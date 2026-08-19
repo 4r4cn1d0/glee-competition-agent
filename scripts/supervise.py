@@ -41,19 +41,113 @@ FLEET = [
     ("GLEE_KEY_TEST5", "composite"),
 ]
 
-#: Per-agent experiment arms. Only the named agent gets the flag, so every other
-#: agent stays a control and the comparison is clean. Empty dict = no experiment.
+#: Per-agent experiment arms live in arms.json, NOT in this file, so an arm can
+#: be changed and applied to one agent without restarting the whole fleet.
+#: Format: {"<probe>": {"ENV_VAR": "value"}}
+ARMS_PATH = os.path.join(REPO, "arms.json")
+
+
+#: A game we have not moved in for this long is probably one we are timing out.
+#: The server closes a game after 120s on your turn, and three consecutive
+#: self-timeouts suspend queue joins for 30 minutes. Catching the FIRST one is
+#: the difference between a blip and a half-hour outage.
+STALL_SECONDS = 100
+
+
+def active_games(env_key: str) -> int | None:
+    """How many games this agent currently has in flight, per the server.
+
+    Authoritative, unlike the local move log: a game where we are waiting on the
+    opponent produces no turns of ours, so log recency cannot tell "idle" from
+    "mid-game". Returns None when the answer is unknown, which callers must
+    treat as busy.
+    """
+    key = os.environ.get(env_key)
+    if not key:
+        return None
+    try:
+        from glee_sdk import GleeClient
+        return int(GleeClient(api_key=key).stats().get("active_games", 0))
+    except Exception:
+        return None
+
+
+def stalled_games(probe: str) -> int:
+    """Games whose last move by us is old enough to be timing out right now."""
+    path = os.path.join(REPO, "logs", probe, "turns.jsonl")
+    if not os.path.exists(path):
+        return 0
+    now = time.time()
+    last: dict = {}
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            for line in handle.readlines()[-4000:]:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                gid = rec.get("game_id")
+                if gid:
+                    last[gid] = max(last.get(gid, 0.0), rec.get("ts", 0.0))
+    except OSError:
+        return 0
+    # Only count games touched recently enough to still be live.
+    return sum(1 for t in last.values() if STALL_SECONDS < now - t < 600)
+
+
+def load_arms() -> dict:
+    """Read the arm assignments fresh. Called at every agent launch."""
+    try:
+        with open(ARMS_PATH, encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return {}
+
+
+#: A cycle request names probes to drain and relaunch, one per line. Written by
+#: `supervise.py --cycle <probe>` and consumed by the running supervisor, so a
+#: deployment costs one agent's in-flight games instead of all five.
+CYCLE_PATH = os.path.join(REPO, "logs", "cycle.request")
+
+#: How long a draining agent gets to finish its games before we give up on it.
+#: Measured live: persuasion games run a median 88s and negotiation p90 is 214s.
+#: A SIGKILLed agent submits nothing, the server closes the game on its 120s
+#: turn timeout, and an ABANDONED game is scored at the 5th percentile —
+#: strictly worse than any legal move. Killing the fleet after 60s once cost
+#: ~91 games across five agents. Never rush this.
+DRAIN_SECONDS = 300
+
+#: Each agent is launched with a bounded --max-time and then relaunched. This is
+#: the ONLY safe way to apply a config change.
 #:
-#: Ratings are permanently scored, so arms go on the agent with the most headroom
-#: in the affected family, never on whichever agent currently holds our
-#: leaderboard place.
-ARMS = {
-    # conceder's negotiation is the weakest cell in the fleet (41.1 percentile),
-    # so it has the most room and the least to lose. The legacy clamp let an
-    # opponent's lowball cap our anchor, collapsing a configured 4.00x ask to
-    # 1.05x our own valuation and making the anchor knobs inert.
-    "conceder": {"GLEE_NEGO_BOUND_AS_FLOOR": "1"},
-}
+#: SIGINT does not drain: it propagates straight out of the SDK's poll loop, so
+#: every in-flight game is abandoned and hits the server's 120s turn clock.
+#: Three such timeouts suspend queue joins for 30 minutes, and cycling caused
+#: exactly that outage three separate times.
+#:
+#: --max-time uses the SDK's own drain instead: it stops STARTING games, plays
+#: the in-flight ones to completion, and exits 0. Zero games abandoned, ever.
+#: The cost is that an arms.json change lands at the next boundary rather than
+#: instantly, which is a trade worth making.
+AGENT_MAX_TIME = 900
+
+#: Live control surface, re-read every loop. Nothing here needs a code change or
+#: a supervisor restart.
+#:   {"shift_seconds": 900,
+#:    "disabled": ["conceder"],        # drain at next boundary, do not relaunch
+#:    "cycle_now": ["composite"]}      # apply arms.json at next boundary
+CONTROL_PATH = os.path.join(REPO, "control.json")
+
+
+def load_control() -> dict:
+    try:
+        with open(CONTROL_PATH, encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return {}
 
 #: Restart backoff. A tight relaunch loop against a server that is refusing us
 #: wastes the rate limit and can trip the platform's crash-loop cooldown
@@ -79,13 +173,40 @@ class Agent:
         self.probe = probe
         self.args = args
         self.proc: subprocess.Popen | None = None
+        self.adopted_pid: int | None = None
         self.restarts = 0
         self.started_at = 0.0
         self.next_try = 0.0
 
     @property
     def alive(self) -> bool:
+        if self.adopted_pid is not None:
+            try:
+                os.kill(self.adopted_pid, 0)   # signal 0 only tests existence
+                return True
+            except OSError:
+                self.adopted_pid = None        # it exited; we may relaunch now
+                return False
         return self.proc is not None and self.proc.poll() is None
+
+    @property
+    def pid(self) -> int | None:
+        if self.adopted_pid is not None:
+            return self.adopted_pid
+        return self.proc.pid if self.proc else None
+
+    def adopt(self, pid: int) -> None:
+        """Supervise an already-running agent without disturbing it.
+
+        A running agent holds 6-9 scored games at all times, so stopping one to
+        bring it under supervision would abandon them and risk a 30-minute queue
+        ban. We do not need to own the process to supervise it — only to notice
+        when it exits and start its replacement. The adopted process keeps its
+        original (unbounded) shift, so an arms.json change reaches it only when
+        it eventually exits; its replacement is launched with a bounded shift and
+        joins the normal rotation from then on.
+        """
+        self.adopted_pid = pid
 
     def launch(self) -> bool:
         key = os.environ.get(self.env_key)
@@ -97,19 +218,64 @@ class Agent:
                "--llm-mode", self.args.llm_mode,
                "--concurrency", str(self.args.concurrency),
                "--poll-interval", str(self.args.poll_interval),
-               "--families", self.args.families, "--quiet"]
+               "--families", self.args.families, "--quiet",
+               "--max-time", str(int(load_control().get("shift_seconds")
+                                     or self.args.agent_max_time))]
         if self.probe == "randomized":
             cmd += ["--seed", "20260819"]
-        env = dict(os.environ, GLEE_API_KEY=key, GLEE_LOG_DIR=log_dir)
-        env.update(ARMS.get(self.probe, {}))
+        # GLEE_PROBE lets the agent re-read its own arm from arms.json while it
+        # runs, so a flag change lands without a restart -- and therefore without
+        # abandoning the 6-9 games a restart costs, each scored at the 5th
+        # percentile, three of which in a row earn a 30-minute queue ban.
+        env = dict(os.environ, GLEE_API_KEY=key, GLEE_LOG_DIR=log_dir,
+                   GLEE_PROBE=self.probe)
+        env.update(load_arms().get(self.probe, {}))
         out = open(os.path.join(REPO, "logs", f"{self.probe}.out"), "a", encoding="utf-8")
-        arm = ARMS.get(self.probe) or {}
+        arm = load_arms().get(self.probe) or {}
         out.write(f"\n===== supervisor launch {time.strftime('%Y-%m-%d %H:%M:%S')} "
                   f"(restart #{self.restarts}){' arm=' + repr(arm) if arm else ''} =====\n")
         out.flush()
         self.proc = subprocess.Popen(cmd, cwd=REPO, env=env, stdout=out,
                                      stderr=subprocess.STDOUT)
         self.started_at = time.time()
+        return True
+
+    def quiet(self) -> bool:
+        """True only if the server says this agent holds no games right now.
+
+        SIGINT makes run_agent stop queueing AND stop submitting moves for games
+        already in progress, so every in-flight game is then guaranteed to hit
+        the 120s turn clock. Three such timeouts suspend the agent's queue joins
+        for 30 minutes. Cycling has caused that outage three separate times.
+        Waiting for a genuinely quiet moment is the only safe way to signal.
+        """
+        n = active_games(self.env_key)
+        return n == 0
+
+    def drain(self, seconds: float = DRAIN_SECONDS) -> bool:
+        """Stop this agent and wait, however long it takes, for it to exit.
+
+        There is deliberately no give-up path. Once SIGINT is sent the agent has
+        stopped queueing and is playing out its in-flight games — that decision
+        cannot be un-sent. An earlier version bailed out after a deadline and
+        "left it alone", which meant a half-drained agent sat there not
+        submitting moves; three of its games hit the 120s turn timeout and the
+        platform suspended the agent's queue joins for 30 minutes ("last 3 games
+        all timed out on its turn"). Waiting is always cheaper than that.
+
+        ``seconds`` now only controls how often we complain while waiting.
+        """
+        self.stop()
+        started = time.time()
+        warned = False
+        while self.alive:
+            waited = time.time() - started
+            if waited > seconds and not warned:
+                print(f"  [{time.strftime('%H:%M:%S')}] {self.probe} still draining "
+                      f"after {waited:.0f}s — waiting rather than abandoning its "
+                      f"games", flush=True)
+                warned = True
+            time.sleep(2)
         return True
 
     def stop(self) -> None:
@@ -170,10 +336,24 @@ def main() -> int:
     parser.add_argument("--llm-mode", default="off", choices=("off", "messages", "full"))
     parser.add_argument("--families", default="bargaining,negotiation,persuasion")
     parser.add_argument("--only", help="comma-separated probe names")
+    parser.add_argument("--agent-max-time", type=float, default=AGENT_MAX_TIME,
+                        help="seconds before an agent drains and is relaunched; "
+                             "this is how config changes are applied safely")
     parser.add_argument("--check-interval", type=float, default=10.0)
     parser.add_argument("--stop", action="store_true")
+    parser.add_argument("--cycle", metavar="PROBE",
+                        help="drain and relaunch just these agents (comma-separated) "
+                             "so an arms.json change applies without restarting the fleet")
     args = parser.parse_args()
     load_env()
+
+    if args.cycle:
+        os.makedirs(os.path.join(REPO, "logs"), exist_ok=True)
+        with open(CYCLE_PATH, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(p.strip() for p in args.cycle.split(",") if p.strip()))
+        print(f"requested cycle of {args.cycle}; the running supervisor will drain "
+              f"and relaunch them (up to {DRAIN_SECONDS}s each)")
+        return 0
 
     if args.stop:
         if not os.path.exists(STATE):
@@ -192,6 +372,26 @@ def main() -> int:
         return 0
 
     _claim_singleton("supervisor")
+    def _running_probe_pids() -> dict:
+        out = subprocess.run(["ps", "-axo", "pid=,command="],
+                             capture_output=True, text=True).stdout
+        found = {}
+        for line in out.splitlines():
+            line = line.strip()
+            if "run_agent.py" not in line or "--probe" not in line:
+                continue
+            if "/python" not in line.lower() and "Python" not in line:
+                continue
+            parts = line.split()
+            try:
+                pid = int(parts[0])
+            except (ValueError, IndexError):
+                continue
+            if "--probe" in parts:
+                probe = parts[parts.index("--probe") + 1]
+                found.setdefault(probe, pid)
+        return found
+
     only = {p.strip() for p in args.only.split(",")} if args.only else None
     agents = [Agent(k, p, args) for k, p in FLEET if not only or p in only]
 
@@ -202,16 +402,47 @@ def main() -> int:
     signal.signal(signal.SIGINT, handle)
     signal.signal(signal.SIGTERM, handle)
 
+    pending_cycle: set = set()
+    existing = _running_probe_pids()
+    for agent in agents:
+        pid = existing.get(agent.probe)
+        if pid:
+            agent.adopt(pid)
+            print(f"  adopted already-running {agent.probe} pid={pid} "
+                  f"(no games disturbed)", flush=True)
+
     print(f"supervising {len(agents)} agents "
           f"(concurrency={args.concurrency}, llm={args.llm_mode}). Ctrl-C to stop.", flush=True)
     started = time.time()
     while not stopping["flag"]:
         now = time.time()
+        control = load_control()
+        disabled = set(control.get("disabled") or [])
         for agent in agents:
+            if agent.probe in disabled:
+                if agent.alive:
+                    continue          # let its shift finish; do not signal it
+                if agent.proc is not None:
+                    print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} disabled via "
+                          f"control.json; leaving it down", flush=True)
+                    agent.proc = None
+                agent.next_try = now + 30
+                continue
             if agent.alive or now < agent.next_try:
                 continue
-            if agent.proc is not None:                 # it died
+            if agent.proc is not None:                 # it exited
                 ran = now - agent.started_at
+                rc = agent.proc.returncode if agent.proc else 0
+                # A clean exit at the --max-time boundary is the DESIGNED
+                # rotation, not a failure. Relaunch at once and do not let the
+                # crash backoff escalate.
+                if rc == 0 and ran >= agent.args.agent_max_time * 0.8:
+                    print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} completed its "
+                          f"{ran:.0f}s shift and drained cleanly; relaunching",
+                          flush=True)
+                    agent.proc = None
+                    agent.next_try = 0.0
+                    continue
                 agent.restarts += 1
                 delay = BACKOFF[min(agent.restarts - 1, len(BACKOFF) - 1)] if ran < 60 else 5
                 agent.next_try = now + delay
@@ -224,27 +455,67 @@ def main() -> int:
                 continue
             if agent.launch():
                 print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} started "
-                      f"pid={agent.proc.pid}", flush=True)
+                      f"pid={agent.pid}", flush=True)
             else:
                 print(f"  {agent.probe}: {agent.env_key} not set, skipping", flush=True)
                 agent.next_try = float("inf")
 
+        # A cycle request drains and relaunches only the named agents, so an
+        # arm change costs one agent's in-flight games rather than the fleet's.
+        if os.path.exists(CYCLE_PATH):
+            try:
+                with open(CYCLE_PATH, encoding="utf-8") as handle:
+                    wanted = {line.strip() for line in handle if line.strip()}
+                os.remove(CYCLE_PATH)
+            except OSError:
+                wanted = set()
+            for agent in agents:
+                if agent.probe not in wanted or not agent.alive:
+                    continue
+                pending_cycle.add(agent.probe)
+                print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} queued for cycle; "
+                      f"will apply when it next holds zero games or completes its "
+                      f"shift", flush=True)
+
+        # Cycle each queued agent the moment the SERVER says it is holding no
+        # games. Signalling a busy agent abandons those games to the turn clock.
+        for agent in agents:
+            if agent.probe not in pending_cycle or not agent.alive:
+                continue
+            if not agent.quiet():
+                continue
+            print(f"  [{time.strftime('%H:%M:%S')}] cycling {agent.probe}: idle, "
+                  f"draining", flush=True)
+            agent.drain()
+            agent.proc = None
+            agent.next_try = 0.0
+            pending_cycle.discard(agent.probe)
+            print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} cycled with zero "
+                  f"games abandoned", flush=True)
+
         with open(STATE, "w", encoding="utf-8") as handle:
             json.dump({"supervisor_pid": os.getpid(),
                        "started": started,
-                       "agents": {a.probe: (a.proc.pid if a.alive else None) for a in agents},
+                       "agents": {a.probe: (a.pid if a.alive else None) for a in agents},
                        "restarts": {a.probe: a.restarts for a in agents}}, handle, indent=2)
         time.sleep(args.check_interval)
 
     print("\nstopping — agents drain their in-flight games first", flush=True)
     for agent in agents:
         agent.stop()
-    deadline = time.time() + 180
-    while time.time() < deadline and any(a.alive for a in agents):
+    # DEFENCE: there is no kill path here, deliberately. An agent that is still
+    # alive is still playing scored games. Killing it abandons them, they hit the
+    # 120s turn timeout, and three such timeouts suspend the agent's queue joins
+    # for 30 minutes. Waiting is always cheaper. This loop ends only when every
+    # agent has exited on its own.
+    started_wait = time.time()
+    while any(a.alive for a in agents):
+        waited = time.time() - started_wait
+        if waited > DRAIN_SECONDS and int(waited) % 60 < 2:
+            still = [a.probe for a in agents if a.alive]
+            print(f"  still draining after {waited:.0f}s: {still} — waiting, never "
+                  f"killing", flush=True)
         time.sleep(2)
-    for agent in agents:
-        if agent.alive:
-            agent.proc.kill()
     if os.path.exists(STATE):
         os.remove(STATE)
     uptime = (time.time() - started) / 3600

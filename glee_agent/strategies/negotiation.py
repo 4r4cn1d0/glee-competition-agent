@@ -18,13 +18,80 @@ Two ideas carry the strategy:
 
 from __future__ import annotations
 
-import os
+from .. import runtime_flags
 
 from ..actions import _num, is_final_round
 
 # Exponent on the concession curve. >1 holds firm early and concedes late, which
 # extracts more from an opponent who concedes linearly.
 _BOULWARE = 2.0
+
+
+def _split_candidate_enabled() -> bool:
+    """Whether to propose split-the-difference when it dominates our schedule.
+
+    Field evidence across used cars, insurance, housing and eBay (Keniston,
+    Larsen, Li, Prescott, Silveira & Yu, Intl. Economic Review 65(4), 2024)
+    finds offers at the midpoint of the two most recent prices are accepted
+    disproportionately often — a focal point a smooth concession curve can
+    never land on. Only the DOMINANT case is taken: the midpoint must be at
+    least as good for us as our own scheduled target, so this can raise
+    acceptance but never concede a cent beyond schedule. OFF by default.
+    """
+    return runtime_flags.enabled("GLEE_NEGO_SPLIT_CANDIDATE")
+
+
+def _our_last_price(state: dict, me: str) -> float | None:
+    """The price we most recently put on the table, if any."""
+    last = None
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        for key in ("offer", "counteroffer"):
+            off = entry.get(key)
+            if isinstance(off, dict) and off.get("from_player") == me:
+                if off.get("price") is not None:
+                    last = _num(off["price"])
+    return last
+
+
+def _maybe_split(state: dict, p: dict, price: float) -> float:
+    """Take the midpoint of the two most recent prices when it dominates."""
+    if not _split_candidate_enabled():
+        return price
+    me = state.get("current_player") or ""
+    ours = _our_last_price(state, me)
+    theirs = (state.get("last_offer") or {}).get("price")
+    if ours is None or theirs is None:
+        return price
+    split = (ours + _num(theirs)) / 2.0
+    # Dominant case only: the focal midpoint must be no worse for us than the
+    # scheduled price, and still strictly profitable.
+    if _surplus(split, p) <= 0:
+        return price
+    if p["i_am_seller"] and split >= price:
+        return split
+    if not p["i_am_seller"] and split <= price:
+        return split
+    return price
+
+
+def _horizon_v2_enabled() -> bool:
+    """Whether to use the corrected horizon / ZOPA / margin logic.
+
+    OFF by default. These three changes are unflagged code by nature — they
+    would apply to every agent on its next restart, including the controls, and
+    three agents are currently mid-ban and will restart automatically. One of
+    them is also known-imperfect: it clamps the target to the EDGE of the zone
+    of agreement, leaving the opponent zero surplus, which the measured 0.39
+    acceptance cliff says gets rejected. Gating keeps the controls clean and
+    stops a ban lifting into an untested policy.
+    """
+    return runtime_flags.enabled("GLEE_NEGO_HORIZON_V2")
+
+
+def other_player(me: str) -> str:
+    return "player_2" if me == "player_1" else "player_1"
 
 
 def _bound_as_floor_enabled() -> bool:
@@ -34,8 +101,7 @@ def _bound_as_floor_enabled() -> bool:
     by environment variable, which makes the rollout deliberate and gives the
     controlled comparison for free.
     """
-    return os.environ.get("GLEE_NEGO_BOUND_AS_FLOOR", "").strip().lower() in (
-        "1", "true", "yes", "on")
+    return runtime_flags.enabled("GLEE_NEGO_BOUND_AS_FLOOR")
 
 
 def _continuation_accept_enabled() -> bool:
@@ -55,8 +121,7 @@ def _continuation_accept_enabled() -> bool:
     where no deal is possible at all, against ~100% in the live sample, which
     discredits the null rather than confirming it.
     """
-    return os.environ.get("GLEE_NEGO_CONTINUATION_ACCEPT", "").strip().lower() in (
-        "1", "true", "yes", "on")
+    return runtime_flags.enabled("GLEE_NEGO_CONTINUATION_ACCEPT")
 
 
 def _rounds_left(state: dict, assumed_horizon: int) -> tuple[int, bool]:
@@ -69,6 +134,12 @@ def _rounds_left(state: dict, assumed_horizon: int) -> tuple[int, bool]:
     horizon instead, so the schedule actually advances.
     """
     if state.get("horizon_known") is False or state.get("max_rounds") is None:
+        # An uncapped game has NO known final round. Counting down against the
+        # planning horizon and then treating the result as a deadline was a bug
+        # of mine: from round 10 onward rounds_left hit 1, decide() read that as
+        # the final round, and we accepted any offer with positive surplus. An
+        # opponent only had to stall to round 10 to get our floor. The planning
+        # clock still paces concession; it must never declare the game over.
         current = int(_num(state.get("round"), 1))
         return max(1, assumed_horizon - current + 1), False
     remaining = int(_num(state.get("max_rounds"), 1)) - int(_num(state.get("round"), 1)) + 1
@@ -113,6 +184,21 @@ def plan(game: dict, cfg) -> dict:
     i_am_seller = role == "seller"
     my_value = _num(state.get(f"{me}_value"), 0.0)
 
+    # Under complete information the server hands us BOTH valuations. Ignoring
+    # that ran the same blind anchor-and-concede as when we know nothing, in
+    # roughly half of all games. With both values the zone of agreement is
+    # exact: no search, no posterior, no model.
+    other = other_player(me)
+    their_value = None
+    if _horizon_v2_enabled() and state.get(f"{other}_value") is not None:
+        their_value = _num(state.get(f"{other}_value"), 0.0)
+    zopa_lo = zopa_hi = None
+    if their_value is not None:
+        seller_v = my_value if i_am_seller else their_value
+        buyer_v = their_value if i_am_seller else my_value
+        if buyer_v > seller_v:
+            zopa_lo, zopa_hi = seller_v, buyer_v
+
     rounds_left, capped = _rounds_left(state, cfg.nego_assumed_horizon)
     horizon = max(1, int(_num(state.get("max_rounds"), cfg.nego_assumed_horizon)))
     # Fraction of the negotiation elapsed, 0 at the start and 1 at the deadline.
@@ -152,16 +238,39 @@ def plan(game: dict, cfg) -> dict:
     # zone of agreement existed we captured a median 3.5% of it. So the
     # concession curve stops short, keeping a slice of whatever spread we opened.
     margin = min(max(cfg.nego_min_margin, 0.0), 0.9)
-    reservation = floor + (anchor - floor) * margin
+    # The margin used to be a fraction of the ANCHOR SPREAD, so a theatrical 4x
+    # opening produced a terminal reservation of 1.36x our own value — outside
+    # the zone of agreement in three of the six strict-ZOPA type pairs, i.e. a
+    # guaranteed no-deal. Scale it to the surplus that actually exists instead.
+    if zopa_lo is not None:
+        span = zopa_hi - zopa_lo
+        reservation = (floor + span * margin) if i_am_seller else (floor - span * margin)
+    else:
+        reservation = floor + (anchor - floor) * margin
 
     # Boulware concession from anchor toward reservation.
     concession = elapsed ** _BOULWARE
     target = anchor + (reservation - anchor) * concession
 
+    # Propose INSIDE the zone of agreement we can see — never at its boundary.
+    # The boundary hands the opponent exactly zero surplus, which the measured
+    # acceptance cliff says gets rejected: technically inside the ZOPA,
+    # economically a no-deal. Leave them at least nego_zopa_share of the span.
+    if zopa_lo is not None:
+        span = zopa_hi - zopa_lo
+        share = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", cfg.nego_zopa_share)
+        give = min(max(share, 0.0), 0.5) * span
+        if i_am_seller:
+            target = min(max(target, zopa_lo), zopa_hi - give)
+        else:
+            target = min(max(target, zopa_lo + give), zopa_hi)
+
     return {
         "role": role,
         "i_am_seller": i_am_seller,
         "my_value": my_value,
+        "their_value": their_value,
+        "zopa": (zopa_lo, zopa_hi) if zopa_lo is not None else None,
         "floor": floor,
         "anchor": anchor,
         "reservation": reservation,
@@ -260,12 +369,20 @@ def decide(game: dict, cfg) -> dict:
     p = plan(game, cfg)
 
     if game["valid_actions"]["type"] == "offer":
-        return {"product_price": round(p["target"], 2), "_plan": p}
+        price = _maybe_split(state, p, p["target"])
+        p["split_taken"] = price != p["target"]
+        return {"product_price": round(price, 2), "_plan": p}
 
     # --- decision phase ---
     offer_price = _num((state.get("last_offer") or {}).get("price"), 0.0)
     p["offered_price"] = offer_price
-    final = is_final_round(state) or p["rounds_left"] <= 1
+    # Only a REAL cap ends the game. p["capped"] is False for uncapped games no
+    # matter how far the planning clock has run down.
+    if _horizon_v2_enabled():
+        # Only a REAL cap ends the game.
+        final = is_final_round(state) or (p["capped"] and p["rounds_left"] <= 1)
+    else:
+        final = is_final_round(state) or p["rounds_left"] <= 1
 
     if final:
         # Rejecting now ends the game at $0 for both. Take any profitable deal.
@@ -298,4 +415,5 @@ def decide(game: dict, cfg) -> dict:
         # Their offer already pays; the counter must stay on the profitable side
         # of it so a rejection can never turn a winning deal into a no-deal.
         counter = max(offer_price, counter) if p["i_am_seller"] else min(offer_price, counter)
+    counter = _maybe_split(state, p, counter)
     return {"decision": "RejectOffer", "product_price": round(counter, 2), "_plan": p}

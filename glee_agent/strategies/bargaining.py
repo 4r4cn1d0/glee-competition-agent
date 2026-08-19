@@ -40,6 +40,8 @@ what the field measurably accepts — see ``Config.barg_offer_floor``.
 
 from __future__ import annotations
 
+from .. import runtime_flags
+
 import math
 
 from ..actions import _num
@@ -319,6 +321,19 @@ def decide(game: dict, cfg) -> dict:
             # The opponent gets the last word after this. Cap the ask so the
             # offer stays acceptable, floored by what a refusal is worth.
             my_gain = max(p["continuation_if_refused"], min(my_gain, money * 0.62))
+        # Cap the ask so the opponent is never pushed under the measured
+        # acceptance cliff. barg_offer_floor bounds OUR share from below; this
+        # bounds it from above. Live check found every probe proposing 26-38%
+        # to the opponent in some configurations — inside the region where
+        # acceptance collapses to 5-13% and is flat, so the extra share we were
+        # demanding bought a rejection rather than a better deal.
+        opp_floor = runtime_flags.as_float("GLEE_BARG_OPPONENT_FLOOR",
+                                           cfg.barg_opponent_floor)
+        opp_floor = min(max(opp_floor, 0.0), 0.5)
+        if opp_floor > 0.0:
+            my_gain = min(my_gain, (1.0 - opp_floor) * money)
+            p["opponent_floor_applied"] = opp_floor
+
         return {"alice_gain": my_gain if mine else money - my_gain,
                 "bob_gain": money - my_gain if mine else my_gain,
                 "_plan": p}

@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
 
 from glee_sdk import (
     CompetitionClosedError,
@@ -114,6 +115,30 @@ def main() -> int:
                     "stopped agent.")
         exit_code = 130
     except GleeAPIError as exc:
+        # The platform suspends queue joins for ~30 minutes when an agent's last
+        # three games all timed out on its turn. Exiting turns that into a
+        # crash-loop: the supervisor restarts, the API refuses again, and the
+        # backoff escalates to 5 minutes, so recovery lags the ban by ages.
+        # Waiting in place means the agent rejoins the moment the ban lifts.
+        cooldown = exc.status_code == 403 and "timed out" in str(exc).lower()
+        if cooldown:
+            logger.warning("Queue joins suspended (crash-loop cooldown). Waiting "
+                           "in place and retrying every 60s: %s", exc)
+            while True:
+                time.sleep(60)
+                try:
+                    client.queue(cfg.families[0])
+                    client.leave_queue()
+                    logger.info("Cooldown lifted; resuming play.")
+                    break
+                except GleeAPIError as retry_exc:
+                    if not (retry_exc.status_code == 403
+                            and "timed out" in str(retry_exc).lower()):
+                        logger.error("API error while waiting: %s", retry_exc)
+                        return 1
+                except KeyboardInterrupt:
+                    return 130
+            return main()          # re-enter with a clean run loop
         logger.error("API error: %s", exc)
         exit_code = 1
     finally:

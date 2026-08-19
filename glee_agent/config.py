@@ -60,6 +60,12 @@ class Config:
     # A 99-round cap is not the operative deadline: inflation is. This bounds
     # the concession schedule so the agent cannot stall until the pot is gone.
     barg_uncapped_horizon: int = 30
+    # Minimum share the OPPONENT must be left. Distinct from barg_offer_floor,
+    # which bounds OUR share: one stops us proposing ourselves nothing, the
+    # other stops us demanding past the point the field will accept. Measured
+    # cliff is 0.39 (95% set [0.38,0.40], p=5e-6). Default 0.0 = off, so a
+    # restart cannot change live behaviour; set per-agent to deploy.
+    barg_opponent_floor: float = 0.0
     # Empirical floor on our own share when proposing, as a fraction of the pot.
     # The equilibrium share is 0 whenever the opponent never discounts and holds
     # the last word, which is true and unplayable: the field pays us 39.3% of
@@ -80,6 +86,13 @@ class Config:
     # Base odds that a negotiation still closes if we reject now. Scales the
     # continuation value; at 0 the agent accepts any profitable offer.
     nego_deal_odds: float = 0.65
+    # Fraction of a KNOWN zone of agreement left to the opponent when both
+    # valuations are visible. Targeting the ZOPA boundary hands them exactly
+    # zero surplus, and the bargaining data says zero-surplus offers get
+    # rejected (acceptance collapses below the 0.39-of-pot cliff). No
+    # negotiation-specific cliff has been measured yet, so the bargaining
+    # number is the prior; only read under GLEE_NEGO_HORIZON_V2.
+    nego_zopa_share: float = 0.39
     # Persuasion: shade the optimal lie rate down; LLM buyers punish detected
     # lies harder than a Bayesian would.
     pers_lie_shading: float = 0.80
@@ -109,12 +122,14 @@ class Config:
             barg_unknown_delta=_env_float("GLEE_BARG_UNKNOWN_DELTA", 0.90),
             barg_undisclosed_horizon=_env_int("GLEE_BARG_UNDISCLOSED_HORIZON", 99),
             barg_uncapped_horizon=_env_int("GLEE_BARG_UNCAPPED_HORIZON", 30),
+            barg_opponent_floor=_env_float("GLEE_BARG_OPPONENT_FLOOR", 0.0),
             barg_offer_floor=_env_float("GLEE_BARG_OFFER_FLOOR", 0.50),
             nego_seller_anchor=_env_float("GLEE_NEGO_SELLER_ANCHOR", 2.20),
             nego_buyer_anchor=_env_float("GLEE_NEGO_BUYER_ANCHOR", 0.45),
             nego_assumed_horizon=_env_int("GLEE_NEGO_HORIZON", 10),
             nego_min_margin=_env_float("GLEE_NEGO_MIN_MARGIN", 0.12),
             nego_deal_odds=_env_float("GLEE_NEGO_DEAL_ODDS", 0.65),
+            nego_zopa_share=_env_float("GLEE_NEGO_ZOPA_SHARE", 0.39),
             pers_lie_shading=_env_float("GLEE_PERS_LIE_SHADING", 0.80),
             pers_honest_rounds=_env_int("GLEE_PERS_HONEST_ROUNDS", 2),
             log_dir=os.environ.get("GLEE_LOG_DIR", "logs"),
