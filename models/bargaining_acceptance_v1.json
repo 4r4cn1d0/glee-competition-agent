@@ -1,0 +1,128 @@
+{
+ "built": "2026-08-19T18:03:46",
+ "source": "logs/{champion,hardliner,conceder,randomized}[.pre-fix]/games/*.json, bargaining only",
+ "n_games": 402,
+ "n_offers_by_us": 439,
+ "n_offers_by_them": 510,
+ "cliff": {
+  "threshold": 0.39,
+  "profile_95_set": [
+   0.38,
+   0.4
+  ],
+  "note": "P(responder accepts) jumps discontinuously when the share offered to them crosses 0.39"
+ },
+ "model_A_pooled": {
+  "features": [
+   "const",
+   "share_to_responder",
+   "1{share>=0.39}",
+   "log(round)"
+  ],
+  "beta": [
+   -1.8850479020651303,
+   2.0385823717887437,
+   1.3941253211484463,
+   -1.1851738421707578
+  ],
+  "se": [
+   0.3197039736349948,
+   0.94557495853583,
+   0.4814300142056479,
+   0.201095873011586
+  ],
+  "loglik": -185.2255697457499,
+  "n": 439,
+  "use": "incomplete-information games; responder delta unknown"
+ },
+ "model_B_complete": {
+  "features": [
+   "const",
+   "share_to_responder",
+   "1{share>=0.39}",
+   "log(round)",
+   "(delta_responder-0.9)*10"
+  ],
+  "beta": [
+   -1.828626106404147,
+   2.7530146411649477,
+   1.367599783797002,
+   -1.4608026105837617,
+   -1.257874975452531
+  ],
+  "se": [
+   0.49885436084225837,
+   1.338953519945723,
+   0.7281552205642716,
+   0.3859436029291974,
+   0.32237447518179074
+  ],
+  "loglik": -82.26909793569453,
+  "n": 211,
+  "use": "complete-information games; responder delta observed"
+ },
+ "model_C_patience_classifier": {
+  "features": [
+   "const",
+   "their_first_offer_share_to_us"
+  ],
+  "beta": [
+   1.7294421661868686,
+   -2.8897244178523
+  ],
+  "se": [
+   0.44442305798658205,
+   0.813018506530868
+  ],
+  "loglik": -99.85863536189697,
+  "n": 157,
+  "in_sample_accuracy": 0.6178343949044586,
+  "target": "P(opponent delta >= 0.95)",
+  "use": "incomplete information: infer opponent patience from their opening offer"
+ },
+ "ev_optimal_offer": {
+  "note": "argmax_s P(accept|s,round,delta_resp)*(1-s) under model_B",
+  "table": {
+   "0.8": {
+    "1": 0.39,
+    "2": 0.39,
+    "3": 0.39,
+    "4": 0.39
+   },
+   "0.9": {
+    "1": 0.39,
+    "2": 0.39,
+    "3": 0.47,
+    "4": 0.515
+   },
+   "0.95": {
+    "1": 0.39,
+    "2": 0.475,
+    "3": 0.53,
+    "4": 0.56
+   },
+   "1.0": {
+    "1": 0.425,
+    "2": 0.535,
+    "3": 0.575,
+    "4": 0.595
+   }
+  }
+ },
+ "our_acceptance_rule_observed": {
+  "note": "what WE currently accept, from 510 opponent offers",
+  "by_share_bucket": {
+   "0-10%": 0.19,
+   "10-20%": 0.333,
+   "20-30%": 0.667,
+   "30-35%": 0.625,
+   "35-40%": 0.462,
+   "40-45%": 0.544,
+   "45-50%": 0.541,
+   "50-55%": 0.453,
+   "55-60%": 0.741,
+   "60-70%": 0.686,
+   "70-100%": 0.676
+  }
+ }
+}

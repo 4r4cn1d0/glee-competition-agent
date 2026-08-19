@@ -1,0 +1,293 @@
+{
+ "_schema": "glee.persuasion_seller_policy/v1",
+ "_built": "2026-08-19T23:32:40",
+ "_provenance": "logs/*/games/*.json frozen at 2026-08-19T23:26:26; 696 completed persuasion games, 353 seller-seat",
+ "question": "what realised honesty rate maximises total sales against the real field, and does Kamenica-Gentzkow's q* survive contact with it?",
+ "q_star": {
+  "formula": "q* = p*(v - price) / ((1 - p)*(price - u)), clipped to [0,1]; u = 0 in every observed config",
+  "assumption_that_fails": "K-G derives q* under seller COMMITMENT to a signal structure announced before the state is drawn. GLEE gives the seller no commitment device, so the buyer prices the realised record, not the announced rule.",
+  "values_on_the_config_grid": {
+   "p=0.333,v/price=1.20": 0.1,
+   "p=0.333,v/price=1.25": 0.125,
+   "p=0.333,v/price=2.00": 0.5,
+   "p=0.333,v/price=3.00": 1.0,
+   "p=0.333,v/price=4.00": 1.0,
+   "p=0.500,v/price=1.20": 0.2,
+   "p=0.500,v/price=1.25": 0.25,
+   "p=0.500,v/price=2.00": 1.0,
+   "p=0.500,v/price=3.00": 1.0,
+   "p=0.500,v/price=4.00": 1.0,
+   "p=0.800,v/price=1.20": 0.8,
+   "p=0.800,v/price=1.25": 1.0,
+   "p=0.800,v/price=2.00": 1.0,
+   "p=0.800,v/price=3.00": 1.0,
+   "p=0.800,v/price=4.00": 1.0
+  }
+ },
+ "what_the_agent_actually_does": {
+  "branch_audit_low_quality_seller_turns_post_fix": {
+   "high quality (n/a)": 14252,
+   "no valuations; tracking buyer": 5925,
+   "prior alone justifies purchase": 2840,
+   "lie budget q*": 1956,
+   "building reputation": 878,
+   "probe (no plan)": 7290
+  },
+  "reading": "pers_lie_shading and pers_honest_rounds bind ONLY in the 'lie budget' branch, 1956 of 11599 non-trivial seller turns = 17%. In stratum A the code takes 'prior alone justifies purchase' and recommends unconditionally, so the realised lie rate is 1.000 for champion, conceder AND hardliner alike.",
+  "realised_lie_rate_by_probe_and_stratum": {
+   "champion": {
+    "A": 1.0,
+    "B": 0.412,
+    "C": 0.188,
+    "D": 0.024,
+    "hidden_v": 0.386
+   },
+   "conceder": {
+    "A": 1.0,
+    "B": 0.0,
+    "C": 0.0,
+    "D": 0.0,
+    "hidden_v": 0.361
+   },
+   "hardliner": {
+    "A": 1.0,
+    "B": 0.733,
+    "C": 0.164,
+    "D": 0.043,
+    "hidden_v": 0.474
+   },
+   "randomized": {
+    "A": 0.449,
+    "B": 0.417,
+    "C": 0.465,
+    "D": 0.478,
+    "hidden_v": 0.474
+   }
+  },
+  "consequence": "the honesty experiment the fleet believes it is running has never been run in stratum A or hidden-v, which together are 66% of our seller games"
+ },
+ "causal_evidence": {
+  "design_1_exogenous_lie_count_in_stratum_A": {
+   "why_causal": "in stratum A all three deterministic probes recommend every unit, so lies_told == lows_so_far == Binomial(t-1, 1-p): exogenous noise given (round, p)",
+   "n_games": 81,
+   "n_rounds": 1620,
+   "logit_P_buy_given_recommend": {
+    "const": -6.355,
+    "lies_told": -0.323,
+    "round_over_20": 1.935,
+    "p": 4.835,
+    "v_over_price_over_4": 6.596
+   },
+   "lies_told_ci95_game_cluster_bootstrap": [
+    -0.579,
+    -0.147
+   ],
+   "nonparametric_check_P_buy_by_round_block_and_lies": {
+    "rounds 1-7": {
+     "0 lies": 0.771,
+     "1-2": 0.67,
+     "3-4": 0.378,
+     "5+": 0.333
+    },
+    "rounds 8-14": {
+     "0 lies": 0.931,
+     "1-2": 0.796,
+     "3-4": 0.672,
+     "5+": 0.394
+    },
+    "rounds 15-20": {
+     "0 lies": 1.0,
+     "1-2": 0.814,
+     "3-4": 0.661,
+     "5+": 0.497
+    }
+   },
+   "reading": "monotone decline WITHIN round block. Each lie costs about 0.32 in the log-odds of every later purchase, inside the stratum where K-G says the buyer should buy unconditionally."
+  },
+  "design_2_randomized_seller_messages": {
+   "why_causal": "the randomized probe's seller recommends on a coin flip independent of quality and history: a genuine randomized experiment on the field buyer",
+   "n_games": 71,
+   "n_rounds": 1420,
+   "effect_of_recommending_a_LOW_unit_all_states": {
+    "immediate_sale": 0.253,
+    "immediate_ci95": [
+     0.126,
+     0.397
+    ],
+    "future_sales": -0.01,
+    "future_ci95": [
+     -0.69,
+     0.72
+    ],
+    "total": 0.24,
+    "total_ci95": [
+     -0.46,
+     1.01
+    ],
+    "note": "figures from the 49-game snapshot; the immediate effect is precise, the future effect is not"
+   },
+   "by_state": {
+    "just bought a HIGH unit": 1.19,
+    "just bought a LOW unit": -2.0,
+    "declined after our warning": -0.14,
+    "declined after our recommendation": 0.19,
+    "round 1": 4.75,
+    "units": "change in total sales from that round onward; all CIs cross zero except the immediate components"
+   },
+   "verdict": "the randomized experiment CANNOT resolve the future cost of a lie at n=71 games. To pin the total effect to +-0.25 sales needs roughly 420 randomized seller games; to +-0.10 needs about 2,600."
+  },
+  "design_3_early_warnings": {
+   "question": "does an early honest warning buy trust that pays later?",
+   "design": "randomized-probe seller games; the number of warnings in the first k rounds is a coin flip",
+   "slope_sold_rate_per_extra_early_warning": {
+    "k=2": -0.028,
+    "ci95": [
+     -0.157,
+     0.097
+    ],
+    "k=3": -0.041,
+    "ci95_k3": [
+     -0.142,
+     0.054
+    ],
+    "k=5": -0.056,
+    "ci95_k5": [
+     -0.177,
+     0.043
+    ]
+   },
+   "n_games": 71,
+   "verdict": "NO support. All three point estimates are negative. But the randomized probe also warns on 49% of HIGH units, so its warnings are themselves uninformative; this is not a test of a TRUTHFUL warning. The CIs still admit the +0.025/warning the structural model needs."
+  }
+ },
+ "policy_evaluation_stratum_A": {
+  "method": "simulate the exogenously-identified dose-response forward; P(buy|warn) = 0.283 measured in stratum A; uncertainty by refitting on 300 game-cluster bootstrap resamples and re-simulating",
+  "objective": "sold rate = rounds_bought / 20",
+  "baseline": "always recommend == q* = 1 == what champion, conceder and hardliner all actually do in stratum A",
+  "delta_vs_always_lie": {
+   "honest to round 6, then always recommend": {
+    "delta": 0.048,
+    "ci95": [
+     -0.005,
+     0.09
+    ],
+    "P_better": 0.96
+   },
+   "honest to round 8, then always recommend": {
+    "delta": 0.05,
+    "ci95": [
+     -0.009,
+     0.102
+    ],
+    "P_better": 0.96
+   },
+   "honest to round 10, then always recommend": {
+    "delta": 0.047,
+    "ci95": [
+     -0.017,
+     0.101
+    ],
+    "P_better": 0.92
+   },
+   "honest to round 12, then always recommend": {
+    "delta": 0.038,
+    "ci95": [
+     -0.027,
+     0.095
+    ],
+    "P_better": 0.84
+   },
+   "honest to round 16, then always recommend": {
+    "delta": 0.005,
+    "ci95": [
+     -0.061,
+     0.064
+    ],
+    "P_better": 0.51
+   },
+   "never lie (conceder's intent)": {
+    "delta": -0.042,
+    "ci95": [
+     -0.109,
+     0.017
+    ],
+    "P_better": 0.06
+   }
+  },
+  "reading": "K-G's q*=1 is beaten by an honest opening in 96% of bootstrap draws, but the 95% interval on the gain still contains zero. Never-lying is WORSE than q*=1 with 94% confidence. The optimum is interior and closer to q* than to honesty."
+ },
+ "independent_structural_check": {
+  "method": "the field-buyer response model of persuasion_field_buyer_response_v1, simulated over all 15 config cells",
+  "best_policies_by_mean_sold_rate": {
+   "0.8*q*": 0.496,
+   "honest first 6 rounds then always": 0.49,
+   "honest first 4 then always": 0.485,
+   "fixed q=0.8": 0.479,
+   "q* exactly": 0.461,
+   "always recommend": 0.417,
+   "never lie": 0.386
+  },
+  "agreement": "both methods rank an honest opening above pure q* and both rank never-lying last or near-last; they disagree about the mechanism (the structural model credits warnings with building trust, which design 3 does not corroborate)"
+ },
+ "hidden_v_games": {
+  "share_of_seller_games": 0.5,
+  "current_rule": "recommend while the buyer's running buy rate >= 0.5",
+  "realised_lie_rate": {
+   "champion": 0.386,
+   "conceder": 0.361,
+   "hardliner": 0.474,
+   "randomized": 0.474
+  },
+  "game_level_sold_rate": {
+   "champion": 0.465,
+   "conceder": 0.455,
+   "hardliner": 0.516,
+   "randomized": 0.363
+  },
+  "hardliner_minus_champion": {
+   "delta": 0.051,
+   "ci95": [
+    -0.125,
+    0.236
+   ]
+  },
+  "verdict": "cannot tell. Game-level sold rate has sd 0.45 (games are bimodal: the buyer engages or does not), so 1,282 games per arm are needed for 80% power at delta = 0.05."
+ },
+ "recommended_experiment": {
+  "what": "force an honest opening in stratum A and hidden-v: recommend only high-quality units for the first H rounds, then apply the existing lie budget. Test H in {0, 6, 10}.",
+  "why_not_an_arm_comparison": "comparing arm-level sold rates needs ~1,160 stratum-A games per arm. The round-level dose-response is powered at 81 games and already significant.",
+  "how_to_analyse": "refit the stratum-A logit of P(buy|recommend) on lies_told with round and config controls; H is exogenous by construction so lies_told stays exogenous. To halve the CI on the -0.323 coefficient needs about 324 stratum-A seller games, i.e. roughly 2,800 further persuasion games at the current config mix.",
+  "expected_size_if_the_point_estimate_holds": {
+   "stratum_A_sold_rate": "+0.048",
+   "seller_seat_percentile": "+0.6 pts",
+   "family_percentile": "+0.3 pts",
+   "honest_note": "SMALL. Stratum A is only 57 of 301 matched seller games and our percentile curve is flat there. This fix is worth doing because it is free, not because it closes the gap."
+  }
+ },
+ "sizing": {
+  "seller_seat_proxy_percentile": 0.505,
+  "by_stratum": {
+   "A": 0.383,
+   "B": 0.356,
+   "C": 0.651,
+   "D": 0.652,
+   "hidden_v": 0.517
+  },
+  "sold_rate_gap_to_field_median": {
+   "A": 0.111,
+   "B": 0.1,
+   "C": -0.118,
+   "D": -0.09,
+   "hidden_v": 0.013
+  },
+  "ceiling": {
+   "sell_every_round": 0.864,
+   "i.e. seller-seat headroom": "+36 percentile points, +18 family points"
+  },
+  "sensitivity": {
+   "+0.05 sold rate everywhere": "seller +9.3 pts, family +4.7 pts",
+   "+0.10 sold rate everywhere": "seller +12.7 pts, family +6.4 pts",
+   "+0.04 in stratum A only": "seller +0.6 pts, family +0.3 pts"
+  }
+ }
+}

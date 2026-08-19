@@ -1,0 +1,2 @@
+glee-sdk>=0.0.5
+litellm>=1.0        # optional: only needed when GLEE_LLM_MODE is not "off"

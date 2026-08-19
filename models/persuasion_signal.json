@@ -1,0 +1,162 @@
+{
+ "estimand": "P(quality=high | seller message)",
+ "identification": "quality is revealed only on rounds the buyer bought; the buy decision cannot depend on the unobserved quality, so estimating on bought rounds is unbiased for P(high|message)",
+ "source": "1174 completed live games, 3920 buyer-seat rounds, 1640 with quality revealed",
+ "cells": [
+  {
+   "message_type": "binary",
+   "p": 0.3333,
+   "message": "no",
+   "n": 12,
+   "p_high": 0.0,
+   "ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "message_type": "binary",
+   "p": 0.3333,
+   "message": "yes",
+   "n": 82,
+   "p_high": 0.6951,
+   "ci95": [
+    0.5886,
+    0.7842
+   ]
+  },
+  {
+   "message_type": "binary",
+   "p": 0.5,
+   "message": "no",
+   "n": 5,
+   "p_high": 0.0,
+   "ci95": [
+    -0.0,
+    0.4345
+   ]
+  },
+  {
+   "message_type": "binary",
+   "p": 0.5,
+   "message": "yes",
+   "n": 153,
+   "p_high": 0.7124,
+   "ci95": [
+    0.6362,
+    0.7782
+   ]
+  },
+  {
+   "message_type": "binary",
+   "p": 0.8,
+   "message": "no",
+   "n": 4,
+   "p_high": 0.0,
+   "ci95": [
+    0.0,
+    0.4899
+   ]
+  },
+  {
+   "message_type": "binary",
+   "p": 0.8,
+   "message": "yes",
+   "n": 456,
+   "p_high": 0.8026,
+   "ci95": [
+    0.7636,
+    0.8366
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.3333,
+   "message": "unknown",
+   "n": 19,
+   "p_high": 0.0,
+   "ci95": [
+    0.0,
+    0.1682
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.3333,
+   "message": "yes",
+   "n": 86,
+   "p_high": 0.4651,
+   "ci95": [
+    0.3635,
+    0.5698
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.5,
+   "message": "no",
+   "n": 24,
+   "p_high": 0.0,
+   "ci95": [
+    0.0,
+    0.138
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.5,
+   "message": "unknown",
+   "n": 10,
+   "p_high": 0.0,
+   "ci95": [
+    -0.0,
+    0.2775
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.5,
+   "message": "yes",
+   "n": 201,
+   "p_high": 0.607,
+   "ci95": [
+    0.538,
+    0.6719
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.8,
+   "message": "no",
+   "n": 43,
+   "p_high": 0.4884,
+   "ci95": [
+    0.3462,
+    0.6325
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.8,
+   "message": "unknown",
+   "n": 37,
+   "p_high": 0.4595,
+   "ci95": [
+    0.3104,
+    0.6162
+   ]
+  },
+  {
+   "message_type": "text",
+   "p": 0.8,
+   "message": "yes",
+   "n": 508,
+   "p_high": 0.8701,
+   "ci95": [
+    0.838,
+    0.8966
+   ]
+  }
+ ],
+ "decision_rule": "buy iff p_high * v > product_price, i.e. p_high > product_price/v"
+}

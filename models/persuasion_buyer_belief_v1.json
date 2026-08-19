@@ -1,0 +1,322 @@
+{
+ "_schema": "glee.persuasion_buyer_belief/v1",
+ "_built": "2026-08-19T23:31:11",
+ "_provenance": "logs/*/games/*.json frozen at 2026-08-19T23:26:26; 696 completed persuasion games (343 buyer-seat, 353 seller-seat); extractor scratchpad/pers/{pl.py,rows.py}",
+ "estimand": "P(quality_t = high | seller message_t, seller's message history, qualities revealed so far, round, config)",
+ "identification": [
+  "Quality is revealed only on rounds the buyer bought. The buy decision is a function of observables only, so quality_t is independent of bought_t given the buyer's full decision state; estimating on bought rounds is unbiased WITHIN cells the buyer's policy actually visits.",
+  "Positivity does not hold everywhere: states the champion buyer never buys in are never observed. The `randomized` probe's buyer buys with a KNOWN probability clamp((p*v/price - 0.4)/1.2, 0, 1) that ignores the message and the history, so its 61 buyer games give a selection-free sample used for validation and for off-policy evaluation."
+ ],
+ "model": {
+  "name": "discrete type filter over the seller's lie rate q = P(recommend | low quality)",
+  "q_grid": [
+   0.0,
+   0.025,
+   0.05,
+   0.075,
+   0.1,
+   0.125,
+   0.15,
+   0.175,
+   0.2,
+   0.225,
+   0.25,
+   0.275,
+   0.3,
+   0.325,
+   0.35,
+   0.375,
+   0.4,
+   0.425,
+   0.45,
+   0.475,
+   0.5,
+   0.525,
+   0.55,
+   0.575,
+   0.6,
+   0.625,
+   0.65,
+   0.675,
+   0.7,
+   0.725,
+   0.75,
+   0.775,
+   0.8,
+   0.825,
+   0.85,
+   0.875,
+   0.9,
+   0.925,
+   0.95,
+   0.975,
+   1.0
+  ],
+  "prior_weights": [
+   0.094473,
+   0.197887,
+   0.094113,
+   0.024821,
+   0.006526,
+   0.002357,
+   0.001315,
+   0.001114,
+   0.001307,
+   0.001892,
+   0.003029,
+   0.004912,
+   0.007595,
+   0.010797,
+   0.013868,
+   0.016002,
+   0.016604,
+   0.015559,
+   0.013246,
+   0.010338,
+   0.007503,
+   0.005174,
+   0.003499,
+   0.002416,
+   0.001784,
+   0.001473,
+   0.001409,
+   0.00158,
+   0.002038,
+   0.002861,
+   0.003997,
+   0.004996,
+   0.005071,
+   0.003992,
+   0.002562,
+   0.001615,
+   0.001381,
+   0.002365,
+   0.010351,
+   0.08599,
+   0.31019
+  ],
+  "prior_fit": "nonparametric MLE (EM) over the q grid, fit on the full message+reveal sequences of all 343 buyer-seat games",
+  "prior_mean": 0.4988,
+  "prior_shape": "strongly BIMODAL: 41.1% of mass at q<=0.075 (honest sellers), 40.7% at q>=0.95 (always-recommend shills), 11.2% between 0.3 and 0.5. A Beta prior is the wrong family; the bimodality is what makes one negative message near-decisive at low p.",
+  "eps_P_negative_given_high": 0.002,
+  "eps_measured": "1 of 2,141 revealed high-quality rounds carried a negative message (text 1/1166, binary 0/975). Field sellers essentially never decline a sale on a good unit, which is what makes the single-parameter q identification work.",
+  "round_likelihood": {
+   "message positive, quality unrevealed": "p*(1-eps) + (1-p)*q",
+   "message negative, quality unrevealed": "p*eps + (1-p)*(1-q)",
+   "message positive, quality revealed high": "p*(1-eps)",
+   "message positive, quality revealed low": "(1-p)*q",
+   "message negative, quality revealed high": "p*eps",
+   "message negative, quality revealed low": "(1-p)*(1-q)"
+  },
+  "update": "w_j <- w_j * likelihood_j after EVERY round, whether or not the buyer bought; renormalise",
+  "predictive": {
+   "qbar": "sum_j w_j * q_j  (posterior mean, computed BEFORE this round's update)",
+   "p_high_given_positive": "p*(1-eps) / (p*(1-eps) + (1-p)*qbar)",
+   "p_high_given_negative": "p*eps / (p*eps + (1-p)*(1-qbar))"
+  },
+  "unparsed_messages": "treated as positive (they behave like positives: P(high|unparsed, text) = 0.64 vs P(high|positive, text) = 0.76); 255 of 6860 buyer rounds",
+  "decision_rule": "buy iff p_high*v + (1-p_high)*u >= product_price; u is 0 in every observed config"
+ },
+ "emission_table_measured": {
+  "binary|high": {
+   "n": 975,
+   "positive": 1.0
+  },
+  "binary|low": {
+   "n": 321,
+   "positive": 0.866,
+   "negative": 0.134
+  },
+  "text|low": {
+   "n": 524,
+   "positive": 0.6718,
+   "negative": 0.2385,
+   "unparsed": 0.0897
+  },
+  "text|high": {
+   "n": 1166,
+   "positive": 0.9468,
+   "unparsed": 0.0523,
+   "negative": 0.0009
+  }
+ },
+ "cross_validation": {
+  "scheme": "grouped 5-fold by game_id, prior refit inside each fold",
+  "metrics": {
+   "M2_type_filter": {
+    "logloss": 0.4308,
+    "brier": 0.1393,
+    "auc": 0.8219,
+    "n": 2986
+   },
+   "M1_current_agent": {
+    "logloss": 0.4848,
+    "brier": 0.1568,
+    "auc": 0.776,
+    "n": 2986
+   },
+   "M0_prior_only": {
+    "logloss": 0.5597,
+    "brier": 0.1885,
+    "auc": 0.6709,
+    "n": 2986
+   }
+  },
+  "paired_cluster_bootstrap_logloss_M2_minus_M1": {
+   "point": -0.054,
+   "ci95": [
+    -0.0629,
+    -0.0449
+   ],
+   "clusters": "games"
+  },
+  "selection_free_holdout": {
+   "design": "prior fit on the 282 policy-probe buyer games; evaluated on the 61 randomized-probe buyer games, where quality reveal is an exogenous coin flip independent of message and history. No leakage and no selection bias.",
+   "n_rounds": 612,
+   "M0_prior_only": {
+    "logloss": 0.5649,
+    "brier": 0.1905,
+    "auc": 0.6919
+   },
+   "M1_current_agent": {
+    "logloss": 0.4629,
+    "brier": 0.1496,
+    "auc": 0.8125
+   },
+   "M2_type_filter": {
+    "logloss": 0.3911,
+    "brier": 0.1249,
+    "auc": 0.8575
+   },
+   "paired_cluster_bootstrap_M2_minus_M1_logloss": {
+    "point": -0.0719,
+    "ci95": [
+     -0.0949,
+     -0.0511
+    ]
+   },
+   "status": "this is the strongest single piece of evidence in the artefact"
+  },
+  "by_message_mode_in_sample": {
+   "binary": {
+    "n": 1296,
+    "M2_logloss": 0.4279,
+    "M2_auc": 0.806,
+    "M1_logloss": 0.4913,
+    "M1_auc": 0.734
+   },
+   "text": {
+    "n": 1690,
+    "M2_logloss": 0.4321,
+    "M2_auc": 0.831,
+    "M1_logloss": 0.4797,
+    "M1_auc": 0.801
+   },
+   "note": "the gain holds in binary mode, where no text classifier is involved at all, so it does not depend on glee_agent.text"
+  }
+ },
+ "decision_value": {
+  "unit": "payoff per round in units of product_price",
+  "ipw_on_randomized_buyer_games": {
+   "n_games": 58,
+   "n_rounds": 1160,
+   "never_buy": 0.0,
+   "always_buy": 0.264,
+   "prior_only": 0.3825,
+   "M1_current_agent": 0.4472,
+   "M2_type_filter": 0.4726,
+   "M2_minus_M1": {
+    "point": 0.0255,
+    "ci95": [
+     0.0042,
+     0.0478
+    ]
+   },
+   "note": "assumption-light: the randomized probe's reveal probability is known and independent of message and history. It is a per-round (one-step-deviation) value at histories the randomized policy generated; it is biased TOWARD M1, which under its own policy would not receive those free reveals."
+  },
+  "direct_method_all_games": {
+   "M1_current_agent": 0.4988,
+   "M2_type_filter": 0.5502,
+   "M2_minus_M1": {
+    "point": 0.0514,
+    "ci95": [
+     0.0402,
+     0.0639
+    ]
+   },
+   "warning": "MODEL DEPENDENT and self-serving: M2 is both the policy and the outcome model, and 1304 of 6860 rounds flip from no-buy to buy into states never observed. Use the IPW number."
+  }
+ },
+ "action_change": {
+  "M1_no_M2_no": 2568,
+  "M1_no_M2_yes": 1304,
+  "M1_yes_M2_yes": 2923,
+  "M1_yes_M2_no": 65,
+  "summary": "M2 buys on 4227 of 6860 rounds vs M1's 2988: the current agent is systematically too pessimistic at the start of a game, because it sets p_high = p until it has paid for a purchase."
+ },
+ "free_information": {
+  "claim": "the message stream identifies the seller type with ZERO purchases",
+  "E_qbar_after_k_messages_no_purchases": {
+   "p=0.333, true q=0": {
+    "1": 0.302,
+    "3": 0.149,
+    "8": 0.091
+   },
+   "p=0.333, true q=1": {
+    "1": 0.704,
+    "3": 0.913,
+    "8": 0.986
+   },
+   "p=0.500, true q=0": {
+    "1": 0.372,
+    "3": 0.209,
+    "8": 0.115
+   },
+   "p=0.500, true q=1": {
+    "1": 0.639,
+    "3": 0.833,
+    "8": 0.973
+   },
+   "p=0.800, true q=0": {
+    "1": 0.463,
+    "3": 0.383,
+    "8": 0.242
+   },
+   "p=0.800, true q=1": {
+    "1": 0.552,
+    "3": 0.637,
+    "8": 0.807
+   }
+  },
+  "separation_in_p_high_after_3_free_messages": {
+   "p=0.333": 0.417,
+   "p=0.500": 0.282,
+   "p=0.800": 0.05
+  },
+  "note": "the advantage is concentrated at low p, exactly the configs where the buy decision is close"
+ },
+ "sizing": {
+  "metric": "config-matched field-proxy percentile, kernel-smoothed CDF (kernel = one round)",
+  "buyer_seat_baseline": 0.5095,
+  "buyer_seat_percentile_at_delta": {
+   "+0.0042": 0.5306,
+   "+0.0255": 0.6396,
+   "+0.0478": 0.6926
+  },
+  "family_points": {
+   "point": 6.51,
+   "ci95": [
+    1.06,
+    9.16
+   ]
+  },
+  "warning": "the proxy over-reads: family proxy 0.507 vs live earned 0.449, a 5.8-point optimism. Treat the family point estimate as an upper bound of about +6.5 and the honest range as +1 to +9."
+ },
+ "reference_implementation": {
+  "file": "/private/tmp/claude-501/-Users-spiderishi-Coding-GLEE-Competition/61dfd601-4c16-4baa-a5cb-6ed5aabfd3f0/scratchpad/pers/ref_impl.py",
+  "status": "SPECIFICATION ONLY, not installed in glee_agent/",
+  "verified": "reproduces the analysis code exactly on all 6,860 buyer rounds",
+  "cost": "0.92 ms per 20-round game, pure stdlib, no state carried between games",
+  "exploration_bonus": "the current 0.10*price bonus is now redundant but harmless: IPW value 0.4726 at bonus 0.00 vs 0.4757 at 0.10, a difference far inside the noise"
+ }
+}

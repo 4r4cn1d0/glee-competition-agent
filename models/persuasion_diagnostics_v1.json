@@ -1,0 +1,95 @@
+{
+ "_schema": "glee.persuasion_diagnostics/v1",
+ "_built": "2026-08-19T23:33:15",
+ "_provenance": "logs/*/games/*.json and logs/*/turns.jsonl, frozen at 2026-08-19T23:26:26; 696 completed persuasion games",
+ "question": "how much of the persuasion decline does the message-classifier bug explain?",
+ "answer": "none of it, and the decline is not a decline",
+ "timing": {
+  "pre_fix_games": 152,
+  "pre_fix_window": "15:37-16:07",
+  "post_fix_games": 544,
+  "post_fix_window": "16:17-18:39",
+  "interleaving": "none: every pre-fix game precedes every post-fix game",
+  "consequence": "the buggy classifier was live during the HIGH-scoring opening window (53.3% at n=27) and was removed before the flat window. A bug present only in the good period cannot cause a later decline."
+ },
+ "bug_definition": {
+  "what": "the pre-fix reads_as_recommendation was a flat blacklist of eight phrases",
+  "scope": "TEXT message mode only; binary yes/no messages are parsed identically by both versions",
+  "measured_error": "on the 67 distinct field-seller text messages in pre-fix logs the two classifiers disagree on 12, covering 133 of 540 pre-fix text buyer rounds (24.6%). Every disagreement is the same error: an honest warning read as a recommendation.",
+  "examples": [
+   "This unit is below our usual quality this round. (40 rounds)",
+   "Ordinary unit this round. Still available at the same price. (15)",
+   "Not this round. Wait for a better unit. (7)"
+  ],
+  "recovery_method": "the pre-fix buyer plans log the classifier's verdict per message, so the old verdicts are read directly out of logs/*.pre-fix/turns.jsonl rather than reconstructed"
+ },
+ "mechanical_effect": {
+  "buyer_side": {
+   "pre_fix_text_buyer_rounds": 720,
+   "decisions_changed_by_the_fix": 57,
+   "share": 0.079,
+   "mean_change_in_p_high": -0.0256,
+   "direction": "the old classifier counted honest warnings as recommendations, so low-quality rounds bought after a warning were charged to the recommendation bucket, depressing p_high"
+  },
+  "seller_side": {
+   "turns_in_the_lie_budget_branch": "110 pre-fix / 1956 post-fix",
+   "logged_lies_so_far_vs_recount_with_the_current_classifier": {
+    "pre_fix_mismatch": "62 of 110",
+    "post_fix_mismatch": "69 of 1956"
+   },
+   "over_count_range": "1 to 15 lies",
+   "direction": "an inflated lie counter made the pre-fix seller MORE honest than intended, and only inside the 17% lie-budget branch"
+  }
+ },
+ "causal_estimate": {
+  "design": "difference in differences. The bug can only bite in TEXT mode, so BINARY games are the control group across the same fix.",
+  "cells_config_matched_proxy_percentile": {
+   "pre_text": 0.525,
+   "pre_binary": 0.512,
+   "post_text": 0.458,
+   "post_binary": 0.507
+  },
+  "n": {
+   "pre_text": 47,
+   "pre_binary": 52,
+   "post_text": 175,
+   "post_binary": 156
+  },
+  "did": -0.061,
+  "se": 0.073,
+  "z": -0.84,
+  "ci95": [
+   -0.204,
+   0.082
+  ],
+  "interpretation": "the bug's estimated effect on percentile is -6.1 points with a 95% interval from -20 to +8; it is statistically indistinguishable from zero and its sign says text got WORSE after the fix, not better",
+  "share_of_the_decline_explained": 0.0,
+  "power": "to resolve a 5-percentile-point DiD at 80% power needs about 2,100 games per cell (8,400 total). We have 47 in the smallest cell."
+ },
+ "is_there_a_decline": {
+  "metric": "config-matched field-proxy percentile, kernel-smoothed, 430 games with >=5 field comparisons",
+  "by_time_quartile": {
+   "q1": 0.509,
+   "q2": 0.454,
+   "q3": 0.462,
+   "q4": 0.533
+  },
+  "se_per_quartile": 0.031,
+  "verdict": "no monotone trend; the last quartile is the highest. The reported 53.3 -> 46.0 -> 44.9 series is a cumulative mean regressing from a lucky opening window of 27 games, exactly as an earlier analysis concluded.",
+  "mde": "a single game's proxy percentile has sd about 0.29, so detecting a genuine 8-point shift needs about 205 games per arm and a 4-point shift about 819"
+ },
+ "what_is_actually_wrong": {
+  "not": "a regression over time, a classifier bug, or a broken seat",
+  "is": [
+   "the buyer never uses the free information in the seller's message frequency: it sets p_high = p until a purchase has been paid for (see persuasion_buyer_belief_v1)",
+   "the seller's honesty knobs are bypassed in 66% of seller games by the 'prior alone justifies purchase' and 'no valuations' branches (see persuasion_seller_policy_v1)",
+   "on the config-matched proxy both seats sit at the 50th percentile: there is no single broken component, and reaching the top ten requires beating the field rather than matching it"
+  ]
+ },
+ "confounds_checked": {
+  "probe_mix": "stable at ~25% each through quartiles 1-3; quartile 4 shifts to 53% champion / 38% hardliner. Irrelevant to the pre/post comparison, which lives entirely inside quartile 1.",
+  "seat_mix": "48-53% seller in every quartile",
+  "stratum_mix": "stratum A 0.38-0.44 in every quartile",
+  "named_opponent_share": "0.46-0.56 in every quartile"
+ }
+}

@@ -1,0 +1,609 @@
+{
+ "_schema": "glee.theory_decision_rules/v1",
+ "_built": "2026-08-19T22:45:50",
+ "_source": "1658 live game files in logs/*/games (1725 total, 589 bargaining / 589 persuasion / 586 negotiation completed); no repo file modified",
+ "_scripts": "/private/tmp/claude-501/-Users-spiderishi-Coding-GLEE-Competition/61dfd601-4c16-4baa-a5cb-6ed5aabfd3f0/scratchpad/th/",
+ "bargaining": {
+  "field_acceptance_model": {
+   "form": "P(accept | s,t,delta_resp,delta_prop,T) = sigma(a1+b1*(s-v)) * sigma(a2+b2*s)  [AND of a rationality gate and a fairness gate]",
+   "a1": 3.104,
+   "b1": 10.874,
+   "a2": -1.433,
+   "b2": 4.981,
+   "c2_log_round": -1.253,
+   "v": "v = delta_resp * f(delta_resp,delta_prop,T-t); f = the finite-horizon alternating-offers share, parity-correct",
+   "n_offers": 654,
+   "loglik": -271.632,
+   "note": "c2 (log-round) is SURVIVORSHIP, not time preference; use the posterior update instead of c2 inside a DP"
+  },
+  "model_comparison_AIC": {
+   "accept iff s>=max(v_finite,tau)  tau=0.45": 213.44,
+   "s + cliff + v (free)": 214.61,
+   "free coefficients on s and v": 215.96,
+   "pure rational: s - v_finite": 236.05,
+   "pure fairness / no theory": 248.6,
+   "n": 268,
+   "note": "complete-information offers by us; lower AIC is better"
+  },
+  "tau_fairness_floor": {
+   "point": 0.45,
+   "profile_95": [
+    0.34,
+    0.53
+   ],
+   "reduced_form_cliff": 0.39,
+   "cliff_95": [
+    0.38,
+    0.4
+   ]
+  },
+  "fehr_schmidt": {
+   "representative_agent_logit": "REJECTED: adds chi2=1.0 on 2 df (p=0.60) over a linear share; the cliff step adds chi2=15.3 on 1 df (p=9e-5)",
+   "population_mixture": "ACCEPTED as a relabelling: G(s)=P(tau<=s) is the CDF of the FS threshold alpha/(1+2alpha)",
+   "G_logit": {
+    "const": -2.08,
+    "slope": 4.581,
+    "n": 222,
+    "se_const": 0.275,
+    "se_slope": 0.695
+   },
+   "implied_alpha_CDF": {
+    "P(alpha<=0.35)": 0.125,
+    "P(alpha<=0.60)": 0.278,
+    "P(alpha<=1.11)": 0.444,
+    "P(alpha<=2.14)": 0.75,
+    "fehr_schmidt_1999_human_calibration": {
+     "P(alpha<=0.5)": 0.6,
+     "P(alpha<=1)": 0.9,
+     "P(alpha<=4)": 1.0
+    }
+   },
+   "discounted_vs_nominal": "FS on DISCOUNTED payoffs is rejected by the sign of delta_proposer: coefficient +0.641 (se 0.274, p=0.019); FS-discounted predicts negative, Rubinstein predicts positive"
+  },
+  "rationality_evidence": {
+   "single_index_beats_free_deltas": "Rubinstein continuation index (1 param) ll=-102.31 vs free (delta_r,delta_p) (2 params) ll=-108.77, n=268",
+   "within_s>=v_the_index_adds_nothing": "coef on v = +0.795 (se 2.071), LRT p=0.93 -- exactly what accept-iff-s>=max(v,tau) predicts",
+   "two_by_two": {
+    "s<v & s<0.45": 0.038,
+    "s<v & s>=0.45": 0.424,
+    "s>=v & s<0.45": 0.312,
+    "s>=v & s>=0.45": 0.87,
+    "n": [
+     53,
+     85,
+     93,
+     46
+    ]
+   }
+  },
+  "structural_facts": {
+   "no_deal_rate": {
+    "value": 0.0051,
+    "n_games": 589,
+    "n_no_deal": 3
+   },
+   "nominal_share_vs_agreed_round": {
+    "slope_per_round": 0.0011,
+    "se": 0.0021,
+    "t": 0.52,
+    "n": 587,
+    "reading": "waiting buys nothing nominal"
+   },
+   "repeat_offer_acceptance": {
+    "repeat_or_worse": 0.034,
+    "n": 116,
+    "ci95": [
+     0.013,
+     0.085
+    ],
+    "strictly_better": 0.138,
+    "n2": 116
+   },
+   "clearing_their_stated_demand": {
+    "accept": 0.75,
+    "n": 8,
+    "vs_not_clearing": 0.121,
+    "n2": 372,
+    "warning": "n=8"
+   },
+   "field_first_offer_to_us": {
+    "mean": 0.479,
+    "median": 0.48,
+    "n": 411,
+    "deciles": [
+     0.0,
+     0.17,
+     0.34,
+     0.43,
+     0.44,
+     0.48,
+     0.5,
+     0.56,
+     0.64,
+     0.72
+    ]
+   },
+   "field_concession_first_to_last": {
+    "mean": 0.0439,
+    "median": 0.0001,
+    "n": 166
+   },
+   "delta_marginal": {
+    "0.8": 0.251,
+    "0.9": 0.254,
+    "0.95": 0.258,
+    "1.0": 0.237,
+    "n": 566
+   }
+  },
+  "policy_table_offer_share_to_them": {
+   "_key": "delta_me | delta_opp | T -> [round1, round3, round5]; incomplete info uses the marginal row",
+   "complete_T12": {
+    "0.80|0.80": [
+     0.34,
+     0.35,
+     0.36
+    ],
+    "0.80|0.90": [
+     0.43,
+     0.44,
+     0.45
+    ],
+    "0.80|0.95": [
+     0.48,
+     0.48,
+     0.48
+    ],
+    "0.80|1.00": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "0.90|0.80": [
+     0.25,
+     0.27,
+     0.29
+    ],
+    "0.90|0.90": [
+     0.36,
+     0.37,
+     0.39
+    ],
+    "0.90|0.95": [
+     0.41,
+     0.42,
+     0.42
+    ],
+    "0.90|1.00": [
+     0.44,
+     0.44,
+     0.44
+    ],
+    "0.95|0.80": [
+     0.18,
+     0.21,
+     0.25
+    ],
+    "0.95|0.90": [
+     0.3,
+     0.32,
+     0.34
+    ],
+    "0.95|0.95": [
+     0.35,
+     0.36,
+     0.37
+    ],
+    "0.95|1.00": [
+     0.37,
+     0.38,
+     0.38
+    ],
+    "1.00|0.80": [
+     0.08,
+     0.12,
+     0.18
+    ],
+    "1.00|0.90": [
+     0.19,
+     0.23,
+     0.26
+    ],
+    "1.00|0.95": [
+     0.23,
+     0.26,
+     0.28
+    ],
+    "1.00|1.00": [
+     0.24,
+     0.26,
+     0.29
+    ]
+   },
+   "complete_T99": {
+    "0.80|0.80": [
+     0.32
+    ],
+    "0.80|0.90": [
+     0.41
+    ],
+    "0.80|0.95": [
+     0.46
+    ],
+    "0.80|1.00": [
+     0.5
+    ],
+    "0.90|0.80": [
+     0.2
+    ],
+    "0.90|0.90": [
+     0.28
+    ],
+    "0.90|0.95": [
+     0.37
+    ],
+    "0.90|1.00": [
+     0.44
+    ],
+    "0.95|0.80": [
+     0.1
+    ],
+    "0.95|0.90": [
+     0.16
+    ],
+    "0.95|0.95": [
+     0.24
+    ],
+    "0.95|1.00": [
+     0.36
+    ],
+    "1.00|any": [
+     0.2
+    ],
+    "_note": "the DP's 0.00 in the delta_me=1.0 row is an artefact of a stationary acceptance model; with the posterior update (repeat acceptance 0.034) the answer is a single aggressive probe then the accept threshold"
+   },
+   "incomplete_T12": {
+    "0.80": 0.4,
+    "0.90": 0.32,
+    "0.95": 0.25,
+    "1.00": 0.14
+   },
+   "incomplete_T99": {
+    "0.80": 0.39,
+    "0.90": 0.29,
+    "0.95": 0.18,
+    "1.00": 0.2
+   }
+  },
+  "policy_table_accept_threshold": {
+   "_key": "share offered TO US at which we accept, by delta_me (marginal over an unknown opponent delta)",
+   "T12": {
+    "0.80": 0.37,
+    "0.90": 0.47,
+    "0.95": 0.56,
+    "1.00": 0.7
+   },
+   "T99": {
+    "0.80": 0.37,
+    "0.90": 0.51,
+    "0.95": 0.63,
+    "1.00": 0.75
+   },
+   "closed_form": "x* = delta*P*(1-s*)/(1-(1-P)*delta^2)  with s*=0.45, P=0.71 -> 0.384/0.459/0.502/0.550 for delta 0.80/0.90/0.95/1.00",
+   "note": "T99 delta=1.00 capped at 0.75; the unbounded DP value 0.96 ignores type-updating"
+  },
+  "measured_opening_effect": {
+   "_design": "within (delta_me, delta_opp-known, T) cell, deviation of our realised proxy percentile from the cell mean",
+   "<0.30": {
+    "delta_pctile": 0.115,
+    "se": 0.035,
+    "n": 49
+   },
+   "0.30-0.38": {
+    "delta_pctile": 0.057,
+    "se": 0.053,
+    "n": 23
+   },
+   "0.38-0.46": {
+    "delta_pctile": 0.286,
+    "se": 0.052,
+    "n": 13
+   },
+   "0.46-0.53": {
+    "delta_pctile": 0.019,
+    "se": 0.025,
+    "n": 73
+   },
+   ">=0.53": {
+    "delta_pctile": -0.101,
+    "se": 0.015,
+    "n": 119
+   }
+  },
+  "build_AB_undisclosed_horizon_fix": {
+   "hidden_horizon": {
+    "old_n": 48,
+    "old_pctile": 0.357,
+    "new_n": 247,
+    "new_pctile": 0.498,
+    "diff": 0.142,
+    "se": 0.045,
+    "z": 3.16
+   },
+   "known_horizon_placebo": {
+    "old_n": 53,
+    "old_pctile": 0.448,
+    "new_n": 265,
+    "new_pctile": 0.487,
+    "diff": 0.039,
+    "se": 0.046,
+    "z": 0.85
+   },
+   "DiD": 0.103
+  },
+  "probe_power": {
+   "per_game_sd_of_proxy_percentile": 0.234,
+   "n_per_arm_to_detect_57_rating_points_at_80pct": 8466,
+   "conceder_minus_champion": {
+    "diff_pctile": -0.022,
+    "se": 0.037,
+    "z": -0.61
+   },
+   "verdict": "the bargaining probe ordering (conceder 1588 > champion 1531 > hardliner 1494) is inside noise; only randomized (1133) separates"
+  }
+ },
+ "negotiation": {
+  "value_grid": {
+   "multipliers": [
+    0.8,
+    1.0,
+    1.2,
+    1.5
+   ],
+   "base_determined_by_own_value": true
+  },
+  "on_grid_prices_never_accepted": {
+   "0.80B": [
+    0,
+    90
+   ],
+   "1.00B": [
+    0,
+    45
+   ],
+   "1.20B": [
+    0,
+    413
+   ],
+   "1.50B": [
+    0,
+    266
+   ],
+   "total": [
+    0,
+    814
+   ],
+   "reading": "a price exactly at a grid point gives the counterparty exactly zero surplus and is always refused"
+  },
+  "intra_interval_indifference": {
+   "1.20B+eps": {
+    "accept": 0.085,
+    "n": 47
+   },
+   "1.50B-eps": {
+    "accept": 0.08,
+    "n": 25
+   },
+   "reading": "acceptance is flat inside a grid interval; a seller should always price at the TOP of the interval (next grid point minus eps)"
+  },
+  "seller_acceptance_steps": {
+   "just_above_0.80B": 0.583,
+   "just_above_1.00B": 0.333,
+   "1.20-1.50B": 0.085,
+   "above_1.50B": 0.0,
+   "rational_benchmark": [
+    0.75,
+    0.5,
+    0.25,
+    0.0
+   ],
+   "haircut": "the field accepts at 0.34-0.78 of the rational rate in non-final rounds"
+  },
+  "optimal_one_shot_price": {
+   "_units": "multiples of B; eps = one currency unit",
+   "surplus_objective": {
+    "seller_0.8": "1.20B-eps",
+    "seller_1.0": "1.50B-eps",
+    "seller_1.2": "1.50B-eps",
+    "seller_1.5": "no trade",
+    "buyer_1.5": "1.00B+eps",
+    "buyer_1.2": "0.80B+eps",
+    "buyer_1.0": "0.80B+eps",
+    "buyer_0.8": "no trade"
+   },
+   "percentile_objective": {
+    "seller_0.8": "1.00B-eps",
+    "seller_1.0": "1.20B-eps",
+    "seller_1.2": "1.50B-eps",
+    "seller_1.5": "no trade",
+    "buyer_1.5": "1.20B+eps",
+    "buyer_1.2": "1.00B+eps",
+    "buyer_1.0": "0.80B+eps",
+    "buyer_0.8": "no trade"
+   }
+  },
+  "percentile_map_payoff_over_B": {
+   "0": 0.354,
+   "0.001": 0.601,
+   "0.05": 0.63,
+   "0.1": 0.687,
+   "0.2": 0.809,
+   "0.3": 0.882,
+   "0.5": 0.959
+  },
+  "nash_KS_test": {
+   "seller_surplus_share_at_the_closing_price": {
+    "mean": 0.522,
+    "median": 0.426,
+    "p25": 0.2,
+    "p75": 0.639,
+    "n": 148
+   },
+   "exact_50_50_within_0.02": 0.128,
+   "reading": "Nash and Kalai-Smorodinsky coincide at the 50/50 surplus split here and the field's MEAN sits on it, but only 13% of deals are near it; it is a location for the price band, not a prediction of individual deals"
+  },
+  "closing_price_over_B": {
+   "p10": 0.839,
+   "p25": 0.94,
+   "median": 1.088,
+   "p75": 1.287,
+   "p90": 1.485,
+   "mean": 1.139,
+   "n": 292,
+   "grid_expectation": 1.125
+  }
+ },
+ "persuasion": {
+  "identified_punishment": {
+   "design": "stratum A (prior alone justifies purchase) -> our code recommends deterministically, so the count of low draws is exogenous",
+   "logit_buy": {
+    "const": 0.56,
+    "beta_low_draws": -0.222,
+    "se": 0.023,
+    "z": -9.53,
+    "beta_round": 0.057,
+    "se_round": 0.013,
+    "n_rounds": 1521,
+    "n_games": 79
+   },
+   "endogenous_contrast": {
+    "beta_detected_bad_ledger": 0.548,
+    "se": 0.039,
+    "reading": "wrong sign; conditioning on detected lies conditions on a buyer who buys"
+   },
+   "raw": {
+    "rounds_1_7": {
+     "0 lows": 0.759,
+     "1-2": 0.601,
+     "3-4": 0.432
+    },
+    "rounds_8_14": {
+     "1-2": 0.691,
+     "3-4": 0.631,
+     "5+": 0.37
+    },
+    "rounds_15_20": {
+     "1-2": 0.727,
+     "3-4": 0.56,
+     "5+": 0.475
+    }
+   }
+  },
+  "detection_structure": {
+   "low_recommendations_not_bought": 1229,
+   "low_recommendations_bought": 759,
+   "reading": "62% of lies are never observable to the buyer; the reputational cost is incurred only jointly with the sale"
+  },
+  "optimal_lie_schedule": {
+   "policy": "recommend every HIGH unit; on a LOW unit recommend iff t >= t*(p, L)",
+   "honest_prefix_t_star_clean_record": {
+    "p=0.333": 7,
+    "p=0.5": 6,
+    "p=0.8": 5
+   },
+   "sensitivity_beta_L": {
+    "-0.10": [
+     1,
+     1,
+     1
+    ],
+    "-0.15": [
+     2,
+     2,
+     1
+    ],
+    "-0.222": [
+     7,
+     6,
+     5
+    ],
+    "-0.30": [
+     10,
+     9,
+     8
+    ],
+    "-0.50": [
+     13,
+     13,
+     13
+    ],
+    "-0.80": [
+     16,
+     16,
+     15
+    ],
+    "-1.50": [
+     18,
+     18,
+     18
+    ]
+   },
+   "expected_rounds_sold": {
+    "p=0.333": {
+     "optimal": 9.57,
+     "always_lie": 8.89,
+     "never_lie": 5.04
+    },
+    "p=0.5": {
+     "optimal": 11.03,
+     "always_lie": 10.49,
+     "never_lie": 7.56
+    },
+    "p=0.8": {
+     "optimal": 13.59,
+     "always_lie": 13.45,
+     "never_lie": 12.1
+    }
+   },
+   "expected_percentile": {
+    "p=0.333": {
+     "optimal": 0.6,
+     "always_lie": 0.587,
+     "never_lie": 0.502
+    },
+    "p=0.5": {
+     "optimal": 0.625,
+     "always_lie": 0.615,
+     "never_lie": 0.562
+    },
+    "p=0.8": {
+     "optimal": 0.659,
+     "always_lie": 0.657,
+     "never_lie": 0.64
+    }
+   }
+  },
+  "buyer_information_premium": {
+   "form": "buy iff p_high*v + (1-p_high)*u + I(t,n) >= price ; I = the exact Beta-Bernoulli value of information",
+   "premium_at_t1_as_fraction_of_price": {
+    "p=1/3,v/price=3": 0.333,
+    "p=1/3,v/price=1.25": 0.167,
+    "p=0.5,v/price=2": 0.333,
+    "p=0.5,v/price=1.2": 0.2,
+    "p=0.8,v/price=1.25": 0.1,
+    "p=0.8,v/price=4": 0.289
+   },
+   "decay": "linear-ish to 0 at t=T; the current code uses a flat 0.10*price switched off after 2 observations"
+  },
+  "seller_percentile_map_sold_over_20": {
+   "0.0": 0.171,
+   "0.1": 0.415,
+   "0.25": 0.512,
+   "0.4": 0.573,
+   "0.5": 0.612,
+   "0.7": 0.667,
+   "0.85": 0.695,
+   "1.0": 0.854
+  }
+ }
+}

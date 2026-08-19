@@ -1,0 +1,162 @@
+{
+ "_schema": "glee.persuasion_field_buyer_response/v1",
+ "_built": "2026-08-19T23:31:44",
+ "_provenance": "logs/*/games/*.json frozen at 2026-08-19T23:26:26; 696 completed persuasion games; seller seat: 353 games / 7,060 rounds with quality revealed on every round",
+ "estimand": "P(the FIELD buyer buys at round t | our message, their posterior about our honesty, round, config)",
+ "why_not_a_markov_chain": [
+  "A raw chain over (last outcome, our message) is NOT policy-invariant. Measured on the deterministic probes P(buy | bought-high last round, we warn) = 0.35; measured on the randomized probe, where warnings are uninformative, the same cell is 0.66. Optimising against the chain is a Lucas-critique error.",
+  "This model instead conditions on the buyer's POSTERIOR about our lie rate, computed by running the same type filter as models/persuasion_buyer_belief_v1.json over OUR message stream and the qualities they revealed by buying. That state is a function of our policy, so the response function is invariant to it."
+ ],
+ "state": {
+  "filter": "identical to persuasion_buyer_belief_v1 (same q grid, same prior, same eps); the buyer learns quality only on rounds they bought",
+  "index_x": "log( p_high_t * v / product_price ), p_high_t from the filter given OUR message at t",
+  "note": "v is the buyer's value. When is_seller_know_cv is false we do not observe it and must marginalise over the observed grid v/price in {1.2, 1.25, 2, 3, 4}"
+ },
+ "branch_W_we_warned": {
+  "p_buy_overall": 0.0842,
+  "n": 1948,
+  "by_stratum": {
+   "A": 0.283,
+   "B": 0.015,
+   "C": 0.003,
+   "D": 0.007,
+   "hidden_v": 0.1
+  },
+  "by_warmth": {
+   "never_bought_before": 0.012,
+   "has_bought_before": 0.161
+  },
+  "by_endgame": {
+   "rounds_1_15": 0.084,
+   "rounds_16_20": 0.084
+  },
+  "reading": "a warning is close to a guaranteed no-sale unless the buyer is already in a buying groove"
+ },
+ "branch_R_we_recommended": {
+  "link": "logistic",
+  "features": [
+   "const",
+   "x",
+   "x^2",
+   "round/20",
+   "never_bought",
+   "p"
+  ],
+  "feature_definitions": {
+   "const": "1",
+   "x": "log(p_high*v/price), floored at log(1e-6)",
+   "x^2": "x squared",
+   "round/20": "round index / 20",
+   "never_bought": "1 if the buyer has bought nothing yet",
+   "p": "prior probability of high"
+  },
+  "beta": [
+   -0.0531,
+   4.6464,
+   -1.8204,
+   -1.8957,
+   -2.9512,
+   1.7284
+  ],
+  "n": 2651,
+  "auc_in_sample": 0.899
+ },
+ "transportability_test": {
+  "design": "fit on one message-policy regime, test on the other; the randomized probe's seller recommends with probability 0.5 independent of quality and history (measured P(recommend|low)=0.465, P(recommend|high)=0.513, n=980 rounds)",
+  "deterministic_probes_to_randomized": {
+   "n_train": 2263,
+   "n_test": 388,
+   "test_logloss": 0.3539,
+   "test_base_rate_logloss": 0.6878,
+   "test_auc": 0.932
+  },
+  "randomized_to_deterministic_probes": {
+   "n_train": 388,
+   "n_test": 2263,
+   "test_logloss": 0.4356,
+   "test_base_rate_logloss": 0.6906,
+   "test_auc": 0.882
+  },
+  "verdict": "transports. Calibration holds out of regime in both directions."
+ },
+ "validation_predicted_vs_actual_sold_rate": {
+  "champion|A": [
+   0.591,
+   0.591
+  ],
+  "champion|B": [
+   0.471,
+   0.4
+  ],
+  "champion|C": [
+   0.183,
+   0.14
+  ],
+  "champion|D": [
+   0.108,
+   0.107
+  ],
+  "conceder|A": [
+   0.628,
+   0.697
+  ],
+  "conceder|B": [
+   0.384,
+   0.47
+  ],
+  "conceder|C": [
+   0.204,
+   0.17
+  ],
+  "conceder|D": [
+   0.157,
+   0.025
+  ],
+  "hardliner|A": [
+   0.63,
+   0.626
+  ],
+  "hardliner|B": [
+   0.165,
+   0.05
+  ],
+  "hardliner|C": [
+   0.219,
+   0.135
+  ],
+  "hardliner|D": [
+   0.128,
+   0.065
+  ],
+  "randomized|A": [
+   0.395,
+   0.5
+  ],
+  "randomized|B": [
+   0.23,
+   0.163
+  ],
+  "randomized|C": [
+   0.155,
+   0.059
+  ],
+  "randomized|D": [
+   0.092,
+   0.05
+  ],
+  "format": "[predicted, actual]",
+  "known_bias": "the model over-predicts honest policies in stratum D (conceder|D 0.157 vs 0.025, n=2 games) and over-predicts stratum C by 0.03-0.10. Do not use it to argue that honesty pays in C/D."
+ },
+ "field_seller_adaptation": {
+  "question": "does the field SELLER react to the buyer's purchases within a game?",
+  "design": "randomized-probe buyer games, where the buy decision is an exogenous coin flip",
+  "raw_between_game": "P(positive next | bought last) 0.909 vs 0.649 -- entirely a between-game confound",
+  "within_game_estimate": -0.045,
+  "ci95": [
+   -0.138,
+   0.039
+  ],
+  "n_games_with_usable_variation": 22,
+  "verdict": "no detectable adaptation. The buyer's problem is a bandit (purchases buy information), not a repeated game. MDE at this n is about 0.12 in the polarity rate, so a small reaction is not excluded."
+ }
+}

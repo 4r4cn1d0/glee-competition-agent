@@ -1,0 +1,15 @@
+# secrets — five live competition API keys live here
+.env
+*.key
+
+# environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# runtime state and data (hundreds of MB of game logs)
+logs/
+*.lock
+*.pids
+nohup.out

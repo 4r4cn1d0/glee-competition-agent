@@ -1,0 +1,76 @@
+{
+ "_schema": "glee.bargaining_field_acceptance/v3",
+ "_built": "2026-08-19T22:34:15",
+ "_provenance": "logs/{champion,hardliner,conceder,randomized,composite}[.pre-fix]/games/*.json; 1,635 completed games as of 2026-08-19T22:34:15; extractor: scratchpad/ml/ext.py",
+ "estimand": "P(the field opponent accepts | share offered to them, state) -- prefix-safe features only",
+ "n_offers": 620,
+ "n_games": 409,
+ "accept_rate": 0.3226,
+ "feature_names": [
+  "const",
+  "share",
+  "1[s>=.39]",
+  "log(round)",
+  "(d_resp-.9)*10",
+  "1[d_resp=1]",
+  "1[d_resp known]",
+  "their_last_to_me",
+  "1[no offer yet]",
+  "1[T=12]"
+ ],
+ "coef": [
+  -4.1251,
+  3.4404,
+  1.961,
+  -0.7799,
+  -1.0652,
+  -0.5517,
+  0.4024,
+  3.6441,
+  -0.3137,
+  -0.4397
+ ],
+ "se": [
+  0.6577,
+  0.8332,
+  0.4071,
+  0.2709,
+  0.3119,
+  0.5101,
+  0.274,
+  0.8815,
+  0.3943,
+  0.2439
+ ],
+ "regularisation": {
+  "kind": "L2 ridge, intercept unpenalised",
+  "lambda": 0.3,
+  "selected_by": "5-fold CV grouped by game_id, 5 seeds"
+ },
+ "validation": {
+  "cv_logloss_grouped_by_game": 0.3918,
+  "cv_auc_grouped_by_game": 0.8846,
+  "cv_brier": 0.1213,
+  "cv_logloss_grouped_by_OPPONENT_IDENTITY": 0.4008,
+  "cv_auc_grouped_by_OPPONENT_IDENTITY": 0.8783,
+  "intercept_only_logloss": 0.6288
+ },
+ "empirical_cliff": {
+  "[0.28,0.39)": {
+   "n": 74,
+   "accept": 0.108
+  },
+  "[0.39,0.45)": {
+   "n": 20,
+   "accept": 0.65
+  },
+  "[0.39,0.45)_round1": {
+   "n": 9,
+   "accept": 1.0
+  }
+ },
+ "known_hazards": [
+  "Any per-game aggregate feature leaks the label: 153/556 games have NO opponent offer, and our offer was accepted in 153/153 of them. Build every opponent feature from the strict history prefix.",
+  "Round is a selected variable (late rounds only exist in games that did not settle). Valid for conditional prediction at the state we are in; INVALID for a causal 'offer less late' reading."
+ ]
+}

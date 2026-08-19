@@ -1,0 +1,80 @@
+{
+ "value_grid": [
+  80,
+  100,
+  120,
+  150
+ ],
+ "scales_seen": [
+  1,
+  100,
+  10000
+ ],
+ "evidence": "every player_1_value / player_2_value in 490 observed config fields lies on this grid; both sides share one scale",
+ "incomplete_information": {
+  "draw": "independent uniform over the 4 grid points per side",
+  "chi2_uniformity_seller": 2.06,
+  "n_seller": 144,
+  "chi2_uniformity_buyer": 7.78,
+  "n_buyer": 133,
+  "crit_3df_0.05": 7.81,
+  "P_zopa_positive": 0.375,
+  "P_zero_surplus_tie": 0.25,
+  "P_no_zopa": 0.375
+ },
+ "complete_information": {
+  "seller_value_always_below_buyer_value": true,
+  "n": 106,
+  "ratios_seen": [
+   1.2,
+   1.25,
+   1.5,
+   1.875
+  ],
+  "seller_value_150_never_seen": true,
+  "buyer_value_80_never_seen": true
+ },
+ "feasible_price_band": [
+  80,
+  150
+ ],
+ "buyer_accept_curve_T1": [
+  {
+   "price_range": [
+    80,
+    120
+   ],
+   "n": 23,
+   "p_accept": 0.83
+  },
+  {
+   "price_range": [
+    120,
+    160
+   ],
+   "n": 13,
+   "p_accept": 0.23
+  },
+  {
+   "price_range": [
+    160,
+    200
+   ],
+   "n": 17,
+   "p_accept": 0.0
+  }
+ ],
+ "optimal_one_shot_seller_price": {
+  "80": 120,
+  "100": 150,
+  "120": 150,
+  "150": 150
+ },
+ "optimal_one_shot_buyer_price": {
+  "80": 80,
+  "100": 100,
+  "120": 100,
+  "150": 120
+ },
+ "dominance": "a price strictly between two grid points is dominated: for a seller, raising it to just under the next grid point leaves the acceptance set unchanged and raises the margin"
+}

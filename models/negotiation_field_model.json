@@ -1,0 +1,308 @@
+{
+  "_source": "1197 live GLEE games; 387 negotiation games; 7046 responded offers",
+  "_fitted": "2026-08-19",
+  "value_grid": {
+    "multipliers": [
+      0.8,
+      1.0,
+      1.2,
+      1.5
+    ],
+    "bases": [
+      100,
+      10000,
+      1000000
+    ],
+    "base_is_determined_by_scale": true,
+    "n_value_observations": 774,
+    "n_off_grid": 0,
+    "complete_info_pairs_always_seller_lt_buyer": {
+      "n": 107,
+      "violations": 0
+    },
+    "incomplete_info_draws": "independent (seller=1.5B and buyer=0.8B both occur, which is impossible under complete info)"
+  },
+  "horizon": {
+    "horizon_known_true_max_rounds": [
+      1,
+      10
+    ],
+    "horizon_known_false_true_T": 99,
+    "evidence": "46/46 no_deal games with horizon_known=false ended at exactly round 99",
+    "effective_horizon": 15,
+    "evidence_effective": "1 of 71 hidden-horizon games that reached round 15 ever closed; 0/1886 of our offers after round 26 were accepted"
+  },
+  "settlement_band_price_over_B": {
+    "p10": 0.85,
+    "median": 1.08,
+    "p90": 1.45,
+    "n_deals": 183
+  },
+  "field_concession_exponent": {
+    "k_median": 1.18,
+    "k_mean": 1.24,
+    "n_paths": 71,
+    "our_k": 2.04
+  },
+  "acceptance_curve_seller_seat_final_or_single_round": [
+    {
+      "lo": 0,
+      "hi": 0.9,
+      "n": 10,
+      "p_accept": 0.9,
+      "ci95": [
+        0.5958,
+        0.9821
+      ]
+    },
+    {
+      "lo": 0.9,
+      "hi": 1.0,
+      "n": 2,
+      "p_accept": 1.0,
+      "ci95": [
+        0.3424,
+        1
+      ]
+    },
+    {
+      "lo": 1.0,
+      "hi": 1.1,
+      "n": 8,
+      "p_accept": 0.875,
+      "ci95": [
+        0.5291,
+        0.9776
+      ]
+    },
+    {
+      "lo": 1.1,
+      "hi": 1.2,
+      "n": 3,
+      "p_accept": 0.3333,
+      "ci95": [
+        0.0615,
+        0.7923
+      ]
+    },
+    {
+      "lo": 1.2,
+      "hi": 1.35,
+      "n": 2,
+      "p_accept": 0.5,
+      "ci95": [
+        0.0945,
+        0.9055
+      ]
+    },
+    {
+      "lo": 1.35,
+      "hi": 1.5,
+      "n": 6,
+      "p_accept": 0.3333,
+      "ci95": [
+        0.0968,
+        0.7
+      ]
+    },
+    {
+      "lo": 1.5,
+      "hi": 1.75,
+      "n": 12,
+      "p_accept": 0.0,
+      "ci95": [
+        0,
+        0.2425
+      ]
+    },
+    {
+      "lo": 1.75,
+      "hi": 99,
+      "n": 10,
+      "p_accept": 0.0,
+      "ci95": [
+        0,
+        0.2775
+      ]
+    }
+  ],
+  "acceptance_curve_seller_seat_non_final": [
+    {
+      "lo": 0,
+      "hi": 0.9,
+      "n": 58,
+      "p_accept": 0.0172,
+      "ci95": [
+        0.003,
+        0.0914
+      ]
+    },
+    {
+      "lo": 0.9,
+      "hi": 1.0,
+      "n": 68,
+      "p_accept": 0.0735,
+      "ci95": [
+        0.0318,
+        0.1609
+      ]
+    },
+    {
+      "lo": 1.0,
+      "hi": 1.1,
+      "n": 79,
+      "p_accept": 0.0506,
+      "ci95": [
+        0.0199,
+        0.1231
+      ]
+    },
+    {
+      "lo": 1.1,
+      "hi": 1.2,
+      "n": 74,
+      "p_accept": 0.0946,
+      "ci95": [
+        0.0466,
+        0.1826
+      ]
+    },
+    {
+      "lo": 1.2,
+      "hi": 1.35,
+      "n": 254,
+      "p_accept": 0.0079,
+      "ci95": [
+        0.0022,
+        0.0283
+      ]
+    },
+    {
+      "lo": 1.35,
+      "hi": 1.5,
+      "n": 150,
+      "p_accept": 0.0133,
+      "ci95": [
+        0.0037,
+        0.0473
+      ]
+    },
+    {
+      "lo": 1.5,
+      "hi": 1.75,
+      "n": 530,
+      "p_accept": 0.0,
+      "ci95": [
+        0.0,
+        0.0072
+      ]
+    },
+    {
+      "lo": 1.75,
+      "hi": 99,
+      "n": 768,
+      "p_accept": 0.0,
+      "ci95": [
+        0,
+        0.005
+      ]
+    }
+  ],
+  "acceptance_curve_buyer_seat_non_final": [
+    {
+      "lo": 0,
+      "hi": 0.9,
+      "n": 1093,
+      "p_accept": 0.0046,
+      "ci95": [
+        0.002,
+        0.0107
+      ]
+    },
+    {
+      "lo": 0.9,
+      "hi": 1.0,
+      "n": 157,
+      "p_accept": 0.0064,
+      "ci95": [
+        0.0011,
+        0.0352
+      ]
+    },
+    {
+      "lo": 1.0,
+      "hi": 1.1,
+      "n": 82,
+      "p_accept": 0.1463,
+      "ci95": [
+        0.0857,
+        0.2386
+      ]
+    },
+    {
+      "lo": 1.1,
+      "hi": 1.2,
+      "n": 10,
+      "p_accept": 0.0,
+      "ci95": [
+        0,
+        0.2775
+      ]
+    },
+    {
+      "lo": 1.2,
+      "hi": 1.35,
+      "n": 107,
+      "p_accept": 0.028,
+      "ci95": [
+        0.0096,
+        0.0792
+      ]
+    },
+    {
+      "lo": 1.35,
+      "hi": 1.5,
+      "n": 15,
+      "p_accept": 0.0667,
+      "ci95": [
+        0.0119,
+        0.2982
+      ]
+    },
+    {
+      "lo": 1.5,
+      "hi": 1.75,
+      "n": 2,
+      "p_accept": 1.0,
+      "ci95": [
+        0.3424,
+        1
+      ]
+    },
+    {
+      "lo": 1.75,
+      "hi": 99,
+      "n": 0,
+      "p_accept": null,
+      "ci95": [
+        0,
+        1
+      ]
+    }
+  ],
+  "opponent_irrationality": {
+    "deals": 183,
+    "opponent_payoff_negative": 31,
+    "rate": 0.169,
+    "our_mean_payoff_over_B_in_those": 0.465,
+    "elsewhere": 0.162,
+    "never_happens_in_single_round_games": true
+  },
+  "our_baseline_post_fix": {
+    "n": 234,
+    "deal_rate": 0.551,
+    "zero_payoff_rate": 0.474,
+    "mean_payoff_over_B": 0.129,
+    "share_of_all_available_surplus_captured": 0.61
+  }
+}
