@@ -1,5 +1,11 @@
 {
   "shift_seconds": 900,
   "disabled": [],
-  "cycle_now": []
+  "cycle_now": [],
+  "policy": {
+    "randomized": "composite"
+  },
+  "families": {
+    "randomized": "negotiation"
+  }
 }

@@ -120,6 +120,27 @@ def shift(seconds: int) -> int:
     return 0
 
 
+def _slot_setting(key: str, probe: str, value: str | None, label: str) -> int:
+    """Set or clear one per-slot launch override (policy / families).
+
+    These apply at the slot's NEXT launch, not immediately: which policy an agent
+    plays and which families it queues for are fixed when the process starts.
+    Flags in arms.json are the live half of the control surface; this is the half
+    that needs a rotation.
+    """
+    control = _read(CONTROL, {})
+    table = dict(control.get(key) or {})
+    if value is None or value == "-":
+        table.pop(probe, None)
+        print(f"{probe}: {label} override cleared — reverts to the default at next launch.")
+    else:
+        table[probe] = value
+        print(f"{probe}: {label} = {value} — applies at next launch.")
+    control[key] = table
+    _write(CONTROL, control)
+    return 0
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -137,6 +158,10 @@ def main() -> int:
         return enable(rest[0], True)
     if cmd == "shift" and rest:
         return shift(int(rest[0]))
+    if cmd == "policy" and rest:
+        return _slot_setting("policy", rest[0], rest[1] if len(rest) > 1 else None, "policy")
+    if cmd == "families" and rest:
+        return _slot_setting("families", rest[0], rest[1] if len(rest) > 1 else None, "families")
     print(__doc__)
     return 1
 

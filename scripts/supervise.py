@@ -213,15 +213,23 @@ class Agent:
         if not key:
             return False
         log_dir = os.path.join("logs", self.probe)
+        ctl = load_control()
+        # A slot (key + log dir + arms entry) is separate from the POLICY it plays
+        # and the FAMILIES it queues for. Keeping them separate lets a slot be
+        # repurposed -- e.g. spending our weakest agent as a single-family probe to
+        # triple the sample rate in the family we are trying to fix -- without
+        # moving API keys around or losing that slot's log history.
+        policy = (ctl.get("policy") or {}).get(self.probe) or self.probe
+        families = (ctl.get("families") or {}).get(self.probe) or self.args.families
         cmd = [os.path.join(REPO, ".venv", "bin", "python"), "run_agent.py",
-               "--probe", self.probe, "--log-dir", log_dir,
+               "--probe", policy, "--log-dir", log_dir,
                "--llm-mode", self.args.llm_mode,
                "--concurrency", str(self.args.concurrency),
                "--poll-interval", str(self.args.poll_interval),
-               "--families", self.args.families, "--quiet",
-               "--max-time", str(int(load_control().get("shift_seconds")
+               "--families", families, "--quiet",
+               "--max-time", str(int(ctl.get("shift_seconds")
                                      or self.args.agent_max_time))]
-        if self.probe == "randomized":
+        if policy == "randomized":
             cmd += ["--seed", "20260819"]
         # GLEE_PROBE lets the agent re-read its own arm from arms.json while it
         # runs, so a flag change lands without a restart -- and therefore without
@@ -233,7 +241,8 @@ class Agent:
         out = open(os.path.join(REPO, "logs", f"{self.probe}.out"), "a", encoding="utf-8")
         arm = load_arms().get(self.probe) or {}
         out.write(f"\n===== supervisor launch {time.strftime('%Y-%m-%d %H:%M:%S')} "
-                  f"(restart #{self.restarts}){' arm=' + repr(arm) if arm else ''} =====\n")
+                  f"(restart #{self.restarts}) policy={policy} families={families}"
+                  f"{' arm=' + repr(arm) if arm else ''} =====\n")
         out.flush()
         self.proc = subprocess.Popen(cmd, cwd=REPO, env=env, stdout=out,
                                      stderr=subprocess.STDOUT)
