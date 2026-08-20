@@ -40,7 +40,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 
-FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS")
+FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS", "GLEE_OPP")
 
 #: The flag set composite ran live before today's changes -- the natural control.
 DEFAULT_CONTROL = {"GLEE_NEGO_BOUND_AS_FLOOR": "1",

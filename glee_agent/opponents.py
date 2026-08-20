@@ -26,6 +26,8 @@ import os
 import threading
 import time
 
+from . import runtime_flags
+
 _PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "models", "opponent_profiles.json")
 #: Minimum labelled observations behind a bargaining threshold before we act on it.
@@ -86,9 +88,14 @@ def barg_give_floor(game: dict) -> float | None:
     barg = (profiles.get(name) or {}).get("bargaining") or {}
     thr = barg.get("accept_threshold")
     n = barg.get("n") or 0
-    if thr is None or n < MIN_N:
+    # confidence knobs live-tunable so coverage-vs-safety is a measured trade,
+    # not a constant: MIN_N gates how thin a profile may act, PAD is the safety
+    # margin above the fitted threshold
+    min_n = runtime_flags.as_float("GLEE_OPP_MIN_N", MIN_N)
+    pad = runtime_flags.as_float("GLEE_OPP_PAD", PAD)
+    if thr is None or n < min_n:
         return None
-    give = thr + PAD
+    give = thr + pad
     if not (0.02 <= give <= 0.5):
         return None
     return give
