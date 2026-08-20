@@ -74,7 +74,7 @@ class Config:
     # of the pot and 47-64% of everything from 45% up, so its acceptance curve
     # is flat from an even split onward and conceding past that point buys
     # nothing. 0.0 restores the pre-fix behaviour for an A/B.
-    barg_offer_floor: float = 0.50
+    barg_offer_floor: float = 0.52
     # Negotiation: opening anchor as a multiple of your own valuation.
     nego_seller_anchor: float = 2.20
     nego_buyer_anchor: float = 0.45
@@ -123,7 +123,7 @@ class Config:
             barg_undisclosed_horizon=_env_int("GLEE_BARG_UNDISCLOSED_HORIZON", 99),
             barg_uncapped_horizon=_env_int("GLEE_BARG_UNCAPPED_HORIZON", 30),
             barg_opponent_floor=_env_float("GLEE_BARG_OPPONENT_FLOOR", 0.0),
-            barg_offer_floor=_env_float("GLEE_BARG_OFFER_FLOOR", 0.50),
+            barg_offer_floor=_env_float("GLEE_BARG_OFFER_FLOOR", 0.52),
             nego_seller_anchor=_env_float("GLEE_NEGO_SELLER_ANCHOR", 2.20),
             nego_buyer_anchor=_env_float("GLEE_NEGO_BUYER_ANCHOR", 0.45),
             nego_assumed_horizon=_env_int("GLEE_NEGO_HORIZON", 10),
