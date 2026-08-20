@@ -1,17 +1,19 @@
 {
- "shift_seconds": 1800,
- "disabled": [],
- "cycle_now": [],
- "policy": {
-  "randomized": "composite",
-  "conceder": "composite"
- },
- "families": {
-  "randomized": "negotiation",
-  "conceder": "persuasion"
- },
- "llm": {
-  "conceder": "messages",
-  "composite": "messages"
- }
+  "shift_seconds": 1800,
+  "disabled": [
+    "randomized"
+  ],
+  "cycle_now": [],
+  "policy": {
+    "randomized": "composite",
+    "conceder": "composite"
+  },
+  "families": {
+    "randomized": "negotiation",
+    "conceder": "persuasion"
+  },
+  "llm": {
+    "conceder": "messages",
+    "composite": "messages"
+  }
 }
