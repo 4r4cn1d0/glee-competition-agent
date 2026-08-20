@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import threading
 
@@ -78,7 +79,7 @@ def stats() -> dict:
         return {"llm_calls": _calls, "llm_failures": _failures}
 
 
-def _complete(cfg, messages: list[dict]) -> str | None:
+def _complete(cfg, messages: list[dict], model: str | None = None) -> str | None:
     if _budget_exhausted(cfg):
         return None
     try:
@@ -88,7 +89,7 @@ def _complete(cfg, messages: list[dict]) -> str | None:
         return None
     _count_call()
     try:
-        response = completion(model=cfg.llm_model, messages=messages,
+        response = completion(model=model or cfg.llm_model, messages=messages,
                               timeout=cfg.llm_timeout)
         return response.choices[0].message.content or ""
     except Exception as exc:               # provider error, timeout, bad key
@@ -192,7 +193,17 @@ def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
         rnd=st.get("round"), total=st.get("total_rounds"),
         rec="RECOMMEND BUYING" if recommend else "ADVISE AGAINST BUYING",
         rec_word="a clear yes" if recommend else "a clear no")
-    text = _complete(cfg, [{"role": "user", "content": prompt}])
+    # Model mix per operator: Sonnet 5 for the bulk, Opus 5 (4x cost) reserved
+    # for the two moments wording matters most -- the opening impression
+    # (rounds 1-2, nothing else to judge us by) and trust repair right after
+    # the buyer caught a lie. ~15% of calls at premium keeps the blend cheap.
+    model = None
+    hist = st.get("history") or []
+    caught_recent = any(r.get("bought") and str(r.get("quality")).lower() == "low"
+                        for r in hist[-2:])
+    if (st.get("round") or 99) <= 2 or caught_recent:
+        model = os.environ.get("GLEE_LLM_MODEL_PREMIUM", "anthropic/claude-opus-5")
+    text = _complete(cfg, [{"role": "user", "content": prompt}], model=model)
     if not text:
         return None
     msg = text.strip().strip('"')[:300]
