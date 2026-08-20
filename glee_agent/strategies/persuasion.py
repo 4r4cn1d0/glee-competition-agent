@@ -202,8 +202,23 @@ def decide(game: dict, cfg) -> dict:
             return {"decision": "yes" if p["recommend"] else "no", "_plan": p}
         # Text mode: the message *is* the recommendation. The LLM layer rewrites
         # this into something persuasive; the fallback still carries the signal.
-        message = ("I recommend this one." if p["recommend"]
-                   else "I would hold off on this one.")
+        # Message style is a live experiment knob. The fitted buyer table shows a
+        # 20pp conversion gap between a binary "yes" (71.5% buy at high prior)
+        # and our text-mode positive template (51.2%) -- same intent, different
+        # tokens, and the buyers are parsers. Styles reword the SAME honest
+        # recommendation; the decision itself is unchanged. Binary-mode games in
+        # the same block are untouched by this knob and serve as the concurrent
+        # control for field drift.
+        style = (runtime_flags.get("GLEE_PERS_MSG_STYLE") or "plain").strip().lower()
+        if style == "affirm":
+            message = ("Yes. Buy this one - great product, I recommend it."
+                       if p["recommend"]
+                       else "No. Skip this one - I do not recommend it.")
+        elif style == "token":
+            message = "yes" if p["recommend"] else "no"
+        else:
+            message = ("I recommend this one." if p["recommend"]
+                       else "I would hold off on this one.")
         return {"message": message, "_plan": p}
 
     p = buyer_plan(game, cfg)
