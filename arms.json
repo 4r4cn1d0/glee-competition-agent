@@ -46,7 +46,7 @@
     "GLEE_BARG_UNCAPPED_HORIZON": "60"
   },
   "conceder": {
-    "GLEE_PERS_LIE_SHADING": "0.3",
+    "GLEE_PERS_LIE_SHADING": "0.8",
     "GLEE_PERS_HONEST_ROUNDS": "2"
   }
 }
