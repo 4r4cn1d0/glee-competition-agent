@@ -1,0 +1,64 @@
+{
+  "_what": "Frozen revert point for the champion slot (API agent 'Test 1'), our best overall agent. Restoring these three things reproduces it: the policy name, an EMPTY arms entry, and the code at the recorded commit.",
+  "_captured_utc": "2026-08-20T00:18:41Z",
+  "slot": "champion",
+  "policy": "champion",
+  "api_agent": "Test 1",
+  "ratings_at_capture": {
+    "bargaining": [
+      1990.62,
+      1621
+    ],
+    "negotiation": [
+      1903.05,
+      1614
+    ],
+    "persuasion": [
+      1966.26,
+      1606
+    ]
+  },
+  "git_head_now": "4d2d9858518590e2df46e58880579c9ba15a0208",
+  "git_commit_it_launched_from": "1298b9e",
+  "process_started_local": "2026-08-20 03:33:13",
+  "launch_command": "/opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python run_agent.py --probe champion --log-dir logs/champion --llm-mode off --concurrency 8 --poll-interval 2.0 --families bargaining,negotiation,persuasion --quiet",
+  "strategy_env_flags": {},
+  "arms_entry": {},
+  "resolved_config": {
+    "concurrency": 6,
+    "poll_interval": 2.0,
+    "max_games": null,
+    "max_time": null,
+    "llm_mode": "messages",
+    "llm_model": "gemini/gemini-2.5-flash",
+    "llm_timeout": 25.0,
+    "llm_max_calls": 0,
+    "barg_spe_weight": 0.65,
+    "barg_unknown_delta": 0.9,
+    "barg_undisclosed_horizon": 99,
+    "barg_uncapped_horizon": 30,
+    "barg_opponent_floor": 0.0,
+    "barg_offer_floor": 0.5,
+    "nego_seller_anchor": 2.2,
+    "nego_buyer_anchor": 0.45,
+    "nego_assumed_horizon": 10,
+    "nego_min_margin": 0.12,
+    "nego_deal_odds": 0.65,
+    "nego_zopa_share": 0.39,
+    "pers_lie_shading": 0.8,
+    "pers_honest_rounds": 2,
+    "log_dir": "logs"
+  },
+  "_restore": [
+    "1. python scripts/fleet.py clear champion        # arms entry must stay EMPTY",
+    "2. python scripts/fleet.py policy champion -     # no policy override",
+    "3. python scripts/fleet.py families champion -   # all three families",
+    "4. the slot then relaunches as plain --probe champion with no GLEE_* strategy flags"
+  ],
+  "_equivalence_check": {
+    "what": "Champion launched 2026-08-20 03:33 from commit 1298b9e plus uncommitted work, so it is NOT running the code now on disk. Replayed 3,600 of its own live decision states (1,200 per family) through both versions with no flags set.",
+    "states_replayed": 3600,
+    "differing_decisions": 0,
+    "conclusion": "Today's code reproduces champion bit-for-bit. Restarting it does not change its behaviour, and this revert point is valid against current HEAD."
+  }
+}
