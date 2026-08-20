@@ -67,34 +67,43 @@ def _conceder(cfg):
 def _composite(cfg):
     """Best measured configuration per family, assembled from the fleet.
 
-    The knobs are already family-namespaced, so the winning arm of each family
-    can be lifted wholesale without the families interfering. Measured over
-    ~330 games per agent per family (earned percentile, which strips out the
-    volume drift that inflates raw ratings):
+    The knobs are family-namespaced, so each family's winning arm can be lifted
+    wholesale without the families interfering.
 
-        bargaining  <- conceder   51.7%  (flat 50/50; lands above the ~40%
-                                          acceptance cliff, where champion's
-                                          median 38% offer does not)
-        negotiation <- hardliner  51.0%  (aggressive anchors; conceder's soft
-                                          anchoring measured 42.9%, the worst
-                                          cell in the fleet)
-        persuasion  <- hardliner  50.2%  (full lie budget; this REVERSED an
-                                          earlier reading that never-lying won,
-                                          which is why it was not shipped then)
+    Reassembled 2026-08-20 from live ratings at ~1,600 games per agent per family,
+    which is past the point where the rating has converged (eta is 0.2% at that
+    volume, a 10h time constant against 50 games/hr):
 
-    Caveat kept deliberately visible: this selects the maximum of four noisy
-    estimates per family, which biases the projection upward. The composite is
-    a measured starting point, not a proven optimum.
+        family        champion  hardliner  conceder  composite     ->  taken from
+        bargaining      1975.7    2018.1     1917.7    2003.2      ->  hardliner
+        negotiation     1866.3    1872.1     1161.7    1759.2      ->  hardliner
+        persuasion      1935.3    1861.4     2013.9    1989.8      ->  conceder
+
+    Two of these reverse the previous assembly. Bargaining was taken from conceder
+    (flat 50/50) on an earlier percentile estimate; hardliner's full-equilibrium
+    demand now leads it by 100 points. Persuasion was taken from hardliner (ride
+    the whole lie budget) on a reading that itself reversed an earlier one; the
+    honest arm now leads by 152 points, and it is the ordering theory predicts --
+    20 rounds with the buyer holding full history means a caught lie costs the
+    remaining rounds while gaining a single sale.
+
+    Negotiation stays with hardliner's anchors, but see the note in arms.json:
+    composite ran those same anchors and scored 113 points BELOW hardliner, and
+    the only difference was three extra negotiation flags. Those are dropped.
+
+    Caveat kept deliberately visible: this still selects the maximum of four noisy
+    per-family estimates, which biases the projection upward. It is a measured
+    starting point, not a proven optimum.
     """
     c, h = _conceder(cfg), _hardliner(cfg)
     return replace(
         cfg,
-        barg_spe_weight=c.barg_spe_weight,
-        barg_uncapped_horizon=c.barg_uncapped_horizon,
+        barg_spe_weight=h.barg_spe_weight,          # was conceder's 0.0
+        barg_uncapped_horizon=h.barg_uncapped_horizon,
         nego_seller_anchor=h.nego_seller_anchor,
         nego_buyer_anchor=h.nego_buyer_anchor,
-        pers_lie_shading=h.pers_lie_shading,
-        pers_honest_rounds=h.pers_honest_rounds,
+        pers_lie_shading=c.pers_lie_shading,        # was hardliner's 1.0
+        pers_honest_rounds=c.pers_honest_rounds,
     )
 
 
