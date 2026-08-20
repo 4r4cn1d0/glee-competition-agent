@@ -43,9 +43,12 @@ def barg_cell(gs, role_seat):
         bool(gs.get("horizon_known")), bool(gs.get("complete_information"))))
 
 
-def nego_cell(base, mult, gs):
+def nego_cell(base, mult, role, gs):
+    # ROLE is part of the configuration cell. Its omission let 1.5xB BUYER
+    # windfalls pollute the 1.5xB SELLER cell, manufacturing the phantom "39%
+    # positive harvest" that briefly justified endgame v3's third fix.
     return "|".join(str(x) for x in (
-        "negotiation", base, mult, gs.get("max_rounds"),
+        "negotiation", base, mult, role, gs.get("max_rounds"),
         bool(gs.get("horizon_known")), bool(gs.get("complete_information"))))
 
 
@@ -78,11 +81,13 @@ def main() -> int:
             if base is None:
                 continue
             if isinstance(mine, (int, float)):
-                cells[nego_cell(base, round(my_value / base, 2), gs)].append(
+                cells[nego_cell(base, round(my_value / base, 2),
+                                gs.get(f"{me}_role"), gs)].append(
                     round(mine / base, 4))
             their_value = gs.get(f"{them}_value")
             if isinstance(theirs, (int, float)) and their_value:
-                cells[nego_cell(base, round(their_value / base, 2), gs)].append(
+                cells[nego_cell(base, round(their_value / base, 2),
+                                gs.get(f"{them}_role"), gs)].append(
                     round(theirs / base, 4))
     doc = {"_schema": "glee.percentile_cdf/v3", "_games": games,
            "cells": {k: sorted(v)[-MAX_PER_CELL:] if len(v) > MAX_PER_CELL

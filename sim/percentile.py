@@ -45,8 +45,10 @@ def percentile(family: str, params: dict, seat: str, payoff: float):
         base = infer_base(my_value)
         if base is None:
             return None
+        role = "seller" if seat == "player_1" else "buyer"
         key = "|".join(str(x) for x in (
-            "negotiation", base, round(my_value / base, 2), params.get("max_rounds"),
+            "negotiation", base, round(my_value / base, 2), role,
+            params.get("max_rounds"),
             bool(params.get("horizon_known")), bool(params.get("complete_information"))))
         norm = payoff / base
     else:
