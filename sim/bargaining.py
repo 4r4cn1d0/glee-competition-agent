@@ -186,6 +186,8 @@ class BargainingEngine:
         # that is merely flaky as well as one that is fatally so.
         self._invalid = {PLAYER_1: 0, PLAYER_2: 0}
 
+        self._forced_opponent = {"name": params.get("opponent_name"),
+                                 "disclose": params.get("disclose_opponent")}
         self._opponent_view = self._draw_opponents()   # A15: drawn once
 
     # --- Engine protocol -----------------------------------------------------
@@ -523,7 +525,20 @@ class BargainingEngine:
         return " ".join(parts)
 
     def _draw_opponents(self) -> dict:
-        """A15 — one draw for the whole game, from the injected rng only."""
+        """A15 — one draw for the whole game, from the injected rng only.
+
+        ``params["opponent_name"]`` + ``params["disclose_opponent"]`` force the
+        identity, so a cloned opponent can be disclosed to the strategy under
+        test exactly as the live server would disclose it.
+        """
+        forced_name = self._forced_opponent.get("name")
+        forced_disclose = self._forced_opponent.get("disclose")
+        if forced_name is not None and forced_disclose is not None:
+            if not forced_disclose:
+                hidden = {"type": "hidden", "name": None}
+                return {PLAYER_1: dict(hidden), PLAYER_2: dict(hidden)}
+            view = {"type": "agent", "name": forced_name}
+            return {PLAYER_1: dict(view), PLAYER_2: dict(view)}
         disclosed = self._rng.random() < 0.5
         if not disclosed:
             hidden = {"type": "hidden", "name": None}

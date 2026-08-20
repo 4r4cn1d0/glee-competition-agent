@@ -93,6 +93,12 @@ def _play_arm(field, draws, flags):
     for family, params, seat, game_seed in draws:
         grng = random.Random(game_seed)
         opponent = field.sample_opponent(random.Random(game_seed + 1))
+        params = dict(params)
+        if opponent.name != "__field__":
+            # disclose the clone's real name to the strategy half the time,
+            # exactly as the live server would; paired across arms by seed
+            params["opponent_name"] = opponent.name
+            params["disclose_opponent"] = random.Random(game_seed + 2).random() < 0.5
         s1, s2 = (strategy, opponent) if seat == "player_1" else (opponent, strategy)
         result = play(SimConfig(family, dict(params)), s1, s2, grng)
         mine = result.payoff(seat)

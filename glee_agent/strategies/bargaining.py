@@ -40,6 +40,7 @@ what the field measurably accepts — see ``Config.barg_offer_floor``.
 
 from __future__ import annotations
 
+from .. import opponents
 from .. import runtime_flags
 
 import math
@@ -348,6 +349,20 @@ def decide(game: dict, cfg) -> dict:
             my_gain = min(my_gain, (1.0 - opp_floor) * money)
             p["opponent_floor_applied"] = opp_floor
 
+        # Opponent-conditional exploitation: when this game DISCLOSES who we are
+        # playing and their fitted profile says they accept far less than the
+        # generic floor gives them, tighten the offer to just above their own
+        # measured threshold. This deliberately overrides the generic
+        # opponent-floor above -- that floor protects us against the AVERAGE
+        # field, and the whole point of a profile is that this opponent is not
+        # average. max() so the exploit can only ever raise our ask, never make
+        # us more generous than the baseline.
+        if runtime_flags.enabled("GLEE_OPP_EXPLOIT"):
+            give = opponents.barg_give_floor(game)
+            if give is not None:
+                my_gain = max(my_gain, (1.0 - give) * money)
+                p["opp_exploit_give"] = give
+
         return {"alice_gain": my_gain if mine else money - my_gain,
                 "bob_gain": money - my_gain if mine else my_gain,
                 "_plan": p}
@@ -368,6 +383,19 @@ def decide(game: dict, cfg) -> dict:
         # would be worth against an equilibrium opponent. Holding out for the
         # latter against someone who never concedes pays zero.
         threshold = p["realistic_continuation"] * 0.98
+        # Opponent-conditional: against a PROFILED soft opponent our next offer
+        # (asking all but their measured threshold) is very likely accepted, so
+        # continuing is worth nearly (1-give) discounted one round -- far more
+        # than the generic continuation estimate. Without this, the offer-side
+        # exploit is theatre: deals close on THEIR ~50/50 proposal because our
+        # baseline acceptance takes it first. Only ever RAISES the bar, and only
+        # while rounds remain; the final-round any-positive rule stays untouched.
+        if runtime_flags.enabled("GLEE_OPP_EXPLOIT") and p["rounds_left"] > 2:
+            give = opponents.barg_give_floor(game)
+            if give is not None:
+                hold = (1.0 - give) * money * p["delta_me"]
+                threshold = max(threshold, min(hold, 0.95 * money))
+                p["opp_exploit_hold"] = threshold
         decision = "accept" if my_gain >= threshold else "reject"
         # Last resort where inflation, not the cap, is the real deadline: past
         # that point any positive offer beats grinding the pot down to nothing.
