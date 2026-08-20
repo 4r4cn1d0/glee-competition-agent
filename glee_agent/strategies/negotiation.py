@@ -204,6 +204,12 @@ def plan(game: dict, cfg) -> dict:
     # Fraction of the negotiation elapsed, 0 at the start and 1 at the deadline.
     elapsed = 1.0 - (rounds_left - 1) / max(1, horizon)
     elapsed = min(max(elapsed, 0.0), 1.0)
+    if (not capped and elapsed > 0.85
+            and runtime_flags.enabled("GLEE_NEGO_ENDGAME_V3")):
+        # No real deadline exists; the planning clock paces concession but must
+        # never finish it (failure 2 above -- full-value bids by round 12 of an
+        # uncapped game, exactly when a stonewaller profits from waiting).
+        elapsed = 0.85
 
     anchor = my_value * (cfg.nego_seller_anchor if i_am_seller else cfg.nego_buyer_anchor)
     if not i_am_seller:
@@ -257,6 +263,34 @@ def plan(game: dict, cfg) -> dict:
         reservation = (floor + span * margin) if i_am_seller else (floor - span * margin)
     else:
         reservation = floor + (anchor - floor) * margin
+
+    # Endgame v3 -- three measured failures, one gate (games cited in commit):
+    # 1. With a VISIBLE zone of agreement the walk's endpoint was our own value
+    #    (value -/+ span*margin ~ value at margin 0.02), so a stonewalling bot
+    #    collected our entire surplus: game 120a6b39, buyer value 10,000 vs a
+    #    seller at 8,000, closed at 10,000 for payoff 0, 4th percentile. The
+    #    interior share must bound the ENDPOINT, not just early offers.
+    # 2. In UNCAPPED games the planning clock still ran elapsed to 1.0 by round
+    #    ~12, full capitulation with no deadline anywhere. Cap elapsed short of
+    #    1 when no real deadline exists: the walk approaches, never surrenders.
+    # 3. A 1.5xB seller has no rational deal, but 39% of the field's payoffs in
+    #    that cell are POSITIVE (median +0.35xB): irrational buyers pay above
+    #    value. Reservation 1.5B*(1+2*margin) at margin 0.02 asked 1.54B --
+    #    below the harvest zone. Floor the no-rational-deal seller's ask at
+    #    1.15x value; the ask costs nothing (the alternative was 0 anyway).
+    if runtime_flags.enabled("GLEE_NEGO_ENDGAME_V3"):
+        share_iv = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", cfg.nego_zopa_share)
+        share_iv = min(max(share_iv, 0.0), 0.5)
+        if zopa_lo is not None:
+            span_iv = zopa_hi - zopa_lo
+            if i_am_seller:
+                reservation = max(reservation, zopa_lo + share_iv * span_iv)
+            else:
+                reservation = min(reservation, zopa_hi - share_iv * span_iv)
+        elif i_am_seller:
+            pb = pricing.infer_base(my_value)
+            if pb and my_value >= 1.5 * pb - 1e-9:
+                reservation = max(reservation, 1.15 * my_value)
 
     # Boulware concession from anchor toward reservation.
     # Live-tunable. The fitted field concedes at k~1.18 (n=71 paths); our 2.0
