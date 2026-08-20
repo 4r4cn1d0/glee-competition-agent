@@ -18,7 +18,7 @@ Two ideas carry the strategy:
 
 from __future__ import annotations
 
-from .. import runtime_flags
+from .. import pricing, runtime_flags
 
 from ..actions import _num, is_final_round
 
@@ -274,6 +274,26 @@ def plan(game: dict, cfg) -> dict:
             target = min(max(target, zopa_lo), zopa_hi - give)
         else:
             target = min(max(target, zopa_lo + give), zopa_hi)
+
+    # Final-offer pricing from the fitted acceptance curve, where the constants
+    # were blindest: a hidden-information game at our last offer opportunity.
+    # The right ask depends on our own value multiplier -- a 0.8xB seller should
+    # ask ~1.15-1.4xB while a 1.5xB seller has NO profitable ask at all (the
+    # curve's acceptance is 0/283 above 1.5xB) -- which no constant margin can
+    # express: margin 0.12 asked 1.36x our value regardless, demanding an
+    # impossible 2.04xB from a 1.5xB seller. Gated, and None falls back to the
+    # constant path, so the curve can only replace a constant with a measurement.
+    # NOTE the visibility test reads the STATE, not plan's their_value: that
+    # local is (pre-existing) gated behind GLEE_NEGO_HORIZON_V2, so without V2 it
+    # is None even when the opponent's valuation is right there in the state.
+    # Conditioning on it would have silently extended curve pricing to
+    # complete-information games.
+    if (i_am_seller and state.get(f"{other}_value") is None and capped
+            and rounds_left <= 1
+            and runtime_flags.enabled("GLEE_NEGO_CURVE_PRICING")):
+        curve_ask = pricing.seller_final_ask(my_value)
+        if curve_ask is not None and curve_ask > my_value:
+            target = curve_ask
 
     return {
         "role": role,
