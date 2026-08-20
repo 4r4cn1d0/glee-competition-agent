@@ -45,8 +45,12 @@ FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS")
 #: The flag set composite ran live before today's changes -- the natural control.
 DEFAULT_CONTROL = {"GLEE_NEGO_BOUND_AS_FLOOR": "1",
                    "GLEE_BARG_OPPONENT_FLOOR": "0.39",
-                   "GLEE_BARG_OFFER_FLOOR": "0.52",
-                   "GLEE_NEGO_MIN_MARGIN": "0.04"}
+                   "GLEE_BARG_OFFER_FLOOR": "0.55",
+                   "GLEE_NEGO_MIN_MARGIN": "0.02",
+                   "GLEE_NEGO_CURVE_PRICING": "1",
+                   "GLEE_NEGO_MARGIN_WEIGHT": "0.25",
+                   "GLEE_NEGO_CONTINUATION_ACCEPT": "1",
+                   "GLEE_NEGO_HORIZON_V2": "1"}
 
 
 def _set_flags(flags: dict) -> None:

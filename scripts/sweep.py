@@ -111,6 +111,12 @@ def report(results, fam, key, good_negative=False):
 
 
 def main() -> int:
+    global CANDIDATES
+    if len(sys.argv) > 1:
+        # a JSON file of {name: {FLAG: value, ...}} replaces the built-in set,
+        # so each round of the standing loop can bring its own candidates
+        with open(sys.argv[1], encoding="utf-8") as fh:
+            CANDIDATES = json.load(fh)
     field = Field()
     families = ["bargaining", "negotiation"]
     os.makedirs(os.path.join(REPO, "logs", "sweeps"), exist_ok=True)
