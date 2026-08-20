@@ -4,8 +4,8 @@
   "randomized"
  ],
  "cycle_now": [
-  "composite",
-  "conceder"
+  "conceder",
+  "composite"
  ],
  "policy": {
   "randomized": "composite",

@@ -206,7 +206,17 @@ def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
     text = _complete(cfg, [{"role": "user", "content": prompt}], model=model)
     if not text:
         return None
-    msg = text.strip().strip('"')[:300]
+    msg = text.strip()
+    # models sometimes wrap the reply as {"message": "..."} despite instructions;
+    # unwrap any JSON envelope before it reaches a buyer as literal braces
+    if msg.startswith("{"):
+        try:
+            obj = json.loads(msg)
+            if isinstance(obj, dict):
+                msg = str(obj.get("message") or next(iter(obj.values()), ""))
+        except ValueError:
+            pass
+    msg = msg.strip().strip('"')[:300]
     low = msg.lower()
     positive = not ("don't" in low or "do not" in low or "skip" in low or "pass" in low
                     or "avoid" in low or "hold off" in low or low.startswith("no"))
