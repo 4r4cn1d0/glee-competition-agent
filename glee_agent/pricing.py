@@ -238,3 +238,74 @@ def posterior_cap(my_value: float, their_role: str,
     if not live:
         return None
     return (max(live) * base * 0.97) if i_am_seller else (min(live) * base * 1.03)
+
+
+# ---------------------------------------------------------------------------
+# Stall response: where to park against a stonewalling opponent.
+# ---------------------------------------------------------------------------
+
+_STALL_PATH = os.path.join(os.path.dirname(_MODEL_PATH), "stall_response_v1.json")
+_STALL_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+
+
+def _stall_doc():
+    now = time.monotonic()
+    with _LOCK:
+        if now - _STALL_STATE["checked"] < 10.0:
+            return _STALL_STATE["doc"]
+        _STALL_STATE["checked"] = now
+        try:
+            mtime = os.stat(_STALL_PATH).st_mtime_ns
+        except OSError:
+            return _STALL_STATE["doc"]
+        if mtime == _STALL_STATE["mtime"]:
+            return _STALL_STATE["doc"]
+        try:
+            with open(_STALL_PATH, encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            return _STALL_STATE["doc"]
+        if isinstance(doc, dict) and "seller" in doc:
+            _STALL_STATE.update(mtime=mtime, doc=doc)
+        return _STALL_STATE["doc"]
+
+
+def stall_park(my_value: float, i_am_seller: bool) -> float | None:
+    """The best PROFITABLE price to hold against a stonewalling opponent.
+
+    Fitted on 1,644 stalled games: stallers stall their OFFERS, not their
+    acceptance -- 53% of stalled closes were them taking our price -- and their
+    acceptance has sweet spots strictly BETWEEN the value-grid points (a price
+    at a staller's own value gives them zero surplus; 0.1B inside it gives them
+    a reason). Stalled sellers take bids of 1.3-1.4B at 17-18% per offer while
+    grid-point bids run 0.1-2% -- and our normal pricing concentrates exactly on
+    the dead grid points. Parking = repeating the sweet-spot price; at ~5-18%
+    per offer, ten held rounds compound to 40%+ cumulative acceptance.
+
+    None when no profitable bin with n>=50 exists (e.g. a 1.5xB seller):
+    caller falls back to freezing.
+    """
+    base = infer_base(my_value)
+    doc = _stall_doc()
+    if base is None or not doc:
+        return None
+    seat = "seller" if i_am_seller else "buyer"
+    gamma = runtime_flags.as_float("GLEE_NEGO_MARGIN_WEIGHT", 0.5)
+    gamma = min(max(gamma, 0.05), 2.0)
+    best, best_price = 0.0, None
+    for pb, cell in (doc.get(seat) or {}).items():
+        if cell.get("n", 0) < 50 or not cell.get("p"):
+            continue
+        # a bin whose probability rests on 1-2 accepts is a tail artifact (a
+        # single irrational buyer at 3.5xB once outscored every real sweet spot
+        # on margin alone); demand >=3 observed accepts and a sane price range
+        if cell["p"] * cell["n"] < 3 or float(pb) > 2.0:
+            continue
+        price = float(pb) * base
+        margin = (price - my_value) if i_am_seller else (my_value - price)
+        if margin <= 0:
+            continue
+        score = cell["p"] * (margin / base) ** gamma
+        if score > best:
+            best, best_price = score, price
+    return best_price

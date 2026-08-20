@@ -374,12 +374,19 @@ def plan(game: dict, cfg) -> dict:
             if (_sp > my_value) if i_am_seller else (_sp < my_value):
                 target = _sp
             else:
-                _prev = [float((r.get("offer") or {}).get("price"))
-                         for r in state.get("history") or []
-                         if (r.get("offer") or {}).get("from_player") == me
-                         and (r.get("offer") or {}).get("price") is not None]
-                if _prev:
-                    target = _prev[-1]
+                # v2: stallers stall their OFFERS, not their acceptance (53% of
+                # stalled closes were them taking our price). Park at the
+                # fitted profitable sweet spot; freeze only when none exists.
+                _park = pricing.stall_park(my_value, i_am_seller)
+                if _park is not None:
+                    target = _park
+                else:
+                    _prev = [float((r.get("offer") or {}).get("price"))
+                             for r in state.get("history") or []
+                             if (r.get("offer") or {}).get("from_player") == me
+                             and (r.get("offer") or {}).get("price") is not None]
+                    if _prev:
+                        target = _prev[-1]
 
     posterior_fired = table_fired
     if (not table_fired and state.get(f"{other}_value") is None
