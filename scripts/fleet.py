@@ -159,6 +159,21 @@ def drain(probe: str, timeout_s: int = 1800) -> int:
 
     A game that slips through between a topup and our next leave just extends the
     drain; it is played normally and costs nothing.
+
+    LIMITS -- read before using. The platform allows 60 requests per minute PER
+    AGENT, and that budget is SHARED with the agent's own loop, which spends ~30
+    of them polling pending_games every 2s. This drainer therefore has only ~20
+    calls/min of headroom, i.e. one leave_queue every 3s, and it must never be run
+    twice against the same slot: doing so pushed champion over the limit, and the
+    429s it caused fall on the AGENT's own move submissions, which is precisely
+    the timeout this command exists to avoid.
+
+    Within that budget the drain reduces but does NOT reliably empty a slot. The
+    SDK re-queues whenever active < concurrency, so an agent with concurrency=8
+    actively refills toward 8 while we can only suppress ~20% of its topup window.
+    Measured on champion: 10 -> 3 games, then back to 9. Treat this as a way to
+    catch a low moment, not as a guaranteed drain. If you need a guaranteed one,
+    the agent must have been launched with --max-time in the first place.
     """
     import time
     env = {}
@@ -175,8 +190,16 @@ def drain(probe: str, timeout_s: int = 1800) -> int:
         return 1
     from glee_sdk import GleeClient, GleeAPIError
     c = GleeClient(api_key=env[slot_key])
+    import subprocess as _sp
+    if len(_sp.run(["pgrep", "-f", f"fleet.py drain {probe}"],
+                   capture_output=True, text=True).stdout.split()) > 1:
+        print(f"a drainer is already running for {probe}. Refusing to start a second:\n"
+              f"  the 60 req/min budget is shared with the agent's own polling, and\n"
+              f"  exceeding it makes the AGENT's moves fail, not just ours.")
+        return 1
     print(f"draining {probe}: leaving the queue every 3s, letting in-flight games finish.")
-    print("  nothing is abandoned; this only stops NEW games from starting.\n")
+    print("  nothing is abandoned; this only stops NEW games from starting.")
+    print("  NOTE: reduces but may not empty -- the agent refills toward its concurrency.\n")
     start = time.time(); zero_streak = 0; last_report = 0.0
     while time.time() - start < timeout_s:
         try:
