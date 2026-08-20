@@ -79,6 +79,7 @@ def _iter_finals():
                 seen.add(gid)
                 final = rec.get("final") or {}
                 if final.get("game_state"):
+                    final.setdefault("_ts", rec.get("ts"))
                     yield final
     for path in glob.glob(os.path.join(REPO, "logs", "*", "games", "*.json")):
         try:

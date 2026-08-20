@@ -32,6 +32,28 @@ CANDIDATES = [("honest", "0.0", "99"), ("s015", "0.15", "2"),
 
 
 def load_configs():
+    """Configs from the INSTRUMENT's own recent games when --calib is set: the
+    live anchors were measured on that draw, so calibration must use it too."""
+    import json as _j, time as _t
+    if os.environ.get("PERS_ARENA_CALIB"):
+        out=[]
+        cut=_t.time()-8*3600
+        for line in open(os.path.join(REPO,"logs","conceder","results.jsonl"),
+                         encoding="utf-8",errors="replace").readlines()[-2500:]:
+            try: d=_j.loads(line)
+            except ValueError: continue
+            if d.get("ts",0)<cut: continue
+            f=d.get("final") or {}
+            gs=f.get("game_state") or {}
+            if f.get("game_family")!="persuasion" or gs.get("p") is None: continue
+            if gs.get(f"{f.get('your_player')}_role")!="seller": continue
+            out.append({"p":gs["p"],"v":gs.get("v"),"u":gs.get("u",0) or 0,
+                        "price":gs.get("product_price"),
+                        "mode":gs.get("seller_message_type") or "text",
+                        "rounds":gs.get("total_rounds") or 20})
+        out=[c for c in out if c["price"] and c["v"]]
+        if len(out)>=100:
+            return out
     from sim.field_data import _iter_finals
     out = []
     for final in _iter_finals():
@@ -50,15 +72,23 @@ def load_configs():
 
 
 class BuyerClone:
-    def __init__(self, table, mode, p, rng):
-        self.t, self.mode, self.rng = table, mode, rng
+    """v2: a SPECIFIC buyer when the draw names one (75 fitted, covering 90% of
+    named games), the pooled mixture otherwise. v1 marched every buyer through
+    the pooled trust cells, whose 2+ rows select the gullible subpopulation --
+    the bias that made v1 rank lying above honesty against live evidence.
+    Per-name tables resolve heterogeneity by identity instead."""
+
+    def __init__(self, table, mode, p, rng, own=None):
+        self.t, self.mode, self.rng, self.own = table, mode, rng, own or {}
         self.pb = "lo" if p < 0.45 else ("mid" if p < 0.65 else "hi")
         self.lies = 0
 
     def decide(self, rec: bool) -> bool:
         lb = "0" if self.lies == 0 else ("1" if self.lies == 1 else "2+")
-        cell = (self.t.get(f"{self.mode}|{self.pb}|{'yes' if rec else 'no'}|{lb}")
-                or self.t.get(f"{self.mode}|{self.pb}|{'yes' if rec else 'no'}|0"))
+        key = f"{self.mode}|{self.pb}|{'yes' if rec else 'no'}|{lb}"
+        key0 = f"{self.mode}|{self.pb}|{'yes' if rec else 'no'}|0"
+        cell = self.own.get(key) or self.own.get(key0) \
+            or self.t.get(key) or self.t.get(key0)
         pr = cell["p"] if cell else (0.5 if rec else 0.1)
         return self.rng.random() < pr
 
@@ -67,10 +97,14 @@ class BuyerClone:
             self.lies += 1
 
 
-def play(cfg, strategy_cfg, table, seed):
+def play(cfg, strategy_cfg, table, seed, extra=None):
     from glee_agent.strategies import persuasion as P
     rng = random.Random(seed)
-    buyer = BuyerClone(table, cfg["mode"], cfg["p"], random.Random(seed + 1))
+    brng = random.Random(seed + 1)
+    own = None
+    if extra and brng.random() < extra["p_named"] and extra["names"]:
+        own = extra["named"][brng.choices(extra["names"], weights=extra["weights"])[0]]
+    buyer = BuyerClone(table, cfg["mode"], cfg["p"], brng, own=own)
     history = []
     revenue = 0.0
     sales = 0
@@ -115,8 +149,16 @@ def main() -> int:
     ap.add_argument("--games", type=int, default=4000)
     ap.add_argument("--seed", type=int, default=515)
     args = ap.parse_args()
-    table = json.load(open(os.path.join(REPO, "models",
-                                        "pers_buyer_response_v2.json")))["table"]
+    doc = json.load(open(os.path.join(REPO, "models",
+                                      "pers_buyer_response_v2.json")))
+    table = doc["table"]
+    named = doc.get("named") or {}
+    mix = doc.get("named_mix") or {}
+    named_names = [n for n in named]
+    named_w = [mix.get(n, 1) for n in named_names]
+    total_named = sum(mix.values()) or 1
+    total_games_seen = doc.get("_seller_games") or 1
+    p_named = min(0.95, (total_named / total_games_seen))
     configs = load_configs()
     rng = random.Random(args.seed)
     draws = [(configs[rng.randrange(len(configs))], rng.randrange(2 ** 30))
@@ -137,7 +179,9 @@ def main() -> int:
         sold = tot = 0
         rev = []
         for c, seed in draws:
-            s, r, rv = play(c, cfg, table, seed)
+            s, r, rv = play(c, cfg, table, seed,
+                           {"p_named": p_named, "named": named,
+                            "names": named_names, "weights": named_w})
             sold += s
             tot += r
             rev.append(rv)
