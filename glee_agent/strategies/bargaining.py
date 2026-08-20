@@ -383,6 +383,19 @@ def decide(game: dict, cfg) -> dict:
         # would be worth against an equilibrium opponent. Holding out for the
         # latter against someone who never concedes pays zero.
         threshold = p["realistic_continuation"] * 0.98
+        # Share-floor acceptance: the fleet's agreed share averages 0.476-0.494
+        # in every config cell, and the percentile pays the 0.500 focal atom --
+        # a 0.48 close ranks below the entire even-split pile, so discounted
+        # continuation math that happily clears a 47% offer is surplus-correct
+        # and rating-wrong. While enough rounds remain to counter safely,
+        # refuse anything under this share of the pot. Final two rounds are
+        # untouched (the opponent holds the last word there). OFF by default.
+        accept_floor = runtime_flags.as_float("GLEE_BARG_ACCEPT_FLOOR", 0.0)
+        if accept_floor > 0.0 and p["rounds_left"] > 2 and money > 0:
+            floor_gain = min(max(accept_floor, 0.0), 0.6) * money
+            if threshold < floor_gain:
+                threshold = floor_gain
+                p["accept_floor_applied"] = accept_floor
         # Opponent-conditional: against a PROFILED soft opponent our next offer
         # (asking all but their measured threshold) is very likely accepted, so
         # continuing is worth nearly (1-give) discounted one round -- far more

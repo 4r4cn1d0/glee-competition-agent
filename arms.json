@@ -32,7 +32,8 @@
     "GLEE_NEGO_TABLE": "1",
     "GLEE_PERS_BUYER_V2": "1",
     "GLEE_PERS_BUYER_TIGHT_PRIOR": "0.65",
-    "GLEE_PERS_MSG_STYLE": "token"
+    "GLEE_PERS_MSG_STYLE": "token",
+    "GLEE_BARG_ACCEPT_FLOOR": "0.50"
   },
   "conceder": {
     "GLEE_PERS_LIE_SHADING": "0.8",
