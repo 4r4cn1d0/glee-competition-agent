@@ -89,6 +89,13 @@ def main() -> int:
         if oname:
             name_games[oname] += 1
         pb = "lo" if p < 0.45 else ("mid" if p < 0.65 else "hi")
+        # v/price ratio: the feature template bots actually threshold on
+        # (synthesis finding: its omission is why named buyers looked only
+        # ~55-60% deterministic). Bucket to the observed grid.
+        v = gs.get("v") or 0
+        price = gs.get("product_price") or 1
+        ratio = round(v / price, 2)
+        rb_ = min((1.2, 1.25, 2.0, 3.0, 4.0), key=lambda g: abs(g - ratio))
         lies_caught = 0
         for rnd in gs.get("history") or []:
             rec = rec_of(rnd.get("seller_message"))
@@ -97,7 +104,7 @@ def main() -> int:
             if rec is None:
                 continue
             lb = "0" if lies_caught == 0 else ("1" if lies_caught == 1 else "2+")
-            key = (mode, pb, "yes" if rec else "no", lb)
+            key = (mode, pb, f"r{rb_}", "yes" if rec else "no", lb)
             cell = tab[key]
             cell[1] += 1
             if bought:
@@ -115,11 +122,11 @@ def main() -> int:
         total = sum(n for _, n in t2.values())
         if total < 120:
             continue                     # thin buyers fold into the pooled table
-        doc["named"][oname] = {f"{a}|{b}|{c}|{d}": {"n": n, "p": round(k / n, 4)}
-                               for (a, b, c, d), (k, n) in t2.items() if n >= 12}
-    for (mode, pb, rec, lb), (buys, n) in sorted(tab.items()):
+        doc["named"][oname] = {"|".join(k): {"n": n, "p": round(kk / n, 4)}
+                               for k, (kk, n) in t2.items() if n >= 8}
+    for key, (buys, n) in sorted(tab.items()):
         if n >= 30:
-            doc["table"][f"{mode}|{pb}|{rec}|{lb}"] = {"n": n, "p": round(buys / n, 4)}
+            doc["table"]["|".join(key)] = {"n": n, "p": round(buys / n, 4)}
     tmp = OUT + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(doc, fh, indent=1)
