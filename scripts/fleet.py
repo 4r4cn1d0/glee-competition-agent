@@ -7,6 +7,7 @@
     python scripts/fleet.py stop randomized
     python scripts/fleet.py start randomized
     python scripts/fleet.py shift 600
+    python scripts/fleet.py safe-restart   # supervisor code update, interlocked
 
 Everything is applied at the agent's next SHIFT BOUNDARY, never by signalling a
 running agent. That is not a limitation to work around, it is the safety
@@ -226,6 +227,74 @@ def drain(probe: str, timeout_s: int = 1800) -> int:
     return 1
 
 
+def safe_restart() -> int:
+    """Restart the supervisor ONLY at a provably quiet moment.
+
+    The twin-ban incident (2026-08-20, ~-100 rating): the supervisor was
+    restarted by hand while one slot drained and another cycled; the relaunch
+    cut both transitions mid-flight and five held games timed out at the 5th
+    percentile. The rule "never restart the supervisor while any slot is
+    draining or cycling" now lives here instead of in anyone's memory:
+
+      1. refuse while control.json has pending cycle_now entries;
+      2. refuse while any drainer is running;
+      3. refuse while any agent process is under 120s old (a fresh launch
+         means a transition JUST happened and adoption may not be settled);
+      4. only then SIGTERM the supervisor and relaunch its exact command
+         line. The new supervisor ADOPTS the running agents by PID
+         (supervise.py adopt()), so no agent restarts, no game is touched,
+         and code changes still land at each slot's next natural boundary.
+    """
+    import signal
+    import time
+    control = _read(CONTROL, {})
+    pending = control.get("cycle_now") or []
+    if pending:
+        print(f"REFUSED: cycle_now pending for {pending} — wait for the boundary to clear it.")
+        return 1
+    drainers = subprocess.run(["pgrep", "-f", "fleet.py drain"],
+                              capture_output=True, text=True).stdout.split()
+    if len(drainers) > 1:            # our own pgrep matches once
+        print("REFUSED: a drainer is running — a restart now would cut it mid-flight.")
+        return 1
+    state = _read(STATE, {})
+    for probe, pid in (state.get("agents") or {}).items():
+        if not pid:
+            continue
+        out = subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+                             capture_output=True, text=True).stdout.strip()
+        if out and int(out) < 120:
+            print(f"REFUSED: {probe} launched {out}s ago — a transition just "
+                  f"happened; retry once it is 120s old.")
+            return 1
+    sup = state.get("supervisor_pid")
+    if not sup:
+        print("supervisor not recorded as running — nothing to restart safely.")
+        return 1
+    cmdline = subprocess.run(["ps", "-o", "command=", "-p", str(sup)],
+                             capture_output=True, text=True).stdout.strip()
+    if "supervise" not in cmdline:
+        print(f"REFUSED: pid {sup} does not look like the supervisor ({cmdline!r}).")
+        return 1
+    print(f"quiet: no cycles pending, no drainers, all agents settled.")
+    print(f"stopping supervisor {sup} ({cmdline})")
+    os.kill(int(sup), signal.SIGTERM)
+    for _ in range(20):
+        if subprocess.run(["ps", "-p", str(sup)], capture_output=True).returncode != 0:
+            break
+        time.sleep(0.5)
+    log = open(os.path.join(REPO, "logs", "supervisor.out"), "ab")
+    subprocess.Popen(cmdline, shell=True, cwd=REPO, stdout=log, stderr=log,
+                     start_new_session=True)
+    time.sleep(5)
+    new = _read(STATE, {})
+    new_pid = new.get("supervisor_pid")
+    same = sum(1 for p, pid in (new.get("agents") or {}).items()
+               if pid and pid == (state.get("agents") or {}).get(p))
+    print(f"relaunched: supervisor pid {new_pid}, {same} agents adopted unchanged.")
+    return 0 if new_pid and new_pid != sup else 1
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -233,6 +302,8 @@ def main() -> int:
     cmd, rest = sys.argv[1], sys.argv[2:]
     if cmd == "status":
         return status()
+    if cmd == "safe-restart":
+        return safe_restart()
     if cmd == "set" and len(rest) >= 2:
         return set_flags(rest[0], rest[1:])
     if cmd == "clear" and rest:
