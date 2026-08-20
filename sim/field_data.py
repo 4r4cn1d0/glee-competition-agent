@@ -176,6 +176,22 @@ def fit() -> dict:
             census["negotiation"][json.dumps(cfg, sort_keys=True)] += 1
             nego_value_marginal[my_mult] += 1
             their_seat = gs.get(f"{them}_role") or "?"
+            # their multiplier, observed (complete info) or inverted from a
+            # closed deal's payoff -- lets the clone's behaviour be conditioned
+            # on its drawn value, without which the arena is structurally blind
+            # to any strategy that INFERS the hidden value
+            their_mult = None
+            tv = their_value
+            res = final.get("result") or {}
+            if tv is None and isinstance(res, dict) and res.get("outcome") == "agreement":
+                pr, pay = res.get("agreed_price"), res.get(f"{them}_payoff")
+                if isinstance(pr, (int, float)) and isinstance(pay, (int, float)):
+                    tv = (pr - pay) if their_seat == "seller" else (pr + pay)
+            if tv:
+                for g_ in (0.8, 1.0, 1.2, 1.5):
+                    if abs(tv / base - g_) < 0.05:
+                        their_mult = g_
+                        break
             for rnd in history:
                 offer = rnd.get("offer") or {}
                 price = offer.get("price")
@@ -186,13 +202,21 @@ def fit() -> dict:
                 if offer.get("from_player") == me and dec:
                     kind = ("accept" if "accept" in dec
                             else "walk" if "walk" in dec else "counter")
-                    key = (_price_bin(price / base), their_seat, rb)
-                    for tgt in (who, "__field__"):
-                        clones[tgt]["nego_resp"][key][kind] += 1
+                    keys = [(_price_bin(price / base), their_seat, rb)]
+                    if their_mult is not None:
+                        keys.append((f"{_price_bin(price / base)}|m{their_mult}",
+                                     their_seat, rb))
+                    for key in keys:
+                        for tgt in (who, "__field__"):
+                            clones[tgt]["nego_resp"][key][kind] += 1
                 elif offer.get("from_player") == them:
-                    for tgt in (who, "__field__"):
-                        clones[tgt]["nego_counter"][(their_seat, rb)].append(
-                            round(price / base, 4))
+                    ckeys = [(their_seat, rb)]
+                    if their_mult is not None:
+                        ckeys.append((f"{their_seat}|m{their_mult}", rb))
+                    for ck in ckeys:
+                        for tgt in (who, "__field__"):
+                            clones[tgt]["nego_counter"][ck].append(
+                                round(price / base, 4))
 
     def _pack(c):
         total = (sum(sum(v.values()) for v in c["barg_resp"].values())
@@ -282,17 +306,31 @@ class Clone:
         role = state.get(f"{me}_role")
         seat = role or "?"
 
+        my_mult = None
+        for g_ in (0.8, 1.0, 1.2, 1.5):
+            if base and abs(my_value / base - g_) < 0.05:
+                my_mult = g_
+                break
+
         def counter_price():
-            xs = (self._t.get("nego_counter") or {}).get(f"{seat}|{rb}") \
-                or (self._f.get("nego_counter") or {}).get(f"{seat}|{rb}")
-            if xs:
-                return round(self._rng.choice(xs) * base, 2)
+            keys = ([f"{seat}|m{my_mult}|{rb}"] if my_mult is not None else []) \
+                + [f"{seat}|{rb}"]
+            for src in (self._t, self._f):
+                for k in keys:
+                    xs = (src.get("nego_counter") or {}).get(k)
+                    if xs:
+                        return round(self._rng.choice(xs) * base, 2)
             return round(my_value * (1.3 if role == "seller" else 0.8), 2)
 
         if game["valid_actions"]["type"] == "offer":
             return {"product_price": counter_price()}
         price = (state.get("last_offer") or {}).get("price") or 0.0
-        hit = self._lookup("nego_resp", f"{_price_bin(price / base)}|{seat}|{rb}")
+        hit = None
+        if my_mult is not None:
+            hit = self._lookup("nego_resp",
+                               f"{_price_bin(price / base)}|m{my_mult}|{seat}|{rb}")
+        if not hit:
+            hit = self._lookup("nego_resp", f"{_price_bin(price / base)}|{seat}|{rb}")
         if hit:
             n = max(sum(hit.values()), 1)
             r = self._rng.random()

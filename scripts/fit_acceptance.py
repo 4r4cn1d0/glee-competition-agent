@@ -119,6 +119,22 @@ def fit() -> dict:
         my_role = gs.get(f"{me}_role")
         max_rounds = gs.get("max_rounds")
         games += 1
+        # the responder's value multiplier, observed or inverted from a closed
+        # deal, for value-conditioned curves (the posterior's other half)
+        them = "player_2" if me == "player_1" else "player_1"
+        their_role = gs.get(f"{them}_role")
+        tv = gs.get(f"{them}_value")
+        res = final.get("result") or {}
+        if tv is None and isinstance(res, dict) and res.get("outcome") == "agreement":
+            pr, pay = res.get("agreed_price"), res.get(f"{them}_payoff")
+            if isinstance(pr, (int, float)) and isinstance(pay, (int, float)):
+                tv = (pr - pay) if their_role == "seller" else (pr + pay)
+        their_mult = None
+        if tv:
+            for g_ in (0.8, 1.0, 1.2, 1.5):
+                if abs(tv / base - g_) < 0.05:
+                    their_mult = g_
+                    break
         for rnd in gs.get("history") or []:
             offer = rnd.get("offer") or {}
             if offer.get("from_player") != me:
@@ -130,8 +146,11 @@ def fit() -> dict:
                 # treating it as a rejection of THIS price would poison the tail.
                 continue
             is_final = max_rounds is not None and rnd.get("round") == max_rounds
-            key = (my_role or "?", "final" if is_final else "mid")
-            obs[key].append((price / base, "accept" in decision))
+            pos = "final" if is_final else "mid"
+            obs[(my_role or "?", pos)].append((price / base, "accept" in decision))
+            if their_mult is not None:
+                obs[(f"{my_role or '?'}|m{their_mult}", pos)].append(
+                    (price / base, "accept" in decision))
     curves = {}
     for (seat, pos), pts in obs.items():
         rows = []

@@ -259,7 +259,11 @@ def plan(game: dict, cfg) -> dict:
         reservation = floor + (anchor - floor) * margin
 
     # Boulware concession from anchor toward reservation.
-    concession = elapsed ** _BOULWARE
+    # Live-tunable. The fitted field concedes at k~1.18 (n=71 paths); our 2.0
+    # holds-then-collapses where the field glides, which reads as stonewalling to
+    # opponents pacing us against their own curve (our measured k was 2.04).
+    boulware = runtime_flags.as_float("GLEE_NEGO_BOULWARE", _BOULWARE)
+    concession = elapsed ** min(max(boulware, 0.5), 4.0)
     target = anchor + (reservation - anchor) * concession
 
     # Propose INSIDE the zone of agreement we can see — never at its boundary.
@@ -283,12 +287,47 @@ def plan(game: dict, cfg) -> dict:
     # express: margin 0.12 asked 1.36x our value regardless, demanding an
     # impossible 2.04xB from a 1.5xB seller. Gated, and None falls back to the
     # constant path, so the curve can only replace a constant with a measurement.
+    # Posterior-conditional pricing: in a hidden-information game the opponent's
+    # value is one of four grid points and their FIRST OFFER leaks which -- a
+    # seller opening at 0.9-1.05xB is a 0.8-value seller 91% of the time (n=174),
+    # a buyer opening at 1.2-1.4xB holds the 1.5 value 87% of the time (n=97).
+    # grid_ask prices just inside the posterior-likely step instead of walking a
+    # blind concession curve. Applies to EVERY offer round in a hidden game, both
+    # seats; the pooled final-round curve below stays as the fallback when this
+    # gate is off or the model is missing.
+    posterior_fired = False
+    if (state.get(f"{other}_value") is None
+            and runtime_flags.enabled("GLEE_NEGO_POSTERIOR")):
+        first_over_b = None
+        pb = pricing.infer_base(my_value)
+        if pb:
+            for _rnd in state.get("history") or []:
+                _off = _rnd.get("offer") or {}
+                if _off.get("from_player") == other and _off.get("price") is not None:
+                    first_over_b = _off["price"] / pb
+                    break
+        if capped and rounds_left <= 1:
+            p_ask = pricing.posterior_final_ask(my_value, state.get(f"{other}_role"),
+                                                first_over_b, i_am_seller)
+            if p_ask is not None:
+                target = p_ask
+                posterior_fired = True
+        elif runtime_flags.enabled("GLEE_NEGO_POSTERIOR_CAP"):
+            p_cap = pricing.posterior_cap(my_value, state.get(f"{other}_role"),
+                                          first_over_b, i_am_seller)
+            if p_cap is not None:
+                capped_target = min(target, p_cap) if i_am_seller else max(target, p_cap)
+                # the cap must never push the walk through our own floor
+                if (capped_target > my_value) if i_am_seller else (capped_target < my_value):
+                    target = capped_target
+
     # NOTE the visibility test reads the STATE, not plan's their_value: that
     # local is (pre-existing) gated behind GLEE_NEGO_HORIZON_V2, so without V2 it
     # is None even when the opponent's valuation is right there in the state.
     # Conditioning on it would have silently extended curve pricing to
     # complete-information games.
-    if (i_am_seller and state.get(f"{other}_value") is None and capped
+    if (not posterior_fired and i_am_seller
+            and state.get(f"{other}_value") is None and capped
             and rounds_left <= 1
             and runtime_flags.enabled("GLEE_NEGO_CURVE_PRICING")):
         curve_ask = pricing.seller_final_ask(my_value)
