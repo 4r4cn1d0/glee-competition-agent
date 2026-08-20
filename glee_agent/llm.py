@@ -188,6 +188,18 @@ def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
     tiny (~250 tokens) -- the operator's $15 must stretch to thousands of
     messages, and the experiment is about wording, not context."""
     st = game.get("game_state") or {}
+    # Spend only where wording can move the outcome (operator: no burn on
+    # unimportant calls). Measured today: buyers bought on a "no" 0 times in
+    # 1,220 rounds -- discouragement needs no artistry; and buyers who already
+    # caught 2+ lies convert at 89-92% regardless -- saturated. Both cases use
+    # the free template. LLM spend concentrates on POSITIVE recommendations to
+    # unburned buyers: the exact cells where the 20pp text-vs-binary gap lives.
+    if not recommend:
+        return None
+    caught = sum(1 for r in st.get("history") or []
+                 if r.get("bought") and str(r.get("quality")).lower() == "low")
+    if caught >= 2:
+        return None
     prompt = PERS_SELLER_PROMPT.format(
         price=st.get("product_price"), p=float(st.get("p") or 0),
         rnd=st.get("round"), total=st.get("total_rounds"),
