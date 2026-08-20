@@ -70,7 +70,8 @@ def _play(game: dict, cfg, log) -> dict:
     # 2. In "full" mode the model may override, but only through the same
     #    repair path — a bad override degrades to the heuristic, never to an
     #    invalid move.
-    if cfg.llm_mode == "full":
+    if (cfg.llm_mode == "full" and game.get("game_family") in
+            set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))):
         proposed = llm.propose_action(game, raw, plan, cfg)
         if proposed:
             repaired = coerce(proposed, game)
@@ -98,8 +99,11 @@ def _play(game: dict, cfg, log) -> dict:
 
     # 3. Attach a message. The numbers are already fixed at this point, so a
     #    slow or failed call costs nothing but the message itself.
-    llm_fams = set((os.environ.get("GLEE_LLM_FAMILIES") or
-                    "bargaining,negotiation,persuasion").split(","))
+    # Default-DENY outside persuasion: the operator's standing rule is that LLM
+    # spend works persuasion only, so a process launched without the env var
+    # must fence itself rather than inherit an open door. Non-persuasion
+    # messages fall through to the grounded template bank, which is free.
+    llm_fams = set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))
     if _wants_message(game) and game.get("game_family") in llm_fams:
         message = None
         if cfg.llm_mode in ("messages", "full"):

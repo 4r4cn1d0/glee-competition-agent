@@ -270,9 +270,22 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     recommended_now = _recommended({"seller_message": state.get("seller_message")})
     post = _q_posterior(history, p, mode)
 
+    # The CURRENT message is itself evidence about q and must reweight the
+    # mixture before P(high|message) is read off it -- a pure spammer almost
+    # never says "no", so a "no" collapses the q=1 mass instead of letting
+    # P(high|no,q=1)~1 ride into the average. The audit measured the unweighted
+    # version buying on explicit declines 688 times across the logged games at
+    # -0.65x price a piece.
+    post_now = []
+    for w, q in zip(post, _Q_GRID):
+        pr_yes = p * (1.0 - _EPS) + (1.0 - p) * q
+        post_now.append(w * (pr_yes if recommended_now else (1.0 - pr_yes)))
+    z = sum(post_now)
+    post_now = [x / z for x in post_now] if z > 1e-12 else list(post)
+
     # P(high | this seller's current message), mixed over the type posterior.
     p_high = 0.0
-    for w, q in zip(post, _Q_GRID):
+    for w, q in zip(post_now, _Q_GRID):
         if recommended_now:
             yes_hi = p * (1.0 - _EPS)
             p_high += w * yes_hi / (yes_hi + (1.0 - p) * q)
@@ -321,7 +334,7 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,
         "p_high": p_high, "expected_value": expected,
-        "q_posterior": [round(x, 3) for x in post],
+        "q_posterior": [round(x, 3) for x in post_now],
         "observed_rounds": observed, "caught_lies": caught,
         "breakeven": breakeven, "tight": tight, "blocked": blocked,
         "exploration_bonus": bonus,
