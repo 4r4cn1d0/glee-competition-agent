@@ -132,7 +132,13 @@ def negotiation_message(game: dict, action: dict, plan: dict | None,
             "That leaves you a clear gain over walking away.",
             "This is a real offer, and it beats no deal for both of us.",
         ]))
-    if rounds_left is not None and rounds_left <= 2:
+    # Deadline talk only when the deadline is REAL. In uncapped games
+    # rounds_left is the synthetic planning clock, and the transcript export
+    # showed "nearly out of rounds" repeated from round 11 to round 99 of a
+    # hidden-horizon game -- a claim any patient opponent can falsify by
+    # simply waiting, which converts the message from leverage into a leak.
+    if (rounds_left is not None and rounds_left <= 2
+            and plan.get("capped", False)):
         parts.append("We are nearly out of rounds, and no deal pays us both zero.")
     return " ".join(parts)[:1800]
 
