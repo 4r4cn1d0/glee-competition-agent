@@ -17,9 +17,11 @@ action as its fallback.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import random
 import re
 import threading
 
@@ -28,6 +30,68 @@ logger = logging.getLogger("glee.llm")
 _lock = threading.Lock()
 _calls = 0
 _failures = 0
+
+# ---------------------------------------------------------------------------
+# Cross-game message memory. The persuasion seller prompt is built from only
+# (price, p, round, total, rec) -- no per-game content -- so byte-identical
+# prompts recur across hundreds of games, and every recurrence used to be a
+# fresh paid call for an answer already bought. Each unique prompt now pays for
+# at most GLEE_LLM_CACHE_POOL validated variants (default 3), after which the
+# pool serves free. Reuse is invisible to opponents: every game is a fresh
+# buyer, exactly the property the template bank already relies on.
+# ---------------------------------------------------------------------------
+_MSG_CACHE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "logs", "llm_msg_cache.json")
+_MSG_CACHE = {"checked": 0.0, "mtime": None, "pools": {}}
+
+
+def _cache_pools() -> dict:
+    import time
+    now = time.monotonic()
+    with _lock:
+        if now - _MSG_CACHE["checked"] < 10.0:
+            return _MSG_CACHE["pools"]
+        _MSG_CACHE["checked"] = now
+        try:
+            mtime = os.stat(_MSG_CACHE_PATH).st_mtime_ns
+        except OSError:
+            return _MSG_CACHE["pools"]
+        if mtime == _MSG_CACHE["mtime"]:
+            return _MSG_CACHE["pools"]
+        try:
+            with open(_MSG_CACHE_PATH, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            return _MSG_CACHE["pools"]
+        if isinstance(data, dict):
+            _MSG_CACHE["mtime"] = mtime
+            _MSG_CACHE["pools"] = data
+        return _MSG_CACHE["pools"]
+
+
+def _cache_add(key: str, msg: str, cap: int) -> None:
+    """Best-effort append; concurrent agents may race and last-writer-wins.
+
+    Losing a variant costs at most one repeat API call, so no locking."""
+    try:
+        try:
+            with open(_MSG_CACHE_PATH, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            data = {}
+        pool = data.get(key) or []
+        if msg not in pool and len(pool) < cap:
+            pool.append(msg)
+            data[key] = pool
+            tmp = _MSG_CACHE_PATH + f".tmp{os.getpid()}"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(data, fh)
+            os.replace(tmp, _MSG_CACHE_PATH)
+        with _lock:
+            _MSG_CACHE["pools"] = data
+            _MSG_CACHE["checked"] = 0.0
+    except OSError:
+        pass
 
 SYSTEM_PROMPT = """\
 You are a strategic player in an economic game, playing to maximise YOUR OWN
@@ -215,6 +279,20 @@ def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
                         for r in hist[-2:])
     if (st.get("round") or 99) <= 2 or caught_recent:
         model = os.environ.get("GLEE_LLM_MODEL_PREMIUM", "anthropic/claude-opus-5")
+    # Serve from the cross-game pool once this exact prompt has bought its
+    # variants; GLEE_LLM_CACHE=off restores a paid call every time.
+    cache_on = (os.environ.get("GLEE_LLM_CACHE", "on").strip().lower()
+                not in ("off", "0", "no"))
+    pool_cap = 3
+    try:
+        pool_cap = max(int(os.environ.get("GLEE_LLM_CACHE_POOL", "3")), 0)
+    except ValueError:
+        pass
+    key = hashlib.sha256(f"{model or cfg.llm_model}|{prompt}".encode()).hexdigest()
+    if cache_on and pool_cap > 0:
+        pool = _cache_pools().get(key) or []
+        if len(pool) >= pool_cap:
+            return random.choice(pool)
     text = _complete(cfg, [{"role": "user", "content": prompt}], model=model)
     if not text:
         return None
@@ -234,4 +312,6 @@ def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
                     or "avoid" in low or "hold off" in low or low.startswith("no"))
     if positive != recommend:
         return None                      # model flipped the signal: use template
+    if msg and cache_on and pool_cap > 0:
+        _cache_add(key, msg, pool_cap)   # only validated messages enter the pool
     return msg or None
