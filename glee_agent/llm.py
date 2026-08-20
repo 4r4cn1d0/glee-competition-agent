@@ -171,3 +171,34 @@ def propose_action(game: dict, fallback: dict, plan: dict | None, cfg) -> dict |
         _count_failure()
         logger.warning("Unparseable LLM reply: %r", text[:200])
     return action
+
+
+PERS_SELLER_PROMPT = """You are a seller in a repeated trust game. Fixed price: {price}. \
+The buyer knows P(high quality)={p:.2f} and remembers everything. Round {rnd}/{total}. \
+Your recommendation this round is: {rec}. \
+Write ONE persuasive message (max 160 chars) that clearly conveys that recommendation \
+({rec_word}). Be credible, specific, human. Message only, no quotes."""
+
+
+def pers_seller_message(game: dict, recommend: bool, cfg) -> str | None:
+    """LLM-worded seller message for persuasion TEXT mode. The recommendation
+    itself comes from the policy and is NOT the model's to change: a reply that
+    fails to convey it is discarded for the template. Prompt is deliberately
+    tiny (~250 tokens) -- the operator's $15 must stretch to thousands of
+    messages, and the experiment is about wording, not context."""
+    st = game.get("game_state") or {}
+    prompt = PERS_SELLER_PROMPT.format(
+        price=st.get("product_price"), p=float(st.get("p") or 0),
+        rnd=st.get("round"), total=st.get("total_rounds"),
+        rec="RECOMMEND BUYING" if recommend else "ADVISE AGAINST BUYING",
+        rec_word="a clear yes" if recommend else "a clear no")
+    text = _complete(cfg, [{"role": "user", "content": prompt}])
+    if not text:
+        return None
+    msg = text.strip().strip('"')[:300]
+    low = msg.lower()
+    positive = not ("don't" in low or "do not" in low or "skip" in low or "pass" in low
+                    or "avoid" in low or "hold off" in low or low.startswith("no"))
+    if positive != recommend:
+        return None                      # model flipped the signal: use template
+    return msg or None

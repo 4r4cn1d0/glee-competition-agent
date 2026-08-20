@@ -14,6 +14,7 @@ anywhere below it degrades to the conservative fallback rather than escaping.
 from __future__ import annotations
 
 import logging
+import os
 import random
 
 from . import llm, messages
@@ -78,9 +79,28 @@ def _play(game: dict, cfg, log) -> dict:
 
     action = coerce(raw, game)
 
+    # Persuasion TEXT mode: the message IS the action. In messages/full mode the
+    # LLM rewords the policy's recommendation persuasively; the recommendation
+    # itself is never the model's to change, and any failure falls back to the
+    # template (a lost call costs wording, never a game).
+    if (game.get("game_family") == "persuasion" and "persuasion" in
+            set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))
+            and cfg.llm_mode in ("messages", "full")
+            and isinstance(action, dict) and "message" in action
+            and (game.get("game_state") or {}).get("seller_message_type") == "text"):
+        rec = bool(plan.get("recommend")) if isinstance(plan, dict) else \
+            ("recommend" in str(action.get("message", "")).lower())
+        better = llm.pers_seller_message(game, rec, cfg)
+        if better:
+            action = dict(action, message=better)
+            source = source + "+llm-pers"
+
+
     # 3. Attach a message. The numbers are already fixed at this point, so a
     #    slow or failed call costs nothing but the message itself.
-    if _wants_message(game):
+    llm_fams = set((os.environ.get("GLEE_LLM_FAMILIES") or
+                    "bargaining,negotiation,persuasion").split(","))
+    if _wants_message(game) and game.get("game_family") in llm_fams:
         message = None
         if cfg.llm_mode in ("messages", "full"):
             message = llm.write_message(game, action, plan, cfg)

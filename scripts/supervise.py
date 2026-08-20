@@ -220,10 +220,11 @@ class Agent:
         # triple the sample rate in the family we are trying to fix -- without
         # moving API keys around or losing that slot's log history.
         policy = (ctl.get("policy") or {}).get(self.probe) or self.probe
+        llm_mode = (ctl.get("llm") or {}).get(self.probe) or self.args.llm_mode
         families = (ctl.get("families") or {}).get(self.probe) or self.args.families
         cmd = [os.path.join(REPO, ".venv", "bin", "python"), "run_agent.py",
                "--probe", policy, "--log-dir", log_dir,
-               "--llm-mode", self.args.llm_mode,
+               "--llm-mode", llm_mode,
                "--concurrency", str(self.args.concurrency),
                "--poll-interval", str(self.args.poll_interval),
                "--families", families, "--quiet",
@@ -237,6 +238,20 @@ class Agent:
         # percentile, three of which in a row earn a 30-minute queue ban.
         env = dict(os.environ, GLEE_API_KEY=key, GLEE_LOG_DIR=log_dir,
                    GLEE_PROBE=self.probe)
+        if llm_mode != "off":
+            env_file = {}
+            with open(os.path.join(REPO, ".env"), encoding="utf-8") as fh:
+                for line in fh:
+                    if "=" in line and not line.strip().startswith("#"):
+                        k2, v2 = line.strip().split("=", 1)
+                        env_file[k2] = v2
+            for k2 in ("ANTHROPIC_API_KEY", "LLM_MODEL"):
+                if env_file.get(k2):
+                    env[k2] = env_file[k2]
+            env.setdefault("GLEE_LLM_MAX_CALLS", "800")
+            # the $15 budget survives only on the cheap prompts: LLM wording is
+            # fenced to persuasion; negotiation/bargaining stay fully programmatic
+            env.setdefault("GLEE_LLM_FAMILIES", "persuasion")
         env.update(load_arms().get(self.probe, {}))
         out = open(os.path.join(REPO, "logs", f"{self.probe}.out"), "a", encoding="utf-8")
         arm = load_arms().get(self.probe) or {}
