@@ -24,6 +24,8 @@ early purchases carry information value on top of their payoff.
 
 from __future__ import annotations
 
+from .. import runtime_flags
+
 from ..actions import _num
 from ..text import reads_as_recommendation
 
@@ -94,10 +96,16 @@ def seller_plan(game: dict, cfg) -> dict:
                 "round": round_no, "total_rounds": total, "buy_rate": buy_rate,
                 "knows_values": True, "lie_rate": 1.0, "quality_is_high": False}
 
-    q_star = optimal_lie_rate(p, v, u, price) * cfg.pers_lie_shading
+    # Read live so the honesty setting can be changed without a restart -- a
+    # restart of an unbounded agent costs every game it holds. Falls back to the
+    # config value, so behaviour is unchanged unless arms.json says otherwise.
+    shading = runtime_flags.as_float("GLEE_PERS_LIE_SHADING", cfg.pers_lie_shading)
+    honest_rounds = int(runtime_flags.as_float("GLEE_PERS_HONEST_ROUNDS",
+                                               cfg.pers_honest_rounds))
+    q_star = optimal_lie_rate(p, v, u, price) * shading
     # Stay honest through the opening rounds: the buyer learns quality only on
     # rounds they buy, so an early clean record is what makes later ones sell.
-    if round_no <= cfg.pers_honest_rounds:
+    if round_no <= honest_rounds:
         return {"recommend": False, "reason": "building reputation", "round": round_no,
                 "total_rounds": total, "buy_rate": buy_rate, "knows_values": True,
                 "lie_rate": q_star, "quality_is_high": False}

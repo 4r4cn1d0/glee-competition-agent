@@ -19,5 +19,9 @@
     "GLEE_NEGO_HORIZON_V2": "1",
     "GLEE_NEGO_SPLIT_CANDIDATE": "1",
     "GLEE_BARG_OPPONENT_FLOOR": "0.39"
+  },
+  "champion": {
+    "GLEE_PERS_LIE_SHADING": "0.0",
+    "GLEE_PERS_HONEST_ROUNDS": "99"
   }
 }

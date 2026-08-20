@@ -141,6 +141,68 @@ def _slot_setting(key: str, probe: str, value: str | None, label: str) -> int:
     return 0
 
 
+def drain(probe: str, timeout_s: int = 1800) -> int:
+    """Empty a slot's in-flight games WITHOUT abandoning any of them.
+
+    An agent launched with --max-time drains itself: it stops queueing, plays its
+    in-flight games out, and exits 0. An agent adopted from an older launch has no
+    such path, and SIGINT is not one -- it leaves the process alive while every
+    held game runs out its 120s turn clock, scoring each at the 5th percentile and
+    earning a 30-minute queue ban. That cost has been paid three times.
+
+    This reproduces the drain from outside the process. The SDK's loop only starts
+    games by calling queue(), at most once every topup_interval (15s), and it plays
+    in-flight games from pending_games() regardless of queue state. So calling
+    leave_queue() every few seconds starves it of NEW games while it finishes the
+    ones it holds -- no timeouts, no ban, nothing abandoned. When active_games
+    reaches zero the process can be killed for free.
+
+    A game that slips through between a topup and our next leave just extends the
+    drain; it is played normally and costs nothing.
+    """
+    import time
+    env = {}
+    with open(os.path.join(REPO, ".env"), encoding="utf-8") as fh:
+        for line in fh:
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.strip().split("=", 1)
+                env[k] = v
+    slot_key = {"champion": "GLEE_KEY_TEST1", "hardliner": "GLEE_KEY_TEST2",
+                "conceder": "GLEE_KEY_TEST3", "randomized": "GLEE_KEY_TEST4",
+                "composite": "GLEE_KEY_TEST5"}.get(probe)
+    if not slot_key or slot_key not in env:
+        print(f"no API key for slot {probe!r}")
+        return 1
+    from glee_sdk import GleeClient, GleeAPIError
+    c = GleeClient(api_key=env[slot_key])
+    print(f"draining {probe}: leaving the queue every 3s, letting in-flight games finish.")
+    print("  nothing is abandoned; this only stops NEW games from starting.\n")
+    start = time.time(); zero_streak = 0; last_report = 0.0
+    while time.time() - start < timeout_s:
+        try:
+            c.leave_queue()
+        except GleeAPIError as exc:
+            if "429" in str(exc):
+                time.sleep(5)
+                continue
+        now = time.time()
+        if now - last_report >= 10:
+            last_report = now
+            try:
+                n = c.stats().get("active_games", 0)
+            except GleeAPIError:
+                time.sleep(3); continue
+            print(f"  [{time.strftime('%H:%M:%S')}] active_games={n}"
+                  f"  ({now - start:.0f}s elapsed)")
+            zero_streak = zero_streak + 1 if n == 0 else 0
+            if zero_streak >= 2:
+                print(f"\n{probe} is empty. It can now be stopped with zero games lost.")
+                return 0
+        time.sleep(3)
+    print(f"\ntimed out after {timeout_s}s — do NOT kill it, games are still in flight.")
+    return 1
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -160,6 +222,8 @@ def main() -> int:
         return shift(int(rest[0]))
     if cmd == "policy" and rest:
         return _slot_setting("policy", rest[0], rest[1] if len(rest) > 1 else None, "policy")
+    if cmd == "drain" and rest:
+        return drain(rest[0], int(rest[1]) if len(rest) > 1 else 1800)
     if cmd == "families" and rest:
         return _slot_setting("families", rest[0], rest[1] if len(rest) > 1 else None, "families")
     print(__doc__)
