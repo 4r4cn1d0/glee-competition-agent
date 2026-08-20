@@ -125,6 +125,28 @@ def _continuation_accept_enabled() -> bool:
     return runtime_flags.enabled("GLEE_NEGO_CONTINUATION_ACCEPT")
 
 
+def _their_stall_price(state: dict, me: str):
+    """The opponent's price if their last 3+ offers moved <=1% of scale, else None.
+
+    Measured on 6,540 deduped games (workflow nego-regime-evidence, verified):
+    44% of uncapped and 19% of capped multi-round games feature a stalling
+    opponent; we kept conceding into stalls ~74% of the time, 70% of stalled
+    games die at 0/0, and in uncapped stalls the concessions earn nothing.
+    """
+    other = "player_2" if me == "player_1" else "player_1"
+    theirs = [float((r.get("offer") or {}).get("price"))
+              for r in state.get("history") or []
+              if (r.get("offer") or {}).get("from_player") == other
+              and (r.get("offer") or {}).get("price") is not None]
+    if len(theirs) < 3:
+        return None
+    recent = theirs[-3:]
+    scale = max(abs(x) for x in recent) or 1.0
+    if max(recent) - min(recent) <= 0.01 * scale:
+        return recent[-1]
+    return None
+
+
 def _rounds_left(state: dict, assumed_horizon: int) -> tuple[int, bool]:
     """(rounds remaining including this one, whether the cap is real).
 
@@ -330,8 +352,37 @@ def plan(game: dict, cfg) -> dict:
     # blind concession curve. Applies to EVERY offer round in a hidden game, both
     # seats; the pooled final-round curve below stays as the fallback when this
     # gate is off or the model is missing.
-    posterior_fired = False
+    # Learned-table OFFER policy (glee_agent/table_policy.py). NOTE: the first
+    # attempt to wire this aborted before writing and only the acceptance half
+    # shipped -- an evolver run then optimised ask parameters that were never
+    # consulted. Verified through decide() this time.
+    table_fired = False
     if (state.get(f"{other}_value") is None
+            and runtime_flags.enabled("GLEE_NEGO_TABLE")):
+        t_ask = table_policy.offer(my_value, i_am_seller, elapsed)
+        if t_ask is not None:
+            target = t_ask
+            table_fired = True
+
+    # Stall policy, offer side (verified measurement in _their_stall_price's
+    # docstring): freeze against an unprofitable stall -- further concession is
+    # what makes stonewalling pay; converge onto a profitable one -- each extra
+    # round is 70%-no-deal territory.
+    if runtime_flags.enabled("GLEE_NEGO_STALL_POLICY"):
+        _sp = _their_stall_price(state, me)
+        if _sp is not None:
+            if (_sp > my_value) if i_am_seller else (_sp < my_value):
+                target = _sp
+            else:
+                _prev = [float((r.get("offer") or {}).get("price"))
+                         for r in state.get("history") or []
+                         if (r.get("offer") or {}).get("from_player") == me
+                         and (r.get("offer") or {}).get("price") is not None]
+                if _prev:
+                    target = _prev[-1]
+
+    posterior_fired = table_fired
+    if (not table_fired and state.get(f"{other}_value") is None
             and runtime_flags.enabled("GLEE_NEGO_POSTERIOR")):
         first_over_b = None
         pb = pricing.infer_base(my_value)
@@ -512,6 +563,12 @@ def decide(game: dict, cfg) -> dict:
                 return {"decision": "AcceptOffer", "_plan": p}
             # below threshold: fall through to counter via the offer path
             p["table_accept_below"] = True
+
+    if runtime_flags.enabled("GLEE_NEGO_STALL_POLICY"):
+        _sp = _their_stall_price(state, state.get("current_player") or "")
+        if (_sp is not None and _profitable(offer_price, p)
+                and abs(offer_price - _sp) <= 0.01 * max(abs(_sp), 1.0)):
+            return {"decision": "AcceptOffer", "_plan": p}
 
     if p["continuation_accept"]:
         # Accept when the offer beats what rejecting is worth. NOT when it beats
