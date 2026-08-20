@@ -45,12 +45,13 @@ FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS")
 #: The flag set composite ran live before today's changes -- the natural control.
 DEFAULT_CONTROL = {"GLEE_NEGO_BOUND_AS_FLOOR": "1",
                    "GLEE_BARG_OPPONENT_FLOOR": "0.39",
-                   "GLEE_BARG_OFFER_FLOOR": "0.55",
+                   "GLEE_BARG_OFFER_FLOOR": "0.57",
                    "GLEE_NEGO_MIN_MARGIN": "0.02",
                    "GLEE_NEGO_CURVE_PRICING": "1",
                    "GLEE_NEGO_MARGIN_WEIGHT": "0.25",
                    "GLEE_NEGO_CONTINUATION_ACCEPT": "1",
-                   "GLEE_NEGO_HORIZON_V2": "1"}
+                   "GLEE_NEGO_HORIZON_V2": "1",
+                   "GLEE_OPP_EXPLOIT": "1"}
 
 
 def _set_flags(flags: dict) -> None:
@@ -103,9 +104,11 @@ def _play_arm(field, draws, flags):
         result = play(SimConfig(family, dict(params)), s1, s2, grng)
         mine = result.payoff(seat)
         scale = params.get("money_to_divide") or params.get("player_1_value") or 1.0
+        from sim.percentile import percentile as _pct
         rows.append({"family": family, "mine": mine, "norm": mine / scale,
                      "closed": result.outcome == "agreement",
-                     "zero": mine <= 0.0, "opponent": opponent.name})
+                     "zero": mine <= 0.0, "opponent": opponent.name,
+                     "pct": _pct(family, params, seat, mine)})
     return rows
 
 
@@ -156,8 +159,11 @@ def main() -> int:
         cnd = [b for _, b in pairs]
         d_norm = [b["norm"] - a["norm"] for a, b in pairs]
         d_close = [b["closed"] - a["closed"] for a, b in pairs]
+        d_pct = [b["pct"] - a["pct"] for a, b in pairs
+                 if a.get("pct") is not None and b.get("pct") is not None]
         ci_n = _boot_ci(d_norm)
         ci_c = _boot_ci(d_close)
+        ci_p = _boot_ci(d_pct)
         verdict = ("cannot distinguish" if ci_n and ci_n[0] <= 0.0 <= ci_n[1]
                    else ("CANDIDATE BETTER" if sum(d_norm) > 0 else "CANDIDATE WORSE"))
         verdicts.append((family, verdict))
@@ -169,6 +175,10 @@ def main() -> int:
               f"{mean(cnd,'zero'):>11.1%}")
         print(f"  payoff delta {sum(d_norm)/n:+.4f}  95% CI [{ci_n[0]:+.4f}, {ci_n[1]:+.4f}]")
         print(f"  close  delta {sum(d_close)/n:+.3f}   95% CI [{ci_c[0]:+.3f}, {ci_c[1]:+.3f}]")
+        if d_pct:
+            print(f"  EST. PERCENTILE delta {sum(d_pct)/len(d_pct):+.4f}  "
+                  f"95% CI [{ci_p[0]:+.4f}, {ci_p[1]:+.4f}]  "
+                  f"(n={len(d_pct)} scoreable — the rating-relevant number)")
         print(f"  -> {verdict}\n")
     return 0
 
