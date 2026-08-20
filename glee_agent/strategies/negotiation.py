@@ -388,6 +388,52 @@ def plan(game: dict, cfg) -> dict:
                     if _prev:
                         target = _prev[-1]
 
+    # Reciprocal-concession damping. The Boulware walk is paced by the CLOCK
+    # alone, so it keeps conceding even while the opponent is closing the gap
+    # from their side -- paying twice for the same convergence. The percentile
+    # decomposition put half of negotiation's drag on wide-surplus cells where
+    # our closes rank ~51st among the field's, and the paired transcripts show
+    # the shape exactly: schedule-priced closes bleed rating, anchor-and-hold
+    # closes land at the field's q75. While their counters are walking toward
+    # us at >= RECIP_DAMP of the remaining gap per step, we repeat our last
+    # price instead of meeting them; the schedule resumes the moment they
+    # stall (which the stall policy above already prices) or the endgame
+    # nears. OFF by default.
+    recip_damped = False
+    _damp = runtime_flags.as_float("GLEE_NEGO_RECIP_DAMP", 0.0)
+    if _damp > 0 and not table_fired and rounds_left > 1:
+        _ours_last = _our_last_price(state, me)
+        # Opponent price sequence with the ECHO collapsed: a counteroffer is
+        # recorded again as the next round's opening offer at the identical
+        # price -- one utterance, two rows. Comparing a price to its own echo
+        # reads every mover as a staller (measured: 0 damp firings in 2,858
+        # arena games while buyers walked 9,750->10,528->10,917). A genuine
+        # staller still shows as repeated COUNTERS, which the collapse keeps.
+        _seq: list[float] = []
+        _prev_key = None
+        for _entry in state.get("history") or []:
+            if not isinstance(_entry, dict):
+                continue
+            for _k in ("offer", "counteroffer"):
+                _off = _entry.get(_k)
+                if (isinstance(_off, dict) and _off.get("from_player")
+                        not in (None, me) and _off.get("price") is not None):
+                    _pr = _num(_off["price"])
+                    if (_k == "offer" and _prev_key == "counteroffer"
+                            and _seq and _pr == _seq[-1]):
+                        _prev_key = _k
+                        continue               # echo of the same utterance
+                    _seq.append(_pr)
+                    _prev_key = _k
+        if _ours_last is not None and len(_seq) >= 2:
+            _a, _b = _seq[-2], _seq[-1]
+            _move = (_b - _a) if i_am_seller else (_a - _b)
+            _gap = abs(_ours_last - _b)
+            if _gap > 1e-9 and _move >= _damp * _gap:
+                target = max(target, _ours_last) if i_am_seller \
+                    else min(target, _ours_last)
+                recip_damped = True
+
     posterior_fired = table_fired
     if (not table_fired and state.get(f"{other}_value") is None
             and runtime_flags.enabled("GLEE_NEGO_POSTERIOR")):
@@ -441,6 +487,7 @@ def plan(game: dict, cfg) -> dict:
         "capped": capped,
         "elapsed": elapsed,
         "opponent_bound": bound,
+        "recip_damped": recip_damped,
     }
 
 
