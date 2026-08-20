@@ -13,3 +13,4 @@ logs/
 *.lock
 *.pids
 nohup.out
+glee_test1_negotiation_transcripts.txt

@@ -606,6 +606,33 @@ def decide(game: dict, cfg) -> dict:
     p["continuation_evidence"] = evidence
     p["continuation_accept"] = _continuation_accept_enabled()
 
+    # Span-floor acceptance veto. The 500-game transcript export scored 77
+    # complete-info closes below 40% of the visible ZOPA span at -5.07 rating
+    # EACH (closes at >=55% averaged +4.52), and 53 of them were our own
+    # AcceptOffer with rounds to spare: continuation value underestimates what
+    # holding is worth, so "beats continuation" accepts lowballs the field
+    # prices at ~half the span. While the ZOPA is visible and >=2 rounds
+    # remain, refuse anything below this share of the span and counter on the
+    # profitable side instead. Final-round any-positive stays untouched above.
+    # OFF by default.
+    _span_floor = runtime_flags.as_float("GLEE_NEGO_ACCEPT_SPAN", 0.0)
+    if _span_floor > 0 and p.get("zopa") and p["rounds_left"] >= 2:
+        _zlo, _zhi = p["zopa"]
+        _span = _zhi - _zlo
+        if _span > 0:
+            _share = ((offer_price - _zlo) / _span) if p["i_am_seller"] \
+                else ((_zhi - offer_price) / _span)
+            p["span_share"] = round(_share, 3)
+            if _share < _span_floor:
+                p["span_veto"] = True
+                counter = p["target"]
+                if _profitable(offer_price, p):
+                    counter = max(offer_price, counter) if p["i_am_seller"] \
+                        else min(offer_price, counter)
+                counter = _maybe_split(state, p, counter)
+                return {"decision": "RejectOffer",
+                        "product_price": round(counter, 2), "_plan": p}
+
     # Learned-table acceptance: in hidden games the evolved threshold decides
     # mid-game acceptance when present; final-round any-positive stays above.
     if (p.get("their_value") is None
