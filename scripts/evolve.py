@@ -41,17 +41,16 @@ GAMES = 2400
 
 
 def fitness(field, draws, rows_ctl, flags):
+    """Mean ESTIMATED PERCENTILE delta vs the parent -- the rating currency.
+
+    The first run's payoff/zero blend faithfully optimised the wrong thing (its
+    winner cut zeros, lost payoff, and the percentile scorer showed the trade
+    was net-negative for rating). Fitness is now the percentile estimate itself.
+    """
     rows = _play_arm(field, draws, flags)
-    score = 0.0
-    for fam, wz in (("bargaining", 0.0), ("negotiation", 2.0)):
-        pairs = [(a, b) for a, b in zip(rows_ctl, rows) if a["family"] == fam]
-        if not pairs:
-            continue
-        n = len(pairs)
-        d_pay = sum(b["norm"] - a["norm"] for a, b in pairs) / n
-        d_zero = sum(b["zero"] - a["zero"] for a, b in pairs) / n
-        score += d_pay - wz * d_zero
-    return score
+    d = [b["pct"] - a["pct"] for a, b in zip(rows_ctl, rows)
+         if a.get("pct") is not None and b.get("pct") is not None]
+    return sum(d) / len(d) if d else 0.0
 
 
 def main() -> int:

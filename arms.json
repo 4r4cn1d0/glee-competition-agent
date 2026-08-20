@@ -3,9 +3,6 @@
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
     "GLEE_BARG_OPPONENT_FLOOR": "0.39"
   },
-  "conceder": {
-    "GLEE_NEGO_CONTINUATION_ACCEPT": "1"
-  },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
     "GLEE_NEGO_CONTINUATION_ACCEPT": "1",

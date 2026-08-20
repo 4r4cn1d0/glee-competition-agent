@@ -3,9 +3,11 @@
   "disabled": [],
   "cycle_now": [],
   "policy": {
-    "randomized": "composite"
+    "randomized": "composite",
+    "conceder": "composite"
   },
   "families": {
-    "randomized": "negotiation"
+    "randomized": "negotiation",
+    "conceder": "persuasion"
   }
 }
