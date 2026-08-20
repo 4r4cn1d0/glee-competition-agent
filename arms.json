@@ -36,5 +36,9 @@
     "GLEE_NEGO_CONTINUATION_ACCEPT": "1",
     "GLEE_NEGO_HORIZON_V2": "1",
     "GLEE_OPP_EXPLOIT": "1"
+  },
+  "conceder": {
+    "GLEE_PERS_LIE_SHADING": "0.3",
+    "GLEE_PERS_HONEST_ROUNDS": "2"
   }
 }
