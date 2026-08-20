@@ -237,7 +237,17 @@ def plan(game: dict, cfg) -> dict:
     # Live data: 55% of closed negotiations landed on exactly 0.00, and where a
     # zone of agreement existed we captured a median 3.5% of it. So the
     # concession curve stops short, keeping a slice of whatever spread we opened.
-    margin = min(max(cfg.nego_min_margin, 0.0), 0.9)
+    # Live-tunable, and the single most percentile-sensitive number in this
+    # family. 51% of negotiation outcomes field-wide are exactly $0, and scoring
+    # is percentile-per-config: ANY positive close beats that whole pile. Live
+    # comparison on the same configs (single-round seller seat): the field asks
+    # 1.24x its value and closes 42.7%; margin 0.12 under a 4.0x anchor made us
+    # ask 1.36x and close 33.7% -- more money per close, fewer closes, and the
+    # scoring pays frequency. This margin sets the concession ENDPOINT (and, via
+    # elapsed=1, the whole ask in a single-round game), so lowering it trades
+    # margin for close rate, which is the direction the percentile pays.
+    margin = runtime_flags.as_float("GLEE_NEGO_MIN_MARGIN", cfg.nego_min_margin)
+    margin = min(max(margin, 0.0), 0.9)
     # The margin used to be a fraction of the ANCHOR SPREAD, so a theatrical 4x
     # opening produced a terminal reservation of 1.36x our own value — outside
     # the zone of agreement in three of the six strict-ZOPA type pairs, i.e. a
