@@ -19,6 +19,7 @@ Two ideas carry the strategy:
 from __future__ import annotations
 
 from .. import pricing, runtime_flags
+from .. import table_policy
 
 from ..actions import _num, is_final_round
 
@@ -499,6 +500,18 @@ def decide(game: dict, cfg) -> dict:
     p["continuation_value"] = v_cont
     p["continuation_evidence"] = evidence
     p["continuation_accept"] = _continuation_accept_enabled()
+
+    # Learned-table acceptance: in hidden games the evolved threshold decides
+    # mid-game acceptance when present; final-round any-positive stays above.
+    if (p.get("their_value") is None
+            and runtime_flags.enabled("GLEE_NEGO_TABLE")):
+        t_thr = table_policy.accept_threshold(
+            p["my_value"], p["i_am_seller"], p.get("elapsed", 0.5))
+        if t_thr is not None:
+            if _profitable(offer_price, p) and surplus_now >= t_thr:
+                return {"decision": "AcceptOffer", "_plan": p}
+            # below threshold: fall through to counter via the offer path
+            p["table_accept_below"] = True
 
     if p["continuation_accept"]:
         # Accept when the offer beats what rejecting is worth. NOT when it beats
