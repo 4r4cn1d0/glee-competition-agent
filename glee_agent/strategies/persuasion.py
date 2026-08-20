@@ -102,6 +102,35 @@ def seller_plan(game: dict, cfg) -> dict:
     shading = runtime_flags.as_float("GLEE_PERS_LIE_SHADING", cfg.pers_lie_shading)
     honest_rounds = int(runtime_flags.as_float("GLEE_PERS_HONEST_ROUNDS",
                                                cfg.pers_honest_rounds))
+    # DP policy (models/pers_policy_dp_v1.json): exact backward-induction
+    # recommendation for low-quality rounds, keyed on (mode, prior, v/price
+    # ratio, round, lies-the-buyer-caught). Gated; falls through to the
+    # shading heuristic when off, unkeyed, or the file is absent.
+    if runtime_flags.enabled("GLEE_PERS_DP"):
+        dp = _dp_policy()
+        if dp is not None:
+            pb_ = "lo" if p < 0.45 else ("mid" if p < 0.65 else "hi")
+            rb_ = min((1.2, 1.25, 2.0, 3.0, 4.0),
+                      key=lambda g_: abs(g_ - (v / price if price else 0)))
+            cell = (dp.get("cells") or {}).get(f"{mode_of(state)}|{pb_}|r{rb_}")
+            if cell:
+                lies_caught = 0
+                for _r in state.get("history") or []:
+                    if (_r.get("bought") and str(_r.get("quality")).lower() == "low"
+                            and _looks_positive(_r.get("seller_message"))):
+                        lies_caught += 1
+                lb_ = "0" if lies_caught == 0 else ("1" if lies_caught == 1 else "2+")
+                idx = min(max(round_no - 1, 0), len(cell["policy"][lb_]) - 1)
+                # high quality already returned above -- this hook only ever
+                # decides the LOW-quality recommendation
+                lie_now = bool(cell["policy"][lb_][idx])
+                return {"recommend": lie_now,
+                        "reason": "dp: exact policy on low quality",
+                        "round": round_no, "total_rounds": total,
+                        "buy_rate": buy_rate, "knows_values": True,
+                        "lie_rate": 1.0 if lie_now else 0.0,
+                        "quality_is_high": False, "dp": True}
+
     q_star = optimal_lie_rate(p, v, u, price) * shading
     # Stay honest through the opening rounds: the buyer learns quality only on
     # rounds they buy, so an early clean record is what makes later ones sell.
@@ -223,3 +252,38 @@ def decide(game: dict, cfg) -> dict:
 
     p = buyer_plan(game, cfg)
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
+
+_DP_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+
+
+def mode_of(state) -> str:
+    return state.get("seller_message_type") or "text"
+
+
+def _looks_positive(msg) -> bool:
+    s = str(msg or "").strip().lower()
+    return not ("hold off" in s or s in ("no", "false") or "not recommend" in s
+                or "skip" in s)
+
+
+def _dp_policy():
+    import os as _os, time as _time, json as _json
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "models", "pers_policy_dp_v1.json")
+    now = _time.monotonic()
+    if now - _DP_STATE["checked"] < 10.0:
+        return _DP_STATE["doc"]
+    _DP_STATE["checked"] = now
+    try:
+        mtime = _os.stat(path).st_mtime_ns
+    except OSError:
+        return _DP_STATE["doc"]
+    if mtime == _DP_STATE["mtime"]:
+        return _DP_STATE["doc"]
+    try:
+        doc = _json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return _DP_STATE["doc"]
+    if isinstance(doc, dict) and doc.get("cells"):
+        _DP_STATE.update(mtime=mtime, doc=doc)
+    return _DP_STATE["doc"]
