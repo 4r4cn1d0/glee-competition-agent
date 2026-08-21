@@ -2,7 +2,8 @@
   "hardliner": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
     "GLEE_BARG_OPPONENT_FLOOR": "0.39",
-    "GLEE_PERS_PARSE_V2": "1"
+    "GLEE_PERS_PARSE_V2": "1",
+    "GLEE_NEGO_ZOPA_AB": "0.10"
   },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -56,7 +57,8 @@
     "GLEE_BARG_STONEWALL_MIN": "0",
     "GLEE_NEGO_FINAL_OPTION": "0.6",
     "GLEE_NEGO_SURPLUS_PROBE": "0",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_NEGO_ZOPA_AB": "0.10"
   },
   "conceder": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -86,7 +88,8 @@
     "GLEE_BARG_ECON_STALL": "0",
     "GLEE_BARG_BOB_OFFER": "1",
     "GLEE_NEGO_SURPLUS_PROBE": "0",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_NEGO_ZOPA_AB": "0.10"
   },
   "champion": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -113,6 +116,7 @@
     "GLEE_NEGO_ULTIMATUM_SHARE": "0.80",
     "GLEE_NEGO_SPAN_INVARIANT": "0.40",
     "GLEE_OPP_EXPLOIT": "1",
-    "GLEE_OPP_PAD": "0.16"
+    "GLEE_OPP_PAD": "0.16",
+    "GLEE_NEGO_ZOPA_AB": "0.10"
   }
 }
