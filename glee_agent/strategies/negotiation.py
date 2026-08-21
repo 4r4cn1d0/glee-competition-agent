@@ -399,7 +399,17 @@ def plan(game: dict, cfg) -> dict:
     deadgame = False
     if runtime_flags.enabled("GLEE_NEGO_DEADGAME_V1") and not table_fired:
         _pb = pricing.infer_base(my_value)
-        if _pb and bound is not None and len(_their_offers(state, me)) >= 4:
+        # Own-draw gate first: only the structurally dominated draws (1.5xB
+        # seller, 0.8xB buyer -- measured zero-rates 97-100%), where the
+        # normal schedule closes essentially nothing to displace. The first
+        # arena run skipped this gate and misfired on winnable games: a weak
+        # opponent bound read "probably dead" and the ladder dumped closeable
+        # asks to near-value (-0.010/-0.007 pct, both seeds, closes UP 2pp at
+        # ruined prices).
+        _dominated = _pb is not None and (
+            (my_value >= 1.5 * _pb - 1e-9) if i_am_seller
+            else (my_value <= 0.8 * _pb + 1e-9))
+        if _dominated and bound is not None and len(_their_offers(state, me)) >= 4:
             _margin = 0.02 * _pb
             _unprof = (bound < my_value + _margin) if i_am_seller \
                 else (bound > my_value - _margin)
