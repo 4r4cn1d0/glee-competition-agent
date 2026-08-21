@@ -1,0 +1,12 @@
+{
+  "floor=0.58":        {"GLEE_BARG_OFFER_FLOOR": "0.58"},
+  "floor=0.59":        {"GLEE_BARG_OFFER_FLOOR": "0.59"},
+  "zopa=0.35":         {"GLEE_NEGO_ZOPA_SHARE": "0.35"},
+  "zopa=0.45":         {"GLEE_NEGO_ZOPA_SHARE": "0.45"},
+  "mweight=0.15":      {"GLEE_NEGO_MARGIN_WEIGHT": "0.15"},
+  "mweight=0.20":      {"GLEE_NEGO_MARGIN_WEIGHT": "0.20"},
+  "margin=0.015":      {"GLEE_NEGO_MIN_MARGIN": "0.015"},
+  "unk_delta=0.85":    {"GLEE_BARG_UNKNOWN_DELTA": "0.85"},
+  "unk_delta=0.95":    {"GLEE_BARG_UNKNOWN_DELTA": "0.95"},
+  "undisc_hz=50":      {"GLEE_BARG_UNDISCLOSED_HORIZON": "50"}
+}

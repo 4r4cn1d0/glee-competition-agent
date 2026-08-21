@@ -1,0 +1,40 @@
+{
+ "when": "2026-08-20T16:00Z",
+ "question": "why does negotiation sit at ~1790 (47th pct) on every serious slot",
+ "diagnosis": {
+  "tell": "three different flag stacks (champion/hardliner/composite) within 8 rating points -> shared core, not per-slot flags",
+  "decomposition_test1_760_games": {
+   "mean_pct": 0.479,
+   "drag_by_cell": {
+    "seller|m0.8": -7.5,
+    "seller|m1.0": -2.8,
+    "buyer|m1.5": -2.5,
+    "seller|m1.2": -2.5
+   },
+   "zero_rates_vs_field": "ours ~= field (22v19, 39v36, 19v18) -> NOT a closing problem"
+  },
+  "mechanism": "closes are cheap: seller|m0.8 median +0.122xB vs field +0.160 (q75 +0.288); buyer|m1.5 +0.188 vs field +0.290; field medians include our own cheap closes so gap understated",
+  "root_cause": "GLEE_NEGO_MARGIN_WEIGHT=0.25 over-rotates toward close frequency; in wide-surplus cells the field also closes, so percentile is decided by price among closes",
+  "live_confirmation": "1-round seller close at +0.15xB -> -2.3 rating (agreement that LOST rating); 0.8-seller anchor-and-hold close at +0.29xB -> +4.4"
+ },
+ "sweep_seed_811_3000_games": {
+  "gamma_0.40": "decision-identical to 0.25 (no bin flips)",
+  "gamma_0.55": {
+   "est_percentile_delta": 0.0027,
+   "ci": [
+    0.0003,
+    0.0051
+   ],
+   "payoff_delta": 0.0049,
+   "close_delta": -0.008
+  },
+  "gamma_0.70": "decision-identical to 0.55"
+ },
+ "status": "REJECTED: seed-2 (4272) percentile delta +0.0001 [-0.0022,+0.0025] spans zero; payoff gain real on both seeds but rating-irrelevant. gamma stays 0.25. Verification discipline held.",
+ "recip_damp_result": "REJECTED both seeds both strengths (pct deltas -0.0005..-0.0011, CIs clear NEGATIVE). First sweep silently nulled by a history-echo artifact (counteroffer re-recorded as next round's offer; movement always compared a price to its own echo) -- fixed, verified 56/550 firings, then measured genuinely worse. Clones condition their walk-up on OUR movement; freezing stalls them.",
+ "residual": "both hard-line directions (richer final bins, mid-walk holding) fail the percentile line; next hypothesis is the OPPOSITE arrow -- glide with the field early (GLEE_NEGO_BOULWARE 1.2/1.5 vs default 2.0, the code's own fitted-field note) to draw reciprocal concessions; sweep running",
+ "caveat": "arena clones are fitted per-round lookup tables; walk-up dynamics only partially represented; live trail after deploy stays mandatory",
+ "boulware_result": "REJECTED decisively both seeds (pct -0.0079..-0.0168, all CIs clear negative; worse monotonically in softness). k=2.0 stands.",
+ "acceptance_split": "no clean lever: cheap closes are our-own-asks in m0.8-seller and buyer|m1.5, but our-accepts in m1.0-seller",
+ "conclusion": "three offer-path attacks + acceptance split say the concession machinery is locally optimal vs the cloned field. Residual ~3pp gap must be attacked on arena-invisible axes: (1) negotiation message framing (framing harness so far bargaining-only; transcript-1 bleed was a messages-allowed cell), (2) opponent-mix effects beyond our control. Next build: extend framing experiment arms to negotiation offers (free, template-based)."
+}

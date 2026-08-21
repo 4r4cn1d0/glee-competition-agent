@@ -1,0 +1,7 @@
+{
+  "exploit n>=20":        {"GLEE_OPP_MIN_N": "20"},
+  "exploit n>=15":        {"GLEE_OPP_MIN_N": "15"},
+  "exploit pad=0.02":     {"GLEE_OPP_PAD": "0.02"},
+  "exploit pad=0.06":     {"GLEE_OPP_PAD": "0.06"},
+  "n>=20 + pad=0.02":     {"GLEE_OPP_MIN_N": "20", "GLEE_OPP_PAD": "0.02"}
+}

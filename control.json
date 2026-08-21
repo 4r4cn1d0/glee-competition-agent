@@ -10,7 +10,7 @@
     "conceder": "composite"
   },
   "families": {
-    "conceder": "persuasion"
+    "conceder": "bargaining,negotiation,persuasion"
   },
   "llm": {
     "conceder": "off",

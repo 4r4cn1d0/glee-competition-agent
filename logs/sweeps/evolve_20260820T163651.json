@@ -1,0 +1,200 @@
+{
+ "space": {
+  "GLEE_NEGO_MIN_MARGIN": [
+   0.005,
+   0.15,
+   0.015
+  ],
+  "GLEE_NEGO_MARGIN_WEIGHT": [
+   0.05,
+   1.5,
+   0.12
+  ],
+  "GLEE_BARG_OFFER_FLOOR": [
+   0.5,
+   0.68,
+   0.015
+  ],
+  "GLEE_NEGO_ZOPA_SHARE": [
+   0.1,
+   0.5,
+   0.05
+  ]
+ },
+ "generations": [
+  {
+   "gen": 0,
+   "seed": 492491201,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.02,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.25,
+    "GLEE_BARG_OFFER_FLOOR": 0.57,
+    "GLEE_NEGO_ZOPA_SHARE": 0.3
+   }
+  },
+  {
+   "gen": 1,
+   "seed": 670557303,
+   "improved": true,
+   "fitness_vs_parent": 0.0015,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0085,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.2223,
+    "GLEE_BARG_OFFER_FLOOR": 0.5727,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2422
+   }
+  },
+  {
+   "gen": 2,
+   "seed": 657987522,
+   "improved": true,
+   "fitness_vs_parent": 0.00031,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.005,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5765,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2642
+   }
+  },
+  {
+   "gen": 3,
+   "seed": 112984275,
+   "improved": true,
+   "fitness_vs_parent": 0.00267,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.005,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5737,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2372
+   }
+  },
+  {
+   "gen": 4,
+   "seed": 360632540,
+   "improved": true,
+   "fitness_vs_parent": 0.00061,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0234,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5761,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2624
+   }
+  },
+  {
+   "gen": 5,
+   "seed": 891963772,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0234,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5761,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2624
+   }
+  },
+  {
+   "gen": 6,
+   "seed": 830127367,
+   "improved": true,
+   "fitness_vs_parent": 0.00021,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0154,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.564,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2968
+   }
+  },
+  {
+   "gen": 7,
+   "seed": 339162437,
+   "improved": true,
+   "fitness_vs_parent": 0.00231,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0101,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.0518,
+    "GLEE_BARG_OFFER_FLOOR": 0.5772,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2599
+   }
+  },
+  {
+   "gen": 8,
+   "seed": 699071629,
+   "improved": true,
+   "fitness_vs_parent": 0.00182,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.005,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5606,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2561
+   }
+  },
+  {
+   "gen": 9,
+   "seed": 655652438,
+   "improved": true,
+   "fitness_vs_parent": 0.00078,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0215,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5679,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2513
+   }
+  },
+  {
+   "gen": 10,
+   "seed": 320041575,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0215,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5679,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2513
+   }
+  },
+  {
+   "gen": 11,
+   "seed": 271453687,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0215,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5679,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2513
+   }
+  },
+  {
+   "gen": 12,
+   "seed": 946733812,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0215,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5679,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2513
+   }
+  },
+  {
+   "gen": 13,
+   "seed": 8272156,
+   "improved": false,
+   "fitness_vs_parent": 0.0,
+   "best": {
+    "GLEE_NEGO_MIN_MARGIN": 0.0215,
+    "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+    "GLEE_BARG_OFFER_FLOOR": 0.5679,
+    "GLEE_NEGO_ZOPA_SHARE": 0.2513
+   }
+  }
+ ],
+ "final": {
+  "GLEE_NEGO_MIN_MARGIN": 0.0215,
+  "GLEE_NEGO_MARGIN_WEIGHT": 0.05,
+  "GLEE_BARG_OFFER_FLOOR": 0.5679,
+  "GLEE_NEGO_ZOPA_SHARE": 0.2513
+ }
+}
