@@ -4,7 +4,9 @@
     "GLEE_BARG_OPPONENT_FLOOR": "0.39",
     "GLEE_PERS_PARSE_V2": "1",
     "GLEE_NEGO_ZOPA_AB": "0.10",
-    "GLEE_NEGO_CLOSE_AB": "1.2"
+    "GLEE_NEGO_CLOSE_AB": "1.2",
+    "GLEE_PERS_KEEP_MSG": "1",
+    "GLEE_PERS_MSG_STYLE": "token"
   },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -60,7 +62,8 @@
     "GLEE_NEGO_SURPLUS_PROBE": "0",
     "GLEE_TRACE_GATES": "1",
     "GLEE_NEGO_ZOPA_AB": "0.10",
-    "GLEE_NEGO_CLOSE_AB": "1.2"
+    "GLEE_NEGO_CLOSE_AB": "1.2",
+    "GLEE_PERS_KEEP_MSG": "1"
   },
   "conceder": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -92,7 +95,8 @@
     "GLEE_NEGO_SURPLUS_PROBE": "0",
     "GLEE_TRACE_GATES": "1",
     "GLEE_NEGO_ZOPA_AB": "0.10",
-    "GLEE_NEGO_CLOSE_AB": "1.2"
+    "GLEE_NEGO_CLOSE_AB": "1.2",
+    "GLEE_PERS_KEEP_MSG": "1"
   },
   "champion": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -121,6 +125,7 @@
     "GLEE_OPP_EXPLOIT": "1",
     "GLEE_OPP_PAD": "0.16",
     "GLEE_NEGO_ZOPA_AB": "0.10",
-    "GLEE_NEGO_CLOSE_AB": "1.2"
+    "GLEE_NEGO_CLOSE_AB": "1.2",
+    "GLEE_PERS_KEEP_MSG": "1"
   }
 }

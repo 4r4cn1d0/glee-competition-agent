@@ -110,7 +110,30 @@ def _play(game: dict, cfg, log) -> dict:
     # GLEE_NEGO_MSG_ARMS is set, so with the flag unset this condition is
     # exactly the one that was here before.
     armed = isinstance(plan, dict) and bool(plan.get("msg_arm"))
-    if _wants_message(game) and game.get("game_family") in llm_fams and not armed:
+    # In persuasion TEXT mode the message IS the recommendation -- it is the
+    # whole action, not decoration on a number. Recomposing over it replaced the
+    # strategy's chosen wording with a generic template and made
+    # GLEE_PERS_MSG_STYLE completely inert: the flag was armed on three agents
+    # and 0% of their messages were the token form, 100% were prose.
+    # That is expensive. persuasion.py's own note records a 20pp conversion gap
+    # between a binary "yes" (71.5% buy at high prior) and the prose template
+    # (51.2%), and the live cells agree -- at p=0.8 we push in 96% of text
+    # rounds and 97% of binary rounds, yet sell 65% against 74%. The seller
+    # p=0.8 text cell scores at the 0.366 percentile against 0.537 for the same
+    # configuration in binary, which is ~926 rating-equivalent in that cell.
+    # Same intent, different tokens, and the buyers are parsers.
+    #
+    # Gated so the fix itself is measurable rather than assumed: with
+    # GLEE_PERS_KEEP_MSG unset, behaviour is exactly what it was.
+    from . import runtime_flags as _rf
+    pers_final = (game.get("game_family") == "persuasion"
+                  and (game.get("game_state") or {}).get("seller_message_type") == "text"
+                  and isinstance(action, dict)
+                  and isinstance(action.get("message"), str)
+                  and action["message"].strip()
+                  and _rf.enabled("GLEE_PERS_KEEP_MSG"))
+    if _wants_message(game) and game.get("game_family") in llm_fams \
+            and not armed and not pers_final:
         message = None
         if cfg.llm_mode in ("messages", "full"):
             message = llm.write_message(game, action, plan, cfg)
