@@ -132,8 +132,11 @@ DRAIN_SECONDS = 300
 #:     stall.
 #: Cost is one request per agent per HEALTH_EVERY seconds, which has to fit
 #: inside the 60/min per-key budget the agent's own polling already shares.
+#: NOTE the name: STALL_SECONDS above (100) is a DIFFERENT threshold, used by
+#: stalled_games() for games we have not moved in. Reusing that name here
+#: silently rebound it to 300 and changed timeout detection -- hence IDLE_*.
 STALL_GRACE = 420.0      # ignore a process younger than this
-STALL_SECONDS = 300.0    # active_games must read 0 for this long
+IDLE_SECONDS = 300.0     # active_games must read 0 for this long
 HEALTH_EVERY = 120.0     # seconds between health probes per agent
 
 #: Each agent is launched with a bounded --max-time and then relaunched. This is
@@ -332,11 +335,19 @@ class Agent:
         An agent left queued keeps getting matched after it stops polling, and
         loses every one of those games to the turn timeout.
         """
-        if self.alive:
-            try:
-                self.proc.send_signal(signal.SIGINT)
-            except ProcessLookupError:
-                pass
+        if not self.alive:
+            return
+        # An ADOPTED agent has no Popen handle -- only adopted_pid -- so
+        # self.proc is None and this raised AttributeError, which crashed the
+        # supervisor mid-shutdown on 2026-08-22 and left three agents dead with
+        # nothing to relaunch them. Signal by PID, which works for both.
+        pid = self.pid
+        if pid is None:
+            return
+        try:
+            os.kill(pid, signal.SIGINT)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
 
 
 
@@ -503,7 +514,7 @@ def main() -> int:
                     else:
                         if agent.zero_since == 0.0:
                             agent.zero_since = now
-                        elif now - agent.zero_since >= STALL_SECONDS:
+                        elif now - agent.zero_since >= IDLE_SECONDS:
                             pid = agent.pid
                             agent.stall_kills += 1
                             print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} STALLED: "
