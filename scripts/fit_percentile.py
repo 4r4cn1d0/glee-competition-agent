@@ -52,6 +52,15 @@ def nego_cell(base, mult, role, gs):
         bool(gs.get("horizon_known")), bool(gs.get("complete_information"))))
 
 
+def pers_cell(mode, p, ratio, role, rounds):
+    # ROLE is part of the cell for the same reason it is in negotiation: the
+    # two seats' payoff distributions share nothing. Persuasion was the last
+    # family without a fitted CDF, which is why its offline referees kept
+    # failing calibration -- there was no true currency to check them against.
+    return "|".join(str(x) for x in (
+        "persuasion", mode, round(p, 2), ratio, role, rounds))
+
+
 def main() -> int:
     cells = defaultdict(list)
     games = 0
@@ -65,6 +74,24 @@ def main() -> int:
         them = "player_2" if me == "player_1" else "player_1"
         mine, theirs = r.get(f"{me}_payoff"), r.get(f"{them}_payoff")
         games += 1
+        if fam == "persuasion":
+            price = gs.get("product_price")
+            p = gs.get("p")
+            v = gs.get("v")
+            rounds = gs.get("total_rounds") or r.get("rounds_total") or 20
+            if not price or p is None or not v:
+                continue
+            mode = gs.get("seller_message_type") or "text"
+            ratio = min((1.2, 1.25, 2.0, 3.0, 4.0),
+                        key=lambda g_: abs(g_ - v / price))
+            # player_1 is the seller in every observed persuasion game
+            for player, val in ((me, mine), (them, theirs)):
+                if not isinstance(val, (int, float)):
+                    continue
+                role = "seller" if player == "player_1" else "buyer"
+                cells[pers_cell(mode, p, ratio, role, rounds)].append(
+                    round(val / (price * rounds), 4))
+            continue
         if fam == "bargaining":
             money = gs.get("money_to_divide")
             if not money:

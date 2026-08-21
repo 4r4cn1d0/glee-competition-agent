@@ -51,6 +51,20 @@ def percentile(family: str, params: dict, seat: str, payoff: float):
             params.get("max_rounds"),
             bool(params.get("horizon_known")), bool(params.get("complete_information"))))
         norm = payoff / base
+    elif family == "persuasion":
+        price = params.get("product_price")
+        p = params.get("p")
+        v = params.get("v")
+        rounds = params.get("total_rounds") or 20
+        if not price or p is None or not v:
+            return None
+        mode = params.get("seller_message_type") or "text"
+        ratio = min((1.2, 1.25, 2.0, 3.0, 4.0),
+                    key=lambda g_: abs(g_ - v / price))
+        role = "seller" if seat == "player_1" else "buyer"
+        key = "|".join(str(x) for x in (
+            "persuasion", mode, round(p, 2), ratio, role, rounds))
+        norm = payoff / (price * rounds)
     else:
         return None
     samples = cells.get(key)
