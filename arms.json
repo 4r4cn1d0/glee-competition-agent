@@ -1,7 +1,8 @@
 {
   "hardliner": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
-    "GLEE_BARG_OPPONENT_FLOOR": "0.39"
+    "GLEE_BARG_OPPONENT_FLOOR": "0.39",
+    "GLEE_PERS_PARSE_V2": "1"
   },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",

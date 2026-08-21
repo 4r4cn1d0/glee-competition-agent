@@ -33,8 +33,8 @@ import re
 # Phrases that decline the sale. Weight reflects how unambiguous each is.
 _NEGATIVE = (
     (3.0, ("do not buy", "don't buy", "dont buy", "do not recommend", "don't recommend",
-           "not recommending", "cannot recommend", "can't recommend", "would not recommend",
-           "wouldn't recommend")),
+           "not recommending", "cannot recommend", "can't recommend",
+           "would not recommend", "wouldn't recommend")),
     (2.5, ("hold off", "hold out for", "pass on this", "pass on it", "i'd pass", "i would pass",
            "skip it", "skip this", "skip a sale", "sit this round out", "sit this one out",
            "not this round", "not this one", "wait for the next", "wait for a better",
@@ -87,7 +87,7 @@ def _negated(text: str, at: int) -> bool:
 
 def _score(text: str) -> float:
     total = 0.0
-    for weight, phrases in _NEGATIVE:
+    for weight, phrases in (_NEGATIVE + (_NEGATIVE_V2 if _parse_v2() else ())):
         for phrase in phrases:
             if phrase in text:
                 total -= weight
@@ -102,6 +102,26 @@ def _score(text: str) -> float:
                     break
                 at = text.find(phrase, at + 1)
     return total
+
+
+#: Decline phrases the original table missed. Measured on 20h of live logs:
+#: 373 purchases of messages that explicitly declined the sale, 373 of them low
+#: quality and 0 high -- "not recommending" was listed but "not recommended"
+#: was not, so the bare past participle scored neutral, resolved to None, and
+#: the buyer's None-means-yes fallback bought it. Gated so the fix can be
+#: staged on one agent while the others stay on the old parser as controls.
+_NEGATIVE_V2 = (
+    (3.0, ("not recommended", "not recommend", "recommend skipping",
+           "recommend passing", "recommend against", "advise you to skip",
+           "advising you to skip", "not asking you to buy")),
+    (2.5, ("i\'d skip", "i would skip", "save your cash", "save your money",
+           "not worth what i am asking", "not worth what i\'m asking")),
+)
+
+
+def _parse_v2() -> bool:
+    from . import runtime_flags
+    return runtime_flags.enabled("GLEE_PERS_PARSE_V2")
 
 
 def reads_as_recommendation(message: str) -> bool | None:
