@@ -220,6 +220,41 @@ def _opponent_bound(state: dict, i_am_seller: bool) -> float | None:
     return bound
 
 
+def _zopa_share(gid, default: float) -> float:
+    """The share of the visible zone we LEAVE the opponent, A/B-aware.
+
+    Normally this is just GLEE_NEGO_ZOPA_SHARE. But this parameter is the one
+    lever measured large enough to matter for negotiation (+0.0121 in the arena)
+    AND the one the arena cannot be trusted on: sim/field_data.py bins nego
+    responses on _price_bin (0.1 of base) when the move is often smaller than one
+    bin, consults a survivorship-selected value-keyed table first, and falls back
+    at field_data.py:343 to "profitable -> AcceptOffer", which GRANTS any greedy
+    ask it has never seen. So it has to be settled on live play instead.
+
+    GLEE_NEGO_ZOPA_AB=<value> runs that experiment: each GAME is assigned by a
+    hash of its id to control (`default`) or to the candidate <value>. Assignment
+    is per GAME, not per turn, so a game is never half in each arm, and it is a
+    pure function of the game id, so scripts/live_percentile.py can recover the
+    arm afterwards without us logging anything that could drift.
+
+    Deliberately unlike the surplus probe this replaces: that one assigned inside
+    plan() before the offer/decision branch and overwrote p["target"], which
+    negotiation.py:1046 also compares against INCOMING offers -- so the treatment
+    leaked into our accept threshold and the experiment could not identify
+    anything. Here the assignment changes only this one parameter, at every site
+    that reads it, exactly as shipping the flag would.
+    """
+    ab = runtime_flags.as_float("GLEE_NEGO_ZOPA_AB", 0.0)
+    if ab <= 0.0:
+        return runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", default)
+    gid = str(gid or "")
+    if not gid:
+        return runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", default)
+    import hashlib as _h
+    bit = int(_h.sha256(("zopa_ab|" + gid).encode()).hexdigest(), 16) & 1
+    return ab if bit else default
+
+
 def plan(game: dict, cfg) -> dict:
     state = game["game_state"]
     me = state.get("current_player") or game["your_player"]
@@ -322,7 +357,7 @@ def plan(game: dict, cfg) -> dict:
     #    below the harvest zone. Floor the no-rational-deal seller's ask at
     #    1.15x value; the ask costs nothing (the alternative was 0 anyway).
     if runtime_flags.enabled("GLEE_NEGO_ENDGAME_V3"):
-        share_iv = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", cfg.nego_zopa_share)
+        share_iv = _zopa_share(game.get("game_id"), cfg.nego_zopa_share)
         share_iv = min(max(share_iv, 0.0), 0.5)
         if zopa_lo is not None:
             span_iv = zopa_hi - zopa_lo
@@ -349,7 +384,7 @@ def plan(game: dict, cfg) -> dict:
     # economically a no-deal. Leave them at least nego_zopa_share of the span.
     if zopa_lo is not None:
         span = zopa_hi - zopa_lo
-        share = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", cfg.nego_zopa_share)
+        share = _zopa_share(game.get("game_id"), cfg.nego_zopa_share)
         give = min(max(share, 0.0), 0.5) * span
         if i_am_seller:
             target = min(max(target, zopa_lo), zopa_hi - give)
@@ -665,6 +700,10 @@ def plan(game: dict, cfg) -> dict:
             target = curve_ask
 
     out = {
+        # Carried so _final_option_value() can resolve the SAME A/B arm this
+        # game was assigned; without it that site silently stayed on the control
+        # value and the two arms disagreed inside one game.
+        "game_id": game.get("game_id"),
         "role": role,
         "i_am_seller": i_am_seller,
         "my_value": my_value,
@@ -1096,7 +1135,7 @@ def _final_option_value(state: dict, p: dict, weight: float) -> float | None:
         span = hi - lo
         if span <= 0:
             return None
-        share = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", 0.2)
+        share = _zopa_share(p.get("game_id"), 0.2)
         give = min(max(share, 0.0), 0.5) * span
         ask = (hi - give) if i_am_seller else (lo + give)
         surplus = (ask - my_value) if i_am_seller else (my_value - ask)
