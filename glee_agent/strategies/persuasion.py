@@ -107,12 +107,31 @@ def seller_plan(game: dict, cfg) -> dict:
     # ratio, round, lies-the-buyer-caught). Gated; falls through to the
     # shading heuristic when off, unkeyed, or the file is absent.
     if runtime_flags.enabled("GLEE_PERS_DP"):
-        dp = _dp_policy()
+        # v2 dispatch: when the opponent's NAME maps to a fitted buyer
+        # archetype, plan against that archetype's own policy -- the pooled
+        # policy plans against an average buyer the clustering shows is a
+        # fiction (16/33 named buyers keep buying at ~0.92 after 2+ caught
+        # lies; a skeptic cluster drops to ~0.57). Hidden opponents, unknown
+        # names, and thin archetype cells all fall through to the pooled
+        # cell, which is v1 verbatim.
+        dp = _dp_policy_v2() if runtime_flags.enabled("GLEE_PERS_DP_ARCH") else None
+        arch_used = False
+        if dp is None:
+            dp = _dp_policy()
         if dp is not None:
             pb_ = "lo" if p < 0.45 else ("mid" if p < 0.65 else "hi")
             rb_ = min((1.2, 1.25, 2.0, 3.0, 4.0),
                       key=lambda g_: abs(g_ - (v / price if price else 0)))
-            cell = (dp.get("cells") or {}).get(f"{mode_of(state)}|{pb_}|r{rb_}")
+            cell = None
+            opp_name = (game.get("opponent") or {}).get("name")
+            if opp_name is not None:
+                k_ = (dp.get("names") or {}).get(str(opp_name))
+                if k_ is not None:
+                    cell = (dp.get("cells") or {}).get(
+                        f"a{k_}|{mode_of(state)}|{pb_}|r{rb_}")
+                    arch_used = cell is not None
+            if cell is None:
+                cell = (dp.get("cells") or {}).get(f"{mode_of(state)}|{pb_}|r{rb_}")
             if cell:
                 lies_caught = 0
                 for _r in state.get("history") or []:
@@ -129,7 +148,8 @@ def seller_plan(game: dict, cfg) -> dict:
                         "round": round_no, "total_rounds": total,
                         "buy_rate": buy_rate, "knows_values": True,
                         "lie_rate": 1.0 if lie_now else 0.0,
-                        "quality_is_high": False, "dp": True}
+                        "quality_is_high": False, "dp": True,
+                        "dp_arch": arch_used}
 
     q_star = optimal_lie_rate(p, v, u, price) * shading
     # Stay honest through the opening rounds: the buyer learns quality only on
@@ -430,6 +450,30 @@ def decide(game: dict, cfg) -> dict:
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
 _DP_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+_DP2_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+
+
+def _dp_policy_v2():
+    import os as _os, time as _time, json as _json
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "models", "pers_policy_dp_v2.json")
+    now = _time.monotonic()
+    if now - _DP2_STATE["checked"] < 10.0:
+        return _DP2_STATE["doc"]
+    _DP2_STATE["checked"] = now
+    try:
+        mtime = _os.stat(path).st_mtime_ns
+    except OSError:
+        return _DP2_STATE["doc"]
+    if mtime == _DP2_STATE["mtime"]:
+        return _DP2_STATE["doc"]
+    try:
+        doc = _json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return _DP2_STATE["doc"]
+    if isinstance(doc, dict) and doc.get("cells"):
+        _DP2_STATE.update(mtime=mtime, doc=doc)
+    return _DP2_STATE["doc"]
 
 
 def mode_of(state) -> str:
