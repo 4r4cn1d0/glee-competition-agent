@@ -255,6 +255,50 @@ def _zopa_share(gid, default: float) -> float:
     return ab if bit else default
 
 
+def _close_harder(game: dict, i_am_seller: bool, my_value, complete: bool) -> bool:
+    """Is this a hidden game we should be PUSHING to close, and is it in the arm?
+
+    Codex's decomposition of the remaining negotiation prize (deal rates in
+    .ai/FINDINGS.md against the grid's feasibility ceiling):
+        complete-info games we fail to close   0.02236 of all games = 28%
+        HIDDEN-info games we fail to close     0.05745 of all games = 72%
+    So nearly three quarters of what is left is hidden-information closure, and
+    almost all of THAT sits in two cells. By our own factor, hidden info:
+        0.8  we close 64.5% against a 75% ceiling   gap 10.5pp
+        1.0  we close 41.4% against a 50% ceiling   gap  8.6pp
+        1.2  we close 23.3% against a 25% ceiling   gap  1.7pp
+        1.5  we close  2.6% against a  0% ceiling   (harvest, not closure)
+
+    The point is that we ALREADY KNOW which cell we are in at round one. Our own
+    value is observed, the factor grid is {0.8,1.0,1.2,1.5}, and in hidden games
+    the two factors are drawn independently and uniformly -- so our own factor
+    alone fixes P(a deal exists): 75/50/25/0%. Today we play every hidden game
+    identically and spend the same caution on a game that is 75% likely to be
+    winnable as on one that is provably dead.
+
+    This marks the games worth pushing: hidden information, and our own draw on
+    the favourable side (seller at or below 1.0x base, buyer at or above 1.2x).
+    Assignment is per GAME by a hash of its id, the same scheme as
+    GLEE_NEGO_ZOPA_AB, so scripts/live_percentile.py can recover the arm without
+    anything being logged that could drift.
+    """
+    ab = runtime_flags.as_float("GLEE_NEGO_CLOSE_AB", 0.0)
+    if ab <= 0.0 or complete or my_value is None:
+        return False
+    base = pricing.infer_base(my_value)
+    if not base:
+        return False
+    ratio = my_value / base
+    favourable = (ratio <= 1.0 + 1e-9) if i_am_seller else (ratio >= 1.2 - 1e-9)
+    if not favourable:
+        return False
+    gid = str((game or {}).get("game_id") or "")
+    if not gid:
+        return False
+    import hashlib as _h
+    return bool(int(_h.sha256(("close_ab|" + gid).encode()).hexdigest(), 16) & 1)
+
+
 def plan(game: dict, cfg) -> dict:
     state = game["game_state"]
     me = state.get("current_player") or game["your_player"]
@@ -375,6 +419,16 @@ def plan(game: dict, cfg) -> dict:
     # holds-then-collapses where the field glides, which reads as stonewalling to
     # opponents pacing us against their own curve (our measured k was 2.04).
     boulware = runtime_flags.as_float("GLEE_NEGO_BOULWARE", _BOULWARE)
+    # Push to close where a deal is probably THERE. Faster concession measured
+    # WORSE when applied unconditionally (-0.0166/-0.0182), but that test spent
+    # the concession everywhere, including the 62.5% of hidden cells with no
+    # possible trade, where conceding buys nothing and can only cost price. Here
+    # it is spent only where our own draw says a deal is 50-75% likely.
+    if _close_harder(game, i_am_seller, my_value, bool(state.get("complete_information"))):
+        boulware = runtime_flags.as_float("GLEE_NEGO_CLOSE_AB", boulware)
+        p_close = True
+    else:
+        p_close = False
     concession = elapsed ** min(max(boulware, 0.5), 4.0)
     target = anchor + (reservation - anchor) * concession
 
@@ -700,6 +754,7 @@ def plan(game: dict, cfg) -> dict:
             target = curve_ask
 
     out = {
+        "close_push": p_close,
         # Carried so _final_option_value() can resolve the SAME A/B arm this
         # game was assigned; without it that site silently stayed on the control
         # value and the two arms disagreed inside one game.
