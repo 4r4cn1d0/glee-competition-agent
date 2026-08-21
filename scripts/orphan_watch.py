@@ -55,6 +55,7 @@ def scan(hours: float):
     now = time.time()
     played = defaultdict(dict)
     done = defaultdict(set)
+    flush = defaultdict(list)     # ts of every result we have, to find the watermark
     for path in glob.glob(os.path.join(REPO, "logs", "*", "turns.jsonl")):
         slot = os.path.basename(os.path.dirname(path))
         if slot not in NAMES:
@@ -81,11 +82,26 @@ def scan(hours: float):
                     continue
                 if rec.get("ts", 0) >= cut and rec.get("game_id"):
                     done[slot].add(rec["game_id"])
+                if rec.get("ts"):
+                    flush[slot].append(rec["ts"])
     out = {}
     for slot in NAMES:
-        orph = [g for g, ts in played[slot].items()
+        # RESULTS ARE FLUSHED ONLY AT PROCESS EXIT (run_agent.py:154 calls
+        # log.finalize in a finally block), so results.jsonl is written in a
+        # batch at each shift rotation -- roughly every 83 minutes -- while
+        # turns.jsonl streams continuously. A game played by the CURRENT process
+        # therefore has no result line yet no matter how healthy it was, and a
+        # naive "no result" test counts an entire shift's play as abandoned.
+        # That is what produced a phantom 65-game "spike" minutes after a
+        # rotation on 2026-08-22.
+        #
+        # So judge a game only once a flush has happened AFTER our last move in
+        # it. Games newer than the watermark are simply not yet knowable.
+        watermark = max(flush[slot], default=0.0)
+        judged = [(g, ts) for g, ts in played[slot].items() if ts < watermark]
+        orph = [g for g, ts in judged
                 if g not in done[slot] and now - ts > COLD_SECONDS]
-        out[slot] = (len(orph), len(played[slot]))
+        out[slot] = (len(orph), len(judged), len(played[slot]) - len(judged))
     return out
 
 
@@ -99,15 +115,16 @@ def main() -> int:
     worst = 0
     print(f"abandoned games, last {args.hours:g}h "
           f"(each is scored at the 5th percentile against our ~0.52)")
-    print(f"{'agent':9} {'played':>8} {'ABANDONED':>10} {'rate':>7} {'est. percentile drag':>21}")
-    for slot, (orph, played) in sorted(res.items(), key=lambda kv: -kv[1][0]):
-        if not played:
+    print(f"{'agent':9} {'judged':>8} {'ABANDONED':>10} {'rate':>7} "
+          f"{'drag':>9} {'awaiting flush':>15}")
+    for slot, (orph, judged, pending) in sorted(res.items(), key=lambda kv: -kv[1][0]):
+        if not judged and not pending:
             continue
         worst = max(worst, orph)
-        rate = orph / played
+        rate = orph / judged if judged else 0.0
         drag = rate * (0.52 - 0.05)
-        print(f"{NAMES[slot]:9} {played:>8} {orph:>10} {100*rate:>6.1f}% "
-              f"{-drag:>20.4f}")
+        print(f"{NAMES[slot]:9} {judged:>8} {orph:>10} {100*rate:>6.1f}% "
+              f"{-drag:>9.4f} {pending:>15}")
     if args.alert is not None and worst > args.alert:
         print(f"\nALERT: {worst} abandoned games exceeds threshold {args.alert}. "
               f"Something stranded in-flight games -- check for a restart, a "
