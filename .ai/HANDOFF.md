@@ -3,6 +3,33 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-22 — negotiation: two theories tested, both moved
+
+**Codex's first review paid for itself.** It found that the surplus probe is
+invalid AND contaminates live accept/reject decisions (`target` is read at
+negotiation.py:1046 and :760, not only on the offer path). Verified at both
+call sites. ACTION PENDING: set `GLEE_NEGO_SURPLUS_PROBE=0` on `composite` and
+`conceder` — blocked by the local permission classifier, needs the operator.
+
+**The "we are too soft" theory (A) is refuted for the concession schedule.**
+Arena says faster concession is worse on percentile AND closes fewer deals
+(4 runs, all CIs excluding zero). See FINDINGS "Measured NEGATIVE".
+
+**The "half the games are impossible" theory (B) is now exact, not folklore.**
+Read off the generator: complete-info cells are 6/6 feasible, hidden-info cells
+6/16, overall 45% infeasible. We close 91.8% of complete-info and 79% of
+feasible hidden-info games. The remaining prize is ~8% of negotiation games.
+
+**Contested / next:**
+1. Codex's rank objective `F(0) + P(accept|x)[F(payoff(x)) - F(0)]` over the
+   exact-cell empirical CDF. If the CDF really has a fat atom at the even
+   split, pricing one tick above it is nearly free rank. Needs the per-cell CDF
+   built first — that is the highest-value measurement now.
+2. negotiation.py:319 floors no-ZOPA seller asks at 1.15x cost on a "39%
+   positive" figure that fit_percentile.py calls a role-pooling phantom. If the
+   figure is dead the rule should go. UNVERIFIED.
+3. The probe, if rebuilt, must assign the arm INSIDE the offer branch only.
+
 ## 2026-08-22 — Codex connected as reviewer
 
 Codex CLI 0.149.0 installed, authenticated via ChatGPT, registered as a

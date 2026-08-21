@@ -6,8 +6,18 @@ they go in EXPERIMENTS.md until they have evidence.
 ## Structure of the games
 - Negotiation config mix (810 games, Test 1, 21 Aug): hidden 76% / complete 24%;
   seat 50/50; horizon 35% one-round, 31% ten-round, 33% uncapped; messages 50%.
-- **48% of that sample had V_s >= V_b** (trade impossible). Sample-specific —
-  do not treat as a structural constant.
+- **Feasibility is a STRUCTURAL CONSTANT of the grid, now read off the
+  generator** (`sim/grid.py:244 NEGOTIATION_VALUE_CONDITIONS`, a 22-point axis):
+  * **complete-information cells: 6 of 6 have a ZOPA.** A deal is ALWAYS
+    available when we can see the opponent's value. Confirmed empirically:
+    911 of 911 live complete-info games had V_b > V_s, zero exceptions
+    (4 slots, 10h, 22 Aug). Min span 20, median 3,000.
+  * **hidden-information cells: only 6 of 16 have a ZOPA (37.5%).**
+  * Overall 10/22 = **45% of negotiation games are structurally infeasible**.
+    The earlier "48% of that sample" line was this constant, measured noisily.
+  * The opponent's value is NEVER revealed in a hidden-info game, not even in
+    the final game_state. Per-game feasibility there is UNIDENTIFIABLE from our
+    own logs; only the 37.5% cell rate is knowable.
 - Only ~7.1% of offers in recent exports carry any text at all.
 
 ## Where rating is won and lost
@@ -19,6 +29,21 @@ they go in EXPERIMENTS.md until they have evidence.
   era-controlled replication).
 - Complete-info closes capture a MEDIAN 49.4% of available surplus (n=192);
   only 14% land in the 45-55% band. Strong evidence of a 50/50 attractor.
+- **Deal rates by information condition** (Agent 5 + Test 1 + Test 2, 3,100
+  negotiation games, 10h, 22 Aug): complete-info **91.8%** closed (n=805),
+  hidden-info **29.6%** closed (n=2,295). Against the structural ceilings above
+  that is ~92% of feasible complete-info deals and **~79% of feasible
+  hidden-info deals** — NOT the 30% a raw close-rate reading suggests. Total
+  remaining prize is ~8% of negotiation games, not ~50%.
+- **We are not rejecting profitable offers.** Across 14,732 decision turns in
+  hidden-info games that ended in no deal, only **89 (0.6%)** had an opponent
+  offer that was profitable for us. The no-deal outcome is the opponent never
+  reaching a feasible price, not our accept threshold being too high.
+- **Our concession path is outcome-blind until round 8** (Agent 5, hidden-info,
+  10h). As seller we open at 3.97x our own cost and are still at 2.94x by round
+  6; as buyer we open at 0.16x our own value and reach 0.82x only by round 9.
+  Medians for eventually-deal and eventually-no-deal games are IDENTICAL for
+  rounds 1-6 and only diverge at round 8. max_rounds is 10 in 84% of games.
 - Persuasion p=0.8 buyer cells all beat their breakeven when measured POOLED
   (good% 83-92% vs breakeven 80-83%). An earlier per-game average said
   otherwise and was biased by games with few purchases.
@@ -49,3 +74,45 @@ they go in EXPERIMENTS.md until they have evidence.
 - Clearing an arms.json key does not disarm a RUNNING agent.
 - `models/nego_policy_v1.json` has ZERO ask cells — GLEE_NEGO_TABLE is four
   acceptance thresholds and nothing more.
+
+## Measured NEGATIVE — do not re-propose without new reasoning
+- **Faster concession (`GLEE_NEGO_BOULWARE` 1.2 and 1.5 vs the 2.0 default) is
+  clearly WORSE.** Arena, negotiation only, 3,000 games x 2 seeds x 2 values,
+  all four runs agree: EST. PERCENTILE -0.041 / -0.042 / -0.041 / -0.050, every
+  CI excluding zero. Crucially the **close rate FELL 4-5 points** as well, so
+  the intuition "concede sooner and you close more" is exactly backwards
+  against this field — the cloned opponents pace against our curve and harden
+  when we soften early. The `k~1.18` figure in the source comment describes the
+  FIELD's schedule; it is not the best reply to it. Reachability note: BOULWARE
+  is a continuous `as_float`, never a traced `_gate()`, so `fired_count` is
+  structurally 0 and only `action_changed` (3,595/6,257) is meaningful.
+
+## Instrument defects found
+- **`GLEE_NEGO_SURPLUS_PROBE` is INVALID as run, and contaminates live play.**
+  The arm is assigned inside `plan()` (negotiation.py:404) BEFORE the offer /
+  decision branch, and it overwrites `p["target"]`. But `target` also drives
+  the ACCEPT path: `negotiation.py:1046` compares the incoming offer directly
+  against `p["target"]`, and `negotiation.py:760` uses it as the continuation
+  ceiling. So the randomiser moves our accept/reject threshold in complete-info
+  decision turns where nothing was ever offered — the treatment leaks into the
+  outcome channel, and the experiment cannot identify P(accept | x).
+  Found by Codex on its first review; verified independently at both call sites.
+  Live on Agent 5 and Test 3 (~0.6% of negotiation turns). Only 5 assignments
+  banked, so nothing is lost by disabling it.
+- `scripts/analyze_surplus_probe.py` compounds this: it joins the SAME round's
+  decision rather than the opponent's response to a transmitted price, never
+  checks `decided_by`, and computes only `P(accept)*x` despite the docstring
+  promising a continuation term.
+- Codex flags a live no-ZOPA seller rule (negotiation.py:319, floors asks at
+  1.15x cost) whose justifying "39% positive" figure `scripts/fit_percentile.py`
+  itself calls a phantom from pooling buyer and seller roles. UNVERIFIED by me
+  — next thing to check.
+
+## Better objective for any surplus-share experiment (Codex, unverified)
+Rating is affine in percentile, so there is no variance premium; and a no-ZOPA
+cell where everyone scores 0 gives every player midrank 0.5, which dilutes
+signal but cannot lower rating. The quantity to maximise is therefore rank, not
+surplus: `F(0) + P_accept(x) * [F(payoff(x)) - F(0)]`, where F is the empirical
+payoff CDF for the exact cell. Because F has large atoms at 0 and at the even
+split, landing one tick above an atom can buy a lot of rank for almost no extra
+rejection risk — an effect a coarse 0.05 grid on x can step straight over.
