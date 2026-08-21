@@ -312,3 +312,61 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
 - NOT A BUG, checked and cleared: bargaining has NO zero-share accepts. 49 of
   8,087 accepts (0.6%) are under 5%, spread evenly across slots. An earlier
   "min 0.0000" was display rounding of a small positive share.
+
+## REFUTED: ZOPA_SHARE=0.10 must NOT be deployed (adversarial panel, 22 Aug)
+Five independent reviewers attacked the +0.0121 result. It does not survive, and
+I verified every load-bearing CODE claim myself rather than accepting the report.
+
+THE HARNESS CANNOT MEASURE THE COST SIDE OF GREED. Verified in sim/field_data.py:
+1. **The fallback GRANTS greed by construction** (field_data.py:343): when no
+   observed bin matches, the clone does `profitable = price >= my_value ->
+   AcceptOffer`. Our historical asks never populated the aggressive bins, so
+   exactly the region the candidate moves into is auto-accepted.
+2. **The wrong binner is used.** `_share_bin` (4%-wide, keyed on SHARE) exists at
+   field_data.py:59 and is NOT used for nego_resp; the coarser `_price_bin`
+   (0.1 of base) is. 33% of feasible cells have span = 0.20*base, where the
+   0.29-of-span move is 0.058 of base -- LESS THAN ONE BIN, so the clone
+   frequently returns a bit-identical response to a much greedier ask.
+3. **Survivorship in the value-keyed table**, which field_data.py:332 consults
+   FIRST: in hidden games `their_mult` is recoverable only by inverting an
+   AGREEMENT payoff, so that table is populated almost only by games that
+   closed. Panel measured round 4+, buyer m1.5, bin 1.0: accept 0.640 (n=25)
+   against the plain key's 0.027 (n=2793) -- 24x inflation.
+4. Bargaining does NOT share this defect: it uses `_share_bin` and falls back to
+   a `my_gain >= 0.4*money` threshold (field_data.py:298-302). Bargaining arena
+   results are materially more trustworthy than negotiation ones.
+
+THE MECHANISM EVIDENCE WAS MISATTRIBUTED. The 384/384 step function lives
+entirely in `max_rounds==1` games, where rejection pays BOTH sides zero -- that
+is the ultimatum payoff structure, not a property of the opponent, and it does
+not generalise to the ~94% of offers that are multi-round. Worse, the 109/109
+in the 80-90% band is produced by GLEE_NEGO_ULTIMATUM_SHARE=0.80, which
+overwrites target in exactly that cell. It identifies the ULTIMATUM flag, not
+this one.
+
+THE FLAG IS NOT ONE PARAMETER. negotiation.py:325 treats it as the minimum we
+KEEP, :352 as the minimum we LEAVE, and :1099 is a DIFFERENT quantity with a
+DIFFERENT default (0.2). Agent 5 sets none, so control is 0.39/0.39/0.20;
+setting 0.10 moves two sites by 0.29 and the third by 0.10 in the OPPOSITE
+safety direction -- it raises the FINAL_OPTION hold value, making us REJECT
+offers we currently accept. Corroborated independently: ZOPA 0.10 +
+ULTIMATUM_SHARE 0.90 already measured WORSE, which is the direct test of
+"claim more span in the cell where the frontier evidence came from".
+
+BREAK-EVEN IS THIN. A $0 outcome scores 0.2191 and a positive one averages
+0.6177, so one lost deal costs 0.3987 percentile and the whole +0.0125
+evaporates at **3.14pp of extra rejection**.
+
+AND IT WOULD NOT ACHIEVE THE GOAL ANYWAY. +0.0125 x 12.5 rating/percentile-point
+= +15.6 rating, inside the +/-125 cross-agent noise floor, and one sixth of the
++89 that 2011 -> 2100 requires.
+
+=> DO NOT DEPLOY, at 0.10 or at the conservative 0.22/0.30: the conservative
+value is a smaller unmeasured bet on the same broken meter, not a smaller
+measured gain.
+
+## THE REAL DELIVERABLE: the negotiation clone needs fixing
+Until nego_resp uses `_share_bin` on the share of span and stops auto-accepting
+unobserved profitable prices, NO negotiation arena result that moves our asks
+into a new price region can be trusted -- in either direction. Fixing the
+instrument is worth more than any single flag. Bargaining results are unaffected.
