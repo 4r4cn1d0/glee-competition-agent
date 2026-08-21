@@ -18,6 +18,8 @@ chooses how to say it.
 
 from __future__ import annotations
 
+from . import runtime_flags
+
 import random
 
 from .actions import _num
@@ -115,22 +117,27 @@ def negotiation_message(game: dict, action: dict, plan: dict | None,
             f"I can do {price:,.2f}.",
             f"My number is {price:,.2f}.",
         ]))
-    # Near the reservation the strongest honest claim is that there is no room.
-    close_to_limit = (abs(price - reservation) / reservation < 0.10) if reservation else False
-    if close_to_limit:
-        parts.append(_pick(rng, [
-            "That is effectively my limit — below it I am better off with no deal.",
-            "There is no meaningful room left on my side of this.",
-        ]))
-    elif seller:
+    # THE SAME LEAK, IN NEGOTIATION. These two lines fired only when the price
+    # was within 10% of our PRIVATE reservation -- 4,926 and 4,994 historical
+    # emissions, every one of them inside that band. An opponent correlating the
+    # phrase with our subsequent behaviour learns exactly when we have no room
+    # left, which is the one thing about us they cannot otherwise observe, and
+    # the moment to stop conceding.
+    #
+    # The claim itself is a legitimate tactic; being perfectly honest about WHEN
+    # we make it is what hands over the information. So the line stays in the
+    # general pool and is no longer conditioned on proximity to the limit.
+    if seller:
         parts.append(_pick(rng, [
             "I would rather trade than not, but not at any number.",
             "Priced to close, not to start a haggle.",
+            "There is no meaningful room left on my side of this.",
         ]))
     else:
         parts.append(_pick(rng, [
             "That leaves you a clear gain over walking away.",
             "This is a real offer, and it beats no deal for both of us.",
+            "There is no meaningful room left on my side of this.",
         ]))
     # Deadline talk only when the deadline is REAL. In uncapped games
     # rounds_left is the synthetic planning clock, and the transcript export
@@ -176,23 +183,41 @@ def persuasion_message(game: dict, action: dict, plan: dict | None,
         "Strong unit this round — I would buy it.",
         "This is one of the better ones.",
     ])]
-    if truthful and (reason.startswith("building reputation") or round_no <= 2):
-        parts.append("I will tell you plainly when a unit is not worth it, so you "
-                     "can judge me by the ones I do recommend.")
-    elif truthful is False:
-        # Pushing a weak unit: stay generic. No verifiable claim to be caught on.
-        parts.append(_pick(rng, [
-            "Priced the same as every other round, so the call is yours.",
-            "Same price as always — take it or leave it on your own read.",
-        ]))
-    elif round_no >= max(2, total - 1):
-        parts.append("We are near the end and my record this game is what it is — "
-                     "check it against how I have called these.")
-    else:
-        parts.append(_pick(rng, [
-            "You can check that against the calls I have made so far.",
-            "My record on these is the reason to take this one seriously.",
-        ]))
+    # THE CLOSER MUST NOT DEPEND ON THE QUALITY ONLY WE CAN SEE.
+    #
+    # The branch below picked the closer from `truthful`, and the two
+    # price-framing lines it used for a weak unit appear NOWHERE ELSE. Measured
+    # over 24h of live seller rounds, that made them a perfect oracle:
+    #
+    #   "Priced the same as every other round"  3,008 bought, 100% LOW
+    #   "Same price as always"                  3,041 bought, 100% LOW
+    #   "My record on these is the reason"      4,695 bought,   0% LOW
+    #   "You can check that against the calls"  4,636 bought,   0% LOW
+    #
+    # 6,049 low units all carrying one of two phrases, 11,079 high units
+    # carrying neither. The intent was sound -- do not make a falsifiable
+    # promise about a bad unit -- but because those lines were reserved for that
+    # case, "generic" became DISTINCTIVE, and we shipped a code word for
+    # "this one is worthless" six thousand times. Any opponent correlating
+    # phrasing with outcome gets our private signal for free, and against a
+    # repeated buyer that is the whole game.
+    #
+    # It shows up exactly where it should: those closers convert at 2-5% when
+    # the buyer has been passing, against 12% for the best one -- and they are
+    # attached to the units where a sale is pure profit to us.
+    #
+    # So: one pool, chosen independently of quality. Both survivors are
+    # backward-looking references to our record rather than promises about THIS
+    # unit, so neither is falsifiable on the round it is sent, and both are the
+    # best-converting lines we have. Gated so the change is measurable.
+    # NOT gated. A leak is a defect, not an experiment: there is no configuration
+    # in which broadcasting the quality is the behaviour we want, so the leaking
+    # branches are deleted rather than kept behind a flag. `truthful` is now
+    # unused here by design -- the closer must not be able to depend on it.
+    parts.append(_pick(rng, [
+        "My record on these is the reason to take this one seriously.",
+        "You can check that against the calls I have made so far.",
+    ]))
     return " ".join(parts)[:1800]
 
 

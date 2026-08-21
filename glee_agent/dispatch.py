@@ -126,11 +126,19 @@ def _play(game: dict, cfg, log) -> dict:
     # Gated so the fix itself is measurable rather than assumed: with
     # GLEE_PERS_KEEP_MSG unset, behaviour is exactly what it was.
     from . import runtime_flags as _rf
+    # `style_downgraded` means persuasion.decide DELIBERATELY declined the token
+    # at a high prior and wants the full template bank instead -- which is the
+    # path that measured 69.3% conversion at p=0.8, against 60.8% for the bare
+    # token. Preserving the strategy's fallback string here would send
+    # "I recommend this one." instead, a third thing that was never measured.
+    # So a downgrade is explicitly NOT final: let compose() build the message.
+    _downgraded = isinstance(plan, dict) and bool(plan.get("style_downgraded"))
     pers_final = (game.get("game_family") == "persuasion"
                   and (game.get("game_state") or {}).get("seller_message_type") == "text"
                   and isinstance(action, dict)
                   and isinstance(action.get("message"), str)
                   and action["message"].strip()
+                  and not _downgraded
                   and _rf.enabled("GLEE_PERS_KEEP_MSG"))
     if _wants_message(game) and game.get("game_family") in llm_fams \
             and not armed and not pers_final:

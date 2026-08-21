@@ -67,3 +67,7 @@ tokens used
    **Decision rule:** use proposer-parity-aware continuation rank. Replace the public cliff with a private logistic/mixed acceptance rule around rank indifference.
 
 `FINDINGS.md:308` is overbroad: 48.1% does **not** always close immediately; in the live candidate round-9 state, `FINAL_OPTION` rejects it, then hole 1 reoffers it.
+
+## 2026-08-21 21:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

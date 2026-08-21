@@ -184,6 +184,39 @@ def _effective_horizon(delta_me: float, cfg) -> int:
     return int(max(4, min(rounds, cfg.barg_uncapped_horizon)))
 
 
+def _observed_gain(state: dict, me: str, money: float):
+    """The opponent's ACTUAL concession rate, as a fraction of the pot per round.
+
+    None when there is not enough of their offer trail to estimate it, in which
+    case the caller keeps its prior. Three of their offers is the minimum that
+    can distinguish a trend from a single step.
+
+    Measured across the trail rather than between the last two offers, because
+    a single pair is noisy: opponents commonly jump then hold, and the pair test
+    would read that jump as a rate they will sustain.
+    """
+    if not money:
+        return None
+    theirs = []
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        off = entry.get("offer") or {}
+        if off.get("proposer") == me:
+            continue
+        val = off.get(f"{me}_gain")
+        rnd = entry.get("round")
+        if val is not None and rnd:
+            theirs.append((int(rnd), float(val)))
+    theirs = sorted(set(theirs))
+    if len(theirs) < 3:
+        return None
+    span = theirs[-1][0] - theirs[0][0]
+    if span < 2:
+        return None
+    return ((theirs[-1][1] - theirs[0][1]) / money) / span
+
+
 def _deltas(state: dict, me_is_alice: bool, unknown_delta: float) -> tuple[float, float]:
     """My and my opponent's per-round discount multipliers.
 
@@ -531,12 +564,54 @@ def decide(game: dict, cfg) -> dict:
             # can afford is delta*G/(1-delta), capped by the flat floor:
             # delta 0.8 -> 0.20, 0.9 -> 0.45, 0.95+ -> the 0.50 atom floor.
             gain = runtime_flags.as_float("GLEE_BARG_FLOOR_GAIN", 0.0)
+            # G IS MEASURABLE, AND THE CONSTANT IS WRONG BY 40x.
+            #
+            # The formula above is right: another round is worth taking only if
+            # the haggling gain G beats the discount loss, so a patient player
+            # can afford a floor of delta*G/(1-delta). But G was hardcoded at
+            # 0.05 pot/round from an old 299-game fit, and the opponent's ACTUAL
+            # concession rate is observable in their own offer trail.
+            #
+            # Measured over 899 live games with three or more of their offers:
+            # median G is +0.0012 pot/round, mean +0.0030. NOT ONE GAME IN 895
+            # reached the assumed 0.05, and in 16% G is NEGATIVE -- the opponent
+            # improves their own share over time, farming a clock that costs us
+            # more than it costs them.
+            #
+            # The cost of believing 0.05 is the floor it produces: at delta 0.9
+            # it demands 0.450 of the pot when the observed G justifies 0.000,
+            # and at 0.95 it demands the full 0.500 against 0.020. So we hold
+            # out for half the pot waiting for a concession that never arrives.
+            # Two live transcripts show the endgame: one dragged to round 7 and
+            # kept 371k where accepting at round 3 was worth 406k; the other
+            # dragged to round 11 and kept 1,046 where the opponent's ROUND ONE
+            # offer was worth 4,500 -- a 77% loss.
+            #
+            # This is the same insight as the stonewall override below, which
+            # already fires when the opponent's number never moves. A stonewall
+            # is just the special case G = 0; the general test is economic, and
+            # it catches the far more common case of an opponent who concedes
+            # but too slowly to outrun our discount. Both transcripts above have
+            # MOVING offers, so the stonewall rule never fires on either.
+            #
+            # Safe when G is small: the floor collapsing toward zero does not
+            # mean "accept anything". It hands the decision back to the
+            # discounted-continuation test at the top of this function, which is
+            # the economically correct judge -- exactly what the stonewall
+            # override says it is doing when it releases the floor.
             if gain > 0.0:
                 dme = p.get("delta_me")
                 if dme is not None and dme < 1.0:
-                    if dme * gain / (1.0 - dme) < floor_share:
+                    g_used = gain
+                    if runtime_flags.enabled("GLEE_BARG_OBSERVED_GAIN"):
+                        g_obs = _observed_gain(state, state.get("current_player") or "", money)
+                        if g_obs is not None:
+                            g_used = max(g_obs, 0.0)
+                            p["observed_gain"] = round(g_obs, 5)
+                            _gate(p, "observed_gain")
+                    if dme * g_used / (1.0 - dme) < floor_share:
                         _gate(p, "floor_gain")
-                    floor_share = min(floor_share, dme * gain / (1.0 - dme))
+                    floor_share = min(floor_share, dme * g_used / (1.0 - dme))
             # Stonewall override. The floor's whole premise is that waiting
             # BUYS something; against an opponent who simply repeats their
             # number it buys nothing while our clock burns. Measured on Agent
