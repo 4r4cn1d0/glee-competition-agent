@@ -388,6 +388,28 @@ def plan(game: dict, cfg) -> dict:
                     if _prev:
                         target = _prev[-1]
 
+    # Dead-game play (clean-room panel, all four frames): when the opponent's
+    # own offers PROVE no profitable close plausibly exists, the 0 atom is our
+    # floor either way -- rejection can never cost rank. So fish: hold a small
+    # decaying premium above our own value, where any acceptance by an
+    # irrational opponent converts a structurally-zero game into a top-decile
+    # outcome, at provably zero downside. Detection is deliberately strict --
+    # their best price still unprofitable to us by a 2%-of-B margin after at
+    # least four of their offers.
+    deadgame = False
+    if runtime_flags.enabled("GLEE_NEGO_DEADGAME_V1") and not table_fired:
+        _pb = pricing.infer_base(my_value)
+        if _pb and bound is not None and len(_their_offers(state, me)) >= 4:
+            _margin = 0.02 * _pb
+            _unprof = (bound < my_value + _margin) if i_am_seller \
+                else (bound > my_value - _margin)
+            if _unprof:
+                deadgame = True
+                _prem = _pb * max(0.10 * (1.0 - elapsed), 0.02)
+                target = (my_value + _prem) if i_am_seller else (my_value - _prem)
+    # (recorded in the returned plan below; decide() walks away on it late in
+    # uncapped games once the opponent has also stalled)
+
     # Reciprocal-concession damping. The Boulware walk is paced by the CLOCK
     # alone, so it keeps conceding even while the opponent is closing the gap
     # from their side -- paying twice for the same convergence. The percentile
@@ -488,6 +510,7 @@ def plan(game: dict, cfg) -> dict:
         "elapsed": elapsed,
         "opponent_bound": bound,
         "recip_damped": recip_damped,
+        "deadgame": deadgame,
     }
 
 
@@ -605,6 +628,17 @@ def decide(game: dict, cfg) -> dict:
     p["continuation_value"] = v_cont
     p["continuation_evidence"] = evidence
     p["continuation_accept"] = _continuation_accept_enabled()
+
+    # Dead-game walk-away: proven-unprofitable opponent bound + confirmed
+    # stall + late uncapped game = the 99-round grind from the transcript
+    # export. Walking banks the same 0 the grind ends in, frees the queue
+    # slot ~25 rounds sooner, and (unlike a timeout at the 5th percentile)
+    # costs nothing. Capped games never walk -- the final-round any-positive
+    # rule above may still convert them.
+    if (p.get("deadgame") and not p["capped"] and p["elapsed"] >= 0.6
+            and not _profitable(offer_price, p)
+            and _their_stall_price(state, state.get("current_player") or "") is not None):
+        return {"decision": "WalkAway", "_plan": p}
 
     # Span-floor acceptance veto. The 500-game transcript export scored 77
     # complete-info closes below 40% of the visible ZOPA span at -5.07 rating
