@@ -44,9 +44,23 @@ def snapshot(env):
     boards = {}
     for fam in ("bargaining", "negotiation", "persuasion"):
         try:
-            with urllib.request.urlopen(
-                    f"https://glee-competition.com/api/leaderboard?family={fam}",
-                    timeout=20) as fh:
+            # The endpoint 403s without auth; this failed SILENTLY from the day
+            # the snapshotter was built (except:pass below), so no snapshot
+            # ever carried board data until 2026-08-21. Bearer key + UA fixed it.
+            _key = os.environ.get("GLEE_KEY_TEST1") or os.environ.get("GLEE_API_KEY", "")
+            if not _key:                      # daemon launched without .env in env
+                try:
+                    for _ln in open(os.path.join(REPO, ".env"), encoding="utf-8"):
+                        if _ln.startswith("GLEE_KEY_TEST1="):
+                            _key = _ln.strip().split("=", 1)[1]
+                            break
+                except OSError:
+                    pass
+            req = urllib.request.Request(
+                f"https://glee-competition.com/api/leaderboard?family={fam}",
+                headers={"Authorization": f"Bearer {_key}",
+                         "User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=20) as fh:
                 data = json.load(fh)
             board = {"cutoff": min(r["rating"] for r in data)}
             ours = [{"slot": ids.get(r.get("player_id"), r.get("player_name")),
