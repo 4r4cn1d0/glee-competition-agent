@@ -19,7 +19,16 @@ SURFACES=(
   "cross-family: anything that reads opponent identity, or any state an opponent can manufacture"
   "VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones"
 )
-IDX=$(( ($(date +%s) / 3600) % ${#SURFACES[@]} ))
+# Rotate with a PERSISTENT COUNTER, not with the clock. Deriving the index from
+# the hour (e.g. (epoch/3600) % 6) silently couples rotation to the cron period:
+# on a 2-hourly schedule the index advances by 2 each run and only ever visits
+# the even surfaces, so half of them are never attacked. A counter advances by
+# exactly one per run whatever the cadence.
+CFILE="logs/.redteam_surface"
+IDX=$(cat "$CFILE" 2>/dev/null || echo 0)
+case "$IDX" in ''|*[!0-9]*) IDX=0 ;; esac
+IDX=$(( IDX % ${#SURFACES[@]} ))
+echo $(( (IDX + 1) % ${#SURFACES[@]} )) > "$CFILE"
 SURFACE="${SURFACES[$IDX]}"
 STAMP="$(date -u '+%Y-%m-%d %H:%MZ')"
 
