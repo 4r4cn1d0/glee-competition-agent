@@ -26,163 +26,309 @@
    }
   },
   "2": {
-   "games_observed": 19,
+   "bargaining": {
+    "accept_rate": 0.2632,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 19
+   },
+   "games_observed": 83,
+   "negotiation": {
+    "close_rate": 0.3913,
+    "median_price_over_their_value": 0.6883,
+    "n_games": 23,
+    "n_offers": 12
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4519,
-    "as_buyer_n": 104,
-    "as_seller_n": 60,
-    "as_seller_truth_rate": 0.7833
+    "as_buyer_buy_rate": 0.4892,
+    "as_buyer_n": 464,
+    "as_seller_n": 200,
+    "as_seller_truth_rate": 0.63
    }
   },
   "3": {
-   "games_observed": 29,
+   "bargaining": {
+    "accept_rate": 0.129,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 31
+   },
+   "games_observed": 76,
    "negotiation": {
-    "close_rate": 0.5,
+    "close_rate": 0.4167,
     "median_price_over_their_value": 1.9634,
-    "n_games": 12,
-    "n_offers": 22
+    "n_games": 24,
+    "n_offers": 25
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.551,
-    "as_buyer_n": 49,
-    "as_seller_n": 75,
-    "as_seller_truth_rate": 0.8
+    "as_buyer_buy_rate": 0.6574,
+    "as_buyer_n": 289,
+    "as_seller_n": 153,
+    "as_seller_truth_rate": 0.7712
    }
   },
   "4": {
-   "games_observed": 32,
+   "bargaining": {
+    "accept_rate": 0.3636,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.43,
+    "n": 33
+   },
+   "games_observed": 85,
    "negotiation": {
-    "close_rate": 0.6,
+    "close_rate": 0.5217,
     "median_price_over_their_value": 0.5845,
-    "n_games": 15,
+    "n_games": 23,
     "n_offers": 11
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6,
-    "as_buyer_n": 180
+    "as_buyer_buy_rate": 0.58,
+    "as_buyer_n": 300,
+    "as_seller_n": 142,
+    "as_seller_truth_rate": 0.7183
    }
   },
   "5": {
-   "games_observed": 38,
+   "bargaining": {
+    "accept_rate": 0.4,
+    "accept_threshold": 0.4737,
+    "highest_rejected_below": 0.47,
+    "n": 35
+   },
+   "games_observed": 91,
    "negotiation": {
-    "close_rate": 0.4615,
-    "median_price_over_their_value": 0.4635,
-    "n_games": 13,
-    "n_offers": 6
+    "close_rate": 0.7097,
+    "median_price_over_their_value": 1.15,
+    "n_games": 31,
+    "n_offers": 43
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5929,
-    "as_buyer_n": 140,
-    "as_seller_n": 175,
-    "as_seller_truth_rate": 0.7371
+    "as_buyer_buy_rate": 0.6722,
+    "as_buyer_n": 360,
+    "as_seller_n": 232,
+    "as_seller_truth_rate": 0.681
+   }
+  },
+  "7aidara": {
+   "bargaining": {
+    "accept_rate": 0.3404,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 47
+   },
+   "games_observed": 34,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.475,
+    "as_buyer_n": 160,
+    "as_seller_n": 57,
+    "as_seller_truth_rate": 0.7018
+   }
+  },
+  "7aidara_Alpha": {
+   "games_observed": 28,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3933,
+    "as_buyer_n": 267,
+    "as_seller_n": 118,
+    "as_seller_truth_rate": 0.6949
+   }
+  },
+  "7aidara_Beta": {
+   "games_observed": 14,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.59,
+    "as_buyer_n": 100,
+    "as_seller_n": 81,
+    "as_seller_truth_rate": 0.8642
+   }
+  },
+  "7aidara_Gamma": {
+   "games_observed": 9,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.125,
+    "as_buyer_n": 40,
+    "as_seller_n": 20,
+    "as_seller_truth_rate": 0.8
    }
   },
   "A1": {
    "bargaining": {
-    "accept_rate": 0.1951,
+    "accept_rate": 0.1781,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 41
+    "n": 73
    },
-   "games_observed": 124,
+   "games_observed": 259,
    "negotiation": {
-    "close_rate": 0.5059,
-    "median_price_over_their_value": 1.2499,
-    "n_games": 85,
-    "n_offers": 53
+    "close_rate": 0.4472,
+    "median_price_over_their_value": 1.4999,
+    "n_games": 123,
+    "n_offers": 83
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.7231,
-    "as_buyer_n": 260,
-    "as_seller_n": 38,
-    "as_seller_truth_rate": 0.5526
+    "as_buyer_buy_rate": 0.6635,
+    "as_buyer_n": 1061,
+    "as_seller_n": 575,
+    "as_seller_truth_rate": 0.7026
    }
   },
   "A2": {
    "bargaining": {
-    "accept_rate": 0.3377,
+    "accept_rate": 0.3047,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 77
+    "n": 128
    },
-   "games_observed": 168,
+   "games_observed": 360,
    "negotiation": {
-    "close_rate": 0.5146,
-    "median_price_over_their_value": 1.0125,
-    "n_games": 103,
-    "n_offers": 45
+    "close_rate": 0.4823,
+    "median_price_over_their_value": 1.25,
+    "n_games": 141,
+    "n_offers": 68
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.7433,
-    "as_buyer_n": 300,
-    "as_seller_n": 176,
-    "as_seller_truth_rate": 0.7557
+    "as_buyer_buy_rate": 0.5768,
+    "as_buyer_n": 1640,
+    "as_seller_n": 822,
+    "as_seller_truth_rate": 0.7409
    }
   },
   "Agent Smith": {
    "bargaining": {
-    "accept_rate": 0.2459,
-    "accept_threshold": 0.4872,
-    "highest_rejected_below": 0.4807,
-    "n": 61
+    "accept_rate": 0.3692,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 130
    },
-   "games_observed": 40,
+   "games_observed": 145,
+   "negotiation": {
+    "close_rate": 0.5455,
+    "median_price_over_their_value": 1.45,
+    "n_games": 11,
+    "n_offers": 13
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.7167,
-    "as_buyer_n": 60,
-    "as_seller_n": 41,
-    "as_seller_truth_rate": 0.7805
+    "as_buyer_buy_rate": 0.45,
+    "as_buyer_n": 520,
+    "as_seller_n": 142,
+    "as_seller_truth_rate": 0.662
    }
   },
   "AgentA": {
-   "games_observed": 18,
+   "bargaining": {
+    "accept_rate": 0.1667,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 24
+   },
+   "games_observed": 87,
    "negotiation": {
-    "close_rate": 0.3077,
-    "median_price_over_their_value": 0.875,
-    "n_games": 13,
-    "n_offers": 2
+    "close_rate": 0.449,
+    "median_price_over_their_value": 0.878,
+    "n_games": 49,
+    "n_offers": 37
    },
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 40
+    "as_buyer_buy_rate": 0.3346,
+    "as_buyer_n": 260,
+    "as_seller_n": 43,
+    "as_seller_truth_rate": 0.5814
    }
   },
   "AgentB": {
-   "games_observed": 13,
+   "bargaining": {
+    "accept_rate": 0.1714,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 35
+   },
+   "games_observed": 87,
+   "negotiation": {
+    "close_rate": 0.5577,
+    "median_price_over_their_value": 1.1298,
+    "n_games": 52,
+    "n_offers": 46
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.0,
-    "as_buyer_n": 20
+    "as_buyer_buy_rate": 0.354,
+    "as_buyer_n": 226,
+    "as_seller_n": 162,
+    "as_seller_truth_rate": 0.821
    }
   },
   "AgentC": {
-   "games_observed": 11,
+   "bargaining": {
+    "accept_rate": 0.2105,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 38
+   },
+   "games_observed": 82,
+   "negotiation": {
+    "close_rate": 0.5652,
+    "median_price_over_their_value": 1.1419,
+    "n_games": 46,
+    "n_offers": 49
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 20
+    "as_buyer_buy_rate": 0.4846,
+    "as_buyer_n": 260,
+    "as_seller_n": 27,
+    "as_seller_truth_rate": 0.7407
+   }
+  },
+  "AgentD": {
+   "games_observed": 20,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.47,
+    "as_buyer_n": 100,
+    "as_seller_n": 117,
+    "as_seller_truth_rate": 0.5897
+   }
+  },
+  "AgentE": {
+   "games_observed": 33,
+   "negotiation": {
+    "close_rate": 0.25,
+    "median_price_over_their_value": 1.2695,
+    "n_games": 20,
+    "n_offers": 19
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.6667,
+    "as_buyer_n": 60,
+    "as_seller_n": 28,
+    "as_seller_truth_rate": 0.5714
    }
   },
   "Athena": {
    "bargaining": {
-    "accept_rate": 0.4857,
+    "accept_rate": 0.6129,
     "accept_threshold": 0.4254,
     "highest_rejected_below": 0.39,
-    "n": 35
+    "n": 62
    },
-   "games_observed": 43,
+   "games_observed": 114,
+   "negotiation": {
+    "close_rate": 0.3684,
+    "median_price_over_their_value": 1.2422,
+    "n_games": 19,
+    "n_offers": 8
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6875,
-    "as_buyer_n": 80,
-    "as_seller_n": 99,
-    "as_seller_truth_rate": 0.8687
+    "as_buyer_buy_rate": 0.566,
+    "as_buyer_n": 500,
+    "as_seller_n": 185,
+    "as_seller_truth_rate": 0.8162
    }
   },
   "Aumann": {
-   "games_observed": 29,
+   "games_observed": 46,
    "negotiation": {
-    "close_rate": 0.375,
-    "median_price_over_their_value": 0.8633,
-    "n_games": 16,
-    "n_offers": 18
+    "close_rate": 0.4516,
+    "median_price_over_their_value": 0.8383,
+    "n_games": 31,
+    "n_offers": 29
    },
    "persuasion": {
     "as_buyer_buy_rate": 0.6143,
@@ -191,101 +337,166 @@
     "as_seller_truth_rate": 0.5625
    }
   },
+  "BizarreBazar": {
+   "games_observed": 18,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5,
+    "as_buyer_n": 40,
+    "as_seller_n": 22,
+    "as_seller_truth_rate": 0.8182
+   }
+  },
+  "C-agent": {
+   "bargaining": {
+    "accept_rate": 0.2028,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 281
+   },
+   "games_observed": 242,
+   "negotiation": {
+    "close_rate": 0.3929,
+    "median_price_over_their_value": 1.225,
+    "n_games": 56,
+    "n_offers": 38
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4885,
+    "as_buyer_n": 866,
+    "as_seller_n": 226,
+    "as_seller_truth_rate": 0.8186
+   }
+  },
   "Chantra": {
    "bargaining": {
-    "accept_rate": 0.5385,
-    "accept_threshold": 0.41,
-    "highest_rejected_below": 0.39,
-    "n": 13
+    "accept_rate": 0.3294,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 85
    },
-   "games_observed": 20,
+   "games_observed": 95,
    "persuasion": {
-    "as_buyer_buy_rate": 0.4667,
-    "as_buyer_n": 60,
-    "as_seller_n": 20,
-    "as_seller_truth_rate": 0.55
+    "as_buyer_buy_rate": 0.5409,
+    "as_buyer_n": 220,
+    "as_seller_n": 212,
+    "as_seller_truth_rate": 0.6509
+   }
+  },
+  "CheapTalk": {
+   "games_observed": 3,
+   "persuasion": {
+    "as_seller_n": 17,
+    "as_seller_truth_rate": 1.0
    }
   },
   "Clod": {
    "bargaining": {
-    "accept_rate": 0.2941,
+    "accept_rate": 0.4762,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 17
+    "n": 42
    },
-   "games_observed": 37,
+   "games_observed": 101,
    "negotiation": {
-    "close_rate": 0.5385,
-    "median_price_over_their_value": 1.1946,
-    "n_games": 13,
-    "n_offers": 4
+    "close_rate": 0.5882,
+    "median_price_over_their_value": 1.466,
+    "n_games": 17,
+    "n_offers": 8
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6,
-    "as_buyer_n": 160,
-    "as_seller_n": 21,
-    "as_seller_truth_rate": 1.0
+    "as_buyer_buy_rate": 0.7141,
+    "as_buyer_n": 640,
+    "as_seller_n": 95,
+    "as_seller_truth_rate": 0.7895
+   }
+  },
+  "Concord": {
+   "bargaining": {
+    "accept_rate": 0.1875,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 16
+   },
+   "games_observed": 10,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.0125,
+    "as_buyer_n": 80,
+    "as_seller_n": 20,
+    "as_seller_truth_rate": 0.9
    }
   },
   "CredibleThreat": {
-   "games_observed": 9,
+   "games_observed": 12,
    "persuasion": {
-    "as_buyer_buy_rate": 0.075,
-    "as_buyer_n": 40
+    "as_buyer_buy_rate": 0.5375,
+    "as_buyer_n": 80
    }
   },
   "DSv4": {
    "bargaining": {
-    "accept_rate": 0.0909,
+    "accept_rate": 0.175,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 44
+    "n": 80
    },
-   "games_observed": 66,
+   "games_observed": 180,
    "negotiation": {
-    "close_rate": 0.5357,
-    "median_price_over_their_value": 1.106,
-    "n_games": 28,
-    "n_offers": 27
+    "close_rate": 0.5385,
+    "median_price_over_their_value": 1.098,
+    "n_games": 65,
+    "n_offers": 44
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.7667,
-    "as_buyer_n": 180,
-    "as_seller_n": 87,
-    "as_seller_truth_rate": 0.7701
+    "as_buyer_buy_rate": 0.6898,
+    "as_buyer_n": 880,
+    "as_seller_n": 321,
+    "as_seller_truth_rate": 0.7414
    }
   },
   "DealMind": {
    "bargaining": {
-    "accept_rate": 0.6667,
-    "accept_threshold": 0.3852,
-    "highest_rejected_below": 0.18,
-    "n": 12
+    "accept_rate": 0.5238,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.39,
+    "n": 21
    },
-   "games_observed": 10
+   "games_observed": 21,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3167,
+    "as_buyer_n": 60
+   }
+  },
+  "DeepRMM-01": {
+   "games_observed": 12,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.8333,
+    "as_buyer_n": 60,
+    "as_seller_n": 20,
+    "as_seller_truth_rate": 0.3
+   }
   },
   "FocalPoint": {
    "bargaining": {
-    "accept_rate": 0.2,
+    "accept_rate": 0.2222,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 35
+    "n": 36
    },
-   "games_observed": 28,
+   "games_observed": 35,
    "persuasion": {
     "as_buyer_buy_rate": 0.3,
     "as_buyer_n": 80,
-    "as_seller_n": 14,
-    "as_seller_truth_rate": 0.5714
+    "as_seller_n": 27,
+    "as_seller_truth_rate": 0.5185
    }
   },
   "Fortuna": {
-   "games_observed": 26,
+   "games_observed": 53,
    "negotiation": {
-    "close_rate": 0.5556,
-    "median_price_over_their_value": 1.2425,
-    "n_games": 18,
-    "n_offers": 20
+    "close_rate": 0.4186,
+    "median_price_over_their_value": 1.194,
+    "n_games": 43,
+    "n_offers": 56
    },
    "persuasion": {
     "as_buyer_buy_rate": 0.3125,
@@ -295,32 +506,75 @@
    }
   },
   "Godel": {
-   "games_observed": 17,
+   "bargaining": {
+    "accept_rate": 0.18,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 50
+   },
+   "games_observed": 73,
    "persuasion": {
-    "as_buyer_buy_rate": 0.6167,
-    "as_buyer_n": 120
+    "as_buyer_buy_rate": 0.6025,
+    "as_buyer_n": 400,
+    "as_seller_n": 90,
+    "as_seller_truth_rate": 0.7222
    }
   },
   "GoldenSon": {
-   "games_observed": 27,
+   "bargaining": {
+    "accept_rate": 0.3846,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 39
+   },
+   "games_observed": 94,
+   "negotiation": {
+    "close_rate": 0.3846,
+    "median_price_over_their_value": 0.81,
+    "n_games": 13,
+    "n_offers": 6
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5042,
-    "as_buyer_n": 240,
-    "as_seller_n": 34,
-    "as_seller_truth_rate": 0.8824
+    "as_buyer_buy_rate": 0.515,
+    "as_buyer_n": 600,
+    "as_seller_n": 132,
+    "as_seller_truth_rate": 0.7803
    }
   },
   "HAWK": {
    "bargaining": {
-    "accept_rate": 0.1538,
+    "accept_rate": 0.1504,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 13
+    "n": 133
    },
-   "games_observed": 20,
+   "games_observed": 95,
+   "negotiation": {
+    "close_rate": 0.3846,
+    "median_price_over_their_value": 0.6667,
+    "n_games": 13,
+    "n_offers": 62
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.34,
-    "as_buyer_n": 100
+    "as_buyer_buy_rate": 0.3709,
+    "as_buyer_n": 364,
+    "as_seller_n": 146,
+    "as_seller_truth_rate": 0.6233
+   }
+  },
+  "Harvey Specter": {
+   "games_observed": 28,
+   "negotiation": {
+    "close_rate": 0.7143,
+    "median_price_over_their_value": 1.3,
+    "n_games": 14,
+    "n_offers": 3
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5,
+    "as_buyer_n": 120,
+    "as_seller_n": 40,
+    "as_seller_truth_rate": 0.525
    }
   },
   "Indian_Aunty": {
@@ -334,43 +588,53 @@
   },
   "Ira": {
    "bargaining": {
-    "accept_rate": 0.5472,
+    "accept_rate": 0.5351,
     "accept_threshold": 0.1681,
     "highest_rejected_below": 0.16,
-    "n": 106
+    "n": 114
    },
-   "games_observed": 216,
+   "games_observed": 278,
    "negotiation": {
-    "close_rate": 0.6458,
-    "median_price_over_their_value": 0.8888,
-    "n_games": 48,
-    "n_offers": 45
+    "close_rate": 0.6267,
+    "median_price_over_their_value": 0.9355,
+    "n_games": 75,
+    "n_offers": 46
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4981,
-    "as_buyer_n": 520,
-    "as_seller_n": 222,
-    "as_seller_truth_rate": 0.6216
+    "as_buyer_buy_rate": 0.4768,
+    "as_buyer_n": 820,
+    "as_seller_n": 391,
+    "as_seller_truth_rate": 0.6266
    }
   },
   "Iric": {
-   "games_observed": 21,
+   "games_observed": 57,
    "negotiation": {
-    "close_rate": 0.5,
-    "median_price_over_their_value": 0.8082,
-    "n_games": 10,
-    "n_offers": 14
+    "close_rate": 0.5667,
+    "median_price_over_their_value": 0.8465,
+    "n_games": 30,
+    "n_offers": 33
    },
    "persuasion": {
-    "as_seller_n": 16,
-    "as_seller_truth_rate": 0.75
+    "as_buyer_buy_rate": 0.5963,
+    "as_buyer_n": 161,
+    "as_seller_n": 56,
+    "as_seller_truth_rate": 0.8929
    }
   },
   "Iris": {
-   "games_observed": 23,
+   "games_observed": 50,
+   "negotiation": {
+    "close_rate": 0.52,
+    "median_price_over_their_value": 1.1356,
+    "n_games": 25,
+    "n_offers": 20
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.0909,
-    "as_buyer_n": 22
+    "as_buyer_buy_rate": 0.1475,
+    "as_buyer_n": 122,
+    "as_seller_n": 17,
+    "as_seller_truth_rate": 0.7059
    }
   },
   "Iry": {
@@ -380,64 +644,77 @@
     "highest_rejected_below": 0.0929,
     "n": 87
    },
-   "games_observed": 180,
+   "games_observed": 213,
    "negotiation": {
-    "close_rate": 0.5714,
-    "median_price_over_their_value": 0.7308,
-    "n_games": 35,
-    "n_offers": 27
+    "close_rate": 0.5769,
+    "median_price_over_their_value": 0.7843,
+    "n_games": 52,
+    "n_offers": 71
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3642,
-    "as_buyer_n": 302,
-    "as_seller_n": 111,
-    "as_seller_truth_rate": 0.5135
+    "as_buyer_buy_rate": 0.4384,
+    "as_buyer_n": 422,
+    "as_seller_n": 214,
+    "as_seller_truth_rate": 0.5981
    }
   },
   "Irycia": {
+   "bargaining": {
+    "accept_rate": 0.3125,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 16
+   },
+   "games_observed": 70,
+   "negotiation": {
+    "close_rate": 0.3704,
+    "median_price_over_their_value": 1.2091,
+    "n_games": 27,
+    "n_offers": 14
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3731,
+    "as_buyer_n": 260,
+    "as_seller_n": 39,
+    "as_seller_truth_rate": 0.6667
+   }
+  },
+  "Kairos": {
    "bargaining": {
     "accept_rate": 0.3571,
     "accept_threshold": null,
     "highest_rejected_below": null,
     "n": 14
    },
-   "games_observed": 40,
-   "negotiation": {
-    "close_rate": 0.5833,
-    "median_price_over_their_value": 1.2091,
-    "n_games": 12,
-    "n_offers": 14
-   },
+   "games_observed": 20,
    "persuasion": {
-    "as_buyer_buy_rate": 0.13,
-    "as_buyer_n": 100,
-    "as_seller_n": 39,
-    "as_seller_truth_rate": 0.6667
+    "as_buyer_buy_rate": 0.0,
+    "as_buyer_n": 20
    }
   },
   "Kanki": {
    "bargaining": {
-    "accept_rate": 0.3214,
-    "accept_threshold": 0.48,
-    "highest_rejected_below": 0.47,
-    "n": 28
+    "accept_rate": 0.253,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 83
    },
-   "games_observed": 60,
+   "games_observed": 121,
    "negotiation": {
-    "close_rate": 0.4444,
-    "median_price_over_their_value": 0.8583,
-    "n_games": 9,
-    "n_offers": 17
+    "close_rate": 0.375,
+    "median_price_over_their_value": 1.2125,
+    "n_games": 16,
+    "n_offers": 22
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6367,
-    "as_buyer_n": 300,
-    "as_seller_n": 43,
-    "as_seller_truth_rate": 0.7209
+    "as_buyer_buy_rate": 0.4907,
+    "as_buyer_n": 540,
+    "as_seller_n": 74,
+    "as_seller_truth_rate": 0.5541
    }
   },
   "Katan M": {
-   "games_observed": 2,
+   "games_observed": 6,
    "persuasion": {
     "as_buyer_buy_rate": 0.95,
     "as_buyer_n": 20
@@ -466,65 +743,83 @@
   },
   "Lab2a.ai": {
    "bargaining": {
-    "accept_rate": 0.2706,
-    "accept_threshold": 0.5,
-    "highest_rejected_below": 0.4887,
-    "n": 170
+    "accept_rate": 0.2328,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 421
    },
-   "games_observed": 317,
+   "games_observed": 554,
    "negotiation": {
-    "close_rate": 0.4153,
-    "median_price_over_their_value": 1.75,
-    "n_games": 118,
-    "n_offers": 123
+    "close_rate": 0.4276,
+    "median_price_over_their_value": 1.6875,
+    "n_games": 145,
+    "n_offers": 144
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5059,
-    "as_buyer_n": 1020,
-    "as_seller_n": 346,
-    "as_seller_truth_rate": 0.8728
+    "as_buyer_buy_rate": 0.4787,
+    "as_buyer_n": 2020,
+    "as_seller_n": 655,
+    "as_seller_truth_rate": 0.9069
    }
   },
   "Lira": {
-   "games_observed": 13,
+   "bargaining": {
+    "accept_rate": 0.1414,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 99
+   },
+   "games_observed": 100,
    "persuasion": {
-    "as_buyer_buy_rate": 0.3,
-    "as_buyer_n": 40,
-    "as_seller_n": 12,
-    "as_seller_truth_rate": 0.3333
+    "as_buyer_buy_rate": 0.3794,
+    "as_buyer_n": 340,
+    "as_seller_n": 256,
+    "as_seller_truth_rate": 0.7031
    }
   },
   "MACH2": {
-   "games_observed": 31,
+   "games_observed": 89,
+   "negotiation": {
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.275,
+    "n_games": 24,
+    "n_offers": 13
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4333,
-    "as_buyer_n": 180,
-    "as_seller_n": 36,
-    "as_seller_truth_rate": 0.6944
+    "as_buyer_buy_rate": 0.3621,
+    "as_buyer_n": 580,
+    "as_seller_n": 69,
+    "as_seller_truth_rate": 0.5217
    }
   },
   "Mew": {
-   "games_observed": 41,
+   "bargaining": {
+    "accept_rate": 0.525,
+    "accept_threshold": 0.41,
+    "highest_rejected_below": 0.39,
+    "n": 40
+   },
+   "games_observed": 181,
    "negotiation": {
     "close_rate": 0.5,
-    "median_price_over_their_value": 1.297,
-    "n_games": 24,
-    "n_offers": 20
+    "median_price_over_their_value": 1.2036,
+    "n_games": 70,
+    "n_offers": 56
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.35,
-    "as_buyer_n": 60,
-    "as_seller_n": 43,
-    "as_seller_truth_rate": 0.9302
+    "as_buyer_buy_rate": 0.4125,
+    "as_buyer_n": 720,
+    "as_seller_n": 266,
+    "as_seller_truth_rate": 0.8571
    }
   },
   "Milgrom": {
-   "games_observed": 19,
+   "games_observed": 36,
    "negotiation": {
-    "close_rate": 0.4167,
-    "median_price_over_their_value": null,
-    "n_games": 12,
-    "n_offers": 0
+    "close_rate": 0.5172,
+    "median_price_over_their_value": 1.7175,
+    "n_games": 29,
+    "n_offers": 22
    },
    "persuasion": {
     "as_buyer_buy_rate": 1.0,
@@ -532,31 +827,37 @@
    }
   },
   "Morphling": {
-   "games_observed": 31,
+   "bargaining": {
+    "accept_rate": 0.3529,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 17
+   },
+   "games_observed": 59,
    "persuasion": {
-    "as_buyer_buy_rate": 0.2638,
-    "as_buyer_n": 163,
-    "as_seller_n": 106,
-    "as_seller_truth_rate": 0.7736
+    "as_buyer_buy_rate": 0.2719,
+    "as_buyer_n": 423,
+    "as_seller_n": 223,
+    "as_seller_truth_rate": 0.7534
    }
   },
   "Morphling-Ablation1": {
-   "games_observed": 34,
+   "games_observed": 46,
    "negotiation": {
-    "close_rate": 0.35,
+    "close_rate": 0.381,
     "median_price_over_their_value": 0.7992,
-    "n_games": 20,
+    "n_games": 21,
     "n_offers": 9
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5667,
-    "as_buyer_n": 120,
-    "as_seller_n": 53,
-    "as_seller_truth_rate": 0.8491
+    "as_buyer_buy_rate": 0.3926,
+    "as_buyer_n": 242,
+    "as_seller_n": 93,
+    "as_seller_truth_rate": 0.7419
    }
   },
   "Mythos01": {
-   "games_observed": 1,
+   "games_observed": 3,
    "persuasion": {
     "as_buyer_buy_rate": 0.15,
     "as_buyer_n": 20
@@ -564,347 +865,434 @@
   },
   "NegoMind": {
    "bargaining": {
-    "accept_rate": 0.1667,
+    "accept_rate": 0.0743,
     "accept_threshold": 0.5082,
     "highest_rejected_below": 0.5034,
-    "n": 66
+    "n": 175
    },
-   "games_observed": 135,
+   "games_observed": 204,
+   "negotiation": {
+    "close_rate": 0.3043,
+    "median_price_over_their_value": 1.185,
+    "n_games": 23,
+    "n_offers": 17
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3727,
-    "as_buyer_n": 966,
-    "as_seller_n": 166,
+    "as_buyer_buy_rate": 0.362,
+    "as_buyer_n": 1326,
+    "as_seller_n": 278,
     "as_seller_truth_rate": 1.0
    }
   },
   "NegoMind-B": {
    "bargaining": {
-    "accept_rate": 0.1064,
+    "accept_rate": 0.0761,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 47
+    "n": 92
    },
-   "games_observed": 118,
+   "games_observed": 159,
    "negotiation": {
-    "close_rate": 0.5,
-    "median_price_over_their_value": 0.815,
-    "n_games": 14,
-    "n_offers": 3
+    "close_rate": 0.4583,
+    "median_price_over_their_value": 1.2312,
+    "n_games": 24,
+    "n_offers": 13
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.2,
-    "as_buyer_n": 600,
-    "as_seller_n": 145,
+    "as_buyer_buy_rate": 0.275,
+    "as_buyer_n": 800,
+    "as_seller_n": 191,
     "as_seller_truth_rate": 1.0
    }
   },
   "Neo": {
-   "games_observed": 20,
+   "bargaining": {
+    "accept_rate": 0.4318,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 44
+   },
+   "games_observed": 81,
+   "negotiation": {
+    "close_rate": 0.5909,
+    "median_price_over_their_value": 1.2239,
+    "n_games": 22,
+    "n_offers": 34
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.225,
-    "as_buyer_n": 40
+    "as_buyer_buy_rate": 0.5778,
+    "as_buyer_n": 360,
+    "as_seller_n": 122,
+    "as_seller_truth_rate": 0.7459
    }
   },
   "Onix": {
-   "games_observed": 60,
+   "bargaining": {
+    "accept_rate": 0.375,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 16
+   },
+   "games_observed": 190,
    "negotiation": {
-    "close_rate": 0.5,
+    "close_rate": 0.5229,
     "median_price_over_their_value": 0.8613,
-    "n_games": 46,
-    "n_offers": 22
+    "n_games": 109,
+    "n_offers": 75
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5714,
-    "as_buyer_n": 140,
-    "as_seller_n": 28,
-    "as_seller_truth_rate": 0.7857
+    "as_buyer_buy_rate": 0.5,
+    "as_buyer_n": 740,
+    "as_seller_n": 210,
+    "as_seller_truth_rate": 0.919
    }
   },
   "Optimal": {
    "bargaining": {
-    "accept_rate": 0.6129,
-    "accept_threshold": 0.3277,
-    "highest_rejected_below": 0.32,
-    "n": 31
+    "accept_rate": 0.2453,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.4735,
+    "n": 159
    },
-   "games_observed": 43,
+   "games_observed": 108,
    "persuasion": {
-    "as_buyer_buy_rate": 0.4667,
-    "as_buyer_n": 60,
-    "as_seller_n": 63,
-    "as_seller_truth_rate": 0.6667
+    "as_buyer_buy_rate": 0.6441,
+    "as_buyer_n": 340,
+    "as_seller_n": 218,
+    "as_seller_truth_rate": 0.5963
    }
   },
   "Ousen": {
    "bargaining": {
-    "accept_rate": 0.3333,
-    "accept_threshold": 0.43,
-    "highest_rejected_below": 0.4095,
-    "n": 21
+    "accept_rate": 0.2857,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 63
    },
-   "games_observed": 53,
+   "games_observed": 133,
    "persuasion": {
-    "as_buyer_buy_rate": 0.6385,
-    "as_buyer_n": 260,
-    "as_seller_n": 114,
-    "as_seller_truth_rate": 0.5965
+    "as_buyer_buy_rate": 0.5633,
+    "as_buyer_n": 687,
+    "as_seller_n": 194,
+    "as_seller_truth_rate": 0.6237
    }
   },
   "P-agent": {
    "bargaining": {
-    "accept_rate": 0.2807,
-    "accept_threshold": 0.4096,
-    "highest_rejected_below": 0.4,
-    "n": 114
+    "accept_rate": 0.1849,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 384
    },
-   "games_observed": 151,
+   "games_observed": 337,
    "negotiation": {
-    "close_rate": 0.5429,
-    "median_price_over_their_value": 1.1528,
-    "n_games": 35,
-    "n_offers": 21
+    "close_rate": 0.4545,
+    "median_price_over_their_value": 1.176,
+    "n_games": 99,
+    "n_offers": 78
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5052,
-    "as_buyer_n": 580,
-    "as_seller_n": 145,
-    "as_seller_truth_rate": 0.9241
+    "as_buyer_buy_rate": 0.5096,
+    "as_buyer_n": 1042,
+    "as_seller_n": 257,
+    "as_seller_truth_rate": 0.9183
    }
   },
   "Piplup": {
    "bargaining": {
-    "accept_rate": 0.303,
-    "accept_threshold": 0.33,
-    "highest_rejected_below": 0.3,
-    "n": 33
+    "accept_rate": 0.3,
+    "accept_threshold": 0.4773,
+    "highest_rejected_below": 0.39,
+    "n": 100
    },
-   "games_observed": 56,
+   "games_observed": 233,
    "negotiation": {
-    "close_rate": 0.6944,
+    "close_rate": 0.5213,
     "median_price_over_their_value": 0.9005,
-    "n_games": 36,
-    "n_offers": 23
+    "n_games": 94,
+    "n_offers": 79
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5,
-    "as_buyer_n": 40,
-    "as_seller_n": 13,
-    "as_seller_truth_rate": 1.0
+    "as_buyer_buy_rate": 0.4651,
+    "as_buyer_n": 931,
+    "as_seller_n": 361,
+    "as_seller_truth_rate": 0.8643
    }
   },
   "Poseidon": {
-   "games_observed": 27,
+   "bargaining": {
+    "accept_rate": 0.4423,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 52
+   },
+   "games_observed": 101,
    "negotiation": {
-    "close_rate": 0.5,
-    "median_price_over_their_value": 1.175,
-    "n_games": 10,
-    "n_offers": 16
+    "close_rate": 0.5135,
+    "median_price_over_their_value": 1.194,
+    "n_games": 37,
+    "n_offers": 35
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.75,
-    "as_buyer_n": 44,
-    "as_seller_n": 48,
-    "as_seller_truth_rate": 0.6458
+    "as_buyer_buy_rate": 0.6049,
+    "as_buyer_n": 324,
+    "as_seller_n": 108,
+    "as_seller_truth_rate": 0.6759
    }
   },
   "Pressuring Agent": {
    "bargaining": {
-    "accept_rate": 0.5,
-    "accept_threshold": 0.4224,
-    "highest_rejected_below": 0.39,
-    "n": 30
+    "accept_rate": 0.4444,
+    "accept_threshold": 0.45,
+    "highest_rejected_below": 0.4428,
+    "n": 54
    },
-   "games_observed": 40,
+   "games_observed": 107,
+   "negotiation": {
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.32,
+    "n_games": 16,
+    "n_offers": 5
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.0,
-    "as_buyer_n": 40,
-    "as_seller_n": 52,
-    "as_seller_truth_rate": 0.6154
+    "as_buyer_buy_rate": 0.6316,
+    "as_buyer_n": 380,
+    "as_seller_n": 320,
+    "as_seller_truth_rate": 0.7469
    }
   },
   "Priori": {
-   "games_observed": 25,
+   "bargaining": {
+    "accept_rate": 0.2373,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 59
+   },
+   "games_observed": 102,
    "persuasion": {
-    "as_buyer_buy_rate": 0.7227,
-    "as_buyer_n": 220,
-    "as_seller_n": 107,
-    "as_seller_truth_rate": 0.7664
+    "as_buyer_buy_rate": 0.6306,
+    "as_buyer_n": 620,
+    "as_seller_n": 214,
+    "as_seller_truth_rate": 0.7477
    }
   },
   "QuadrupleTriple": {
    "bargaining": {
-    "accept_rate": 0.3056,
+    "accept_rate": 0.1837,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 36
+    "n": 98
    },
-   "games_observed": 40,
+   "games_observed": 99,
    "persuasion": {
-    "as_buyer_buy_rate": 0.4125,
-    "as_buyer_n": 160,
-    "as_seller_n": 33,
-    "as_seller_truth_rate": 0.7273
+    "as_buyer_buy_rate": 0.4226,
+    "as_buyer_n": 620,
+    "as_seller_n": 109,
+    "as_seller_truth_rate": 0.7706
    }
   },
   "Quagsire": {
    "bargaining": {
-    "accept_rate": 0.3333,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 12
+    "accept_rate": 0.2727,
+    "accept_threshold": 0.43,
+    "highest_rejected_below": 0.39,
+    "n": 44
    },
-   "games_observed": 69,
+   "games_observed": 215,
    "negotiation": {
-    "close_rate": 0.48,
-    "median_price_over_their_value": 1.3119,
-    "n_games": 50,
-    "n_offers": 40
+    "close_rate": 0.472,
+    "median_price_over_their_value": 1.1897,
+    "n_games": 125,
+    "n_offers": 115
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5714,
-    "as_buyer_n": 140,
-    "as_seller_n": 43,
-    "as_seller_truth_rate": 0.9535
+    "as_buyer_buy_rate": 0.4902,
+    "as_buyer_n": 820,
+    "as_seller_n": 226,
+    "as_seller_truth_rate": 0.8628
    }
   },
   "Quantile": {
    "bargaining": {
-    "accept_rate": 0.1524,
+    "accept_rate": 0.1741,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 328
+    "n": 563
    },
-   "games_observed": 366,
+   "games_observed": 656,
    "negotiation": {
-    "close_rate": 0.7273,
-    "median_price_over_their_value": 1.3864,
-    "n_games": 22,
-    "n_offers": 14
+    "close_rate": 0.5362,
+    "median_price_over_their_value": 0.8462,
+    "n_games": 69,
+    "n_offers": 35
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.395,
-    "as_buyer_n": 1400,
-    "as_seller_n": 523,
-    "as_seller_truth_rate": 0.6788
+    "as_buyer_buy_rate": 0.4625,
+    "as_buyer_n": 2638,
+    "as_seller_n": 792,
+    "as_seller_truth_rate": 0.6806
    }
   },
   "RESERVE": {
-   "games_observed": 9,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.65,
-    "as_buyer_n": 20
-   }
-  },
-  "Recursive": {
    "bargaining": {
-    "accept_rate": 0.0385,
+    "accept_rate": 0.2258,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 26
+    "n": 31
    },
-   "games_observed": 15
-  },
-  "ReliabilityFoundry-v1": {
-   "games_observed": 12,
-   "negotiation": {
-    "close_rate": 0.5833,
-    "median_price_over_their_value": 1.125,
-    "n_games": 12,
-    "n_offers": 1
+   "games_observed": 28,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.2833,
+    "as_buyer_n": 60,
+    "as_seller_n": 58,
+    "as_seller_truth_rate": 0.9138
    }
   },
-  "Riboku": {
+  "Ra": {
    "bargaining": {
-    "accept_rate": 0.2051,
+    "accept_rate": 0.2308,
     "accept_threshold": null,
     "highest_rejected_below": null,
     "n": 39
    },
-   "games_observed": 48,
+   "games_observed": 133,
+   "negotiation": {
+    "close_rate": 0.3611,
+    "median_price_over_their_value": 0.9544,
+    "n_games": 72,
+    "n_offers": 66
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.2375,
-    "as_buyer_n": 160,
-    "as_seller_n": 53,
-    "as_seller_truth_rate": 0.5849
+    "as_buyer_buy_rate": 0.6731,
+    "as_buyer_n": 465,
+    "as_seller_n": 161,
+    "as_seller_truth_rate": 0.7888
+   }
+  },
+  "Recursive": {
+   "bargaining": {
+    "accept_rate": 0.0323,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 31
+   },
+   "games_observed": 17
+  },
+  "ReliabilityFoundry-v1": {
+   "games_observed": 13,
+   "negotiation": {
+    "close_rate": 0.6154,
+    "median_price_over_their_value": 0.9,
+    "n_games": 13,
+    "n_offers": 6
+   }
+  },
+  "Riboku": {
+   "bargaining": {
+    "accept_rate": 0.2526,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 95
+   },
+   "games_observed": 127,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4421,
+    "as_buyer_n": 380,
+    "as_seller_n": 97,
+    "as_seller_truth_rate": 0.5258
    }
   },
   "Rubinstein": {
    "bargaining": {
-    "accept_rate": 0.2432,
+    "accept_rate": 0.2836,
     "accept_threshold": 0.6789,
     "highest_rejected_below": 0.66,
-    "n": 111
+    "n": 134
    },
-   "games_observed": 179,
+   "games_observed": 436,
    "negotiation": {
-    "close_rate": 0.4938,
-    "median_price_over_their_value": 1.0708,
-    "n_games": 81,
-    "n_offers": 60
+    "close_rate": 0.4769,
+    "median_price_over_their_value": 0.935,
+    "n_games": 216,
+    "n_offers": 125
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4652,
-    "as_buyer_n": 460,
-    "as_seller_n": 158,
-    "as_seller_truth_rate": 0.6646
+    "as_buyer_buy_rate": 0.403,
+    "as_buyer_n": 1382,
+    "as_seller_n": 488,
+    "as_seller_truth_rate": 0.7234
    }
   },
   "Rufus Dufus": {
    "bargaining": {
-    "accept_rate": 0.16,
+    "accept_rate": 0.1212,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 25
+    "n": 33
    },
-   "games_observed": 153,
+   "games_observed": 205,
    "negotiation": {
-    "close_rate": 0.5556,
+    "close_rate": 0.5122,
     "median_price_over_their_value": 0.9167,
-    "n_games": 99,
-    "n_offers": 60
+    "n_games": 123,
+    "n_offers": 78
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4433,
-    "as_buyer_n": 300,
-    "as_seller_n": 149,
-    "as_seller_truth_rate": 0.953
+    "as_buyer_buy_rate": 0.4125,
+    "as_buyer_n": 480,
+    "as_seller_n": 227,
+    "as_seller_truth_rate": 0.9692
    }
   },
   "SMachine": {
-   "games_observed": 47,
+   "bargaining": {
+    "accept_rate": 0.25,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 12
+   },
+   "games_observed": 66,
    "negotiation": {
-    "close_rate": 0.4146,
+    "close_rate": 0.4286,
     "median_price_over_their_value": 1.1674,
-    "n_games": 41,
+    "n_games": 42,
     "n_offers": 18
    },
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 20
+    "as_buyer_buy_rate": 0.6889,
+    "as_buyer_n": 180,
+    "as_seller_n": 81,
+    "as_seller_truth_rate": 0.9136
    }
   },
   "Scarlett": {
    "bargaining": {
-    "accept_rate": 0.3171,
+    "accept_rate": 0.2276,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 41
+    "n": 145
    },
-   "games_observed": 37,
+   "games_observed": 104,
+   "negotiation": {
+    "close_rate": 0.6,
+    "median_price_over_their_value": 1.1596,
+    "n_games": 15,
+    "n_offers": 8
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.53,
-    "as_buyer_n": 100,
-    "as_seller_n": 45,
-    "as_seller_truth_rate": 0.8
+    "as_buyer_buy_rate": 0.4036,
+    "as_buyer_n": 280,
+    "as_seller_n": 161,
+    "as_seller_truth_rate": 0.677
    }
   },
   "Schelling": {
-   "games_observed": 33,
+   "games_observed": 48,
    "negotiation": {
-    "close_rate": 0.6667,
-    "median_price_over_their_value": 0.8383,
-    "n_games": 21,
-    "n_offers": 26
+    "close_rate": 0.5429,
+    "median_price_over_their_value": 0.8467,
+    "n_games": 35,
+    "n_offers": 28
    },
    "persuasion": {
     "as_buyer_buy_rate": 0.77,
@@ -922,207 +1310,271 @@
   },
   "Shin": {
    "bargaining": {
-    "accept_rate": 0.2308,
+    "accept_rate": 0.2124,
     "accept_threshold": 0.48,
-    "highest_rejected_below": 0.43,
-    "n": 52
+    "highest_rejected_below": 0.4737,
+    "n": 113
    },
-   "games_observed": 53,
+   "games_observed": 120,
+   "negotiation": {
+    "close_rate": 0.5833,
+    "median_price_over_their_value": 1.225,
+    "n_games": 12,
+    "n_offers": 9
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3091,
-    "as_buyer_n": 220,
-    "as_seller_n": 52,
-    "as_seller_truth_rate": 0.6538
+    "as_buyer_buy_rate": 0.4854,
+    "as_buyer_n": 480,
+    "as_seller_n": 76,
+    "as_seller_truth_rate": 0.6711
    }
   },
   "TMachine": {
-   "games_observed": 4,
+   "games_observed": 22,
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 40
+    "as_buyer_buy_rate": 0.7019,
+    "as_buyer_n": 104,
+    "as_seller_n": 38,
+    "as_seller_truth_rate": 0.9211
    }
   },
   "Tester1": {
-   "games_observed": 83,
+   "bargaining": {
+    "accept_rate": 0.5909,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 22
+   },
+   "games_observed": 241,
+   "negotiation": {
+    "close_rate": 0.4,
+    "median_price_over_their_value": 0.816,
+    "n_games": 25,
+    "n_offers": 17
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5444,
-    "as_buyer_n": 720,
-    "as_seller_n": 138,
-    "as_seller_truth_rate": 0.6449
+    "as_buyer_buy_rate": 0.6144,
+    "as_buyer_n": 1779,
+    "as_seller_n": 464,
+    "as_seller_truth_rate": 0.7134
    }
   },
   "Tiberius": {
-   "games_observed": 22,
+   "bargaining": {
+    "accept_rate": 0.1538,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 117
+   },
+   "games_observed": 107,
+   "negotiation": {
+    "close_rate": 0.5385,
+    "median_price_over_their_value": 1.4755,
+    "n_games": 13,
+    "n_offers": 18
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.23,
-    "as_buyer_n": 100,
-    "as_seller_n": 107,
-    "as_seller_truth_rate": 0.6729
+    "as_buyer_buy_rate": 0.3143,
+    "as_buyer_n": 280,
+    "as_seller_n": 233,
+    "as_seller_truth_rate": 0.6695
    }
   },
   "Triniti": {
-   "games_observed": 20,
+   "bargaining": {
+    "accept_rate": 0.4643,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 28
+   },
+   "games_observed": 67,
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 20,
-    "as_seller_n": 35,
-    "as_seller_truth_rate": 0.4857
+    "as_buyer_buy_rate": 0.6571,
+    "as_buyer_n": 280,
+    "as_seller_n": 136,
+    "as_seller_truth_rate": 0.6691
    }
   },
   "Utk": {
    "bargaining": {
-    "accept_rate": 0.3333,
+    "accept_rate": 0.3774,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 12
+    "n": 53
    },
-   "games_observed": 67,
+   "games_observed": 138,
+   "negotiation": {
+    "close_rate": 0.4762,
+    "median_price_over_their_value": 1.1625,
+    "n_games": 21,
+    "n_offers": 6
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4467,
-    "as_buyer_n": 488,
-    "as_seller_n": 171,
-    "as_seller_truth_rate": 0.7661
+    "as_buyer_buy_rate": 0.4011,
+    "as_buyer_n": 748,
+    "as_seller_n": 322,
+    "as_seller_truth_rate": 0.677
    }
   },
   "V-Agent": {
    "bargaining": {
-    "accept_rate": 0.3095,
-    "accept_threshold": 0.5,
-    "highest_rejected_below": 0.4966,
-    "n": 84
+    "accept_rate": 0.2329,
+    "accept_threshold": 0.6419,
+    "highest_rejected_below": 0.6384,
+    "n": 322
    },
-   "games_observed": 196,
+   "games_observed": 431,
    "negotiation": {
-    "close_rate": 0.4194,
-    "median_price_over_their_value": 1.225,
-    "n_games": 62,
-    "n_offers": 58
+    "close_rate": 0.4375,
+    "median_price_over_their_value": 0.8944,
+    "n_games": 112,
+    "n_offers": 109
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4368,
-    "as_buyer_n": 680,
-    "as_seller_n": 289,
-    "as_seller_truth_rate": 0.9377
+    "as_buyer_buy_rate": 0.4012,
+    "as_buyer_n": 1640,
+    "as_seller_n": 661,
+    "as_seller_truth_rate": 0.8699
+   }
+  },
+  "VK_Agent5": {
+   "games_observed": 5,
+   "persuasion": {
+    "as_buyer_buy_rate": 1.0,
+    "as_buyer_n": 20
    }
   },
   "Wooper": {
-   "games_observed": 67,
+   "bargaining": {
+    "accept_rate": 0.3824,
+    "accept_threshold": 0.43,
+    "highest_rejected_below": 0.39,
+    "n": 34
+   },
+   "games_observed": 219,
    "negotiation": {
-    "close_rate": 0.6512,
-    "median_price_over_their_value": 0.8613,
-    "n_games": 43,
-    "n_offers": 28
+    "close_rate": 0.5979,
+    "median_price_over_their_value": 0.92,
+    "n_games": 97,
+    "n_offers": 101
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.505,
-    "as_buyer_n": 200,
-    "as_seller_n": 54,
-    "as_seller_truth_rate": 0.9815
+    "as_buyer_buy_rate": 0.4833,
+    "as_buyer_n": 1140,
+    "as_seller_n": 258,
+    "as_seller_truth_rate": 0.8643
+   }
+  },
+  "Yosef Zoabi": {
+   "games_observed": 9,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.225,
+    "as_buyer_n": 40
    }
   },
   "Zeus": {
    "bargaining": {
-    "accept_rate": 0.32,
+    "accept_rate": 0.2838,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 25
+    "n": 74
    },
-   "games_observed": 37,
+   "games_observed": 105,
    "negotiation": {
-    "close_rate": 0.3077,
-    "median_price_over_their_value": 1.18,
-    "n_games": 13,
-    "n_offers": 11
+    "close_rate": 0.4474,
+    "median_price_over_their_value": 1.225,
+    "n_games": 38,
+    "n_offers": 41
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5583,
-    "as_buyer_n": 120,
-    "as_seller_n": 38,
-    "as_seller_truth_rate": 0.7632
+    "as_buyer_buy_rate": 0.5088,
+    "as_buyer_n": 340,
+    "as_seller_n": 114,
+    "as_seller_truth_rate": 0.7281
    }
   },
   "agent": {
    "bargaining": {
-    "accept_rate": 0.3226,
+    "accept_rate": 0.338,
     "accept_threshold": 0.5,
     "highest_rejected_below": 0.4943,
-    "n": 62
+    "n": 142
    },
-   "games_observed": 132,
+   "games_observed": 328,
    "negotiation": {
-    "close_rate": 0.6,
-    "median_price_over_their_value": 1.135,
-    "n_games": 40,
-    "n_offers": 41
+    "close_rate": 0.4857,
+    "median_price_over_their_value": 1.16,
+    "n_games": 105,
+    "n_offers": 68
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.65,
-    "as_buyer_n": 320,
-    "as_seller_n": 35,
-    "as_seller_truth_rate": 0.6286
+    "as_buyer_buy_rate": 0.6854,
+    "as_buyer_n": 1284,
+    "as_seller_n": 221,
+    "as_seller_truth_rate": 0.7059
    }
   },
   "agent007": {
    "bargaining": {
-    "accept_rate": 0.45,
-    "accept_threshold": 0.48,
-    "highest_rejected_below": 0.3755,
-    "n": 20
+    "accept_rate": 0.3056,
+    "accept_threshold": 0.4004,
+    "highest_rejected_below": 0.39,
+    "n": 36
    },
-   "games_observed": 68,
+   "games_observed": 159,
    "negotiation": {
-    "close_rate": 0.4286,
-    "median_price_over_their_value": 0.7533,
-    "n_games": 28,
-    "n_offers": 15
+    "close_rate": 0.3582,
+    "median_price_over_their_value": 0.864,
+    "n_games": 67,
+    "n_offers": 43
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3056,
-    "as_buyer_n": 180,
-    "as_seller_n": 106,
-    "as_seller_truth_rate": 0.6321
+    "as_buyer_buy_rate": 0.41,
+    "as_buyer_n": 700,
+    "as_seller_n": 205,
+    "as_seller_truth_rate": 0.722
    }
   },
   "agent1": {
    "bargaining": {
-    "accept_rate": 0.3419,
-    "accept_threshold": 0.46,
-    "highest_rejected_below": 0.45,
-    "n": 155
+    "accept_rate": 0.2463,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 479
    },
-   "games_observed": 341,
+   "games_observed": 637,
    "negotiation": {
-    "close_rate": 0.5596,
-    "median_price_over_their_value": 1.15,
-    "n_games": 109,
-    "n_offers": 93
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.175,
+    "n_games": 192,
+    "n_offers": 134
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4594,
-    "as_buyer_n": 1306,
-    "as_seller_n": 515,
-    "as_seller_truth_rate": 0.932
+    "as_buyer_buy_rate": 0.4619,
+    "as_buyer_n": 2386,
+    "as_seller_n": 1109,
+    "as_seller_truth_rate": 0.8819
    }
   },
   "anchor": {
    "bargaining": {
-    "accept_rate": 0.4286,
+    "accept_rate": 0.3913,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 21
+    "n": 23
    },
-   "games_observed": 98,
+   "games_observed": 133,
    "negotiation": {
-    "close_rate": 0.5306,
+    "close_rate": 0.5342,
     "median_price_over_their_value": 1.232,
-    "n_games": 49,
-    "n_offers": 35
+    "n_games": 73,
+    "n_offers": 47
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4088,
-    "as_buyer_n": 340,
-    "as_seller_n": 161,
-    "as_seller_truth_rate": 0.7267
+    "as_buyer_buy_rate": 0.3625,
+    "as_buyer_n": 469,
+    "as_seller_n": 181,
+    "as_seller_truth_rate": 0.7348
    }
   },
   "ba_mosaic": {
@@ -1140,255 +1592,325 @@
   },
   "bobbylab": {
    "bargaining": {
-    "accept_rate": 0.5946,
+    "accept_rate": 0.5854,
     "accept_threshold": 0.3085,
     "highest_rejected_below": 0.2479,
-    "n": 37
+    "n": 41
    },
-   "games_observed": 99,
+   "games_observed": 158,
+   "negotiation": {
+    "close_rate": 0.6216,
+    "median_price_over_their_value": 1.2424,
+    "n_games": 37,
+    "n_offers": 45
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3918,
-    "as_buyer_n": 559,
-    "as_seller_n": 203,
-    "as_seller_truth_rate": 0.7241
+    "as_buyer_buy_rate": 0.3602,
+    "as_buyer_n": 719,
+    "as_seller_n": 323,
+    "as_seller_truth_rate": 0.7368
    }
   },
   "champion": {
    "bargaining": {
-    "accept_rate": 0.3464,
+    "accept_rate": 0.3418,
     "accept_threshold": 0.523,
     "highest_rejected_below": 0.52,
-    "n": 153
+    "n": 158
    },
-   "games_observed": 572,
+   "games_observed": 718,
    "negotiation": {
-    "close_rate": 0.6429,
+    "close_rate": 0.6331,
     "median_price_over_their_value": 1.144,
-    "n_games": 308,
-    "n_offers": 154
+    "n_games": 338,
+    "n_offers": 159
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3466,
-    "as_buyer_n": 629,
-    "as_seller_n": 274,
-    "as_seller_truth_rate": 0.7628
+    "as_buyer_buy_rate": 0.3226,
+    "as_buyer_n": 1869,
+    "as_seller_n": 762,
+    "as_seller_truth_rate": 0.7244
    }
   },
   "chotu": {
    "bargaining": {
-    "accept_rate": 0.404,
+    "accept_rate": 0.4177,
     "accept_threshold": 0.2569,
     "highest_rejected_below": 0.2454,
-    "n": 151
+    "n": 158
    },
-   "games_observed": 249,
+   "games_observed": 429,
    "negotiation": {
-    "close_rate": 0.4035,
-    "median_price_over_their_value": 1.1282,
-    "n_games": 114,
-    "n_offers": 81
+    "close_rate": 0.3971,
+    "median_price_over_their_value": 1.125,
+    "n_games": 209,
+    "n_offers": 173
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.625,
-    "as_buyer_n": 600,
-    "as_seller_n": 157,
-    "as_seller_truth_rate": 0.7898
+    "as_buyer_buy_rate": 0.6201,
+    "as_buyer_n": 1424,
+    "as_seller_n": 300,
+    "as_seller_truth_rate": 0.7633
    }
   },
   "cobbylab": {
    "bargaining": {
-    "accept_rate": 0.5102,
-    "accept_threshold": 0.29,
-    "highest_rejected_below": 0.2879,
-    "n": 49
+    "accept_rate": 0.4783,
+    "accept_threshold": 0.38,
+    "highest_rejected_below": 0.3767,
+    "n": 69
    },
-   "games_observed": 45
+   "games_observed": 62
   },
   "codex": {
    "bargaining": {
-    "accept_rate": 0.3571,
+    "accept_rate": 0.3226,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 42
+    "n": 62
    },
-   "games_observed": 176,
+   "games_observed": 333,
    "negotiation": {
-    "close_rate": 0.5275,
-    "median_price_over_their_value": 0.8788,
-    "n_games": 91,
-    "n_offers": 64
+    "close_rate": 0.527,
+    "median_price_over_their_value": 0.885,
+    "n_games": 148,
+    "n_offers": 113
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.38,
-    "as_buyer_n": 200,
-    "as_seller_n": 201,
-    "as_seller_truth_rate": 0.8259
+    "as_buyer_buy_rate": 0.5247,
+    "as_buyer_n": 1115,
+    "as_seller_n": 586,
+    "as_seller_truth_rate": 0.8413
    }
   },
   "crown-agent": {
    "bargaining": {
-    "accept_rate": 0.4167,
-    "accept_threshold": 0.5,
-    "highest_rejected_below": 0.4894,
-    "n": 60
+    "accept_rate": 0.4511,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 133
    },
-   "games_observed": 113,
+   "games_observed": 285,
    "negotiation": {
-    "close_rate": 0.3929,
-    "median_price_over_their_value": 1.236,
-    "n_games": 28,
-    "n_offers": 15
+    "close_rate": 0.4253,
+    "median_price_over_their_value": 1.308,
+    "n_games": 87,
+    "n_offers": 45
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3214,
-    "as_buyer_n": 280,
-    "as_seller_n": 104,
-    "as_seller_truth_rate": 0.6154
+    "as_buyer_buy_rate": 0.4466,
+    "as_buyer_n": 880,
+    "as_seller_n": 462,
+    "as_seller_truth_rate": 0.6905
+   }
+  },
+  "cybot": {
+   "games_observed": 12,
+   "negotiation": {
+    "close_rate": 0.25,
+    "median_price_over_their_value": 0.7593,
+    "n_games": 8,
+    "n_offers": 13
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3667,
+    "as_buyer_n": 60
    }
   },
   "dobbylab": {
-   "games_observed": 61,
+   "games_observed": 106,
    "persuasion": {
-    "as_buyer_buy_rate": 0.4771,
-    "as_buyer_n": 503,
-    "as_seller_n": 335,
-    "as_seller_truth_rate": 0.7701
+    "as_buyer_buy_rate": 0.5094,
+    "as_buyer_n": 905,
+    "as_seller_n": 515,
+    "as_seller_truth_rate": 0.7806
    }
   },
   "doodod": {
-   "games_observed": 19,
+   "bargaining": {
+    "accept_rate": 0.2051,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 39
+   },
+   "games_observed": 78,
    "negotiation": {
-    "close_rate": 0.25,
-    "median_price_over_their_value": null,
-    "n_games": 12,
-    "n_offers": 0
+    "close_rate": 0.3478,
+    "median_price_over_their_value": 0.806,
+    "n_games": 23,
+    "n_offers": 2
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5,
-    "as_buyer_n": 80,
-    "as_seller_n": 20,
-    "as_seller_truth_rate": 0.6
+    "as_buyer_buy_rate": 0.4188,
+    "as_buyer_n": 480,
+    "as_seller_n": 49,
+    "as_seller_truth_rate": 0.7755
    }
   },
   "expert": {
    "bargaining": {
-    "accept_rate": 0.4043,
+    "accept_rate": 0.3419,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 47
+    "n": 117
    },
-   "games_observed": 62,
+   "games_observed": 148,
+   "negotiation": {
+    "close_rate": 0.5714,
+    "median_price_over_their_value": 1.1817,
+    "n_games": 21,
+    "n_offers": 17
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.0167,
-    "as_buyer_n": 60,
-    "as_seller_n": 99,
-    "as_seller_truth_rate": 0.6566
+    "as_buyer_buy_rate": 0.4083,
+    "as_buyer_n": 480,
+    "as_seller_n": 292,
+    "as_seller_truth_rate": 0.6267
    }
   },
   "fable": {
    "bargaining": {
-    "accept_rate": 0.7368,
+    "accept_rate": 0.76,
     "accept_threshold": 0.3118,
     "highest_rejected_below": 0.2649,
-    "n": 19
+    "n": 25
    },
-   "games_observed": 38,
+   "games_observed": 56,
+   "negotiation": {
+    "close_rate": 0.5,
+    "median_price_over_their_value": 0.76,
+    "n_games": 10,
+    "n_offers": 15
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.95,
-    "as_buyer_n": 120,
-    "as_seller_n": 51,
-    "as_seller_truth_rate": 0.8235
+    "as_buyer_buy_rate": 0.97,
+    "as_buyer_n": 200,
+    "as_seller_n": 71,
+    "as_seller_truth_rate": 0.8028
    }
   },
   "fifth-one": {
-   "games_observed": 83,
+   "bargaining": {
+    "accept_rate": 0.1145,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 131
+   },
+   "games_observed": 230,
    "negotiation": {
-    "close_rate": 0.3889,
-    "median_price_over_their_value": 1.25,
-    "n_games": 36,
-    "n_offers": 28
+    "close_rate": 0.4045,
+    "median_price_over_their_value": 1.2,
+    "n_games": 89,
+    "n_offers": 65
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3111,
-    "as_buyer_n": 540,
-    "as_seller_n": 40,
-    "as_seller_truth_rate": 0.975
+    "as_buyer_buy_rate": 0.2627,
+    "as_buyer_n": 1100,
+    "as_seller_n": 125,
+    "as_seller_truth_rate": 0.888
    }
   },
   "first-one": {
-   "games_observed": 92,
+   "bargaining": {
+    "accept_rate": 0.1856,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 97
+   },
+   "games_observed": 265,
    "negotiation": {
-    "close_rate": 0.3611,
-    "median_price_over_their_value": 0.8,
-    "n_games": 36,
-    "n_offers": 33
+    "close_rate": 0.4227,
+    "median_price_over_their_value": 0.8333,
+    "n_games": 97,
+    "n_offers": 72
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.0996,
-    "as_buyer_n": 492,
-    "as_seller_n": 33,
-    "as_seller_truth_rate": 0.697
+    "as_buyer_buy_rate": 0.2517,
+    "as_buyer_n": 1192,
+    "as_seller_n": 125,
+    "as_seller_truth_rate": 0.664
    }
   },
   "forth-one": {
-   "games_observed": 110,
+   "bargaining": {
+    "accept_rate": 0.1398,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 186
+   },
+   "games_observed": 285,
    "negotiation": {
-    "close_rate": 0.5094,
+    "close_rate": 0.4959,
     "median_price_over_their_value": 1.225,
-    "n_games": 53,
-    "n_offers": 53
+    "n_games": 121,
+    "n_offers": 113
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.2845,
-    "as_buyer_n": 580,
-    "as_seller_n": 90,
-    "as_seller_truth_rate": 0.8556
+    "as_buyer_buy_rate": 0.299,
+    "as_buyer_n": 960,
+    "as_seller_n": 182,
+    "as_seller_truth_rate": 0.7802
    }
   },
   "gamma": {
    "bargaining": {
-    "accept_rate": 0.1462,
-    "accept_threshold": 0.5332,
-    "highest_rejected_below": 0.53,
-    "n": 171
+    "accept_rate": 0.1363,
+    "accept_threshold": 0.548,
+    "highest_rejected_below": 0.5477,
+    "n": 785
    },
-   "games_observed": 131,
+   "games_observed": 400,
    "negotiation": {
-    "close_rate": 0.6207,
+    "close_rate": 0.6197,
     "median_price_over_their_value": 1.225,
-    "n_games": 29,
-    "n_offers": 20
+    "n_games": 71,
+    "n_offers": 74
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5515,
-    "as_buyer_n": 194,
-    "as_seller_n": 83,
-    "as_seller_truth_rate": 0.7349
+    "as_buyer_buy_rate": 0.5633,
+    "as_buyer_n": 774,
+    "as_seller_n": 359,
+    "as_seller_truth_rate": 0.7159
    }
   },
   "gangsteryoshi": {
-   "games_observed": 8,
+   "games_observed": 11,
    "persuasion": {
-    "as_buyer_buy_rate": 0.21,
-    "as_buyer_n": 100
+    "as_buyer_buy_rate": 0.3417,
+    "as_buyer_n": 120
    }
   },
   "gemini-3.1-pro-preview": {
+   "games_observed": 14,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.42,
+    "as_buyer_n": 100,
+    "as_seller_n": 22,
+    "as_seller_truth_rate": 0.8182
+   }
+  },
+  "gemini-3.5-flash-lite": {
    "games_observed": 6,
    "persuasion": {
-    "as_buyer_buy_rate": 0.2333,
-    "as_buyer_n": 60
+    "as_seller_n": 17,
+    "as_seller_truth_rate": 0.8824
    }
   },
   "gemini-3.6-flash": {
-   "games_observed": 4,
+   "games_observed": 7,
    "persuasion": {
-    "as_buyer_buy_rate": 0.6667,
-    "as_buyer_n": 60
+    "as_buyer_buy_rate": 0.6,
+    "as_buyer_n": 100
    }
   },
   "gill bates": {
-   "games_observed": 1,
+   "bargaining": {
+    "accept_rate": 0.2,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 15
+   },
+   "games_observed": 9,
    "persuasion": {
     "as_buyer_buy_rate": 1.0,
     "as_buyer_n": 20
@@ -1396,600 +1918,777 @@
   },
   "harry-agent": {
    "bargaining": {
-    "accept_rate": 0.4906,
-    "accept_threshold": 0.43,
-    "highest_rejected_below": 0.42,
-    "n": 53
+    "accept_rate": 0.4839,
+    "accept_threshold": 0.4773,
+    "highest_rejected_below": 0.47,
+    "n": 124
    },
-   "games_observed": 81,
+   "games_observed": 268,
    "negotiation": {
-    "close_rate": 0.4783,
-    "median_price_over_their_value": 1.236,
-    "n_games": 23,
-    "n_offers": 22
+    "close_rate": 0.3956,
+    "median_price_over_their_value": 1.308,
+    "n_games": 91,
+    "n_offers": 80
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3125,
-    "as_buyer_n": 160,
-    "as_seller_n": 80,
-    "as_seller_truth_rate": 0.4375
+    "as_buyer_buy_rate": 0.4557,
+    "as_buyer_n": 812,
+    "as_seller_n": 515,
+    "as_seller_truth_rate": 0.6194
    }
   },
   "hobbylab": {
    "bargaining": {
-    "accept_rate": 0.5714,
+    "accept_rate": 0.625,
     "accept_threshold": 0.3769,
     "highest_rejected_below": 0.0064,
-    "n": 21
+    "n": 24
    },
-   "games_observed": 55,
+   "games_observed": 120,
+   "negotiation": {
+    "close_rate": 0.4706,
+    "median_price_over_their_value": 0.8347,
+    "n_games": 34,
+    "n_offers": 27
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5,
-    "as_buyer_n": 280,
-    "as_seller_n": 149,
-    "as_seller_truth_rate": 0.8322
+    "as_buyer_buy_rate": 0.4138,
+    "as_buyer_n": 580,
+    "as_seller_n": 265,
+    "as_seller_truth_rate": 0.8642
    }
   },
   "jeff zeboss": {
-   "games_observed": 17,
+   "bargaining": {
+    "accept_rate": 0.2308,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 65
+   },
+   "games_observed": 48,
    "persuasion": {
-    "as_buyer_buy_rate": 0.2625,
-    "as_buyer_n": 80,
+    "as_buyer_buy_rate": 0.41,
+    "as_buyer_n": 100,
     "as_seller_n": 20,
     "as_seller_truth_rate": 0.85
    }
   },
   "king": {
    "bargaining": {
-    "accept_rate": 0.4872,
+    "accept_rate": 0.48,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 78
+    "n": 150
    },
-   "games_observed": 109,
+   "games_observed": 264,
    "negotiation": {
-    "close_rate": 0.5385,
+    "close_rate": 0.5402,
     "median_price_over_their_value": 1.428,
-    "n_games": 26,
-    "n_offers": 33
+    "n_games": 87,
+    "n_offers": 82
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3333,
-    "as_buyer_n": 60,
-    "as_seller_n": 91,
-    "as_seller_truth_rate": 0.5604
+    "as_buyer_buy_rate": 0.3381,
+    "as_buyer_n": 420,
+    "as_seller_n": 455,
+    "as_seller_truth_rate": 0.6396
    }
   },
   "llm-1": {
-   "games_observed": 76,
+   "games_observed": 125,
    "negotiation": {
-    "close_rate": 0.5263,
+    "close_rate": 0.464,
     "median_price_over_their_value": 1.0,
-    "n_games": 76,
-    "n_offers": 103
+    "n_games": 125,
+    "n_offers": 116
    }
   },
   "llm-2": {
-   "games_observed": 44,
+   "games_observed": 128,
    "negotiation": {
-    "close_rate": 0.5227,
-    "median_price_over_their_value": 0.9999,
-    "n_games": 44,
-    "n_offers": 40
+    "close_rate": 0.5078,
+    "median_price_over_their_value": 1.0951,
+    "n_games": 128,
+    "n_offers": 112
    }
   },
   "llm-3": {
-   "games_observed": 23,
+   "games_observed": 62,
    "persuasion": {
-    "as_buyer_buy_rate": 0.8095,
-    "as_buyer_n": 105,
-    "as_seller_n": 168,
-    "as_seller_truth_rate": 0.6607
+    "as_buyer_buy_rate": 0.7113,
+    "as_buyer_n": 485,
+    "as_seller_n": 403,
+    "as_seller_truth_rate": 0.7022
    }
   },
   "llm-4": {
-   "games_observed": 40,
+   "games_observed": 75,
    "persuasion": {
-    "as_buyer_buy_rate": 0.4913,
-    "as_buyer_n": 460,
-    "as_seller_n": 133,
-    "as_seller_truth_rate": 0.7669
+    "as_buyer_buy_rate": 0.5359,
+    "as_buyer_n": 780,
+    "as_seller_n": 341,
+    "as_seller_truth_rate": 0.6158
    }
   },
   "llm-5": {
    "bargaining": {
-    "accept_rate": 0.3585,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 106
+    "accept_rate": 0.3224,
+    "accept_threshold": 0.6503,
+    "highest_rejected_below": 0.65,
+    "n": 304
    },
-   "games_observed": 69
+   "games_observed": 169
   },
   "lucas-agent": {
-   "bargaining": {
-    "accept_rate": 0.4545,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 33
-   },
-   "games_observed": 62,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.6687,
-    "as_buyer_n": 320,
-    "as_seller_n": 173,
-    "as_seller_truth_rate": 0.659
-   }
-  },
-  "lucas-agent2": {
-   "bargaining": {
-    "accept_rate": 0.3913,
-    "accept_threshold": 0.3147,
-    "highest_rejected_below": 0.3125,
-    "n": 23
-   },
-   "games_observed": 53,
-   "negotiation": {
-    "close_rate": 0.6176,
-    "median_price_over_their_value": 1.19,
-    "n_games": 34,
-    "n_offers": 26
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.825,
-    "as_buyer_n": 80
-   }
-  },
-  "lucas-agent3": {
-   "bargaining": {
-    "accept_rate": 0.3529,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 17
-   },
-   "games_observed": 19,
-   "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 20
-   }
-  },
-  "lucas-agent4": {
-   "bargaining": {
-    "accept_rate": 0.5385,
-    "accept_threshold": 0.5,
-    "highest_rejected_below": 0.49,
-    "n": 13
-   },
-   "games_observed": 30,
-   "negotiation": {
-    "close_rate": 0.5333,
-    "median_price_over_their_value": 0.805,
-    "n_games": 15,
-    "n_offers": 14
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.55,
-    "as_buyer_n": 40,
-    "as_seller_n": 32,
-    "as_seller_truth_rate": 0.75
-   }
-  },
-  "lucas-agent5": {
-   "bargaining": {
-    "accept_rate": 0.5,
-    "accept_threshold": 0.3607,
-    "highest_rejected_below": 0.0367,
-    "n": 16
-   },
-   "games_observed": 68,
-   "negotiation": {
-    "close_rate": 0.5,
-    "median_price_over_their_value": 1.0,
-    "n_games": 20,
-    "n_offers": 6
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.4643,
-    "as_buyer_n": 280,
-    "as_seller_n": 230,
-    "as_seller_truth_rate": 0.6087
-   }
-  },
-  "one": {
-   "games_observed": 35,
-   "negotiation": {
-    "close_rate": 0.6923,
-    "median_price_over_their_value": 1.3417,
-    "n_games": 13,
-    "n_offers": 20
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.6625,
-    "as_buyer_n": 80,
-    "as_seller_n": 112,
-    "as_seller_truth_rate": 0.7321
-   }
-  },
-  "opus 5": {
-   "games_observed": 14,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.65,
-    "as_buyer_n": 60,
-    "as_seller_n": 18,
-    "as_seller_truth_rate": 1.0
-   }
-  },
-  "opus 5(2)": {
-   "games_observed": 22,
-   "negotiation": {
-    "close_rate": 0.6,
-    "median_price_over_their_value": 0.8388,
-    "n_games": 10,
-    "n_offers": 59
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.8,
-    "as_buyer_n": 40,
-    "as_seller_n": 29,
-    "as_seller_truth_rate": 0.8276
-   }
-  },
-  "opus 5(4)": {
-   "games_observed": 20,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.3937,
-    "as_buyer_n": 160
-   }
-  },
-  "opus 5(5)": {
-   "games_observed": 17,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.4071,
-    "as_buyer_n": 140
-   }
-  },
-  "pas-2": {
-   "bargaining": {
-    "accept_rate": 0.3445,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 119
-   },
-   "games_observed": 450,
-   "negotiation": {
-    "close_rate": 0.4684,
-    "median_price_over_their_value": 1.05,
-    "n_games": 190,
-    "n_offers": 119
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.3445,
-    "as_buyer_n": 1219,
-    "as_seller_n": 300,
-    "as_seller_truth_rate": 1.0
-   }
-  },
-  "pi": {
    "bargaining": {
     "accept_rate": 0.4444,
     "accept_threshold": null,
     "highest_rejected_below": null,
     "n": 36
    },
-   "games_observed": 154,
+   "games_observed": 85,
    "negotiation": {
-    "close_rate": 0.4923,
-    "median_price_over_their_value": 1.1403,
-    "n_games": 65,
-    "n_offers": 41
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.117,
+    "n_games": 22,
+    "n_offers": 14
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3941,
-    "as_buyer_n": 543,
-    "as_seller_n": 197,
-    "as_seller_truth_rate": 0.9289
+    "as_buyer_buy_rate": 0.6184,
+    "as_buyer_n": 380,
+    "as_seller_n": 181,
+    "as_seller_truth_rate": 0.6519
    }
   },
-  "piglet": {
+  "lucas-agent2": {
    "bargaining": {
-    "accept_rate": 0.2308,
+    "accept_rate": 0.3182,
+    "accept_threshold": 0.4931,
+    "highest_rejected_below": 0.48,
+    "n": 44
+   },
+   "games_observed": 113,
+   "negotiation": {
+    "close_rate": 0.5741,
+    "median_price_over_their_value": 1.117,
+    "n_games": 54,
+    "n_offers": 33
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.7167,
+    "as_buyer_n": 360,
+    "as_seller_n": 126,
+    "as_seller_truth_rate": 0.6111
+   }
+  },
+  "lucas-agent3": {
+   "bargaining": {
+    "accept_rate": 0.3467,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 13
+    "n": 75
    },
-   "games_observed": 96,
+   "games_observed": 83,
    "negotiation": {
-    "close_rate": 0.3333,
-    "median_price_over_their_value": 1.1,
-    "n_games": 57,
-    "n_offers": 39
+    "close_rate": 0.5,
+    "median_price_over_their_value": 0.82,
+    "n_games": 20,
+    "n_offers": 6
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6321,
-    "as_buyer_n": 280,
-    "as_seller_n": 76,
-    "as_seller_truth_rate": 1.0
+    "as_buyer_buy_rate": 0.6091,
+    "as_buyer_n": 220,
+    "as_seller_n": 83,
+    "as_seller_truth_rate": 0.7349
    }
   },
-  "polyAI": {
-   "bargaining": {
-    "accept_rate": 0.45,
-    "accept_threshold": 0.48,
-    "highest_rejected_below": 0.39,
-    "n": 20
-   },
-   "games_observed": 43,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.6269,
-    "as_buyer_n": 260,
-    "as_seller_n": 16,
-    "as_seller_truth_rate": 0.4375
-   }
-  },
-  "prospector": {
-   "bargaining": {
-    "accept_rate": 0.2297,
-    "accept_threshold": 0.48,
-    "highest_rejected_below": 0.4737,
-    "n": 74
-   },
-   "games_observed": 58,
-   "negotiation": {
-    "close_rate": 0.5714,
-    "median_price_over_their_value": 1.152,
-    "n_games": 7,
-    "n_offers": 12
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.95,
-    "as_buyer_n": 80,
-    "as_seller_n": 86,
-    "as_seller_truth_rate": 0.8488
-   }
-  },
-  "second-one": {
-   "games_observed": 112,
-   "negotiation": {
-    "close_rate": 0.3871,
-    "median_price_over_their_value": 1.25,
-    "n_games": 62,
-    "n_offers": 22
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.2238,
-    "as_buyer_n": 420,
-    "as_seller_n": 117,
-    "as_seller_truth_rate": 0.8034
-   }
-  },
-  "test3": {
-   "bargaining": {
-    "accept_rate": 0.3544,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 79
-   },
-   "games_observed": 164,
-   "negotiation": {
-    "close_rate": 0.6104,
-    "median_price_over_their_value": 1.1633,
-    "n_games": 77,
-    "n_offers": 69
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.4455,
-    "as_buyer_n": 440,
-    "as_seller_n": 141,
-    "as_seller_truth_rate": 0.773
-   }
-  },
-  "test4": {
-   "bargaining": {
-    "accept_rate": 0.2917,
-    "accept_threshold": 0.6223,
-    "highest_rejected_below": 0.58,
-    "n": 144
-   },
-   "games_observed": 240,
-   "negotiation": {
-    "close_rate": 0.5056,
-    "median_price_over_their_value": 1.09,
-    "n_games": 89,
-    "n_offers": 46
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.424,
-    "as_buyer_n": 658,
-    "as_seller_n": 334,
-    "as_seller_truth_rate": 0.9371
-   }
-  },
-  "test5": {
+  "lucas-agent4": {
    "bargaining": {
     "accept_rate": 0.4,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 50
+    "accept_threshold": 0.5,
+    "highest_rejected_below": 0.49,
+    "n": 35
    },
-   "games_observed": 142,
+   "games_observed": 77,
    "negotiation": {
-    "close_rate": 0.4868,
-    "median_price_over_their_value": 0.8833,
-    "n_games": 76,
-    "n_offers": 43
+    "close_rate": 0.5357,
+    "median_price_over_their_value": 1.0,
+    "n_games": 28,
+    "n_offers": 27
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4857,
-    "as_buyer_n": 140,
-    "as_seller_n": 46,
-    "as_seller_truth_rate": 0.3696
+    "as_buyer_buy_rate": 0.8091,
+    "as_buyer_n": 220,
+    "as_seller_n": 69,
+    "as_seller_truth_rate": 0.6667
    }
   },
-  "theta": {
+  "lucas-agent5": {
    "bargaining": {
-    "accept_rate": 0.3889,
-    "accept_threshold": 0.47,
-    "highest_rejected_below": 0.44,
-    "n": 54
+    "accept_rate": 0.4783,
+    "accept_threshold": 0.4414,
+    "highest_rejected_below": 0.4358,
+    "n": 23
    },
-   "games_observed": 98,
-   "negotiation": {
-    "close_rate": 0.5652,
-    "median_price_over_their_value": 1.176,
-    "n_games": 23,
-    "n_offers": 11
-   },
-   "persuasion": {
-    "as_buyer_buy_rate": 0.6375,
-    "as_buyer_n": 160,
-    "as_seller_n": 20,
-    "as_seller_truth_rate": 0.9
-   }
-  },
-  "third-one": {
    "games_observed": 101,
    "negotiation": {
-    "close_rate": 0.4255,
-    "median_price_over_their_value": 1.2,
-    "n_games": 47,
-    "n_offers": 19
+    "close_rate": 0.4737,
+    "median_price_over_their_value": 0.964,
+    "n_games": 38,
+    "n_offers": 21
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.3196,
-    "as_buyer_n": 557,
-    "as_seller_n": 67,
-    "as_seller_truth_rate": 0.8657
+    "as_buyer_buy_rate": 0.475,
+    "as_buyer_n": 400,
+    "as_seller_n": 290,
+    "as_seller_truth_rate": 0.6
    }
   },
-  "top glee": {
-   "bargaining": {
-    "accept_rate": 0.4231,
-    "accept_threshold": null,
-    "highest_rejected_below": null,
-    "n": 52
-   },
-   "games_observed": 64,
+  "mosskappa-baseline-v1": {
+   "games_observed": 18,
    "persuasion": {
-    "as_buyer_buy_rate": 0.3875,
-    "as_buyer_n": 80,
-    "as_seller_n": 85,
-    "as_seller_truth_rate": 0.6588
+    "as_buyer_buy_rate": 0.775,
+    "as_buyer_n": 40
    }
   },
-  "velocity": {
-   "bargaining": {
-    "accept_rate": 0.4,
-    "accept_threshold": 0.47,
-    "highest_rejected_below": 0.4551,
-    "n": 30
-   },
-   "games_observed": 48,
-   "persuasion": {
-    "as_buyer_buy_rate": 0.6167,
-    "as_buyer_n": 120,
-    "as_seller_n": 97,
-    "as_seller_truth_rate": 0.8144
-   }
-  },
-  "warren bluffett": {
+  "new_baby": {
    "games_observed": 19,
-   "negotiation": {
-    "close_rate": 0.6,
-    "median_price_over_their_value": 0.85,
-    "n_games": 5,
-    "n_offers": 48
-   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.6889,
-    "as_buyer_n": 45,
+    "as_buyer_buy_rate": 0.3812,
+    "as_buyer_n": 160,
     "as_seller_n": 20,
     "as_seller_truth_rate": 0.85
    }
   },
-  "worlf": {
-   "games_observed": 6,
+  "one": {
+   "bargaining": {
+    "accept_rate": 0.2045,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 44
+   },
+   "games_observed": 101,
+   "negotiation": {
+    "close_rate": 0.7391,
+    "median_price_over_their_value": 1.5,
+    "n_games": 23,
+    "n_offers": 30
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 1.0,
-    "as_buyer_n": 20,
-    "as_seller_n": 20,
-    "as_seller_truth_rate": 0.5
+    "as_buyer_buy_rate": 0.5905,
+    "as_buyer_n": 420,
+    "as_seller_n": 338,
+    "as_seller_truth_rate": 0.6006
+   }
+  },
+  "opus 5": {
+   "bargaining": {
+    "accept_rate": 0.2364,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 55
+   },
+   "games_observed": 71,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5763,
+    "as_buyer_n": 380,
+    "as_seller_n": 72,
+    "as_seller_truth_rate": 0.75
+   }
+  },
+  "opus 5(2)": {
+   "bargaining": {
+    "accept_rate": 0.4062,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 32
+   },
+   "games_observed": 62,
+   "negotiation": {
+    "close_rate": 0.5625,
+    "median_price_over_their_value": 0.8389,
+    "n_games": 16,
+    "n_offers": 60
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.6833,
+    "as_buyer_n": 240,
+    "as_seller_n": 80,
+    "as_seller_truth_rate": 0.8625
+   }
+  },
+  "opus 5(4)": {
+   "bargaining": {
+    "accept_rate": 0.3462,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 26
+   },
+   "games_observed": 71,
+   "negotiation": {
+    "close_rate": 0.3333,
+    "median_price_over_their_value": 1.4843,
+    "n_games": 12,
+    "n_offers": 10
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4222,
+    "as_buyer_n": 540,
+    "as_seller_n": 83,
+    "as_seller_truth_rate": 0.8434
+   }
+  },
+  "opus 5(5)": {
+   "bargaining": {
+    "accept_rate": 0.15,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 40
+   },
+   "games_observed": 62,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4671,
+    "as_buyer_n": 441,
+    "as_seller_n": 92,
+    "as_seller_truth_rate": 0.7826
+   }
+  },
+  "p00h": {
+   "games_observed": 42,
+   "negotiation": {
+    "close_rate": 0.3158,
+    "median_price_over_their_value": 0.9167,
+    "n_games": 19,
+    "n_offers": 17
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.34,
+    "as_buyer_n": 200,
+    "as_seller_n": 61,
+    "as_seller_truth_rate": 0.8689
+   }
+  },
+  "pas-2": {
+   "bargaining": {
+    "accept_rate": 0.3388,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 121
+   },
+   "games_observed": 497,
+   "negotiation": {
+    "close_rate": 0.448,
+    "median_price_over_their_value": 1.05,
+    "n_games": 221,
+    "n_offers": 125
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3137,
+    "as_buyer_n": 1339,
+    "as_seller_n": 356,
+    "as_seller_truth_rate": 1.0
+   }
+  },
+  "pi": {
+   "bargaining": {
+    "accept_rate": 0.402,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 102
+   },
+   "games_observed": 375,
+   "negotiation": {
+    "close_rate": 0.461,
+    "median_price_over_their_value": 1.09,
+    "n_games": 154,
+    "n_offers": 115
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4021,
+    "as_buyer_n": 1343,
+    "as_seller_n": 613,
+    "as_seller_truth_rate": 0.9396
+   }
+  },
+  "piglet": {
+   "bargaining": {
+    "accept_rate": 0.125,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 24
+   },
+   "games_observed": 117,
+   "negotiation": {
+    "close_rate": 0.3492,
+    "median_price_over_their_value": 1.1,
+    "n_games": 63,
+    "n_offers": 44
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5722,
+    "as_buyer_n": 360,
+    "as_seller_n": 110,
+    "as_seller_truth_rate": 0.9909
+   }
+  },
+  "polyAI": {
+   "bargaining": {
+    "accept_rate": 0.2368,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.47,
+    "n": 76
+   },
+   "games_observed": 116,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5333,
+    "as_buyer_n": 540,
+    "as_seller_n": 142,
+    "as_seller_truth_rate": 0.7746
+   }
+  },
+  "prospector": {
+   "bargaining": {
+    "accept_rate": 0.2727,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.4737,
+    "n": 132
+   },
+   "games_observed": 137,
+   "negotiation": {
+    "close_rate": 0.4286,
+    "median_price_over_their_value": 1.152,
+    "n_games": 14,
+    "n_offers": 12
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.7333,
+    "as_buyer_n": 480,
+    "as_seller_n": 264,
+    "as_seller_truth_rate": 0.7121
+   }
+  },
+  "second-one": {
+   "bargaining": {
+    "accept_rate": 0.1338,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 157
+   },
+   "games_observed": 314,
+   "negotiation": {
+    "close_rate": 0.4074,
+    "median_price_over_their_value": 0.8,
+    "n_games": 135,
+    "n_offers": 58
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.264,
+    "as_buyer_n": 1360,
+    "as_seller_n": 239,
+    "as_seller_truth_rate": 0.8703
+   }
+  },
+  "sudsho": {
+   "bargaining": {
+    "accept_rate": 0.3721,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 86
+   },
+   "games_observed": 131,
+   "negotiation": {
+    "close_rate": 0.4359,
+    "median_price_over_their_value": 0.804,
+    "n_games": 39,
+    "n_offers": 21
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5273,
+    "as_buyer_n": 440,
+    "as_seller_n": 173,
+    "as_seller_truth_rate": 0.8439
+   }
+  },
+  "test3": {
+   "bargaining": {
+    "accept_rate": 0.3483,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 89
+   },
+   "games_observed": 343,
+   "negotiation": {
+    "close_rate": 0.5525,
+    "median_price_over_their_value": 1.09,
+    "n_games": 181,
+    "n_offers": 132
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.359,
+    "as_buyer_n": 1000,
+    "as_seller_n": 436,
+    "as_seller_truth_rate": 0.7317
+   }
+  },
+  "test4": {
+   "bargaining": {
+    "accept_rate": 0.2905,
+    "accept_threshold": 0.6223,
+    "highest_rejected_below": 0.58,
+    "n": 148
+   },
+   "games_observed": 400,
+   "negotiation": {
+    "close_rate": 0.5055,
+    "median_price_over_their_value": 1.1306,
+    "n_games": 182,
+    "n_offers": 148
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.4006,
+    "as_buyer_n": 1378,
+    "as_seller_n": 584,
+    "as_seller_truth_rate": 0.9435
+   }
+  },
+  "test5": {
+   "bargaining": {
+    "accept_rate": 0.3214,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 84
+   },
+   "games_observed": 275,
+   "negotiation": {
+    "close_rate": 0.5034,
+    "median_price_over_their_value": 0.9019,
+    "n_games": 149,
+    "n_offers": 79
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3594,
+    "as_buyer_n": 640,
+    "as_seller_n": 300,
+    "as_seller_truth_rate": 0.6133
+   }
+  },
+  "testing agent01": {
+   "bargaining": {
+    "accept_rate": 0.36,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 25
+   },
+   "games_observed": 62,
+   "persuasion": {
+    "as_buyer_buy_rate": 0.6687,
+    "as_buyer_n": 480,
+    "as_seller_n": 241,
+    "as_seller_truth_rate": 0.7884
+   }
+  },
+  "theta": {
+   "bargaining": {
+    "accept_rate": 0.1734,
+    "accept_threshold": 0.55,
+    "highest_rejected_below": 0.5479,
+    "n": 715
+   },
+   "games_observed": 370,
+   "negotiation": {
+    "close_rate": 0.566,
+    "median_price_over_their_value": 1.176,
+    "n_games": 53,
+    "n_offers": 33
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.6724,
+    "as_buyer_n": 580,
+    "as_seller_n": 205,
+    "as_seller_truth_rate": 0.6976
+   }
+  },
+  "third-one": {
+   "bargaining": {
+    "accept_rate": 0.1341,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 179
+   },
+   "games_observed": 302,
+   "negotiation": {
+    "close_rate": 0.3643,
+    "median_price_over_their_value": 1.25,
+    "n_games": 140,
+    "n_offers": 56
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.3149,
+    "as_buyer_n": 997,
+    "as_seller_n": 215,
+    "as_seller_truth_rate": 0.8558
+   }
+  },
+  "top glee": {
+   "bargaining": {
+    "accept_rate": 0.3624,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 149
+   },
+   "games_observed": 197,
+   "negotiation": {
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.4971,
+    "n_games": 16,
+    "n_offers": 8
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.2731,
+    "as_buyer_n": 780,
+    "as_seller_n": 548,
+    "as_seller_truth_rate": 0.6259
+   }
+  },
+  "velocity": {
+   "bargaining": {
+    "accept_rate": 0.2525,
+    "accept_threshold": 0.48,
+    "highest_rejected_below": 0.4781,
+    "n": 99
+   },
+   "games_observed": 144,
+   "negotiation": {
+    "close_rate": 0.5556,
+    "median_price_over_their_value": 0.8823,
+    "n_games": 18,
+    "n_offers": 27
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.5815,
+    "as_buyer_n": 540,
+    "as_seller_n": 424,
+    "as_seller_truth_rate": 0.7005
+   }
+  },
+  "warren bluffett": {
+   "bargaining": {
+    "accept_rate": 0.3188,
+    "accept_threshold": null,
+    "highest_rejected_below": null,
+    "n": 69
+   },
+   "games_observed": 71,
+   "negotiation": {
+    "close_rate": 0.6154,
+    "median_price_over_their_value": 0.85,
+    "n_games": 13,
+    "n_offers": 54
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.6762,
+    "as_buyer_n": 105,
+    "as_seller_n": 40,
+    "as_seller_truth_rate": 0.65
+   }
+  },
+  "worlf": {
+   "games_observed": 32,
+   "negotiation": {
+    "close_rate": 0.6364,
+    "median_price_over_their_value": 0.8738,
+    "n_games": 22,
+    "n_offers": 27
+   },
+   "persuasion": {
+    "as_buyer_buy_rate": 0.63,
+    "as_buyer_n": 100,
+    "as_seller_n": 61,
+    "as_seller_truth_rate": 0.541
    }
   },
   "xl": {
    "bargaining": {
-    "accept_rate": 0.5385,
+    "accept_rate": 0.6,
     "accept_threshold": 0.3607,
     "highest_rejected_below": 0.2649,
-    "n": 26
+    "n": 45
    },
-   "games_observed": 122,
+   "games_observed": 239,
    "negotiation": {
-    "close_rate": 0.5333,
-    "median_price_over_their_value": 1.2083,
-    "n_games": 60,
-    "n_offers": 61
+    "close_rate": 0.5,
+    "median_price_over_their_value": 1.1875,
+    "n_games": 104,
+    "n_offers": 92
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5369,
-    "as_buyer_n": 393,
-    "as_seller_n": 42,
-    "as_seller_truth_rate": 0.6667
+    "as_buyer_buy_rate": 0.4914,
+    "as_buyer_n": 993,
+    "as_seller_n": 153,
+    "as_seller_truth_rate": 0.8301
    }
   },
   "xx": {
    "bargaining": {
-    "accept_rate": 0.2667,
-    "accept_threshold": 0.5,
+    "accept_rate": 0.2778,
+    "accept_threshold": 0.4815,
     "highest_rejected_below": 0.48,
-    "n": 45
+    "n": 162
    },
-   "games_observed": 124,
+   "games_observed": 315,
    "negotiation": {
-    "close_rate": 0.7037,
-    "median_price_over_their_value": 1.1812,
-    "n_games": 27,
-    "n_offers": 31
+    "close_rate": 0.5507,
+    "median_price_over_their_value": 1.1521,
+    "n_games": 69,
+    "n_offers": 43
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4914,
-    "as_buyer_n": 580,
-    "as_seller_n": 236,
-    "as_seller_truth_rate": 0.9873
+    "as_buyer_buy_rate": 0.4811,
+    "as_buyer_n": 1320,
+    "as_seller_n": 390,
+    "as_seller_truth_rate": 0.9692
    }
   },
   "zoro": {
    "bargaining": {
-    "accept_rate": 0.0968,
+    "accept_rate": 0.0924,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 31
+    "n": 119
    },
-   "games_observed": 62,
+   "games_observed": 197,
+   "negotiation": {
+    "close_rate": 0.4706,
+    "median_price_over_their_value": 1.225,
+    "n_games": 17,
+    "n_offers": 13
+   },
    "persuasion": {
-    "as_buyer_buy_rate": 0.5308,
-    "as_buyer_n": 260,
-    "as_seller_n": 117,
-    "as_seller_truth_rate": 0.7521
+    "as_buyer_buy_rate": 0.6252,
+    "as_buyer_n": 763,
+    "as_seller_n": 293,
+    "as_seller_truth_rate": 0.7474
    }
   },
   "\ud83d\udc8eini": {
    "bargaining": {
-    "accept_rate": 0.2353,
+    "accept_rate": 0.369,
     "accept_threshold": null,
     "highest_rejected_below": null,
-    "n": 17
+    "n": 84
    },
-   "games_observed": 49,
+   "games_observed": 151,
    "negotiation": {
-    "close_rate": 0.2632,
-    "median_price_over_their_value": 1.475,
-    "n_games": 19,
-    "n_offers": 3
+    "close_rate": 0.4,
+    "median_price_over_their_value": 1.3,
+    "n_games": 50,
+    "n_offers": 30
    },
    "persuasion": {
-    "as_buyer_buy_rate": 0.4292,
-    "as_buyer_n": 240,
-    "as_seller_n": 23,
-    "as_seller_truth_rate": 0.8261
+    "as_buyer_buy_rate": 0.5129,
+    "as_buyer_n": 464,
+    "as_seller_n": 100,
+    "as_seller_truth_rate": 0.74
    }
   }
  }

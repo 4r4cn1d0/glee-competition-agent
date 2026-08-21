@@ -153,3 +153,41 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
   The `1.15 * my_value` reservation at negotiation.py:336 that Codex flagged is
   real but INERT in the games that matter -- deadgame overrides it with a far
   lower ask, so the phantom "39%" it was calibrated on costs nothing in practice.
+
+## Opponent identity IS available at decision time (22 Aug)
+- The turn payload carries `opponent: {name, type}` from ROUND 1. Names are
+  disclosed in ~50% of games: 27,860 named vs 27,869 `type=hidden` across
+  55,775 games; 182 distinct opponents overall, 164 in negotiation. An earlier
+  browser-side probe concluded GLEE hides opponent identity -- that is true of
+  the WEB api and FALSE of the agent api. Opponent-conditioned policy is
+  therefore available in half of all games, and `sim/replay_eval.py` already
+  models the disclosure coin at 50%.
+- We also draw our OWN agents as opponents (champion/test3/test4 appear in the
+  opponent field), so cross-agent comparisons can be contaminated by self-play.
+
+## GLEE_OPP_EXPLOIT: built, never armed, and its DEFAULT is the harmful setting
+- Per-opponent bargaining accept thresholds vary enormously and really are
+  exploitable: chotu accepts at 0.257 (we keep 74%), Ira 0.168, against
+  Rubinstein 0.679 and test4 0.622. 33 opponents now carry a usable profile
+  (n>=30) covering 4,779 games.
+- Arena, bargaining, 4,000 games x 2 seeds, control = Agent 5's live 26-flag
+  set. EST. PERCENTILE by `GLEE_OPP_PAD` (the safety margin above the fitted
+  threshold), seed 811 / seed 4272:
+      0.04 (the CODE DEFAULT)  -0.0033 / -0.0035   <- actively worse
+      0.08                     +0.0037 / +0.0000
+      0.12                     +0.0020 / +0.0008
+      0.16                     +0.0030 / +0.0014   <- best, both seeds positive
+  So arming this flag at its default would LOSE rating; the fitted thresholds
+  are too aggressive and need ~4x the default padding. Effect is small but
+  free: ~+0.002 average percentile, i.e. roughly +3 rating on the fitted
+  calibration (12.5 pts per percentile point) or up to +18 on the raw
+  affine map. Seed 4272 never reaches significance alone; the case rests on
+  6/6 runs at PAD>=0.08 being >=0 against 2/2 negative at 0.04.
+- `models/opponent_profiles.json` REFIT 22 Aug on current logs: usable
+  bargaining profiles 27 -> 33, games 2,218 -> 4,779, 10 thresholds materially
+  changed (V-Agent 0.50->0.64, theta 0.47->0.55, cobbylab 0.29->0.38). The
+  refit barely moves arena outcomes; PAD dominates. Profiles should be refit
+  routinely -- they were 2 days stale.
+- CAUTION recorded: the refit rewrote the profile file WHILE a sweep was
+  running, so that sweep mixed old and new profiles. Never refit a model file
+  concurrently with an arena run that reads it.
