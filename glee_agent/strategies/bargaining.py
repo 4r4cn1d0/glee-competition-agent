@@ -392,10 +392,26 @@ def decide(game: dict, cfg) -> dict:
         # untouched (the opponent holds the last word there). OFF by default.
         accept_floor = runtime_flags.as_float("GLEE_BARG_ACCEPT_FLOOR", 0.0)
         if accept_floor > 0.0 and p["rounds_left"] > 2 and money > 0:
-            floor_gain = min(max(accept_floor, 0.0), 0.6) * money
+            floor_share = min(max(accept_floor, 0.0), 0.6)
+            # Discount-derived floor. The flat 0.50 floor is delta-blind, and
+            # the 500-game export priced that exactly: it HELPS where patience
+            # is cheap (delta>0.9: +1.37 rating post-deploy) and HURTS where
+            # the clock burns (delta<=0.9: value kept fell 88%->67%, closes
+            # pushed from round 2.0 to 4.4; the worst cell loses 0.095 pot per
+            # game held). Break-even is exact: another round is worth taking
+            # only if the expected haggling gain G (~0.05 pot/round, measured
+            # n=299) beats the discount loss, so the floor a patient player
+            # can afford is delta*G/(1-delta), capped by the flat floor:
+            # delta 0.8 -> 0.20, 0.9 -> 0.45, 0.95+ -> the 0.50 atom floor.
+            gain = runtime_flags.as_float("GLEE_BARG_FLOOR_GAIN", 0.0)
+            if gain > 0.0:
+                dme = p.get("delta_me")
+                if dme is not None and dme < 1.0:
+                    floor_share = min(floor_share, dme * gain / (1.0 - dme))
+            floor_gain = floor_share * money
             if threshold < floor_gain:
                 threshold = floor_gain
-                p["accept_floor_applied"] = accept_floor
+                p["accept_floor_applied"] = round(floor_share, 3)
         # Opponent-conditional: against a PROFILED soft opponent our next offer
         # (asking all but their measured threshold) is very likely accepted, so
         # continuing is worth nearly (1-give) discounted one round -- far more
