@@ -273,3 +273,42 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
   ceiling of ~+0.034. The measured +0.0121 is about a third of that ceiling,
   which is what partial capture should look like.
 - `GLEE_NEGO_RECIP_DAMP` at 0.5 is NEGATIVE (-0.0002 / -0.0008) -- leave off.
+
+## Codex red team, 22 Aug: BARG_ECON_STALL is the strongest live hole
+- MECHANISM (Codex, verified by me): after three distinct offers whose
+  discounted projected improvement is <=2%, the acceptance floor is ZEROED, and
+  with GLEE_BARG_STONEWALL_MIN=0 the extortion guard is off. Acceptance is
+  `offer >= 0.98 * realistic`, so the trigger arithmetic 0.98*1.02 = 0.9996
+  effectively guarantees we accept. bargaining.py:663, arms.json.
+  Codex's deterministic replay: attacker crawls 17.45% -> 17.71% -> 19.64%, we
+  accept round 5, attacker percentile .9788 against our .0389; over 1,200 games
+  the attacker scores .527 versus the cloned field's .306.
+- IT FIRES LIVE: `econ_stall_release` appears in 91 Agent 5 plans and 25 Test 3
+  plans, every sampled one ending in accept. (A first check for it in
+  `gates_fired` was a FALSE NEGATIVE -- the block never calls `_gate()`, it
+  writes the key straight into the plan. Absence from a trace list proves
+  nothing unless the code actually records there.)
+- BUT THE LIVE DAMAGE IS MODEST, not the worst case. Share we accepted,
+  Agent 5 + Test 3: normal accepts mean 0.4381 / median 0.4520 (n=3,103);
+  econ-stall releases mean 0.4113 / median 0.4400 (n=115). So it costs ~2.7pp
+  of the pot on 3.6% of accepts, and its sub-30% accept rate (8.7%) matches the
+  normal path (8.5%). The .9788/.0389 scenario needs a DELIBERATE adversary; the
+  current field is not aiming at us.
+- REMOVING IT IS A SMALL WIN ANYWAY. Arena, bargaining, 4,000 games x 3 seeds
+  vs the live control: `GLEE_BARG_ECON_STALL=0` gives +0.0016 / +0.0017 /
+  +0.0009, all positive, two CIs excluding zero. Adding STONEWALL_MIN=0.30 on
+  top changes nothing (identical numbers -- same code path once econ-stall is
+  off). Consistent with Test 1, which does NOT carry the flag and holds the
+  fleet's best bargaining rating (2216 vs Agent 5's 2195).
+  => Turning it off is better on average AND closes the exploit. Deploy it.
+- Codex also reports, and this is worth keeping: DEADGAME_V1 is NOT profitably
+  counterfeit-able (it needs our own 1.5xB seller / 0.8xB buyer type, which the
+  attacker cannot manufacture, and harvesting the collapse requires the attacker
+  to accept a loss). Other named cliffs to check later: the span veto is a
+  STRICT `<0.48` so an attacker leaving 48.1% closes immediately; the real-final
+  any-positive rule bypasses the span invariant entirely, so a repeated 0.801B
+  bid can take 99.86% of span; and the k=2.0 Boulware walk can be waited out
+  with changing-but-unprofitable asks that dodge the stall detector.
+- NOT A BUG, checked and cleared: bargaining has NO zero-share accepts. 49 of
+  8,087 accepts (0.6%) are under 5%, spread evenly across slots. An earlier
+  "min 0.0000" was display rounding of a small positive share.
