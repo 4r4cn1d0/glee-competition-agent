@@ -408,6 +408,24 @@ def decide(game: dict, cfg) -> dict:
                 dme = p.get("delta_me")
                 if dme is not None and dme < 1.0:
                     floor_share = min(floor_share, dme * gain / (1.0 - dme))
+            # Stonewall override. The floor's whole premise is that waiting
+            # BUYS something; against an opponent who simply repeats their
+            # number it buys nothing while our clock burns. Measured on Agent
+            # 5's live games: ten grinds to round 7-22 where the opponent's
+            # offer never moved (0.400 repeated for eleven rounds), each
+            # costing -3.9 to -7.9 rating, and each strictly worse than
+            # accepting the SAME opponent's round-1 offer -- one kept 35% of
+            # nominal where round-1 acceptance kept 100%. Two flat offers is
+            # the signal the negotiation stall policy already acts on; here it
+            # releases the floor so the discounted-continuation test (which
+            # correctly says "take it") can decide.
+            if runtime_flags.enabled("GLEE_BARG_STONEWALL"):
+                seen = _offers_to_me(state, state.get("current_player") or "")
+                if len(seen) >= 2:
+                    a, b = seen[-2][1], seen[-1][1]
+                    if abs(b - a) <= 0.01 * max(abs(a), 1.0):
+                        floor_share = 0.0
+                        p["stonewall_release"] = True
             floor_gain = floor_share * money
             if threshold < floor_gain:
                 threshold = floor_gain

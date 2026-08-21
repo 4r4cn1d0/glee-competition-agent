@@ -336,6 +336,29 @@ def plan(game: dict, cfg) -> dict:
         else:
             target = min(max(target, zopa_lo + give), zopa_hi)
 
+    # Ultimatum pricing. When the horizon really ends after this offer and we
+    # can SEE the zone, rejection pays the opponent exactly zero, so the whole
+    # span above their indifference is ours to claim -- yet the concession walk
+    # arrives at elapsed=1.0 on its interior reservation and hands over 61% of
+    # it. Measured live: 1-round complete-info seller games ask 0.390 of the
+    # span in EVERY configuration ([80,100], [80,120], [80,150], [100,150]),
+    # for -5.6 to -6.4 rating apiece; the field pays +6.5 for a 50% split of
+    # the same span. bargaining.py already encodes this asymmetry for its own
+    # ultimatum ("rejecting pays them nothing, so leave a share big enough to
+    # be worth taking" -> it claims 0.75); this is the negotiation counterpart.
+    # Deliberately not a full claim: an insulted opponent rejecting costs the
+    # whole deal, so the share is a live knob, not 1.0. OFF by default.
+    ult = runtime_flags.as_float("GLEE_NEGO_ULTIMATUM_SHARE", 0.0)
+    ultimatum = False
+    if (ult > 0.0 and zopa_lo is not None and capped and rounds_left <= 1
+            and state.get(f"{other}_value") is not None):
+        span_u = zopa_hi - zopa_lo
+        if span_u > 0:
+            take = min(max(ult, 0.0), 0.95)
+            target = (zopa_lo + take * span_u) if i_am_seller \
+                else (zopa_hi - take * span_u)
+            ultimatum = True
+
     # Final-offer pricing from the fitted acceptance curve, where the constants
     # were blindest: a hidden-information game at our last offer opportunity.
     # The right ask depends on our own value multiplier -- a 0.8xB seller should
@@ -561,6 +584,7 @@ def plan(game: dict, cfg) -> dict:
         "deadgame": deadgame,
         "probe_hold": probe_hold,
         "time_driven": time_driven,
+        "ultimatum": ultimatum,
     }
 
 
