@@ -43,15 +43,28 @@ sys.path.insert(0, REPO)
 FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS", "GLEE_OPP")
 
 #: The flag set composite ran live before today's changes -- the natural control.
+#: The live champion/composite stack. This MUST track what the fleet actually
+#: runs: a candidate nested inside a gate the control omits is dead code, and
+#: the harness reports that as a clean +0.0000 null rather than as "never
+#: executed". That trap cost a real screen -- GLEE_BARG_STONEWALL sits inside
+#: `if accept_floor > 0`, the old default omitted GLEE_BARG_ACCEPT_FLOOR, and
+#: the A/B returned exact zeros on every metric while the code never ran.
+#: Anything added to the fleet's arms belongs here the same day.
 DEFAULT_CONTROL = {"GLEE_NEGO_BOUND_AS_FLOOR": "1",
                    "GLEE_BARG_OPPONENT_FLOOR": "0.39",
                    "GLEE_BARG_OFFER_FLOOR": "0.57",
+                   "GLEE_BARG_ACCEPT_FLOOR": "0.50",
+                   "GLEE_BARG_FLOOR_GAIN": "0.05",
                    "GLEE_NEGO_MIN_MARGIN": "0.02",
                    "GLEE_NEGO_CURVE_PRICING": "1",
                    "GLEE_NEGO_MARGIN_WEIGHT": "0.25",
                    "GLEE_NEGO_CONTINUATION_ACCEPT": "1",
                    "GLEE_NEGO_HORIZON_V2": "1",
-                   "GLEE_OPP_EXPLOIT": "1"}
+                   "GLEE_NEGO_ENDGAME_V3": "1",
+                   "GLEE_NEGO_ACCEPT_SPAN": "0.48",
+                   "GLEE_NEGO_STALL_POLICY": "1",
+                   "GLEE_NEGO_DEADGAME_V1": "1",
+                   "GLEE_NEGO_TABLE": "1"}
 
 
 def _set_flags(flags: dict) -> None:

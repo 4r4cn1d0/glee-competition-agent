@@ -419,13 +419,50 @@ def decide(game: dict, cfg) -> dict:
             # the signal the negotiation stall policy already acts on; here it
             # releases the floor so the discounted-continuation test (which
             # correctly says "take it") can decide.
-            if runtime_flags.enabled("GLEE_BARG_STONEWALL"):
-                seen = _offers_to_me(state, state.get("current_player") or "")
-                if len(seen) >= 2:
-                    a, b = seen[-2][1], seen[-1][1]
-                    if abs(b - a) <= 0.01 * max(abs(a), 1.0):
-                        floor_share = 0.0
-                        p["stonewall_release"] = True
+            # Two guards, both measured, both absent from the first version --
+            # which the arena correctly rejected (-0.009 on both seeds):
+            #  * RUN LENGTH. A flat PAIR is weak evidence: it breaks 58% of the
+            #    time, and its modal appearance is round 3. The live grinds
+            #    that motivated this rule were all runs of four or more (rounds
+            #    7-22 with the number never moving). Across 6,917 logged games
+            #    P(they ever improve) falls 0.37 -> 0.26 -> 0.23 as the run
+            #    grows, and mean improvement is +0.33% of pot -- a dead signal.
+            #  * OUR CLOCK. The counterfactual REVERSES on delta_me: with
+            #    delta_me = 1.0 waiting is free and holding out was worth
+            #    +7.7pp of pot (better in 92.7% of 368 logged cases), while at
+            #    delta_me < 1.0 holding LOST 6.0pp (worse in 73.8% of 225).
+            #    Releasing the floor for a patient player is pure loss.
+            run_needed = int(runtime_flags.as_float("GLEE_BARG_STONEWALL", 0))
+            dme_sw = p.get("delta_me")
+            if run_needed >= 2 and dme_sw is not None and dme_sw < 1.0:
+                # Count the run over HISTORY only. _offers_to_me also appends
+                # last_offer, which duplicates the newest history entry when
+                # the platform omits its round key -- and a duplicate cannot be
+                # told from a genuinely new repeat without that key. Undercount
+                # by one rather than over: releasing the floor a round early is
+                # the failure the arena already priced at -0.009.
+                me_sw = state.get("current_player") or ""
+                vals = []
+                for entry in state.get("history") or []:
+                    if not isinstance(entry, dict):
+                        continue
+                    off = entry.get("offer") or {}
+                    if not isinstance(off, dict):
+                        continue
+                    if (off.get("proposer") or entry.get("proposer")) == me_sw:
+                        continue
+                    g_ = off.get(f"{me_sw}_gain")
+                    if g_ is not None:
+                        vals.append(_num(g_))
+                run = 1
+                for i in range(len(vals) - 1, 0, -1):
+                    if abs(vals[i] - vals[i - 1]) <= 0.01 * max(abs(vals[i - 1]), 1.0):
+                        run += 1
+                    else:
+                        break
+                if run >= run_needed:
+                    floor_share = 0.0
+                    p["stonewall_release"] = run
             floor_gain = floor_share * money
             if threshold < floor_gain:
                 threshold = floor_gain
