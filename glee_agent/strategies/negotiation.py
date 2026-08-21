@@ -929,16 +929,61 @@ def _decide(game: dict, cfg) -> dict:
                 return {"decision": "RejectOffer",
                         "product_price": round(counter, 2), "_plan": p}
 
+    # FINAL-PROPOSER OPTION VALUE. Rejecting is not merely "wait and see what
+    # they offer next" -- in a capped game with an even number of remaining
+    # turns, rejecting hands US the last take-it-or-leave-it price, and there
+    # is no discounting in negotiation to erode it. The coarse table threshold
+    # cannot represent that option: measured live, a 1.5xB buyer accepted
+    # 1.375xB in round 9 of 10 for 17.8% of a 0.7xB surplus (-7.1 rating)
+    # because the offer cleared an absolute end-phase threshold of 0.118xB by
+    # 0.006 -- while rejecting would have made it the round-10 proposer.
+    # When we own the final proposal, compare against what that proposal is
+    # worth (its expected acceptance times its surplus) rather than against a
+    # constant. OFF by default.
+    final_opt = runtime_flags.as_float("GLEE_NEGO_FINAL_OPTION", 0.0)
+    own_final = False
+    if final_opt > 0.0 and p.get("capped") and p["rounds_left"] >= 2:
+        # turns alternate; we propose next, so an EVEN number of remaining
+        # turns means the last one is ours
+        own_final = (int(p["rounds_left"]) % 2) == 0
+        if own_final:
+            _fb = _final_option_value(state, p, final_opt)
+            if _fb is not None:
+                p["final_option_value"] = _fb
+                if surplus_now < _fb:
+                    p["final_option_hold"] = True
+                    _gate(p, "final_option")
+                    counter = p["target"]
+                    if _profitable(offer_price, p):
+                        counter = max(offer_price, counter) if p["i_am_seller"] \
+                            else min(offer_price, counter)
+                    counter = _maybe_split(state, p, counter)
+                    counter = _enforce_span_invariant(p, counter)
+                    return {"decision": "RejectOffer",
+                            "product_price": round(counter, 2), "_plan": p}
+
     # Learned-table acceptance: in hidden games the evolved threshold decides
     # mid-game acceptance when present; final-round any-positive stays above.
+    # NOTE the table's ask maps are EMPTY in models/nego_policy_v1.json (0
+    # seller cells, 0 buyer cells, verified by sha256 f20c8620), so
+    # table_policy.offer() has always returned None -- this gate is the whole
+    # of what GLEE_NEGO_TABLE does. Its four absolute thresholds ignore the
+    # available surplus, so the same 0.118xB bar is 59% of a 0.2xB surplus and
+    # 17% of a 0.7xB one, and its phase buckets step from 0.330xB to 0.076xB
+    # between rounds 4 and 5 of ten -- an artificial surrender point.
     if (p.get("their_value") is None
             and runtime_flags.enabled("GLEE_NEGO_TABLE")):
         t_thr = table_policy.accept_threshold(
             p["my_value"], p["i_am_seller"], p.get("elapsed", 0.5))
         if t_thr is not None:
             if _profitable(offer_price, p) and surplus_now >= t_thr:
-                _gate(p, "table_accept")
-                return {"decision": "AcceptOffer", "_plan": p}
+                # The table may only ACCEPT once nothing better is available:
+                # with the final proposal in hand it is not allowed to close
+                # under the option value computed above.
+                if not (own_final and p.get("final_option_value") is not None
+                        and surplus_now < p["final_option_value"]):
+                    _gate(p, "table_accept")
+                    return {"decision": "AcceptOffer", "_plan": p}
             # below threshold: fall through to counter via the offer path
             p["table_accept_below"] = True
 
@@ -973,3 +1018,72 @@ def _decide(game: dict, cfg) -> dict:
         _gate(p, "split")
     counter = _enforce_span_invariant(p, counter)
     return {"decision": "RejectOffer", "product_price": round(counter, 2), "_plan": p}
+
+
+def _final_option_value(state: dict, p: dict, weight: float) -> float | None:
+    """What our own final take-it-or-leave-it proposal is worth, in surplus.
+
+    Rejecting an offer when we own the last proposal is not a gamble on their
+    next concession -- it buys the right to name the closing price. That right
+    is worth P(they accept our final ask) x (our surplus at that ask), and the
+    acceptance side is exactly what models/negotiation_acceptance_v5.json
+    measures. `weight` shrinks the estimate (a live-tunable haircut, since a
+    rejected final offer pays zero and the curve is a field average, not this
+    opponent). None when we cannot price it -- caller keeps its baseline.
+
+    Complete information: they accept anything leaving them a sliver, so the
+    ask is the zopa bound less the usual give, and acceptance is near-certain.
+    Hidden information: use the fitted final-round curve via pricing.
+    """
+    my_value = p["my_value"]
+    i_am_seller = p["i_am_seller"]
+    zopa = p.get("zopa")
+    if zopa is not None:
+        lo, hi = zopa
+        span = hi - lo
+        if span <= 0:
+            return None
+        share = runtime_flags.as_float("GLEE_NEGO_ZOPA_SHARE", 0.2)
+        give = min(max(share, 0.0), 0.5) * span
+        ask = (hi - give) if i_am_seller else (lo + give)
+        surplus = (ask - my_value) if i_am_seller else (my_value - ask)
+        # a final offer inside the visible zone that still pays them `give`
+        # is accepted by anything rational; haircut carries the doubt
+        return max(surplus, 0.0) * min(max(weight, 0.0), 1.0)
+    # Hidden information: score candidate final prices against the fitted
+    # final-round acceptance curve for our seat and keep the best expected
+    # surplus. The seller path has a dedicated helper; the buyer path reads the
+    # same pooled curve directly (models/negotiation_acceptance_v5.json carries
+    # buyer_final as well as seller_final), which is what the live failure
+    # needed -- a 1.5xB BUYER in round 9 of 10 had no way to price its own
+    # round-10 offer, so the option value came back None and the coarse table
+    # closed the game at 17.8% of the surplus.
+    base = pricing.infer_base(my_value)
+    if base is None:
+        return None
+    if i_am_seller:
+        ask = pricing.seller_final_ask(my_value)
+        if ask is None:
+            return None
+        surplus = ask - my_value
+    else:
+        rows = (pricing._curves() or {}).get("buyer_final") or []
+        best = 0.0
+        for row in rows:
+            if row.get("n", 0) < 20:
+                continue
+            pa = row.get("p_accept") or 0.0
+            if pa <= 0.0:
+                continue
+            price = (row["lo"] + row["hi"]) / 2.0 * base
+            s = my_value - price
+            if s <= 0:
+                continue
+            best = max(best, pa * s)
+        if best <= 0.0:
+            return None
+        # `best` already carries P(accept); return it as an expected surplus
+        return best * min(max(weight, 0.0), 1.0)
+    if surplus <= 0:
+        return None
+    return surplus * min(max(weight, 0.0), 1.0)
