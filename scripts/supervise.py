@@ -120,6 +120,22 @@ CYCLE_PATH = os.path.join(REPO, "logs", "cycle.request")
 #: ~91 games across five agents. Never rush this.
 DRAIN_SECONDS = 300
 
+#: Stall watchdog. A LIVE process holding zero games and starting none is not a
+#: state `alive` can see, and it is what cost the fleet an hour on 2026-08-22.
+#: The check is deliberately conservative in three ways, because restarting an
+#: agent that is merely between games would be worse than the stall:
+#:   * it fires ONLY on an exact 0 from the server; None means "unknown", which
+#:     callers must treat as busy (see active_games), so a flaky API never kills;
+#:   * it needs the zero to PERSIST, since a healthy agent dips to 0 briefly
+#:     between matches;
+#:   * it leaves a fresh process alone, so a slow start is not mistaken for a
+#:     stall.
+#: Cost is one request per agent per HEALTH_EVERY seconds, which has to fit
+#: inside the 60/min per-key budget the agent's own polling already shares.
+STALL_GRACE = 420.0      # ignore a process younger than this
+STALL_SECONDS = 300.0    # active_games must read 0 for this long
+HEALTH_EVERY = 120.0     # seconds between health probes per agent
+
 #: Each agent is launched with a bounded --max-time and then relaunched. This is
 #: the ONLY safe way to apply a config change.
 #:
@@ -177,6 +193,14 @@ class Agent:
         self.restarts = 0
         self.started_at = 0.0
         self.next_try = 0.0
+        #: Stall watchdog state. `alive` only asks whether the PROCESS exists,
+        #: which is exactly the question that missed the 2026-08-22 outage: three
+        #: agents sat at 82-90% CPU, past their shift boundary, holding zero
+        #: games and queueing none, for over an hour. The process was up the
+        #: whole time, so nothing here noticed until a human asked.
+        self.zero_since = 0.0        # when active_games first read 0
+        self.last_health = 0.0       # last time we spent an API call on it
+        self.stall_kills = 0
 
     @property
     def alive(self) -> bool:
@@ -452,7 +476,39 @@ def main() -> int:
                     agent.proc = None
                 agent.next_try = now + 30
                 continue
-            if agent.alive or now < agent.next_try:
+            if agent.alive:
+                # STALL WATCHDOG -- see STALL_GRACE. A live process is normally
+                # skipped entirely, which is precisely how three agents idled
+                # for an hour with the supervisor reporting them healthy.
+                if (agent.probe not in pending_cycle
+                        and now - agent.started_at >= STALL_GRACE
+                        and now - agent.last_health >= HEALTH_EVERY):
+                    agent.last_health = now
+                    live = active_games(agent.env_key)
+                    if live is None or live > 0:
+                        agent.zero_since = 0.0        # unknown counts as busy
+                    else:
+                        if agent.zero_since == 0.0:
+                            agent.zero_since = now
+                        elif now - agent.zero_since >= STALL_SECONDS:
+                            pid = agent.pid
+                            agent.stall_kills += 1
+                            print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} STALLED: "
+                                  f"alive as pid={pid} but active_games=0 for "
+                                  f"{now - agent.zero_since:.0f}s. Restarting "
+                                  f"(stall kill #{agent.stall_kills}). Nothing is in "
+                                  f"flight, so no games are stranded.", flush=True)
+                            agent.zero_since = 0.0
+                            try:
+                                if pid:
+                                    os.kill(pid, signal.SIGKILL)
+                            except OSError as exc:
+                                print(f"    could not signal {pid}: {exc}", flush=True)
+                            agent.adopted_pid = None
+                            agent.proc = None
+                            agent.next_try = now + 5
+                continue
+            if now < agent.next_try:
                 continue
             if agent.proc is not None:                 # it exited
                 ran = now - agent.started_at
