@@ -191,3 +191,85 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
 - CAUTION recorded: the refit rewrote the profile file WHILE a sweep was
   running, so that sweep mixed old and new profiles. Never refit a model file
   concurrently with an arena run that reads it.
+
+## Bargaining assumptions that turn out NOT to matter (22 Aug)
+- The real discount factors are uniform over {0.8, 0.9, 0.95, 1.0} (17,177
+  games; mean 0.9133, median 0.95), and the OPPONENT'S delta is hidden in
+  49.9% of bargaining games -- so `GLEE_BARG_UNKNOWN_DELTA` (assumed 0.90)
+  prices half the family. It looked like a systematic mispricing: we assume
+  opponents are less patient than they are.
+  MEASURED NULL. Arena, bargaining, 4,000 games x 2 seeds vs the live control:
+      0.9125 (the true mean)   +0.0001 / +0.0000, CI [-0.0003,+0.0007]
+      0.95   (the true median) +0.0008 / -0.0009, sign-flips across seeds
+  The 0.9125 CIs are tight, so this is a well-measured null rather than an
+  underpowered one -- the assumed delta barely reaches the submitted numbers.
+  The SPE share is dominated by the accept/offer floors instead. Do not revisit.
+- Horizon: disclosed games are always max_rounds=12, undisclosed always read as
+  the 99 'infinite' horizon (8,546 vs 8,631 games), so
+  `GLEE_BARG_UNDISCLOSED_HORIZON=99` is already correct.
+
+## THE STEP ACCEPTANCE FRONTIER (22 Aug) -- the strongest structural fact found
+- In ONE-ROUND COMPLETE-INFO negotiation the field's acceptance is a STEP
+  FUNCTION of whether it is left anything at all. Our own posted asks, live:
+      share of span asked   closed / n
+      [0.0,0.1)              65 / 65    100%
+      [0.1,0.2)              18 / 18    100%
+      [0.2,0.3)               5 / 5     100%
+      [0.3,0.4)             104 / 104   100%
+      [0.4,0.5)              24 / 24    100%
+      [0.5,0.6)              11 / 11    100%
+      [0.7,0.8)              48 / 48    100%
+      [0.8,0.9)             109 / 109   100%
+      >=1.05                  0 / 78      0%
+  384/384 closed below 0.9; 0/78 closed at or above 1.05. Rejection pays the
+  opponent exactly zero in a one-round game, so they take any positive crumb.
+  We currently ask exactly 0.800 (= GLEE_NEGO_ULTIMATUM_SHARE) on Test 1,
+  Agent 5 and Test 3, so the [0.80,0.90) band is free surplus we decline.
+- Test 2, which does NOT carry the flag, asks a mean 1.155 of span in this cell
+  -- above the whole zone, i.e. a guaranteed no-deal. That is a live diagnosis
+  of why its negotiation rating (1928) trails its flagged siblings.
+- HISTORICAL NOTE, not a bug: 655 of 784 logged one-round turns show
+  ultimatum=False. Those predate the flag's deployment or come from Test 2.
+  Verified over the last 6h on current code: mean ask 0.800 with ZERO asks
+  below 15% on all three flagged agents.
+
+## GLEE_NEGO_ZOPA_SHARE is the largest measured gain to date
+- The parameter is how much of the visible span we LEAVE the opponent
+  (default 0.39, i.e. we keep 61%). Arena, negotiation, 4,000 games x 2 seeds,
+  control = Agent 5's live 26-flag set:
+      0.30   +0.0100 / +0.0099   both CIs excluding zero
+      0.22   +0.0113 / +0.0119   both CIs excluding zero
+  Close rate moves only -0.001 to -0.003, so this is almost pure price capture,
+  exactly as the step frontier predicts: the field accepts on positivity, not
+  on fairness.
+- FULL CURVE, with a clean INTERIOR OPTIMUM at 0.10 (share we leave them):
+      0.39 (default)  baseline
+      0.30            +0.0100 / +0.0099
+      0.22            +0.0113 / +0.0119
+      0.15            +0.0115 / +0.0116
+      0.10            +0.0127 / +0.0123   <- peak
+      0.05            +0.0111 / +0.0099   <- declines again
+  Falling away on BOTH sides is the signature of a real effect, not drift.
+- CONFIRMED on a THIRD seed (7777): +0.0114. Four independent measurements
+  of the 0.10 setting: +0.0127, +0.0123, +0.0114, +0.0118 -> mean +0.0121,
+  every CI excluding zero. Close-rate cost is -0.005.
+- NO SPILLOVER: run across bargaining+negotiation, bargaining reads exactly
+  +0.0000 with a zero-width CI. That is the CORRECT signature here -- the
+  parameter is read only in negotiation.py (:325, :352, :1099) so the two arms
+  really are the same code path in bargaining.
+- DO NOT COMBINE with a raised ultimatum share. ZOPA_SHARE=0.10 plus
+  GLEE_NEGO_ULTIMATUM_SHARE=0.90 gives +0.0108 / +0.0102 -- WORSE than 0.10
+  alone -- and doubles the close-rate cost to -0.010. Once the zone share is
+  aggressive, pushing the one-round ask too costs more than it gains. The live
+  step frontier suggested 0.90 was free surplus; against the full stack it is
+  not. Keep ULTIMATUM_SHARE at 0.80.
+- INSTRUMENT CHECK (run independently before trusting the number): the fitted
+  CDF is not extrapolating. Complete-info negotiation cells carry 115-126
+  observations each; the percentile at the top of the range is the well
+  determined COUNT of field payoffs below it (SE ~0.014 at n=126), and the tail
+  is thin because few opponents score there -- which is the point. Bottom-up
+  cross-check: the median percentile gain from asking 61% to 90% of cell max is
+  +0.125 per complete-info game, and complete-info is 27% of the family, for a
+  ceiling of ~+0.034. The measured +0.0121 is about a third of that ceiling,
+  which is what partial capture should look like.
+- `GLEE_NEGO_RECIP_DAMP` at 0.5 is NEGATIVE (-0.0002 / -0.0008) -- leave off.
