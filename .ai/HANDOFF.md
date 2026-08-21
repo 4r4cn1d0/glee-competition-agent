@@ -3,6 +3,23 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-22 — persuasion: buyer parser tri-state correction implemented
+
+`GLEE_PERS_PARSE_TRI` is implemented default OFF. When armed, buyer v1 and v2
+preserve parser abstention as `None`: historical abstentions do not update the
+seller-type posterior, and a current abstention leaves `P(high)` at the prior.
+An explicit parser decline is a final hard veto. The shared legacy boolean
+wrapper is unchanged for seller policy, so this flag cannot move seller play.
+
+Focused regression coverage proves the flag-off path still makes the original
+ambiguous-message purchase, while the armed path passes when the prior is below
+`1/v`; a second case proves an explicit decline vetoes a purchase that the v2
+posterior otherwise makes. Verification: focused parser tests 49 passed; full
+suite 581 passed, with only the two pre-existing bargaining failures named in
+AGENTS.md (`test_bargaining_horizon_floor`, `test_sim_grid[bargaining]`). No
+live configuration, fleet process, or deployment file was touched. Claude still
+owns verification and deployment.
+
 ## 2026-08-22 — negotiation: two theories tested, both moved
 
 **Codex's first review paid for itself.** It found that the surplus probe is

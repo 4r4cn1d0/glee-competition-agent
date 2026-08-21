@@ -234,8 +234,21 @@ def seller_plan(game: dict, cfg) -> dict:
             "quality_is_high": False}
 
 
+def _recommendation_signal(entry: dict) -> bool | None:
+    """The seller's recommendation signal, preserving parser abstention."""
+    msg = entry.get("seller_message")
+    if isinstance(msg, bool):
+        return msg
+    if isinstance(msg, str):
+        return reads_as_recommendation(msg)
+    recommended = entry.get("recommended")
+    if isinstance(recommended, bool):
+        return recommended
+    return None
+
+
 def _recommended(entry: dict) -> bool:
-    """Whether the seller's move in a history entry was a recommendation to buy.
+    """Legacy boolean reading of a seller move.
 
     Text mode is parsed by ``glee_agent.text``. A message carrying no usable
     signal counts as a recommendation, because a seller who says nothing useful
@@ -243,13 +256,10 @@ def _recommended(entry: dict) -> bool:
     read as declining it, or the buyer's honesty estimate treats truthful
     sellers as liars.
     """
-    msg = entry.get("seller_message")
-    if isinstance(msg, bool):
-        return msg
-    if isinstance(msg, str):
-        verdict = reads_as_recommendation(msg)
-        if verdict is not None:
-            return verdict
+    verdict = _recommendation_signal(entry)
+    if verdict is not None:
+        return verdict
+    if isinstance(entry.get("seller_message"), str):
         return True
     return bool(entry.get("recommended", False))
 
@@ -300,7 +310,8 @@ def _buyer_prior_doc():
     return _PRIOR_STATE["doc"]
 
 
-def _q_posterior(history: list, p: float, mode: str) -> list[float]:
+def _q_posterior(history: list, p: float, mode: str,
+                 preserve_abstentions: bool = False) -> list[float]:
     """Posterior over _Q_GRID given every observable round so far.
 
     Bought rounds contribute their (recommendation, quality) joint; unbought
@@ -321,7 +332,12 @@ def _q_posterior(history: list, p: float, mode: str) -> list[float]:
     for entry in history:
         if not isinstance(entry, dict):
             continue
-        rec = _recommended(entry)
+        rec = (_recommendation_signal(entry) if preserve_abstentions
+               else _recommended(entry))
+        if rec is None:
+            # Without a readable recommendation/decline, revealed quality has
+            # its base-rate likelihood p and therefore cannot identify q.
+            continue
         quality = str(entry.get("quality", "")).lower()
         for i, q in enumerate(_Q_GRID):
             if entry.get("bought") and quality in ("high", "low"):
@@ -347,8 +363,26 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     mode = mode_of(state)
     history = [h for h in (state.get("history") or []) if isinstance(h, dict)]
 
-    recommended_now = _recommended({"seller_message": state.get("seller_message")})
-    post = _q_posterior(history, p, mode)
+    parse_tri = runtime_flags.enabled("GLEE_PERS_PARSE_TRI")
+    current = {"seller_message": state.get("seller_message")}
+    recommended_now = (_recommendation_signal(current) if parse_tri
+                       else _recommended(current))
+    post = _q_posterior(history, p, mode, preserve_abstentions=parse_tri)
+
+    # TRI-STATE PARSER CORRECTION (flagged off by default). On Test 1's actual
+    # buyer-v2 path, 38 of 2,640 messages were misread: all 38 were warnings
+    # coerced into recommendations, with zero false negatives. We bought 15,
+    # every one revealed low quality, for a realised loss of 4,040,700;
+    # GLEE_PERS_PARSE_V2 fixes only 4 of the 38. At v=1.2 a bad buy costs five
+    # times a missed good buy, so optimistic coercion has the wrong asymmetry.
+    #
+    # Under GLEE_PERS_PARSE_TRI, False remains readable negative evidence and
+    # is also a final hard veto. None has no modeled likelihood ratio for either
+    # quality or seller type: marginalising the unreadable semantic signal leaves
+    # P(high) at the known base rate p and leaves the q posterior unchanged. The
+    # normal buyer-v2 guards may still reject, but no bonus may buy an abstention
+    # below the base-rate breakeven p >= (price-u)/(v-u), i.e. p >= 1/v when
+    # price=1 and low quality is worth u=0.
 
     # The CURRENT message is itself evidence about q and must reweight the
     # mixture before P(high|message) is read off it -- a pure spammer almost
@@ -356,28 +390,36 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     # P(high|no,q=1)~1 ride into the average. The audit measured the unweighted
     # version buying on explicit declines 688 times across the logged games at
     # -0.65x price a piece.
-    post_now = []
-    for w, q in zip(post, _Q_GRID):
-        pr_yes = p * (1.0 - _EPS) + (1.0 - p) * q
-        post_now.append(w * (pr_yes if recommended_now else (1.0 - pr_yes)))
-    z = sum(post_now)
-    post_now = [x / z for x in post_now] if z > 1e-12 else list(post)
+    if recommended_now is None:
+        post_now = list(post)
+    else:
+        post_now = []
+        for w, q in zip(post, _Q_GRID):
+            pr_yes = p * (1.0 - _EPS) + (1.0 - p) * q
+            post_now.append(w * (pr_yes if recommended_now else (1.0 - pr_yes)))
+        z = sum(post_now)
+        post_now = [x / z for x in post_now] if z > 1e-12 else list(post)
 
     # P(high | this seller's current message), mixed over the type posterior.
-    p_high = 0.0
-    for w, q in zip(post_now, _Q_GRID):
-        if recommended_now:
-            yes_hi = p * (1.0 - _EPS)
-            p_high += w * yes_hi / (yes_hi + (1.0 - p) * q)
-        else:
-            no_hi = p * _EPS
-            p_high += w * no_hi / max(no_hi + (1.0 - p) * (1.0 - q), 1e-9)
+    if recommended_now is None:
+        p_high = p
+    else:
+        p_high = 0.0
+        for w, q in zip(post_now, _Q_GRID):
+            if recommended_now:
+                yes_hi = p * (1.0 - _EPS)
+                p_high += w * yes_hi / (yes_hi + (1.0 - p) * q)
+            else:
+                no_hi = p * _EPS
+                p_high += w * no_hi / max(no_hi + (1.0 - p) * (1.0 - q), 1e-9)
     expected = p_high * v + (1.0 - p_high) * u
 
     observed = sum(1 for h in history if h.get("bought")
                    and str(h.get("quality", "")).lower() in ("high", "low"))
     caught = sum(1 for h in history if h.get("bought")
-                 and str(h.get("quality", "")).lower() == "low" and _recommended(h))
+                 and str(h.get("quality", "")).lower() == "low"
+                 and ((_recommendation_signal(h) is True) if parse_tri
+                      else _recommended(h)))
 
     # Tight cells: breakeven belief close to 1 means one junk unit erases many
     # good ones, so demand a posterior MARGIN, not just a positive edge -- and
@@ -407,7 +449,8 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     audit = runtime_flags.as_float("GLEE_PERS_BUYER_AUDIT", 0.0)
     rounds_remaining = max(0, total - round_no)
     bonus = 0.0
-    if audit > 0.0 and observed == 0 and rounds_remaining > 0 and not tight:
+    if (audit > 0.0 and observed == 0 and rounds_remaining > 0 and not tight
+            and recommended_now is not None):
         bonus = audit * price * (rounds_remaining / max(total, 1))
 
     buy = (not blocked) and (expected + bonus >= threshold)
@@ -423,7 +466,8 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     # gate-blocked cells are untouched.
     lcb_alpha = runtime_flags.as_float("GLEE_PERS_BUYER_LCB", 0.0)
     lcb_extra = {}
-    if 0.0 < lcb_alpha < 0.5 and tight and not blocked:
+    if (0.0 < lcb_alpha < 0.5 and tight and not blocked
+            and recommended_now is not None):
         # Per-type P(high | message, q). Monotone in q (decreasing on a "yes",
         # increasing on a "no"), but sort anyway so the quantile is correct by
         # construction rather than by direction bookkeeping.
@@ -480,17 +524,36 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
         _margin = p - _breakeven_p
         if _margin <= _veto:
             _their = [r for r in (state.get("history") or []) if isinstance(r, dict)]
-            _seen = [r for r in _their if r.get("seller_message") is not None]
-            _declines = sum(1 for r in _seen
-                            if reads_as_recommendation(str(r.get("seller_message"))) is False)
+            if parse_tri:
+                _signals = [_recommendation_signal(r) for r in _their]
+                _seen = [signal for signal in _signals if signal is not None]
+                _declines = sum(1 for signal in _seen if signal is False)
+            else:
+                _seen = [r for r in _their if r.get("seller_message") is not None]
+                _declines = sum(
+                    1 for r in _seen
+                    if reads_as_recommendation(str(r.get("seller_message"))) is False)
             if len(_seen) >= 3 and _declines == 0:
                 buy = False
                 lcb_extra["uninformed_veto"] = True
                 lcb_extra["seller_declines"] = 0
                 lcb_extra["prior_margin"] = round(_margin, 4)
 
+    parser_extra = {}
+    if parse_tri and recommended_now is False:
+        # Apply last so no posterior, audit, or optional LCB path can revive an
+        # explicit instruction not to buy.
+        buy = False
+        parser_extra["parser_decline_veto"] = True
+    elif parse_tri and recommended_now is None:
+        parser_extra["parser_abstained"] = True
+        if expected < price:
+            buy = False
+            parser_extra["parser_prior_below_breakeven"] = True
+
     return {
         **lcb_extra,
+        **parser_extra,
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,
         "p_high": p_high, "expected_value": expected,
@@ -512,23 +575,32 @@ def buyer_plan(game: dict, cfg) -> dict:
     u = _num(state.get("u"), 0.0)
     round_no, total = _rounds(state)
 
-    recommended_now = _recommended({"seller_message": state.get("seller_message")})
+    parse_tri = runtime_flags.enabled("GLEE_PERS_PARSE_TRI")
+    current = {"seller_message": state.get("seller_message")}
+    recommended_now = (_recommendation_signal(current) if parse_tri
+                       else _recommended(current))
 
     # Quality is observed only on rounds we bought, so only those inform the
     # honesty estimate. Smooth toward the prior while the sample is tiny.
     hits = misses = 0
-    for entry in state.get("history") or []:
-        if not isinstance(entry, dict) or not entry.get("bought"):
-            continue
-        if _recommended(entry) != recommended_now:
-            continue                       # compare like with like
-        if str(entry.get("quality", "")).lower() == "high":
-            hits += 1
-        elif str(entry.get("quality", "")).lower() == "low":
-            misses += 1
+    if recommended_now is not None:
+        for entry in state.get("history") or []:
+            if not isinstance(entry, dict) or not entry.get("bought"):
+                continue
+            historical = (_recommendation_signal(entry) if parse_tri
+                          else _recommended(entry))
+            if historical != recommended_now:
+                continue                   # compare like with like
+            if str(entry.get("quality", "")).lower() == "high":
+                hits += 1
+            elif str(entry.get("quality", "")).lower() == "low":
+                misses += 1
 
     observed = hits + misses
-    prior_high = p if recommended_now else p / 2.0   # a non-recommendation is bearish
+    if recommended_now is None:
+        prior_high = p
+    else:
+        prior_high = p if recommended_now else p / 2.0
     p_high = ((hits + _PRIOR_STRENGTH * prior_high)
               / (observed + _PRIOR_STRENGTH))
     expected = p_high * v + (1.0 - p_high) * u
@@ -538,17 +610,29 @@ def buyer_plan(game: dict, cfg) -> dict:
     # round. Worth a small deficit early, nothing at the end.
     rounds_remaining = max(0, total - round_no)
     exploration = 0.0
-    if observed < 2 and rounds_remaining > 0:
+    if observed < 2 and rounds_remaining > 0 and recommended_now is not None:
         exploration = price * 0.10 * min(1.0, rounds_remaining / max(1, total))
 
+    buy = expected + exploration >= price
+    parser_extra = {}
+    if parse_tri and recommended_now is False:
+        buy = False
+        parser_extra["parser_decline_veto"] = True
+    elif parse_tri and recommended_now is None:
+        parser_extra["parser_abstained"] = True
+        if expected < price:
+            buy = False
+            parser_extra["parser_prior_below_breakeven"] = True
+
     return {
+        **parser_extra,
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,
         "p_high": p_high, "expected_value": expected,
         "observed_rounds": observed, "hits": hits, "misses": misses,
         "exploration_bonus": exploration,
         "round": round_no, "total_rounds": total,
-        "buy": expected + exploration >= price,
+        "buy": buy,
     }
 
 

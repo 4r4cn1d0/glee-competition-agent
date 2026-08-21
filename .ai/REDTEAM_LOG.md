@@ -71,3 +71,64 @@ tokens used
 ## 2026-08-21 21:47Z — surface: the concession schedule and stall detection
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-21 23:22Z — surface: the persuasion buyer DP and its belief update
+
+    40	    "bought_low": 2
+    41	  },
+    42	  "our_payoff": -120.0,
+    43	  "opponent_payoff": 600.0,
+    44	  "rounds_played": 20,
+    45	  "history": [
+    46	    {
+    47	      "round": 1,
+    48	      "quality": "high",
+    49	      "seller_message": "yes",
+    50	      "buyer_decision": "yes",
+    51	      "bought": true,
+    52	      "seller_payoff": 100,
+    53	      "buyer_payoff": 20.0,
+    54	      "response_time_ms": 1625
+    55	    },
+    56	    {
+    57	      "round": 2,
+    58	      "quality": "high",
+    59	      "seller_message": "yes",
+    60	      "buyer_decision": "yes",
+
+context compacted
+codex
+### New holes
+
+1. **Costless declines launder a seller’s reputation.** [`_q_posterior()`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:313>) treats every unbought `no` as evidence of low deception, despite its being free strategic speech. Live against `velocity`, a passed `no` at [turn 14](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95399>) raised the next `yes` to `p_high=.84879`; the buyer purchased, and it was low ([turn 15](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95408>)). That purchase changed buyer payoff from −0.2P to −1.2P: estimated percentile `.34135 → .02885`, costing **31.25 points**.
+
+   **Decision rule:** Give unpurchased messages Bayes factor 1 unless the counterfactual opposite message would have induced purchase. Maintain an adaptive/change-point seller model and buy only when worst-case expected percentile gain is positive.
+
+2. **The public break-even cliff lets the seller select the favorable posterior.** Buying is deterministic at `EV >= price` ([line 456](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:456>)). At text `p=.5, v=2P`, after five bought low `yes` messages, `yes` yields `.49935` and rejection, while `no` yields `.53420` and purchase; afterward `yes` yields `.57898`. A seller who observes quality and chooses whichever token clears can sell every low unit. Over 20 rounds, buyer expected percentile is `.41656` versus `.54393` for passing: **−12.74 points**; an 8-high/12-low realization costs **52.09 points**. Seller reaches percentile `.95816`.
+
+   **Decision rule:** Replace the public cliff with private randomized purchase probability, smoothly increasing with robust percentile advantage—not raw EV—and model message choice as adversarial.
+
+The concurrent `PARSE_TRI` patch is default-off and absent from the live composite ([arms.json](</Users/spiderishi/Coding/GLEE Competition/arms.json:35>)); even enabled, it blocks direct `no` purchases but not decline laundering.
+
+### FINDINGS check
+
+Nothing is disproved. The pooled `p=.8` result remains descriptive, not evidence of robustness against adaptive sellers.
+
+
+tokens used
+250,446
+### New holes
+
+1. **Costless declines launder a seller’s reputation.** [`_q_posterior()`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:313>) treats every unbought `no` as evidence of low deception, despite its being free strategic speech. Live against `velocity`, a passed `no` at [turn 14](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95399>) raised the next `yes` to `p_high=.84879`; the buyer purchased, and it was low ([turn 15](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95408>)). That purchase changed buyer payoff from −0.2P to −1.2P: estimated percentile `.34135 → .02885`, costing **31.25 points**.
+
+   **Decision rule:** Give unpurchased messages Bayes factor 1 unless the counterfactual opposite message would have induced purchase. Maintain an adaptive/change-point seller model and buy only when worst-case expected percentile gain is positive.
+
+2. **The public break-even cliff lets the seller select the favorable posterior.** Buying is deterministic at `EV >= price` ([line 456](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:456>)). At text `p=.5, v=2P`, after five bought low `yes` messages, `yes` yields `.49935` and rejection, while `no` yields `.53420` and purchase; afterward `yes` yields `.57898`. A seller who observes quality and chooses whichever token clears can sell every low unit. Over 20 rounds, buyer expected percentile is `.41656` versus `.54393` for passing: **−12.74 points**; an 8-high/12-low realization costs **52.09 points**. Seller reaches percentile `.95816`.
+
+   **Decision rule:** Replace the public cliff with private randomized purchase probability, smoothly increasing with robust percentile advantage—not raw EV—and model message choice as adversarial.
+
+The concurrent `PARSE_TRI` patch is default-off and absent from the live composite ([arms.json](</Users/spiderishi/Coding/GLEE Competition/arms.json:35>)); even enabled, it blocks direct `no` purchases but not decline laundering.
+
+### FINDINGS check
+
+Nothing is disproved. The pooled `p=.8` result remains descriptive, not evidence of robustness against adaptive sellers.
