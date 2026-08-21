@@ -319,10 +319,25 @@ def plan(game: dict, cfg) -> dict:
     }
 
 
+def _gate(p: dict, name: str) -> None:
+    """Append ``name`` to the gate trace when tracing is on (see negotiation).
+
+    Pure instrumentation behind GLEE_TRACE_GATES, OFF by default: with the flag
+    off the plan dict never carries the key and nothing reads the list, so the
+    action is byte-identical either way. The list records, in firing ORDER,
+    every gate that changed the pending offer/threshold/decision this turn.
+    """
+    g = p.get("gates_fired")
+    if g is not None:
+        g.append(name)
+
+
 def decide(game: dict, cfg) -> dict:
     state = game["game_state"]
     p = plan(game, cfg)
     money, mine = p["money"], p["me_is_alice"]
+    if runtime_flags.enabled("GLEE_TRACE_GATES"):
+        p["gates_fired"] = []
 
     if game["valid_actions"]["type"] == "offer":
         my_gain = p["aspiration"]
@@ -332,11 +347,16 @@ def decide(game: dict, cfg) -> dict:
             # take any crumb. In practice humans and LLMs reject offers that
             # read as insulting, and a spite rejection costs the whole pot —
             # so leave a share big enough to be worth taking.
+            if my_gain != money * 0.75:
+                _gate(p, "ultimatum")
             my_gain = money * 0.75
         elif rl <= 2:
             # The opponent gets the last word after this. Cap the ask so the
             # offer stays acceptable, floored by what a refusal is worth.
+            _g0 = my_gain
             my_gain = max(p["continuation_if_refused"], min(my_gain, money * 0.62))
+            if my_gain != _g0:
+                _gate(p, "lastword_cap")
         # Cap the ask so the opponent is never pushed under the measured
         # acceptance cliff. barg_offer_floor bounds OUR share from below; this
         # bounds it from above. Live check found every probe proposing 26-38%
@@ -347,6 +367,8 @@ def decide(game: dict, cfg) -> dict:
                                            cfg.barg_opponent_floor)
         opp_floor = min(max(opp_floor, 0.0), 0.5)
         if opp_floor > 0.0:
+            if my_gain > (1.0 - opp_floor) * money:
+                _gate(p, "opp_floor")
             my_gain = min(my_gain, (1.0 - opp_floor) * money)
             p["opponent_floor_applied"] = opp_floor
 
@@ -444,10 +466,13 @@ def decide(game: dict, cfg) -> dict:
             if picked is not None:
                 target = picked[0] * money
                 w = min(max(bob_w, 0.0), 1.0)
+                _g0 = my_gain
                 my_gain = my_gain + w * (target - my_gain)
                 my_gain = min(max(my_gain, floor_gain), money)
                 p["bob_offer"] = dict(picked[1], target=round(picked[0], 4),
                                       weight=round(w, 3))
+                if my_gain != _g0:
+                    _gate(p, "bob_offer")
 
         # Opponent-conditional exploitation: when this game DISCLOSES who we are
         # playing and their fitted profile says they accept far less than the
@@ -460,6 +485,8 @@ def decide(game: dict, cfg) -> dict:
         if runtime_flags.enabled("GLEE_OPP_EXPLOIT"):
             give = opponents.barg_give_floor(game)
             if give is not None:
+                if my_gain < (1.0 - give) * money:
+                    _gate(p, "opp_exploit")
                 my_gain = max(my_gain, (1.0 - give) * money)
                 p["opp_exploit_give"] = give
 
@@ -507,6 +534,8 @@ def decide(game: dict, cfg) -> dict:
             if gain > 0.0:
                 dme = p.get("delta_me")
                 if dme is not None and dme < 1.0:
+                    if dme * gain / (1.0 - dme) < floor_share:
+                        _gate(p, "floor_gain")
                     floor_share = min(floor_share, dme * gain / (1.0 - dme))
             # Stonewall override. The floor's whole premise is that waiting
             # BUYS something; against an opponent who simply repeats their
@@ -593,13 +622,106 @@ def decide(game: dict, cfg) -> dict:
                     if sw_min > 0.0 and money > 0 and \
                             my_gain < min(max(sw_min, 0.0), 0.6) * money:
                         p["stonewall_extortion"] = run
+                        _gate(p, "stonewall_extortion")
                     else:
+                        if floor_share != 0.0:
+                            _gate(p, "stonewall_release")
                         floor_share = 0.0
                         p["stonewall_release"] = run
+            # Economic-stagnation release (generalises the stonewall). The
+            # flat-run release above only sees an opponent whose number never
+            # moves; one who crawls +0.3-0.5% of pot per round against our
+            # delta 0.9-0.95 clock is economically identical and invisible to
+            # it -- live, Alice at delta 0.95 watched offers crawl
+            # 4,552 -> 4,797 nominal over ten rounds while their discounted
+            # value fell 4,325 -> 2,728, and the floor held until we accepted
+            # at round 12 for -8 rating. So project the opponent's OWN
+            # concession rate through OUR discount: if no reachable round's
+            # projected offer beats today's by more than epsilon in discounted
+            # terms, waiting buys nothing and the floor releases, exactly as
+            # it does for a flat run. Guards, all deliberate:
+            #  * the extortion guard (GLEE_BARG_STONEWALL_MIN) stays -- a
+            #    crawler repeating crumbs must not flip the floor either;
+            #  * delta_me < 1.0 -- for a patient player waiting is free and
+            #    holding out measurably pays (the stonewall's own evidence:
+            #    +7.7pp of pot at delta_me = 1.0);
+            #  * >= 3 DISTINCT opponent offers -- two points cannot support a
+            #    slope estimate, and the rate is the MEDIAN pairwise slope
+            #    over the last 3-4 distinct offers so one outlier step cannot
+            #    fake or hide a trend;
+            #  * the sequence collapses consecutive equal VALUES, the
+            #    echo-collapse pattern from negotiation's _price_seq:
+            #    _offers_to_me double-counts the newest offer via last_offer
+            #    when the platform omits its round key (the trap the
+            #    stonewall counter documents), and a (round, gain) dedup
+            #    cannot see that duplicate -- a value collapse can, and it
+            #    also stops a verbatim repeat posing as a fresh offer. The
+            #    offer being decided (last_offer, not yet in history) DOES
+            #    count when its value moved: it is the newest evidence of
+            #    the crawl and what makes the release fire by round ~6
+            #    rather than ~8.
+            econ_eps = runtime_flags.as_float("GLEE_BARG_ECON_STALL", 0.0)
+            dme_ec = p.get("delta_me")
+            if econ_eps > 0.0 and floor_share > 0.0 and money > 0 \
+                    and my_gain > 0 and dme_ec is not None and dme_ec < 1.0:
+                me_ec = state.get("current_player") or ""
+                seq_ec: list[tuple[int, float]] = []
+                for entry in state.get("history") or []:
+                    if not isinstance(entry, dict):
+                        continue
+                    off = entry.get("offer") or {}
+                    if not isinstance(off, dict):
+                        continue
+                    if (off.get("proposer") or entry.get("proposer")) == me_ec:
+                        continue
+                    g_ = off.get(f"{me_ec}_gain")
+                    if g_ is None:
+                        continue
+                    gv = _num(g_)
+                    if seq_ec and gv == seq_ec[-1][1]:
+                        continue          # echo / verbatim repeat, not distinct
+                    seq_ec.append((int(_num(entry.get("round"), 0)), gv))
+                last_ec = state.get("last_offer") or {}
+                if last_ec.get("proposer") and last_ec["proposer"] != me_ec \
+                        and last_ec.get(f"{me_ec}_gain") is not None:
+                    gv = _num(last_ec[f"{me_ec}_gain"])
+                    if not (seq_ec and gv == seq_ec[-1][1]):
+                        seq_ec.append((int(_num(last_ec.get("round"), 0)), gv))
+                if len(seq_ec) >= 3:
+                    window = seq_ec[-4:]
+                    slopes = sorted((g2 - g1) / (r2 - r1)
+                                    for i, (r1, g1) in enumerate(window)
+                                    for (r2, g2) in window[i + 1:] if r2 > r1)
+                    if slopes:
+                        m = len(slopes)
+                        rate_ec = (slopes[m // 2] if m % 2 else
+                                   0.5 * (slopes[m // 2 - 1] + slopes[m // 2]))
+                        # The planning clock is SYNTHETIC in undisclosed games
+                        # (rounds_left counts against the hidden 99 cap), so
+                        # only a DISCLOSED cap bounds the projection; matching
+                        # realistic_continuation, waiting k rounds only means
+                        # anything up to rounds_left - 1.
+                        horizon_ec = (max(1, min(5, p["rounds_left"] - 1))
+                                      if p["horizon_known"] else 5)
+                        rr = max(rate_ec, 0.0)
+                        best_wait = max((my_gain + rr * k) * dme_ec ** k
+                                        for k in range(1, horizon_ec + 1))
+                        if best_wait <= my_gain * (1.0 + econ_eps):
+                            sw_min_ec = runtime_flags.as_float(
+                                "GLEE_BARG_STONEWALL_MIN", 0.0)
+                            if sw_min_ec > 0.0 and \
+                                    my_gain < min(max(sw_min_ec, 0.0), 0.6) * money:
+                                p["econ_stall_extortion"] = round(
+                                    best_wait / my_gain, 4)
+                            else:
+                                floor_share = 0.0
+                                p["econ_stall_release"] = round(
+                                    best_wait / my_gain, 4)
             floor_gain = floor_share * money
             if threshold < floor_gain:
                 threshold = floor_gain
                 p["accept_floor_applied"] = round(floor_share, 3)
+                _gate(p, "accept_floor")
         # Opponent-conditional: against a PROFILED soft opponent our next offer
         # (asking all but their measured threshold) is very likely accepted, so
         # continuing is worth nearly (1-give) discounted one round -- far more
@@ -611,6 +733,8 @@ def decide(game: dict, cfg) -> dict:
             give = opponents.barg_give_floor(game)
             if give is not None:
                 hold = (1.0 - give) * money * p["delta_me"]
+                if min(hold, 0.95 * money) > threshold:
+                    _gate(p, "opp_exploit")
                 threshold = max(threshold, min(hold, 0.95 * money))
                 p["opp_exploit_hold"] = threshold
         decision = "accept" if my_gain >= threshold else "reject"
@@ -619,6 +743,7 @@ def decide(game: dict, cfg) -> dict:
         if (decision == "reject" and p["effective_horizon"] is not None and my_gain > 0
                 and _num(state.get("round"), 1) >= p["effective_horizon"]):
             decision = "accept"
+            _gate(p, "inflation_accept")
 
     p["offered_to_me"] = my_gain
     return {"decision": decision, "_plan": p}

@@ -377,7 +377,47 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     if audit > 0.0 and observed == 0 and rounds_remaining > 0 and not tight:
         bonus = audit * price * (rounds_remaining / max(total, 1))
 
+    buy = (not blocked) and (expected + bonus >= threshold)
+
+    # Posterior LOWER-CONFIDENCE-BOUND buying, aimed at exactly the cells the
+    # tight-prior gate leaves open: tight (breakeven >= 0.75) hi-prior cells,
+    # where the posterior MEAN still clears the price while a fat q-tail says
+    # this seller may well be a spammer -- live those cells kept producing
+    # -7-class games (3-5 junk buys in a row). Blanket GUARD/STRIKE knobs were
+    # arena-tested and LOST to the plain gate; this instead demands that the
+    # pessimistic alpha-quantile of P(high|message,q) -- not the mean -- pay
+    # for the purchase, and ONLY in the open tight cells. Non-tight cells and
+    # gate-blocked cells are untouched.
+    lcb_alpha = runtime_flags.as_float("GLEE_PERS_BUYER_LCB", 0.0)
+    lcb_extra = {}
+    if 0.0 < lcb_alpha < 0.5 and tight and not blocked:
+        # Per-type P(high | message, q). Monotone in q (decreasing on a "yes",
+        # increasing on a "no"), but sort anyway so the quantile is correct by
+        # construction rather than by direction bookkeeping.
+        vals = []
+        for w, q in zip(post_now, _Q_GRID):
+            if recommended_now:
+                yes_hi = p * (1.0 - _EPS)
+                vals.append((yes_hi / max(yes_hi + (1.0 - p) * q, 1e-9), w))
+            else:
+                no_hi = p * _EPS
+                vals.append((no_hi / max(no_hi + (1.0 - p) * (1.0 - q), 1e-9), w))
+        vals.sort(key=lambda t: t[0])
+        acc = 0.0
+        lcb_p_high = vals[-1][0]
+        for val, w in vals:
+            acc += w
+            if acc >= lcb_alpha:
+                lcb_p_high = val
+                break
+        lcb_buy = lcb_p_high * v + (1.0 - lcb_p_high) * u >= threshold
+        lcb_extra["lcb_p_high"] = lcb_p_high
+        if buy and not lcb_buy:
+            lcb_extra["lcb_veto"] = True
+        buy = lcb_buy
+
     return {
+        **lcb_extra,
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,
         "p_high": p_high, "expected_value": expected,
@@ -387,7 +427,7 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
         "exploration_bonus": bonus,
         "round": round_no, "total_rounds": total,
         "buyer_v2": True,
-        "buy": (not blocked) and (expected + bonus >= threshold),
+        "buy": buy,
     }
 
 

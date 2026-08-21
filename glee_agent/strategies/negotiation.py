@@ -95,6 +95,26 @@ def other_player(me: str) -> str:
     return "player_2" if me == "player_1" else "player_1"
 
 
+def _trace_enabled() -> bool:
+    """Whether plan()/decide() record ``plan["gates_fired"]``.
+
+    Pure instrumentation, OFF by default. Each gate already leaves its own
+    fingerprint boolean; this unifies them into one ordered list — the firing
+    ORDER is what debugging gate-override bugs needs (which gate set the target
+    last, which one it overrode). With the flag off the plan dict is
+    byte-identical to before this existed: the key is never present, and no
+    gate reads the list, so it can never change an action either way.
+    """
+    return runtime_flags.enabled("GLEE_TRACE_GATES")
+
+
+def _gate(p: dict, name: str) -> None:
+    """Record that ``name`` changed the pending target/decision this turn."""
+    g = p.get("gates_fired")
+    if g is not None:
+        g.append(name)
+
+
 def _bound_as_floor_enabled() -> bool:
     """Whether the opponent's revealed bound raises our anchor instead of capping it.
 
@@ -348,6 +368,7 @@ def plan(game: dict, cfg) -> dict:
     # be worth taking" -> it claims 0.75); this is the negotiation counterpart.
     # Deliberately not a full claim: an insulted opponent rejecting costs the
     # whole deal, so the share is a live knob, not 1.0. OFF by default.
+    _tr: list | None = [] if _trace_enabled() else None
     ult = runtime_flags.as_float("GLEE_NEGO_ULTIMATUM_SHARE", 0.0)
     ultimatum = False
     if (ult > 0.0 and zopa_lo is not None and capped and rounds_left <= 1
@@ -355,9 +376,12 @@ def plan(game: dict, cfg) -> dict:
         span_u = zopa_hi - zopa_lo
         if span_u > 0:
             take = min(max(ult, 0.0), 0.95)
+            _t0 = target
             target = (zopa_lo + take * span_u) if i_am_seller \
                 else (zopa_hi - take * span_u)
             ultimatum = True
+            if _tr is not None and target != _t0:
+                _tr.append("ultimatum")
 
     # Final-offer pricing from the fitted acceptance curve, where the constants
     # were blindest: a hidden-information game at our last offer opportunity.
@@ -391,6 +415,8 @@ def plan(game: dict, cfg) -> dict:
         _ours_seq = _price_seq(state, me, True)
         _theirs_seq = _price_seq(state, me, False)
         if len(_ours_seq) == 2:
+            if _tr is not None and target != _ours_seq[-1]:
+                _tr.append("probe_hold")
             target = _ours_seq[-1]
             probe_hold = True
         elif (len(_ours_seq) >= 3 and _pbase
@@ -411,7 +437,10 @@ def plan(game: dict, cfg) -> dict:
         if time_driven and ((not capped) or elapsed < 0.85):
             _ol = _our_last_price(state, me)
             if _ol is not None:
+                _t0 = target
                 target = max(target, _ol) if i_am_seller else min(target, _ol)
+                if _tr is not None and target != _t0:
+                    _tr.append("time_driven")
 
     # Learned-table OFFER policy (glee_agent/table_policy.py). NOTE: the first
     # attempt to wire this aborted before writing and only the acceptance half
@@ -422,6 +451,8 @@ def plan(game: dict, cfg) -> dict:
             and runtime_flags.enabled("GLEE_NEGO_TABLE")):
         t_ask = table_policy.offer(my_value, i_am_seller, elapsed)
         if t_ask is not None:
+            if _tr is not None and target != t_ask:
+                _tr.append("table")
             target = t_ask
             table_fired = True
 
@@ -432,6 +463,7 @@ def plan(game: dict, cfg) -> dict:
     if runtime_flags.enabled("GLEE_NEGO_STALL_POLICY"):
         _sp = _their_stall_price(state, me)
         if _sp is not None:
+            _t0 = target
             if (_sp > my_value) if i_am_seller else (_sp < my_value):
                 target = _sp
             else:
@@ -448,6 +480,8 @@ def plan(game: dict, cfg) -> dict:
                              and (r.get("offer") or {}).get("price") is not None]
                     if _prev:
                         target = _prev[-1]
+            if _tr is not None and target != _t0:
+                _tr.append("stall_park")
 
     # Dead-game play (clean-room panel, all four frames): when the opponent's
     # own offers PROVE no profitable close plausibly exists, the 0 atom is our
@@ -477,7 +511,10 @@ def plan(game: dict, cfg) -> dict:
             if _unprof:
                 deadgame = True
                 _prem = _pb * max(0.10 * (1.0 - elapsed), 0.02)
+                _t0 = target
                 target = (my_value + _prem) if i_am_seller else (my_value - _prem)
+                if _tr is not None and target != _t0:
+                    _tr.append("deadgame")
     # (recorded in the returned plan below; decide() walks away on it late in
     # uncapped games once the opponent has also stalled)
 
@@ -523,9 +560,12 @@ def plan(game: dict, cfg) -> dict:
             _move = (_b - _a) if i_am_seller else (_a - _b)
             _gap = abs(_ours_last - _b)
             if _gap > 1e-9 and _move >= _damp * _gap:
+                _t0 = target
                 target = max(target, _ours_last) if i_am_seller \
                     else min(target, _ours_last)
                 recip_damped = True
+                if _tr is not None and target != _t0:
+                    _tr.append("recip_damp")
 
     posterior_fired = table_fired
     if (not table_fired and state.get(f"{other}_value") is None
@@ -542,6 +582,8 @@ def plan(game: dict, cfg) -> dict:
             p_ask = pricing.posterior_final_ask(my_value, state.get(f"{other}_role"),
                                                 first_over_b, i_am_seller)
             if p_ask is not None:
+                if _tr is not None and target != p_ask:
+                    _tr.append("posterior")
                 target = p_ask
                 posterior_fired = True
         elif runtime_flags.enabled("GLEE_NEGO_POSTERIOR_CAP"):
@@ -551,6 +593,8 @@ def plan(game: dict, cfg) -> dict:
                 capped_target = min(target, p_cap) if i_am_seller else max(target, p_cap)
                 # the cap must never push the walk through our own floor
                 if (capped_target > my_value) if i_am_seller else (capped_target < my_value):
+                    if _tr is not None and target != capped_target:
+                        _tr.append("posterior_cap")
                     target = capped_target
 
     # NOTE the visibility test reads the STATE, not plan's their_value: that
@@ -564,9 +608,11 @@ def plan(game: dict, cfg) -> dict:
             and runtime_flags.enabled("GLEE_NEGO_CURVE_PRICING")):
         curve_ask = pricing.seller_final_ask(my_value)
         if curve_ask is not None and curve_ask > my_value:
+            if _tr is not None and target != curve_ask:
+                _tr.append("curve_final")
             target = curve_ask
 
-    return {
+    out = {
         "role": role,
         "i_am_seller": i_am_seller,
         "my_value": my_value,
@@ -586,6 +632,9 @@ def plan(game: dict, cfg) -> dict:
         "time_driven": time_driven,
         "ultimatum": ultimatum,
     }
+    if _tr is not None:
+        out["gates_fired"] = _tr
+    return out
 
 
 def _price_seq(state: dict, me: str, of_mine: bool) -> list[float]:
@@ -698,6 +747,73 @@ def _profitable(price: float, p: dict) -> bool:
     return price > p["my_value"] if p["i_am_seller"] else price < p["my_value"]
 
 
+def _span_invariant_share() -> float:
+    """Share of the visible ZOPA span the invariant protects. 0 = off."""
+    share = runtime_flags.as_float("GLEE_NEGO_SPAN_INVARIANT", 0.0)
+    if share <= 0:
+        return 0.0
+    return min(share, 0.95)
+
+
+def _real_final(p: dict) -> bool:
+    """True only when a REAL cap ends the game after this decision.
+
+    Never the planning clock: rounds_left is SYNTHETIC in uncapped games
+    (p["capped"] is False there no matter how far the clock has run down).
+    """
+    return bool(p["capped"]) and p["rounds_left"] <= 1
+
+
+def _enforce_span_invariant(p: dict, price: float) -> float:
+    """Span protection as a final-action INVARIANT on every outgoing price.
+
+    Two leaks this closes, both measured live on 2026-08-21 (Agent 5):
+
+    1. The acceptance veto's clock condition used rounds_left — the SYNTHETIC
+       planning clock in uncapped games — so it expired mid-game: uncapped
+       complete-info game, visible ZOPA [8000, 12000], we accepted 11,760 as
+       the buyer for 6% of the span, -6.8 rating (game dcc290cd). The veto's
+       clock is fixed at its call site; this function is the same rule for
+       prices WE name.
+    2. Outgoing counters were never span-protected — after vetoing their
+       sub-floor offer we could counter at our own sub-floor walk price and
+       they accept it: a complete-info seller countered at 8% of a 300,000
+       span, -5.8 rating.
+
+    Applied as the LAST price transform before every return carrying
+    product_price (offer path and both counter paths), after _maybe_split.
+    Seller: max() only — it lifts a too-cheap price to zopa_lo + share*span
+    and NEVER caps a richer ask (ultimatum's 0.80 claim passes untouched).
+    Buyer mirrored: min() against zopa_hi - share*span. Skipped when no
+    visible ZOPA, span <= 0, or on a REAL final round (capped and
+    rounds_left <= 1 — never the planning clock), where any-profitable
+    endgame pricing owns the number. OFF by default.
+    """
+    share = _span_invariant_share()
+    if share <= 0:
+        return price
+    zopa = p.get("zopa")
+    if not zopa:
+        return price
+    zlo, zhi = zopa
+    span = zhi - zlo
+    if span <= 0:
+        return price
+    if _real_final(p):
+        return price
+    if p["i_am_seller"]:
+        protected = zlo + share * span
+        if price < protected:
+            p["span_invariant_applied"] = round(protected, 2)
+            return protected
+    else:
+        protected = zhi - share * span
+        if price > protected:
+            p["span_invariant_applied"] = round(protected, 2)
+            return protected
+    return price
+
+
 def decide(game: dict, cfg) -> dict:
     """Choose the move, then — only under GLEE_NEGO_MSG_ARMS — say something.
 
@@ -726,6 +842,9 @@ def _decide(game: dict, cfg) -> dict:
     if game["valid_actions"]["type"] == "offer":
         price = _maybe_split(state, p, p["target"])
         p["split_taken"] = price != p["target"]
+        if p["split_taken"]:
+            _gate(p, "split")
+        price = _enforce_span_invariant(p, price)
         return {"product_price": round(price, 2), "_plan": p}
 
     # --- decision phase ---
@@ -761,6 +880,7 @@ def _decide(game: dict, cfg) -> dict:
     if (p.get("deadgame") and not p["capped"] and p["elapsed"] >= 0.6
             and not _profitable(offer_price, p)
             and _their_stall_price(state, state.get("current_player") or "") is not None):
+        _gate(p, "deadgame_walk")
         return {"decision": "WalkAway", "_plan": p}
 
     # Span-floor acceptance veto. The 500-game transcript export scored 77
@@ -772,21 +892,40 @@ def _decide(game: dict, cfg) -> dict:
     # remain, refuse anything below this share of the span and counter on the
     # profitable side instead. Final-round any-positive stays untouched above.
     # OFF by default.
+    # Clock condition: rounds_left is the SYNTHETIC planning clock in uncapped
+    # games, so `rounds_left >= 2` let the veto EXPIRE mid-game with no real
+    # deadline anywhere (the 11,760 accept above). Under the span invariant the
+    # veto stands whenever this is not a REAL final round; the invariant share
+    # also acts as an acceptance floor of its own, so the protection cannot be
+    # disarmed by omitting GLEE_NEGO_ACCEPT_SPAN. With the invariant off, the
+    # legacy condition is kept bit-for-bit.
     _span_floor = runtime_flags.as_float("GLEE_NEGO_ACCEPT_SPAN", 0.0)
-    if _span_floor > 0 and p.get("zopa") and p["rounds_left"] >= 2:
+    _inv_share = _span_invariant_share()
+    if _inv_share > 0:
+        _veto_floor = max(_span_floor, _inv_share)
+        _veto_live = not _real_final(p)
+    else:
+        _veto_floor = _span_floor
+        _veto_live = p["rounds_left"] >= 2
+    if _veto_floor > 0 and p.get("zopa") and _veto_live:
         _zlo, _zhi = p["zopa"]
         _span = _zhi - _zlo
         if _span > 0:
             _share = ((offer_price - _zlo) / _span) if p["i_am_seller"] \
                 else ((_zhi - offer_price) / _span)
             p["span_share"] = round(_share, 3)
-            if _share < _span_floor:
+            if _share < _veto_floor:
                 p["span_veto"] = True
+                _gate(p, "span_veto")
                 counter = p["target"]
                 if _profitable(offer_price, p):
                     counter = max(offer_price, counter) if p["i_am_seller"] \
                         else min(offer_price, counter)
+                _c0 = counter
                 counter = _maybe_split(state, p, counter)
+                if counter != _c0:
+                    _gate(p, "split")
+                counter = _enforce_span_invariant(p, counter)
                 return {"decision": "RejectOffer",
                         "product_price": round(counter, 2), "_plan": p}
 
@@ -798,6 +937,7 @@ def _decide(game: dict, cfg) -> dict:
             p["my_value"], p["i_am_seller"], p.get("elapsed", 0.5))
         if t_thr is not None:
             if _profitable(offer_price, p) and surplus_now >= t_thr:
+                _gate(p, "table_accept")
                 return {"decision": "AcceptOffer", "_plan": p}
             # below threshold: fall through to counter via the offer path
             p["table_accept_below"] = True
@@ -806,6 +946,7 @@ def _decide(game: dict, cfg) -> dict:
         _sp = _their_stall_price(state, state.get("current_player") or "")
         if (_sp is not None and _profitable(offer_price, p)
                 and abs(offer_price - _sp) <= 0.01 * max(abs(_sp), 1.0)):
+            _gate(p, "stall_accept")
             return {"decision": "AcceptOffer", "_plan": p}
 
     if p["continuation_accept"]:
@@ -826,5 +967,9 @@ def _decide(game: dict, cfg) -> dict:
         # Their offer already pays; the counter must stay on the profitable side
         # of it so a rejection can never turn a winning deal into a no-deal.
         counter = max(offer_price, counter) if p["i_am_seller"] else min(offer_price, counter)
+    _c0 = counter
     counter = _maybe_split(state, p, counter)
+    if counter != _c0:
+        _gate(p, "split")
+    counter = _enforce_span_invariant(p, counter)
     return {"decision": "RejectOffer", "product_price": round(counter, 2), "_plan": p}
