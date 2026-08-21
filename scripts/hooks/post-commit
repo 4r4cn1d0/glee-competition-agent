@@ -1,0 +1,28 @@
+#!/bin/bash
+# Fire the red team when STRATEGY actually changes -- the moment new holes can
+# appear. A clock-based sweep fires at arbitrary times and, on a day like
+# 2026-08-22 (15 strategy commits, 25 arms.json changes), can sit for two hours
+# on a hole that was introduced two minutes after the last run.
+#
+# Guards, because this must never slow a commit or spam the quota:
+#   * backgrounded and disowned -- the commit returns immediately;
+#   * only for glee_agent/ or arms.json -- doc and .ai/ commits do not fire;
+#   * a 25-minute cooldown, so a burst of commits produces ONE review, and a run
+#     (10-15 min, ~220k tokens) can never overlap itself.
+set -u
+cd "$(git rev-parse --show-toplevel)" || exit 0
+CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+echo "$CHANGED" | grep -qE '^(glee_agent/|arms.json)' || exit 0
+STAMP="logs/.redteam_last"
+NOW=$(date +%s)
+LAST=$(cat "$STAMP" 2>/dev/null || echo 0)
+case "$LAST" in ''|*[!0-9]*) LAST=0 ;; esac
+if [ $(( NOW - LAST )) -lt 1500 ]; then
+  echo "[post-commit] red team skipped (ran $(( (NOW-LAST)/60 ))m ago)"
+  exit 0
+fi
+echo "$NOW" > "$STAMP"
+echo "[post-commit] strategy changed -> red team firing in background"
+nohup /bin/bash scripts/redteam_cycle.sh >> logs/redteam_cron.log 2>&1 &
+disown 2>/dev/null || true
+exit 0
