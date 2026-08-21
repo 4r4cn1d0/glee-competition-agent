@@ -48,6 +48,36 @@ steps toward it. Consequences that trip up most reasoning:
 - Prefer proposing a **falsifiable experiment** over an opinion about a
   parameter value.
 
+## You now IMPLEMENT, not just review
+
+Operator directive, 2026-08-22: "get codex to implement it not you claude."
+You write the code for changes we have agreed. Claude verifies and deploys --
+only Claude pushes to the live fleet, and that has not changed.
+
+How to implement here, because this repo has live agents attached to it:
+
+- EVERY behavioural change is a FLAG, default OFF, so it lands inert and can be
+  reverted without a restart. `runtime_flags.enabled(...)` for booleans,
+  `runtime_flags.as_float(...)` for numbers. A change that alters behaviour the
+  moment it merges is not acceptable -- agents restart on their own schedule and
+  would pick it up at an arbitrary moment on an arbitrary agent.
+- Anything whose value we cannot already prove is a RANDOMISED ARM, assigned per
+  GAME by a hash of the game id, so `scripts/live_percentile.py --ab` can recover
+  the arm afterwards. Copy the shape of `_zopa_share` in
+  glee_agent/strategies/negotiation.py. Do NOT let the arm leak into a variable
+  used by another decision -- that is what made the surplus probe worthless.
+- Run `.venv/bin/python -m pytest tests/ -q` before you finish. Two bargaining
+  tests fail already (test_bargaining_horizon_floor, test_sim_grid[bargaining]);
+  anything else you break is yours.
+- NEVER touch arms.json, control.json, .env, logs/, or any running process.
+- Do NOT run replay_eval, sim/arena.py or scripts/redteam.py -- they are
+  CPU-heavy and this machine is running the live competition fleet. Claude runs
+  those.
+- Write the reasoning into the code as a comment, with the measured numbers that
+  justify it. The comment must describe what the code DOES, not what you meant
+  it to do -- a comment that says "stay generic" over code that made a phrase
+  distinctive is how the quality oracle survived review for days.
+
 ## Rules
 
 - Do not rewrite working strategy code unless explicitly asked.
