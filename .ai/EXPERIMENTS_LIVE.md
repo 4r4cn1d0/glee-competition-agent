@@ -83,3 +83,50 @@ the opponent, and it does not obviously generalise.
 percentile and never writes a result line, so a restart that strands games
 silently poisons BOTH arms — and if it strands them unevenly it poisons the
 comparison. Check abandonment before trusting any number here.
+
+---
+
+## 3. GLEE_PERS_KEEP_MSG = 1 — the persuasion message fix
+
+**Defect (not a hypothesis).** dispatch.py recomposed `action["message"]` from
+the template bank every turn, so in persuasion TEXT mode — where the message IS
+the recommendation — the strategy's chosen wording was discarded and
+`GLEE_PERS_MSG_STYLE` was inert. Armed on three agents, 0% of their messages
+were the token form, 100% were prose.
+
+**Baseline, seller p=0.8, 24h before the fix:**
+| cell | mean | sd | n |
+|---|---|---|---|
+| TEXT (treated) | **0.3657** ±0.0293 | 0.2649 | 313 |
+| BINARY (control, untouched by the flag) | 0.5368 ±0.0249 | 0.2374 | 348 |
+
+Per agent in the text cell: Test 3 0.3228, Test 2 0.3860, **Test 1 0.3610**,
+Agent 5 0.4310. Test 1 is second-worst, which is part of why its persuasion fell
+2179 -> 1968, i.e. 211 below its own high.
+
+**Design: difference-in-differences.** Binary-mode games in the same block are
+untouched by the flag, so they measure field drift directly. A rise in text that
+is really the whole field moving cannot be mistaken for the fix working.
+
+**Read with:** `.venv/bin/python scripts/pers_cell.py --split <deploy_ts>`
+
+**Success requires BOTH, per the operator's bar:**
+1. **Mean up** — diff-in-diff positive with its CI excluding zero. The binary
+   cell at 0.5368 is the natural target, since it is the same decision in a
+   channel the buyers parse cleanly; that would be about +0.17 in this cell.
+2. **Variance down** — sd in the treated cell must not RISE. A change that lifts
+   the average while widening the spread is not a win: the rating is an average
+   over games and a fat lower tail is exactly what produces the -80 swings.
+
+**REJECT if** the diff-in-diff is negative, or the mean rises while sd rises
+materially — that would mean we bought the average with a heavier tail.
+
+**Then promote to Test 1**, which it already carries; the instruction is that if
+it proves out, Test 1 is where it matters most. Expected there: persuasion 1968
+-> the 2100s, which with barg 2240 and nego 2017 puts Test 1's overall near 2145
+and makes it the fleet's strongest agent.
+
+**Timing.** The seller p=0.8 text cell yields ~313 games/24h fleet-wide. To
+resolve +0.17 needs only ~50/arm, so this is readable in HOURS, not a day —
+much faster than either negotiation experiment. First read once ~100 post-fix
+games exist in the cell.
