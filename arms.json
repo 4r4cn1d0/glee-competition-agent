@@ -40,7 +40,8 @@
   "conceder": {
     "GLEE_PERS_LIE_SHADING": "0.8",
     "GLEE_PERS_HONEST_ROUNDS": "2",
-    "GLEE_PERS_MSG_STYLE": "token"
+    "GLEE_PERS_MSG_STYLE": "token",
+    "GLEE_PERS_DP": "1"
   },
   "champion": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
