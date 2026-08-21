@@ -1,5 +1,5 @@
 {
-  "shift_seconds": 1800,
+  "shift_seconds": 3600,
   "disabled": [
     "randomized"
   ],
