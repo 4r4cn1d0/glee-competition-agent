@@ -34,10 +34,20 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NAMES = {"champion": "Test 1", "hardliner": "Test 2", "conceder": "Test 3",
          "randomized": "Test 4", "composite": "Agent 5"}
 
-#: A game is only counted once our last move is older than this. The server
-#: closes a game after 120s on our turn; 600s means a game merely waiting on a
-#: slow opponent is never miscounted as abandoned.
-COLD_SECONDS = 600
+#: A game counts as abandoned only once our last move is older than this.
+#:
+#: CALIBRATED, because the first guess was wrong and inflated the damage ~2x.
+#: 600s looked safe -- the server closes a game 120s into OUR turn -- but that
+#: reasoning ignores the time we spend WAITING on the opponent, during which we
+#: legitimately make no move. Measured on games that actually COMPLETED: gaps
+#: between our own moves exceed 600s in 18.1% of bargaining, 14.2% of
+#: negotiation and 4.7% of persuasion games, with p90 around 2,200-2,800s and a
+#: maximum near 5,700s. At 600s the monitor was calling healthy in-flight games
+#: dead and reported 1,139 abandoned in 12h against a true 457.
+#:
+#: 6000s sits just past the observed maximum, so a game only counts once it is
+#: outside anything a live game has ever done.
+COLD_SECONDS = 6000
 
 
 def scan(hours: float):
