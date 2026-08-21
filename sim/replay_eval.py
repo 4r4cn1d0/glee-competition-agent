@@ -151,9 +151,29 @@ def main() -> int:
     draws = _draw_games(field, families, args.games, args.seed)
 
     control = json.loads(args.control)
-    candidate = json.loads(args.candidate)
+    # The candidate is an OVERLAY on the control, not a replacement. _set_flags
+    # clears every GLEE_ key before applying an arm, so a bare
+    # --candidate '{"GLEE_NEGO_BOULWARE": "1.2"}' used to play an arm with that
+    # one flag and NOTHING else -- the whole live stack silently stripped. Every
+    # such run measured "strategy with no flags vs strategy with fifteen", which
+    # swamps the flag under test and reads as a large, entirely spurious
+    # negative. It also silently disarms gates the candidate depends on: a
+    # harvest-margin sweep whose rule sits inside GLEE_NEGO_ENDGAME_V3 produced
+    # BIT-IDENTICAL numbers for 0.02, 0.05 and 0.02+buyer, because the gate was
+    # off in all three and none of them ever executed the rule.
+    # Merging makes --candidate mean what every caller has assumed it means:
+    # the live stack, plus these overrides. Pass --control '{}' for a bare arm.
+    overrides = json.loads(args.candidate)
+    candidate = {**control, **overrides}
     print(f"control   : {json.dumps(control, sort_keys=True)}")
+    print(f"overrides : {json.dumps(overrides, sort_keys=True)}")
     print(f"candidate : {json.dumps(candidate, sort_keys=True)}")
+    if not overrides:
+        print("WARNING: empty override set -- both arms are identical.")
+    _noop = [k for k, v in overrides.items() if str(control.get(k)) == str(v)]
+    if _noop:
+        print(f"WARNING: override(s) equal to the control, so they change "
+              f"nothing: {sorted(_noop)}")
     print(f"playing {len(draws)} paired games "
           f"({', '.join(families)}) against the cloned field...\n")
 

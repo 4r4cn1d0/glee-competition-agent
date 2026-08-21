@@ -544,7 +544,19 @@ def plan(game: dict, cfg) -> dict:
         _dominated = _pb is not None and (
             (my_value >= 1.5 * _pb - 1e-9) if i_am_seller
             else (my_value <= 0.8 * _pb + 1e-9))
-        if _dominated and bound is not None and len(_their_offers(state, me)) >= 4:
+        # How many of THEIR offers must land before we start fishing. The
+        # strictness was aimed at the detection half of the gate -- reading
+        # "probably dead" off a weak bound and dumping closeable asks. But the
+        # own-draw gate above already establishes deadness by ARITHMETIC, not
+        # inference: at 1.5xB seller / 0.8xB buyer the opposite seat's value
+        # cannot reach ours, so no bound can rescue the cell and no evidence
+        # threshold is protecting anything. Waiting for four of their offers
+        # costs the whole early game in a 10-round cap, and in the 16% of games
+        # drawn at max_rounds=1 a fourth offer never arrives at all, so fishing
+        # never starts. Live-tunable; defaults to the measured 4.
+        _minoff = int(runtime_flags.as_float("GLEE_NEGO_DEADGAME_MINOFF", 4.0))
+        if _dominated and bound is not None \
+                and len(_their_offers(state, me)) >= max(_minoff, 0):
             _margin = 0.02 * _pb
             _unprof = (bound < my_value + _margin) if i_am_seller \
                 else (bound > my_value - _margin)

@@ -76,10 +76,12 @@ they go in EXPERIMENTS.md until they have evidence.
   acceptance thresholds and nothing more.
 
 ## Measured NEGATIVE — do not re-propose without new reasoning
-- **Faster concession (`GLEE_NEGO_BOULWARE` 1.2 and 1.5 vs the 2.0 default) is
-  clearly WORSE.** Arena, negotiation only, 3,000 games x 2 seeds x 2 values,
-  all four runs agree: EST. PERCENTILE -0.041 / -0.042 / -0.041 / -0.050, every
-  CI excluding zero. Crucially the **close rate FELL 4-5 points** as well, so
+- **Faster concession (`GLEE_NEGO_BOULWARE` 1.2 vs the 2.0 default) is WORSE:
+  -0.0166 / -0.0182, both seeds, CIs excluding zero, close rate -0.025.**
+  CORRECTED 22 Aug: the first run of this reported -0.041/-0.050 and was
+  measured through the replay_eval overlay bug below, which stripped the whole
+  flag stack from the candidate arm. Direction unchanged, magnitude was
+  overstated ~2.5x. Re-measured against Agent 5's real 26-flag live set. Crucially the **close rate FELL 4-5 points** as well, so
   the intuition "concede sooner and you close more" is exactly backwards
   against this field — the cloned opponents pace against our curve and harden
   when we soften early. The `k~1.18` figure in the source comment describes the
@@ -116,3 +118,38 @@ surplus: `F(0) + P_accept(x) * [F(payoff(x)) - F(0)]`, where F is the empirical
 payoff CDF for the exact cell. Because F has large atoms at 0 and at the even
 split, landing one tick above an atom can buy a lot of rank for almost no extra
 rejection risk — an effect a coarse 0.05 grid on x can step straight over.
+
+## Instrument defects found and FIXED
+- **`sim/replay_eval.py` REPLACED the control flag set with the candidate
+  instead of overlaying it.** `_set_flags` clears every GLEE_ key before
+  applying an arm, so `--candidate '{"GLEE_NEGO_BOULWARE":"1.2"}'` played an arm
+  carrying that one flag and NOTHING else. Every such run measured "strategy
+  with no flags vs strategy with fifteen", which swamps the flag under test and
+  reads as a large spurious negative; it also silently disarms gates the
+  candidate needs, so a sweep nested under `GLEE_NEGO_ENDGAME_V3` returned
+  BIT-IDENTICAL numbers for three different settings because the gate was off in
+  all three. FIXED 22 Aug: candidate = {**control, **overrides}, both printed,
+  plus warnings for an empty override set and for overrides equal to the
+  control. Prefer `--control` = the live arms entry so results transfer.
+  DIAGNOSTIC: identical numbers across genuinely different settings, or a
+  zero-width CI, means the arms are the same code path -- not a null result.
+
+## Measured NEGATIVE (continued)
+- **Fishing earlier in dead games is worse.** `GLEE_NEGO_DEADGAME_MINOFF` 1 and
+  2 against the hardcoded 4: -0.0022 / -0.0017, both seeds, CIs excluding zero,
+  close rate -0.003. The reasoning that the arithmetic own-draw gate makes the
+  evidence threshold redundant is WRONG in measurement. 1 and 2 are equivalent
+  in practice (the effective offer count is never exactly 1, since `last_offer`
+  is counted alongside history), verified directly. Flag left in at default 4.
+
+## Already implemented -- do not "discover" again
+- **Infeasible-cell harvesting is DONE, both seats, by `GLEE_NEGO_DEADGAME_V1`**
+  (negotiation.py ~line 565). It gates on exactly the structurally dominated
+  draws (1.5xB seller, 0.8xB buyer), cites the same 97-100% zero-rates, and
+  prices at `max(0.10*(1-elapsed), 0.02)` above own value -- an ask of ~1.013x
+  cost late, which is already the acceptance-maximising play.
+  A 22 Aug proposal to add a `GLEE_NEGO_HARVEST_MARGIN` and "the missing buyer
+  branch" was redundant on both counts and measured EXACTLY +0.0000; reverted.
+  The `1.15 * my_value` reservation at negotiation.py:336 that Codex flagged is
+  real but INERT in the games that matter -- deadgame overrides it with a far
+  lower ask, so the phantom "39%" it was calibrated on costs nothing in practice.
