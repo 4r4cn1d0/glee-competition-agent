@@ -227,6 +227,33 @@ def drain(probe: str, timeout_s: int = 1800) -> int:
     return 1
 
 
+def _etime_seconds(text: str) -> int | None:
+    """Parse `ps -o etime=` ("[[dd-]hh:]mm:ss") into seconds.
+
+    Returns None when the process is gone (ps prints nothing) or the field is
+    not parseable, and every caller treats None as "cannot tell, do not act".
+    """
+    text = (text or "").strip()
+    if not text:
+        return None
+    days = 0
+    if "-" in text:
+        head, _, text = text.partition("-")
+        try:
+            days = int(head)
+        except ValueError:
+            return None
+    parts = text.split(":")
+    try:
+        nums = [int(p) for p in parts]
+    except ValueError:
+        return None
+    while len(nums) < 3:
+        nums.insert(0, 0)
+    hours, minutes, seconds = nums[-3], nums[-2], nums[-1]
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
+
+
 def safe_restart() -> int:
     """Restart the supervisor ONLY at a provably quiet moment.
 
@@ -261,10 +288,18 @@ def safe_restart() -> int:
     for probe, pid in (state.get("agents") or {}).items():
         if not pid:
             continue
-        out = subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+        # `etimes` (seconds, as an integer) is a Linux procps extension. On
+        # macOS `ps` does not know it, prints its whole keyword list to STDOUT
+        # instead of erroring, and int() raised ValueError -- so this interlock
+        # crashed every time it was reached and safe-restart was unusable here.
+        # It failed CLOSED, so nothing unsafe ever happened, but the safe path
+        # was unavailable exactly when it was needed. `etime` is portable;
+        # parse its [[dd-]hh:]mm:ss form.
+        out = subprocess.run(["ps", "-o", "etime=", "-p", str(pid)],
                              capture_output=True, text=True).stdout.strip()
-        if out and int(out) < 120:
-            print(f"REFUSED: {probe} launched {out}s ago — a transition just "
+        age = _etime_seconds(out)
+        if age is not None and age < 120:
+            print(f"REFUSED: {probe} launched {age}s ago — a transition just "
                   f"happened; retry once it is 120s old.")
             return 1
     sup = state.get("supervisor_pid")

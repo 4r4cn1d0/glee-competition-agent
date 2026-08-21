@@ -1,10 +1,7 @@
 {
   "shift_seconds": 3600,
   "disabled": [],
-  "cycle_now": [
-    "conceder",
-    "composite"
-  ],
+  "cycle_now": [],
   "policy": {
     "randomized": "composite",
     "conceder": "composite"
