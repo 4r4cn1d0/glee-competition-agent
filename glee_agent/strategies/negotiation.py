@@ -352,6 +352,44 @@ def plan(game: dict, cfg) -> dict:
     # blind concession curve. Applies to EVERY offer round in a hidden game, both
     # seats; the pooled final-round curve below stays as the fallback when this
     # gate is off or the model is missing.
+    # Freeze-probe classifier (clean-room panel): our third offer REPEATS our
+    # second -- a designed experiment. An opponent who keeps conceding into a
+    # flat offer is paced by their own clock, not by reciprocity, so meeting
+    # them halfway pays twice for concessions their clock delivers free: once
+    # classified time-driven, hold our current price until the endgame
+    # machinery (final-ask curves, any-positive) takes over at 85% elapsed.
+    # Stones are already the stall policy's job; reciprocators get the normal
+    # schedule back. Probe skipped in short capped games where an offer is
+    # too scarce to spend on an experiment. OFF by default.
+    probe_hold = False
+    time_driven = False
+    if runtime_flags.enabled("GLEE_NEGO_PROBE_V1") and (not capped or rounds_left >= 6):
+        _pbase = pricing.infer_base(my_value)
+        _ours_seq = _price_seq(state, me, True)
+        _theirs_seq = _price_seq(state, me, False)
+        if len(_ours_seq) == 2:
+            target = _ours_seq[-1]
+            probe_hold = True
+        elif (len(_ours_seq) >= 3 and _pbase
+              and abs(_ours_seq[2] - _ours_seq[1]) <= 1e-6 * max(abs(_ours_seq[1]), 1.0)
+              and len(_theirs_seq) >= 2):
+            # echo-collapsed, each side's k-th distinct price answers the
+            # other's k-th offer, so their move ACROSS our flat pair is the
+            # last delta in their sequence
+            _mv = (_theirs_seq[-1] - _theirs_seq[-2]) if i_am_seller \
+                else (_theirs_seq[-2] - _theirs_seq[-1])
+            if _mv >= 0.01 * _pbase:
+                time_driven = True
+        # Release the hold to the endgame machinery only when a REAL deadline
+        # approaches. Uncapped games have none -- the planning clock reaching
+        # 0.85 is our own fiction, and conceding on it against an opponent
+        # whose clock is delivering concessions for free is the exact mistake
+        # the classifier exists to stop.
+        if time_driven and ((not capped) or elapsed < 0.85):
+            _ol = _our_last_price(state, me)
+            if _ol is not None:
+                target = max(target, _ol) if i_am_seller else min(target, _ol)
+
     # Learned-table OFFER policy (glee_agent/table_policy.py). NOTE: the first
     # attempt to wire this aborted before writing and only the acceptance half
     # shipped -- an evolver run then optimised ask parameters that were never
@@ -521,7 +559,37 @@ def plan(game: dict, cfg) -> dict:
         "opponent_bound": bound,
         "recip_damped": recip_damped,
         "deadgame": deadgame,
+        "probe_hold": probe_hold,
+        "time_driven": time_driven,
     }
+
+
+def _price_seq(state: dict, me: str, of_mine: bool) -> list[float]:
+    """One side's distinct price sequence, with the record echo collapsed.
+
+    A counteroffer is re-recorded as the next round's opening offer at the
+    identical price; comparing a price to its own echo reads every mover as
+    a staller (the recip-damp postmortem). Used by the probe classifier for
+    both sides of the table.
+    """
+    seq: list[float] = []
+    prev_key = None
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        for k in ("offer", "counteroffer"):
+            off = entry.get(k)
+            if not isinstance(off, dict) or off.get("price") is None:
+                continue
+            if (off.get("from_player") == me) != of_mine:
+                continue
+            pr = _num(off["price"])
+            if k == "offer" and prev_key == "counteroffer" and seq and pr == seq[-1]:
+                prev_key = k
+                continue
+            seq.append(pr)
+            prev_key = k
+    return seq
 
 
 def _their_offers(state: dict, me: str) -> list[tuple[int, float]]:
