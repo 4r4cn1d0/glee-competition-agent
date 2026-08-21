@@ -435,9 +435,22 @@ def main() -> int:
                 pid = int(parts[0])
             except (ValueError, IndexError):
                 continue
-            if "--probe" in parts:
-                probe = parts[parts.index("--probe") + 1]
-                found.setdefault(probe, pid)
+            # Key on the SLOT, which is the log directory, NOT on --probe.
+            # --probe carries the POLICY, and control.json's policy override
+            # lets several slots run the same one: with conceder mapped to the
+            # composite policy, both its command line and Agent 5's say
+            # "--probe composite". Keyed that way, setdefault recorded only the
+            # first, the other slot looked unadopted, and the supervisor
+            # launched a SECOND process against a key that already had one --
+            # two agents sharing one 60/min budget, which is how this fleet has
+            # earned rate-limit bans before. Observed 2026-08-22 immediately
+            # after a safe-restart: it reported "2 agents adopted" with four
+            # running, then started a duplicate conceder.
+            if "--log-dir" in parts:
+                slot = os.path.basename(parts[parts.index("--log-dir") + 1].rstrip("/"))
+                found.setdefault(slot, pid)
+            elif "--probe" in parts:
+                found.setdefault(parts[parts.index("--probe") + 1], pid)
         return found
 
     only = {p.strip() for p in args.only.split(",")} if args.only else None
