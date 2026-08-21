@@ -461,8 +461,41 @@ def decide(game: dict, cfg) -> dict:
                     else:
                         break
                 if run >= run_needed:
-                    floor_share = 0.0
-                    p["stonewall_release"] = run
+                    # EXTORTION GUARD (red team, scripts/redteam.py). The
+                    # release is stated as "waiting buys nothing against an
+                    # opponent who repeats their number", and that premise is
+                    # about the WAITING, not about the number. It says nothing
+                    # about how big the number is -- so the rule as written is
+                    # a switch any opponent can flip on our acceptance floor by
+                    # repeating ANY offer three times, a crumb included.
+                    #
+                    # The evolved adversary found exactly that switch and stood
+                    # on it: opening at 99% of the pot, repeating the same
+                    # figure verbatim, never conceding and never accepting
+                    # under ~92%. It scores 0.589 estimated percentile against
+                    # this stack where the cloned field scores 0.304, and it
+                    # takes us from 0.696 to 0.047. Ablating this one flag is
+                    # worth +0.0092 of OUR percentile against it and -0.0003
+                    # against the ordinary field -- the only flag in the whole
+                    # arm with that signature.
+                    #
+                    # The live evidence the release was actually built on is
+                    # narrower than the release: every grind in it repeated a
+                    # number in the 0.40-0.50 band (Agent 5's "0.400 repeated
+                    # for eleven rounds"), and across 12,000 simulated field
+                    # games 92% of releases fire on an offer of 0.40-0.50 of
+                    # the pot, only 8.5% below 0.35. So requiring the repeated
+                    # offer to be worth something keeps every case the rule was
+                    # measured on and removes the extortion corner it was never
+                    # measured on. OFF by default (0.0 reproduces the old path
+                    # exactly).
+                    sw_min = runtime_flags.as_float("GLEE_BARG_STONEWALL_MIN", 0.0)
+                    if sw_min > 0.0 and money > 0 and \
+                            my_gain < min(max(sw_min, 0.0), 0.6) * money:
+                        p["stonewall_extortion"] = run
+                    else:
+                        floor_share = 0.0
+                        p["stonewall_release"] = run
             floor_gain = floor_share * money
             if threshold < floor_gain:
                 threshold = floor_gain

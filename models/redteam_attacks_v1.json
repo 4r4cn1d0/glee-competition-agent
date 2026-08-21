@@ -1,0 +1,125 @@
+{
+ "_schema": "glee.redteam_attacks/v1",
+ "_note": "Evolved adversary genomes from scripts/redteam.py -- opponents searched to EXPLOIT our stack, not to play well generally. Load with sim.adversary.Adversary(genome). Nothing live reads this file; it exists so the attacks are reproducible without re-running the search, and so a future stack can be re-fought against the same opponents.",
+ "stack_attacked": {
+  "GLEE_NEGO_BOUND_AS_FLOOR": "1",
+  "GLEE_BARG_OPPONENT_FLOOR": "0.39",
+  "GLEE_BARG_OFFER_FLOOR": "0.57",
+  "GLEE_BARG_ACCEPT_FLOOR": "0.50",
+  "GLEE_BARG_FLOOR_GAIN": "0.05",
+  "GLEE_NEGO_MIN_MARGIN": "0.02",
+  "GLEE_NEGO_CURVE_PRICING": "1",
+  "GLEE_NEGO_MARGIN_WEIGHT": "0.40",
+  "GLEE_NEGO_CONTINUATION_ACCEPT": "1",
+  "GLEE_NEGO_HORIZON_V2": "1",
+  "GLEE_NEGO_ENDGAME_V3": "1",
+  "GLEE_NEGO_ACCEPT_SPAN": "0.48",
+  "GLEE_NEGO_STALL_POLICY": "1",
+  "GLEE_NEGO_DEADGAME_V1": "1",
+  "GLEE_NEGO_TABLE": "1",
+  "GLEE_NEGO_ULTIMATUM_SHARE": "0.80",
+  "GLEE_NEGO_POSTERIOR": "1",
+  "GLEE_BARG_STONEWALL": "3"
+ },
+ "attacks": {
+  "bargaining_extortionist": {
+   "genome": {
+    "b_open": 0.99,
+    "b_end": 0.93,
+    "b_curve": 1.7931,
+    "b_hold": 6.0845,
+    "b_accept": 0.9188,
+    "b_accept_end": 0.6,
+    "b_patience": 60.0
+   },
+   "search": {
+    "seed": 811,
+    "games": 1500,
+    "generations": 14,
+    "family": "bargaining"
+   },
+   "holdout": {
+    "EVOLVED": {
+     "their_pct": 0.5893,
+     "gain_over_field": 0.2855,
+     "our_pct": 0.0471
+    },
+    "lowball_repeater": {
+     "their_pct": 0.5716,
+     "gain_over_field": 0.2677,
+     "our_pct": 0.0543
+    },
+    "stonewaller": {
+     "their_pct": 0.509,
+     "gain_over_field": 0.2051,
+     "our_pct": 0.0949
+    },
+    "fast_conceder": {
+     "their_pct": 0.3629,
+     "gain_over_field": 0.059,
+     "our_pct": 0.7747
+    },
+    "field_linear": {
+     "their_pct": 0.3239,
+     "gain_over_field": 0.02,
+     "our_pct": 0.7586
+    },
+    "boulware": {
+     "their_pct": 0.23,
+     "gain_over_field": -0.0739,
+     "our_pct": 0.365
+    }
+   },
+   "reading": "Opens keeping 99% of the pot, repeats the identical number verbatim, never concedes, refuses anything under ~92%. Estimated percentile 0.589 against our stack where the cloned field scores 0.304; drops us 0.696 -> 0.047."
+  },
+  "negotiation_stall_farmer": {
+   "genome": {
+    "n_open": 0.1961,
+    "n_end": 0.0,
+    "n_curve": 3.3399,
+    "n_hold": 2.7027,
+    "n_accept": 1.0749,
+    "n_patience": 9.2724
+   },
+   "search": {
+    "seed": 4272,
+    "games": 1200,
+    "generations": 12,
+    "family": "negotiation"
+   },
+   "holdout": {
+    "EVOLVED": {
+     "their_pct": 0.5518,
+     "gain_over_field": 0.1738,
+     "our_pct": 0.5022
+    },
+    "fast_conceder": {
+     "their_pct": 0.4891,
+     "gain_over_field": 0.111,
+     "our_pct": 0.5545
+    },
+    "field_linear": {
+     "their_pct": 0.4761,
+     "gain_over_field": 0.098,
+     "our_pct": 0.4856
+    },
+    "stonewaller": {
+     "their_pct": 0.4146,
+     "gain_over_field": 0.0366,
+     "our_pct": 0.4152
+    },
+    "boulware": {
+     "their_pct": 0.4133,
+     "gain_over_field": 0.0353,
+     "our_pct": 0.4476
+    },
+    "lowball_repeater": {
+     "their_pct": 0.3747,
+     "gain_over_field": -0.0033,
+     "our_pct": 0.6311
+    }
+   },
+   "reading": "Opens ~1.2x its own valuation, repeats that price exactly three times -- the trigger our stall detector keys on -- then holds a Boulware curve and demands surplus above its whole valuation. Estimated percentile 0.552 against our stack where the cloned field scores 0.378; drops us 0.599 -> 0.502."
+  }
+ }
+}
