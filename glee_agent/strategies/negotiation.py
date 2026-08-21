@@ -383,6 +383,46 @@ def plan(game: dict, cfg) -> dict:
             if _tr is not None and target != _t0:
                 _tr.append("ultimatum")
 
+    # SURPLUS-SHARE RESPONSE PROBE. A randomised controlled experiment, not a
+    # policy: in complete-information games the zone is fully visible, so our
+    # ask can be expressed as a share x of the available surplus rather than as
+    # a multiple of our own value. The probe draws x from a grid and records
+    # what the opponent does next, which is the ONLY way to learn the causal
+    # frontier P(accept | x).
+    #
+    # Why an experiment and not a target: observational data says closes at
+    # 60-65% of span earn +4.68 rating while ours land at 49.4% -- but that
+    # statistic conditions on a DEAL HAVING HAPPENED and is therefore blind to
+    # the rejections a greedier ask would cause. The same survivorship trap
+    # made one-round asks at 0.90/0.95 look optimal from accepted prices, and
+    # the arena then measured them clearly worse. Randomising x and observing
+    # the immediate response is what breaks the conditioning.
+    #
+    # Assignment is seeded on the game id so a replay reproduces it exactly,
+    # and stratified by seat and round-block so the arms stay balanced across
+    # cells. OFF by default; costs nothing outside complete-info offer turns.
+    probe_arm = None
+    if (runtime_flags.enabled("GLEE_NEGO_SURPLUS_PROBE")
+            and zopa_lo is not None and state.get(f"{other}_value") is not None
+            and not ultimatum):
+        span_p = zopa_hi - zopa_lo
+        if span_p > 0:
+            import hashlib as _h
+            grid = (0.50, 0.55, 0.60, 0.65, 0.70, 0.75)
+            _rn = int(_num(state.get("round"), 1))
+            rb = 0 if _rn <= 2 else (1 if _rn <= 5 else 2)
+            stratum = f"{'s' if i_am_seller else 'b'}|{rb}|{int(capped)}"
+            key = f"{game.get('game_id')}|{stratum}"
+            idx = int(_h.sha256(key.encode()).hexdigest(), 16) % len(grid)
+            x = grid[idx]
+            _t0 = target
+            target = (zopa_lo + x * span_p) if i_am_seller \
+                else (zopa_hi - x * span_p)
+            probe_arm = {"x": x, "stratum": stratum, "span": span_p,
+                         "prev_target": _t0}
+            if _tr is not None and target != _t0:
+                _tr.append("surplus_probe")
+
     # Final-offer pricing from the fitted acceptance curve, where the constants
     # were blindest: a hidden-information game at our last offer opportunity.
     # The right ask depends on our own value multiplier -- a 0.8xB seller should
@@ -631,6 +671,7 @@ def plan(game: dict, cfg) -> dict:
         "probe_hold": probe_hold,
         "time_driven": time_driven,
         "ultimatum": ultimatum,
+        "surplus_probe": probe_arm,
     }
     if _tr is not None:
         out["gates_fired"] = _tr

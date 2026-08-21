@@ -82,7 +82,9 @@
     "GLEE_NEGO_SPAN_INVARIANT": "0.40",
     "GLEE_NEGO_FINAL_OPTION": "0.6",
     "GLEE_BARG_ECON_STALL": "0.02",
-    "GLEE_BARG_BOB_OFFER": "1"
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_NEGO_SURPLUS_PROBE": "1",
+    "GLEE_TRACE_GATES": "1"
   },
   "champion": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
