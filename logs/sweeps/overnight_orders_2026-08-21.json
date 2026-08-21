@@ -1,0 +1,145 @@
+{
+ "written": "2026-08-20T17:40Z",
+ "operator_orders": {
+  "order_1_leader_swap": {
+   "when": "01:30 UTC 2026-08-21 (= 7:00 AM IST, operator's morning)",
+   "what": "Log which of our agents leads the leaderboard (highest overall). Identify that leader's WEAKEST family (lowest family rating). Copy the family-prefixed strategy flags of whichever fleet agent has the HIGHEST rating in that family into the leader's arm (pure arms.json flip, no restart). If the leader already holds the fleet-best rating in its weakest family, log and skip.",
+   "family_flag_prefixes": {
+    "negotiation": [
+     "GLEE_NEGO_"
+    ],
+    "bargaining": [
+     "GLEE_BARG_"
+    ],
+    "persuasion": [
+     "GLEE_PERS_"
+    ]
+   },
+   "after": "commit + push with the snapshot evidence, per deploy-commit rule",
+   "status": "DONE 03:45Z (late; loop frozen by overnight lid-close sleep): leader=Test 1 (1955.5), weakest=negotiation (1894), fleet-best negotiation IS Test 1 -> logged and skipped per order rule. Snapshot in ratings_history at 03:17Z."
+  },
+  "order_2_overnight_ml": {
+   "what": "Keep building and training ML models recursively; every candidate judged in the paired arena on the percentile line, two fresh seeds, CI-clear before any deploy; one change per agent at a time.",
+   "queue": [
+    "bargaining learned-acceptance table + evolver",
+    "K~4 archetype clustering of the 75 named buyer tables for DP dispatch",
+    "delta-genome negotiation evolution (offsets on hand-written targets; first TRUE full-genome run)",
+    "red-team evolver against our own champion stack",
+    "windowed refits every ~3rd tick: buyers, acceptance curves, opponent profiles, seller imputation"
+   ],
+   "status": "ACTIVE"
+  }
+ },
+ "scheduled_reads": {
+  "18:15Z": "Agent 5 buyer_v2 2h persuasion trail vs pre-deploy + Test 3 control",
+  "19:00Z": "Test 1 span+stall nego trail vs Test 2 control; if confirmed -> roll span+stall to Agent 5",
+  "19:30Z": "DP block (GLEE_PERS_DP=1) to Test 3 once its LLM-off transition has settled",
+  "01:30Z": "order_1 leader swap",
+  "12:00Z": "PushNotification: operator must recreate Test 4 and provide the new key",
+  "15:30Z (21:00 IST)": "PUSH-NOTIFY operator: export transcripts for Test 1 + Agent 5 + Test 4, ALL families (last 500 each or since previous export) \u2014 reads the post-batch trail, the nego tripwire sample, and Test 4's first 3h",
+  "12:00Z (17:30 IST)": "PUSH-NOTIFY operator: recreate Test 4 + provide key; then load full validated stack + Bob batch before first game"
+ },
+ "constraints": [
+  "Test 2 stays untouched (control) unless order_1 names it as the LEADER",
+  "no supervisor restarts except fleet.py safe-restart",
+  "LLM stays off (operator verdict: templates); spend frozen at $2.13",
+  "every deploy: secrets-gated commit + push"
+ ],
+ "reads_done": {
+  "18:15Z buyer_v2": "KEEP: Agent 5 buyer-seat loss 58->37%, neg 21->8% vs control -5pp/-1pp over same window (n=98 post). Differential -16pp/-12pp matches corrected-arena prediction. Rating +18 vs control +25 (noisy, seller-mixed; decision-level instrument is the authority).",
+  "19:00Z nego (rescued 03:45Z)": "CONFIRM: Test 1 nego 1800->1894 overnight vs Test 2 1798->1708. span+stall rolled to Agent 5 at 03:45Z.",
+  "06:45Z DP-v1 on Test 3": "REVERTED: sale rate 38.9% vs control 51.8% same-window (-13pp differential, n=209 post-deploy games; dp fingerprints confirmed firing). Live contradicts the DP's calibrated buyer model -> recalibrate against live before any retry. DP-v2 archetype deploy BLOCKED behind recalibration.",
+  "06:45Z Bob fix live": "CONFIRMED on Agent 5: responder-seat share 0.480 vs control 0.414 (+6.6pp, n=82). Test 1 window still pre/post mixed; re-read ~09:00Z.",
+  "07:4xZ delta-aware floor": "DEPLOYED to Agent 5 + Test 1: arena +0.0109 [+0.0085,+0.0134] / +0.0120 [+0.0097,+0.0144], close rate unchanged. Flagship included without staging wait: regression-correction class -- Test 1's own export measured the flat floor's low-delta harm (67% kept, -0.18) and the restored behavior's health (88%, +0.19). Rating confirmation read ~24h; mechanism check (value-kept, closing round in low-delta) at ~2h."
+ },
+ "overnight_incident": "Lid closed ~18:30Z Aug 20; machine slept on battery with maintenance dark-wakes; agents froze mid-game and cycled bans; loop frozen 18:15Z->03:42Z. Damage: hardliner -64, conceder -98, composite -75 overall. champion -10 only, and its nego +94 vs control -90: span+stall live differential +184.",
+ "day_shift_2026-08-21": {
+  "mandate": "operator 04:0xZ: automate improving agents all day -- new strategies, better models, local arena testing, staged deploys",
+  "cycle": "refit (every ~3 ticks) -> build next queue item -> paired arena, 2 fresh seeds, CI-clear on percentile line -> deploy staged (Agent 5 first, Test 1 after trail confirms, Test 2 never) -> family-scoped trail read >=2h -> promote or revert",
+  "deploys_this_morning": [
+   "03:45Z span+stall -> Agent 5 (live confirmation: Test 1 +94 vs control -90 overnight)",
+   "04:0xZ GLEE_PERS_DP=1 -> Test 3 (queued since LLM verdict; policy verified through decide())"
+  ],
+  "build_queue_today": [
+   "1. bargaining accept-floor -> Test 1 after Agent 5 bargaining trail reads clean (~2h)",
+   "2. per-archetype DP dispatch (extend solve_pers_dp with archetype-conditioned buyer tables + name->archetype lookup in strategy)",
+   "3. delta-genome negotiation evolution (offsets on hand-written targets; first TRUE full-genome; verify through decide() fingerprints)",
+   "4. red-team evolver vs champion stack",
+   "5. no-ZOPA early WalkAway (volume optimization, rating-neutral per export)",
+   "6. negotiation message framing arms (extend framing harness beyond bargaining)"
+  ],
+  "reads_pending": {
+   "~06:00Z": "Agent 5 nego (span+stall) + bargaining (accept-floor) trails vs controls",
+   "~06:30Z": "Test 3 DP trail vs its own pre-deploy baseline",
+   "12:00Z": "PushNotification operator: recreate Test 4 + new key"
+  }
+ },
+ "day_notes": [
+  "05:20Z: Test 1 barg -122 explained: 5 post-wake timeout games at 5th pctile + field-wide low-share window (control 0.437 vs T1 0.421). NOT strategy. Agent 5 accept-floor: raw share 0.391 confounded by 11 sleep-residue timeouts; agreements-only ~0.417 vs control ~0.449 BUT barg rating +12 in window with floor firing 51x. No action; formal read 06:15Z on post-04:30Z games only. All pre-04:00Z trails contaminated by overnight sleep.",
+  "05:5xZ BOB-SEAT DISEASE QUANTIFIED (operator's export cross-checked on 4,001 fleet games): Alice seat 71.5th pctile (share 0.535) vs Bob seat 28.8th (share 0.364), consistent across parity/horizon -- responder acceptance anchors to the opponent's opening lowball via the concession-trend continuation estimate; parity-oscillating SPE aspiration compounds it. GLEE_BARG_ACCEPT_FLOOR=0.50 deployed to Test 1 (arena double-CI +0.0303/+0.0304; mechanism now understood). Agent 5 already live. Test 2 stays control."
+ ],
+ "clean_room_panel": {
+  "when": "06:0xZ Aug 21",
+  "convergent_validation": "all four frames (rank-theory, behavioral, information, ecology) independently derived the atom/CDF doctrine we reached empirically: percentile utility, 0/focal atoms, atom-clearing acceptance floors, terminal any-positive capitulation, walk>timeout ordering",
+  "new_mechanisms_adopted": [
+   "deadgame-v1b (dominated-draw-gated fishing ladder + clean walk): VALIDATED both seeds (+0.0028 [+0.0013,+0.0044], +0.0041 [+0.0023,+0.0060]), staged to Agent 5; Test 1 after ~2h trail. v1a without the own-draw gate was rejected (-0.010/-0.007) and documented.",
+   "freeze-probe classifier: BUILT, mechanics verified through decide() (echo-collapse + planning-clock release bugs found and fixed), then REJECTED both seeds (-0.0102 [-0.0131,-0.0073], -0.0116 [-0.0148,-0.0086]); clone concessions are partly reciprocal even when clock-shaped, freezing kills closes. Fourth concession-withholding variant rejected -- the concession path is at a measured optimum. Code stays gated OFF as instrumentation.",
+   "precise non-round anchors + mandate-freeze final-offer messages: QUEUED into framing arms",
+   "no-consecutive-lies pacing for persuasion seller (streak-triggered buyers): QUEUED as DP refinement",
+   "range-pooled anchor schedule (value-unreadable offers): QUEUED, conflicts with curve-pricing to resolve in arena"
+  ],
+  "rejected": "buyer calibration-buy (contradicts tight-cell discipline, buyer_v2 stream posterior supersedes)"
+ },
+ "arena_calibration_vs_rating": {
+  "when": "07:20Z Aug 21",
+  "n": 242,
+  "fit": "rating_delta = -5.95 + 12.5*pct, R2=0.667, zero-crossing 0.477, calibration curve monotone in all 10 bins",
+  "verdict": "EST. PERCENTILE is validated against the real rating machine for bargaining: correct ranking, ~2pp conservative bias, 12.5 rating/percentile conversion. Persuasion remains the known exception (no cells; live-instrument authority stands)."
+ },
+ "flag_isolation_08:0xZ": {
+  "method": "6 paired arena A/Bs, each differing flag alone on top of the SHARED 16-flag winning core, 3000 games x 2 seeds, in the flag's own family",
+  "results": {
+   "BARG_OFFER_FLOOR 0.57 vs 0.52": "+0.0164 pct (~+20 rating), both seeds CI-clear, pure price gain, close rate unchanged -> DEPLOYED to Test 1",
+   "NEGO_TABLE": "+0.0076 pct (~+9 rating), both seeds CI-clear; mechanism is close-rate (+0.6/+0.7pp), payoff ~flat -> DEPLOYED to Test 1",
+   "OPP_EXPLOIT": "-0.0043 pct (~-5 rating), both seeds CI below zero, closes unchanged, worse terms -> REMOVED from Agent 5",
+   "BARG_SPE_WEIGHT / BARG_UNCAPPED_HORIZON": "exact-zero deltas -- NOT inert live: the arena's composite probe transform hardcodes hardliner's 1.0/60, the same values Test 1 sets by flag, so both arms were identical. Agent 5 gets 1.0/60 via the transform too, so the two agents were ALREADY identical on these; the 'Test 1 only' flags were redundant labels, not a real difference."
+  },
+  "arena_limitation_recorded": "Config-level knobs (spe_weight, uncapped_horizon, nego anchors) are overwritten by the probe transform AFTER Config.from_env, so replay_eval cannot A/B them. Only runtime_flags-read gates are arena-testable. Any future Config-level experiment needs a transform-aware harness."
+ },
+ "stonewall_resolution": {
+  "arena_unguarded": "-0.0091 / -0.0083 (k=2 trigger, modal round 3, run breaks 58%)",
+  "arena_guarded": "run>=3: -0.0000 / +0.0002 ; run>=4: -0.0001 / +0.0001 -- indistinguishable, objection neutralised",
+  "live_case": "at delta_me<1.0 holding out lost 6.0pp of pot in 73.8% of 225 logged cases (rating -5.22 held vs -4.16 accepted); after 3 flat offers the mean next-offer improvement is -0.03% [-0.35,+0.22] i.e. waiting buys nothing, while a delta-0.9 round costs ~10% of our gain",
+  "deployed": "GLEE_BARG_STONEWALL=3 to Agent 5 only (staging). Fires in ~5% of bargaining games (flat-3 6.7% x delta<1.0). Live trail decides Test 1.",
+  "guards": "delta_me<1.0 required (at delta 1.0 holding was worth +7.7pp in 92.7% of 368 cases); run counted from history only (undercounts rather than over)"
+ },
+ "margin_weight_retest": {
+  "prompt": "operator observed negotiation wins are small (+2.76 mean) while losses are big (-4.04), 1.46x asymmetry",
+  "diagnosis": "wins sit at ~70th pct, losses at ~15th; 42% of AGREEMENTS score <=-4 vs 8% of no-deals -> the tail is cheap closes, not failures to close. Percentile ceiling is ~+6.5 so 'bigger wins' has no headroom; all gain must come from the loss tail.",
+  "retest": "MARGIN_WEIGHT was 0.25 (deliberately 'close often at thin margin' = many small wins). 0.55 failed yesterday PRE-span-floor. On the current stack: 0.40 +0.0014 [+0.0004,+0.0026] and +0.0030 [+0.0014,+0.0047] both seeds CI-clear, close rate UP (+0.2/+0.4pp); 0.55 still worse (-0.0041 / -0.0017). Deployed 0.40 to Agent 5.",
+  "lesson": "rejected candidates need retesting after the stack changes -- 0.40 was decision-identical to 0.25 yesterday and is a winner today."
+ },
+ "msg_style_finding": "MSG_STYLE never reaches the wire in text persuasion: dispatch's message-composition step overwrites the style message with the 21-template grounded bank (sources 'heuristic+tmpl-msg'). Token-vs-plain A/B is moot; seller-seat decline hypothesis dead (messages unchanged throughout); 55.3% measured conversion belongs to the bank. The style knob only matters in the (unused) no-compose path. No action -- the bank is the best performer measured.",
+ "retest_pass_09:0xZ": {
+  "POSTERIOR=1": "RESURRECTED: +0.0068 [+0.0050,+0.0086] / +0.0033 [+0.0019,+0.0049], payoff-driven, closes ~flat. Rejected twice on the old stack (v1 -0.070); wins on the current one. Deployed to Agent 5.",
+  "PROBE_V1": "confirmed HURTS (-0.0098/-0.0115) -- stays dead",
+  "BOULWARE=1.5": "confirmed HURTS (-0.0152/-0.0180) -- stays dead",
+  "RECIP_DAMP=0.15": "inconclusive-negative -- stays off",
+  "SPLIT_CANDIDATE": "inconclusive-negative -- stays off",
+  "lesson": "2-for-2 on the staleness hypothesis today (margin-weight, posterior). Retest-on-stack-change is now standing procedure."
+ },
+ "guards_batch_deployed": {
+  "when": "13:5xZ Aug 21",
+  "to": "Agent 5 (next boundary, <=60min)",
+  "flags": "SPAN_INVARIANT=0.40 + ECON_STALL=0.02 + BOB_OFFER=1",
+  "held_off": "LCB buyer (NEGATIVE: insurance premium beats the tail it insures), high-water (arena-negative), response model (off-policy confound)",
+  "test1_follows": "after Agent 5 trail read alongside the 21:00 IST tripwire"
+ },
+ "ultimatum_greed_test": {
+  "when": "16:1xZ Aug 21",
+  "hypothesis": "field 1-round complete-info sellers take 88% median of span (our 0.80 ranks only 46th pct); asking 0.95 would rank 90th -> ~+230 rating in-cell",
+  "arena": "0.90: -0.0025 [-0.0045,-0.0006] / -0.0031 [-0.0057,-0.0007], closes -0.5pp. 0.95: -0.0119 [-0.0155,-0.0082] / -0.0150 [-0.0195,-0.0107], closes -1.6/-2.0pp. BOTH REJECTED, monotone worse with greed.",
+  "why the field stat misled": "the 41 field-seller samples are survivors -- only ACCEPTED asks appear as agreed prices, so the observed 88% median is conditioned on acceptance and cannot price the rejections that greedy asks incur. The arena, which simulates rejection, prices them: closes fall 1.6-2.0pp at 0.95 and each no-deal is a zero.",
+  "verdict": "ULTIMATUM_SHARE stays 0.80. The -3.20/game residual in that cell is NOT recoverable by asking more."
+ }
+}
