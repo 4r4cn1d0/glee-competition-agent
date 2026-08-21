@@ -36,7 +36,8 @@
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
     "GLEE_NEGO_ACCEPT_SPAN": "0.48",
     "GLEE_NEGO_STALL_POLICY": "1",
-    "GLEE_NEGO_DEADGAME_V1": "1"
+    "GLEE_NEGO_DEADGAME_V1": "1",
+    "GLEE_BARG_FLOOR_GAIN": "0.05"
   },
   "conceder": {
     "GLEE_PERS_LIE_SHADING": "0.8",
@@ -61,6 +62,7 @@
     "GLEE_PERS_BUYER_V2": "1",
     "GLEE_PERS_BUYER_TIGHT_PRIOR": "0.65",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_NEGO_DEADGAME_V1": "1"
+    "GLEE_NEGO_DEADGAME_V1": "1",
+    "GLEE_BARG_FLOOR_GAIN": "0.05"
   }
 }
