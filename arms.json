@@ -54,7 +54,9 @@
     "GLEE_BARG_BOB_OFFER": "1",
     "GLEE_BARG_STONEWALL": "0",
     "GLEE_BARG_STONEWALL_MIN": "0",
-    "GLEE_NEGO_FINAL_OPTION": "0.6"
+    "GLEE_NEGO_FINAL_OPTION": "0.6",
+    "GLEE_NEGO_SURPLUS_PROBE": "1",
+    "GLEE_TRACE_GATES": "1"
   },
   "conceder": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
