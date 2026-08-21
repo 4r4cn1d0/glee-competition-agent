@@ -89,6 +89,33 @@ def seller_plan(game: dict, cfg) -> dict:
                 "round": round_no, "total_rounds": total, "buy_rate": buy_rate,
                 "knows_values": False, "quality_is_high": False}
 
+    # DP v3 (models/pers_policy_dp_v3.json). Sits ABOVE the prior-justifies
+    # shortcut on purpose: that shortcut is a theory result -- a Bayesian buyer
+    # whose prior already clears the price buys whatever you say -- and at the
+    # MARGIN of that condition the logged field does not obey it. The biggest
+    # measured gain in the whole candidate is binary|mid|r2.0, a cell sitting
+    # exactly on p*v == price, where the shortcut recommends everything and the
+    # field punishes it.
+    #
+    # But the shortcut is right where it has room. Once the prior clears the
+    # price by a comfortable margin the seller replay and the theory agree
+    # against the fitted model: lying really is close to free, the DP's early
+    # honesty is pure lost revenue, and every cell at ratio 3 or 4 came back
+    # NEGATIVE. So the gate carries a margin guard.
+    #
+    # The qualitative rule -- defer to the shortcut where the prior clears the
+    # price outright, plan where it is tight -- is theory-driven. The 0.25 level
+    # was read off the seller replay across 30 cells, which is an in-sample
+    # choice on a small grid and should be re-checked on new data, so it is a
+    # tunable flag rather than a constant.
+    if runtime_flags.enabled("GLEE_PERS_DP_V3"):
+        margin = ((p * v + (1.0 - p) * u) / price - 1.0) if price else 0.0
+        if margin <= runtime_flags.as_float("GLEE_PERS_DP_V3_MARGIN", 0.25):
+            plan = _dp_v3_plan(state, p, v, price, round_no, total, buy_rate)
+            if plan is not None:
+                plan["prior_margin"] = round(margin, 4)
+                return plan
+
     if p * v + (1.0 - p) * u >= price:
         # The prior alone justifies buying, so a buyer purchases every round
         # regardless. Recommending everything already sells out the game.
@@ -451,6 +478,79 @@ def decide(game: dict, cfg) -> dict:
 
 _DP_STATE = {"checked": 0.0, "mtime": None, "doc": None}
 _DP2_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+_DP3_STATE = {"checked": 0.0, "mtime": None, "doc": None}
+
+
+def _dp_policy_v3():
+    return _cached_model("pers_policy_dp_v3.json", _DP3_STATE)
+
+
+def _cached_model(filename, cache):
+    """mtime-cached model read, checked at most once every 10s."""
+    import os as _os, time as _time, json as _json
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "models", filename)
+    now = _time.monotonic()
+    if now - cache["checked"] < 10.0:
+        return cache["doc"]
+    cache["checked"] = now
+    try:
+        mtime = _os.stat(path).st_mtime_ns
+    except OSError:
+        return cache["doc"]
+    if mtime == cache["mtime"]:
+        return cache["doc"]
+    try:
+        doc = _json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return cache["doc"]
+    if isinstance(doc, dict) and doc.get("cells"):
+        cache.update(mtime=mtime, doc=doc)
+    return cache["doc"]
+
+
+def _dp_v3_plan(state, p, v, price, round_no, total, buy_rate):
+    """The v3 decision for a LOW-quality round, or None to fall through.
+
+    State is what the SELLER has done -- lies told, declines shown, rounds
+    elapsed -- plus the sales banked so far, which the percentile objective
+    needs because the value of one more sale depends on where the total already
+    sits on the field CDF.  None of these is the v1 lies-CAUGHT counter, which
+    only moved when the buyer bought and so measured the buyer rather than us.
+    """
+    dp = _dp_policy_v3()
+    if not dp:
+        return None
+    pb_ = "lo" if p < 0.45 else ("mid" if p < 0.65 else "hi")
+    rb_ = min((1.2, 1.25, 2.0, 3.0, 4.0),
+              key=lambda g_: abs(g_ - (v / price if price else 0)))
+    cell = (dp.get("cells") or {}).get(f"{mode_of(state)}|{pb_}|r{rb_}")
+    if not cell:
+        return None
+    told = nos = sales = 0
+    for _r in state.get("history") or []:
+        if not isinstance(_r, dict):
+            continue
+        positive = _looks_positive(_r.get("seller_message"))
+        if positive:
+            if str(_r.get("quality")).lower() == "low":
+                told += 1
+        else:
+            nos += 1
+        if _r.get("bought"):
+            sales += 1
+    t = min(round_no - 1, int(dp.get("rounds", 20)) - 1)
+    if t < 0:
+        return None
+    row = (cell.get("policy") or {}).get(f"{t}|{told}|{nos}")
+    if not row:
+        return None
+    lie_now = row[min(sales, len(row) - 1)] == "1"
+    return {"recommend": lie_now, "reason": "dp v3: percentile-optimal on low quality",
+            "round": round_no, "total_rounds": total, "buy_rate": buy_rate,
+            "knows_values": True, "lie_rate": 1.0 if lie_now else 0.0,
+            "quality_is_high": False, "dp": True, "dp_v3": True,
+            "dp_state": {"t": t, "told": told, "nos": nos, "sales": sales}}
 
 
 def _dp_policy_v2():

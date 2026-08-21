@@ -104,7 +104,13 @@ def _play(game: dict, cfg, log) -> dict:
     # must fence itself rather than inherit an open door. Non-persuasion
     # messages fall through to the grounded template bank, which is free.
     llm_fams = set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))
-    if _wants_message(game) and game.get("game_family") in llm_fams:
+    # A message the randomised negotiation arms already attached is the
+    # treatment; recomposing over it would replace it with the un-randomised
+    # template and silently destroy the experiment. The marker only exists when
+    # GLEE_NEGO_MSG_ARMS is set, so with the flag unset this condition is
+    # exactly the one that was here before.
+    armed = isinstance(plan, dict) and bool(plan.get("msg_arm"))
+    if _wants_message(game) and game.get("game_family") in llm_fams and not armed:
         message = None
         if cfg.llm_mode in ("messages", "full"):
             message = llm.write_message(game, action, plan, cfg)
@@ -119,6 +125,10 @@ def _play(game: dict, cfg, log) -> dict:
             action["message"] = message
             action = coerce(action, game)   # re-check the 2,000-char cap
             source += tag
+    elif armed:
+        # Name the arm in the turn's source so the assignment is visible in a
+        # grep of turns.jsonl, not only inside the plan record.
+        source += f"+arm-{(plan.get('msg_arm') or {}).get('arm')}"
 
     if log is not None:
         log.turn(game, action, plan, source=source)

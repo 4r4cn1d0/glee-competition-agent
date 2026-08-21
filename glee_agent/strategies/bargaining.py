@@ -40,6 +40,7 @@ what the field measurably accepts — see ``Config.barg_offer_floor``.
 
 from __future__ import annotations
 
+from .. import barg_offer
 from .. import opponents
 from .. import runtime_flags
 
@@ -348,6 +349,105 @@ def decide(game: dict, cfg) -> dict:
         if opp_floor > 0.0:
             my_gain = min(my_gain, (1.0 - opp_floor) * money)
             p["opponent_floor_applied"] = opp_floor
+
+        # --- responder-seat (Bob) offer rebuild ---------------------------
+        # Bob is player_2: he answers first and proposes on even rounds, and
+        # the rest of this function was written for the seat that opens. Two
+        # things break in his seat specifically.
+        #
+        # PARITY. Disclosed games state max_rounds = 12 -- an EVEN cap -- so
+        # player_2 is the last proposer and proposer_share() hands him
+        # 0.77-1.00 of the pot on every even round against Alice's 0.00-0.74 on
+        # every odd one. The last word is really his; it is also unbankable,
+        # since collecting it means agreeing at round 12 where delta_me = 0.8
+        # leaves 8.6% of face value. The blend and the two floors then crush the
+        # whole oscillation into one number, and 532 of Bob's 704 logged offers
+        # landed in the single bin [0.60, 0.65) whoever he was playing.
+        #
+        # THE VALUE OF A REFUSAL IS NOT SYMMETRIC. Measured as the realised
+        # percentile after one of our offers was refused (15,812 offers over
+        # 9,881 games): with delta_me = 1.0 a refusal at round 2 still returns
+        # 0.66 and at round 6 returns 0.74, because waiting costs nothing; with
+        # delta_me < 1.0 the same refusals return 0.28 and 0.06. A patient
+        # player should ask high and can afford to be refused; a burning one is
+        # choosing between closing now and collecting a fifth of the field. One
+        # flat 0.61 ask cannot be right for both, and 0.61 is what we sent.
+        #
+        # So the ask is chosen by maximising expected PERCENTILE -- the rating's
+        # own objective -- against a fitted P(accept | give, round, delta_opp,
+        # their demand) and the field's payoff distribution in this exact
+        # configuration cell. See glee_agent/barg_offer.py.
+        #
+        # SHIPPED AS A FLOOR, NOT A CONCESSION, and the asymmetry is deliberate.
+        # The model wants to move Bob's ask in both directions, and only one
+        # direction can be screened here:
+        #  * UPWARD, where the baseline concession schedule has walked the ask
+        #    below the percentile-optimal level. That is most of the undisclosed
+        #    horizon: `(1 - elapsed)**2` drags Bob from 0.61 down through 0.41 by
+        #    round 12, i.e. straight across the field's 0.50 atom, which is 9.6%
+        #    of the whole bargaining distribution and where an extra 0.01 of pot
+        #    buys +0.095 percentile against +0.025 anywhere else.
+        #  * DOWNWARD, trading share for a higher chance of acceptance. That
+        #    rests entirely on P(accept) rising with the give, and live it rises
+        #    with the RESPONDER'S PATIENCE far more than with the give itself --
+        #    at a give of 0.35-0.45 the field accepts 63.6% at delta_opp = 0.8
+        #    and 6.2% at 1.0. The offline arena cannot see that: its cloned
+        #    responders are fitted on (share, round) alone, delta-blind, and
+        #    nearly flat across the range in question (give 0.39 -> 0.48 moves
+        #    their acceptance 0.325 -> 0.404). Screened over 2,400 paired games
+        #    the two halves separate cleanly -- the concession half returns
+        #    -0.028 percentile [-0.049, -0.009] in the delta_me = 0.95 cell while
+        #    the floor half returns +0.013 [+0.007, +0.019] across Bob's seat --
+        #    so the floor ships and the concession does not. Unresolved, not
+        #    refuted: the harness has no way to price it.
+        #
+        # Deliberately narrow beyond that. Bob's seat only (Alice's opener is a
+        # different problem and already plays above the field). Never in the last
+        # two rounds, where the endgame rules above own the decision and the
+        # ultimatum is a real, checkable thing rather than a fitted curve. The
+        # flag is a shrinkage weight, so a small value is a small step toward the
+        # model rather than a cliff, and a missing or unreadable model file
+        # leaves the baseline ask untouched.
+        bob_w = runtime_flags.as_float("GLEE_BARG_BOB_OFFER", 0.0)
+        if bob_w > 0.0 and not mine and p["rounds_left"] > 2 and money > 0:
+            offers = _offers_to_me(state, game.get("your_player", "player_2"))
+            best_seen = max([g for _, g in offers], default=0.0)
+            latest = offers[-1][1] if offers else None
+            # The search is floored at the baseline ask (so the model can only
+            # raise, see above) and at the BEST share the opponent has ever
+            # offered -- proposing ourselves less than something they have
+            # already shown they will part with is dominated whatever any curve
+            # says. The demand FEATURE takes the LATEST instead: that is the
+            # number Bob is actually answering, and what the model was fitted on.
+            #
+            # Deliberately NOT floored by continuation_if_refused. plan() floors
+            # the aspiration there, but that number is the parity oscillation
+            # again -- with delta_me = 0.95 against delta_opp = 0.9 it claims a
+            # refusal is worth 0.77 of the pot -- and the opponent-floor cap in
+            # this function already overrides it on every live arm.
+            floor_gain = max(best_seen, my_gain, 0.0)
+            picked = barg_offer.best_ask(
+                money=money,
+                rnd=int(_num(state.get("round"), 1)),
+                delta_me=p["delta_me"],
+                # Under incomplete information the opponent's delta key is
+                # ABSENT, and plan() substitutes an assumed middling value.
+                # Hand the model the absence, not the assumption -- it fitted
+                # a separate "hidden" coefficient for exactly this case.
+                delta_opp=(p["delta_opp"]
+                           if state.get("delta_1") is not None else None),
+                their_demand=(1.0 - latest / money) if latest is not None else None,
+                cell=barg_offer.cell_key(money, state.get("max_rounds"),
+                                         p["horizon_known"],
+                                         state.get("complete_information")),
+                lo=floor_gain / money)
+            if picked is not None:
+                target = picked[0] * money
+                w = min(max(bob_w, 0.0), 1.0)
+                my_gain = my_gain + w * (target - my_gain)
+                my_gain = min(max(my_gain, floor_gain), money)
+                p["bob_offer"] = dict(picked[1], target=round(picked[0], 4),
+                                      weight=round(w, 3))
 
         # Opponent-conditional exploitation: when this game DISCLOSES who we are
         # playing and their fitted profile says they accept far less than the

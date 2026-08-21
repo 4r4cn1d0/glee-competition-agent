@@ -18,7 +18,7 @@ Two ideas carry the strategy:
 
 from __future__ import annotations
 
-from .. import pricing, runtime_flags
+from .. import nego_arms, pricing, runtime_flags
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -699,6 +699,27 @@ def _profitable(price: float, p: dict) -> bool:
 
 
 def decide(game: dict, cfg) -> dict:
+    """Choose the move, then — only under GLEE_NEGO_MSG_ARMS — say something.
+
+    The two halves are strictly ordered and that order is the whole design.
+    ``_decide`` returns the action with its numbers final; ``nego_arms.attach``
+    is handed that action, may add exactly one key (``"message"``), and
+    sha256-fingerprints every other key across the call. With the flag unset
+    ``nego_arms.enabled()`` is one dict lookup returning False and the action is
+    byte-identical to what this function returned before the arms existed —
+    which is also the N0 arm, since the fleet has sent no negotiation text at
+    all since the LLM persuasion fence.
+    """
+    action = _decide(game, cfg)
+    try:
+        if nego_arms.enabled():
+            nego_arms.attach(game, action)
+    except Exception:
+        pass                      # a message is never worth risking the move
+    return action
+
+
+def _decide(game: dict, cfg) -> dict:
     state = game["game_state"]
     p = plan(game, cfg)
 
