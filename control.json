@@ -1,8 +1,6 @@
 {
   "shift_seconds": 3600,
-  "disabled": [
-    "randomized"
-  ],
+  "disabled": [],
   "cycle_now": [
     "conceder",
     "composite"
@@ -12,7 +10,6 @@
     "conceder": "composite"
   },
   "families": {
-    "randomized": "negotiation",
     "conceder": "persuasion"
   },
   "llm": {
