@@ -38,7 +38,8 @@
     "GLEE_NEGO_DEADGAME_V1": "1",
     "GLEE_BARG_FLOOR_GAIN": "0.05",
     "GLEE_NEGO_ULTIMATUM_SHARE": "0.80",
-    "GLEE_BARG_STONEWALL": "3"
+    "GLEE_BARG_STONEWALL": "3",
+    "GLEE_NEGO_POSTERIOR": "1"
   },
   "conceder": {
     "GLEE_PERS_LIE_SHADING": "0.8",
