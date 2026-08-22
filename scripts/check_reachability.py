@@ -94,6 +94,19 @@ def _p_complete_ultimatum(game, p):
             and state.get("max_rounds") == 1)
 
 
+def _p_open_claim(game, p):
+    from glee_agent.actions import (
+        _complete_negotiation_zopa,
+        _is_negotiation_opening,
+    )
+
+    zopa = _complete_negotiation_zopa(game)
+    return (zopa is not None
+            and game.get("game_id")
+            and game.get("valid_actions", {}).get("type") in ("offer", "decision")
+            and _is_negotiation_opening(game))
+
+
 def _p_barg_midgame_decision(game, p):
     return _p_decision(game, p) and p.get("rounds_left", 0) > 2
 
@@ -117,6 +130,8 @@ KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
     "GLEE_NEGO_ULT_CAP": ("negotiation", (), _p_complete_ultimatum),
+    "GLEE_NEGO_OPEN_CLAIM": ("negotiation", (), _p_open_claim),
+    "GLEE_NEGO_CLAIM_FLOOR": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULTIMATUM_SHARE": ("negotiation", ("ultimatum",), _p_ultimatum),
     "GLEE_NEGO_RANK_PRICE_AB": ("negotiation", ("rank_price",), _p_rank_price),
     "GLEE_NEGO_POSTERIOR": ("negotiation", ("posterior",), _p_final_hidden),
@@ -163,6 +178,7 @@ KNOWN = {
 # rather than a name in plan["gates_fired"].
 POSTCONDITION_FLAGS = {
     "GLEE_NEGO_ZOPA_CLAMP", "GLEE_NEGO_ULT_FLOOR", "GLEE_NEGO_ULT_CAP",
+    "GLEE_NEGO_OPEN_CLAIM", "GLEE_NEGO_CLAIM_FLOOR",
 }
 
 #: names consulted by runtime_flags.get during the current decide() call

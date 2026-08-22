@@ -118,7 +118,7 @@ def _play_arm(field, draws, flags):
         # ship assigns by sha256("<salt>|" + game_id), and sim/arena.play defaults
         # game_id to the literal "local" -- so before this, EVERY simulated game
         # hashed to the same bit and an arm was 100% control or 100% treatment,
-        # never a comparison. Arms whose salt happens to hash to 0 (ci_ask,
+        # never a comparison. Arms whose salt happens to hash to 0 (open_claim,
         # rank_price_ab, barg_msg) therefore returned a byte-identical FALSE NULL
         # with a zero-width CI, while arms hashing to 1 (zopa, close_ab, backload)
         # ran treatment-everywhere and looked fine. That asymmetry is worse than a

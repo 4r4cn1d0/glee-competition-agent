@@ -3,6 +3,151 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-23 — complete-info opening claim + concession floor implemented, default OFF
+
+This supersedes the never-deployed `GLEE_NEGO_CI_ASK_AB` entry immediately
+below; there is one mechanism, not two.  The old flag and `ci_ask|` assignment
+were removed.  `GLEE_NEGO_OPEN_CLAIM=<share>` and
+`GLEE_NEGO_CLAIM_FLOOR=<share>` are independent floats with inert `0.0`
+defaults, but both use the same per-game treatment assignment:
+`sha256("open_claim|" + game_id) & 1`.  Hash-control games retain the existing
+wire price.  A non-finite/non-positive value is inert, and a missing game id is
+inert.
+
+On a treatment game, OPEN_CLAIM replaces our first outgoing price in either
+seat: the seller's standalone round-1 offer or, on the live protocol, the
+buyer's first `RejectOffer` counterprice.  It includes one-round games.  The
+price is `seller_value + share * span` for a seller and
+`buyer_value - share * span` for a buyer.  CLAIM_FLOOR is then a lower bound on
+our claimed share for every emitted `product_price`, including late rejection
+counters; an already more ambitious price is retained.  Every price affected
+by either knob is clamped to `[seller_value, buyer_value]`, including shares
+above 1 and fractional ZOPA endpoints.  The action postcondition runs after the
+strategy/LLM and only when the normalized action contains `product_price`.
+`AcceptOffer` has no price and returns before either flag is read, so neither
+the flags nor their assignment can change an acceptance threshold.
+
+The complete-information marker is checked before role/value mapping.  A test
+uses a hidden-state dict that raises if the opponent-value key is read, arms
+both flags, and verifies that the unchanged price returns without that read.
+This keeps hidden-information games entirely outside the mechanism.
+
+`scripts/live_percentile.py --ab open-claim` recovers the exact `open_claim|`
+hash and reports mean percentile plus close rate for each arm, per agent and
+pooled.  It cohorts on each game's globally earliest logged outgoing price,
+then applies `--since/--until`; a later counter cannot pull a pre-window game
+into the cohort.  This includes both seats, every horizon, and every round with
+a positive visible ZOPA.  The result join still covers both `results.jsonl` and
+collector-only `games/<id>.json`; unknown-CDF terminals stay in the close-rate
+denominator, unresolved outcomes are bounded and block promotion, and cold
+missing results count as .05-percentile non-closes.  A negative candidate close
+delta prints the close-rate veto.
+
+Reachability registers both flags as final-action postconditions.  Codex did
+not run `scripts/check_reachability.py`, because it imports and executes the
+explicitly prohibited replay/arena path; Claude should later require
+eligible>0, fired>0, action_changed>0 against the intended control stack.
+
+Verification: 67 focused open-claim/ZOPA tests passed.  The mandated full suite
+produced 707 passed and only the two failures pre-declared in AGENTS.md:
+`test_bargaining_horizon_floor` (expected 450, current 468) and
+`test_sim_grid[bargaining]` (`horizon_known` live-grid drift).  No live flag,
+fleet process, `arms.json`, `control.json`, `.env`, or file under `logs/` was
+changed; replay evaluation, arena, red-team, and reachability scripts were not
+run.
+
+**Objections / proposed validation:**
+1. With both floats armed in one interval, `--ab open-claim` identifies the
+   joint opening-plus-floor policy, not the contribution of either component.
+   Separate homogeneous windows (one nonzero float at a time) are needed for
+   component attribution; the requested bundle is still the primary test.
+2. Arm exposure is not persisted.  Record the exact per-slot arm/value `T0`
+   and disarm/value-change `T1`, then analyze that first-price interval.  Games
+   whose first outgoing price predates T0 are deliberately excluded even if a
+   later floor would have changed them after a mid-game arm.
+3. A hidden-information analogue cannot use ZOPA share.  If built, randomize it
+   under an independent salt and key the schedule on role, own value normalized
+   by the public money scale, round/horizon, and bounds or a posterior inferred
+   from opponent offers; do not infer an opponent value that the payload hides.
+
+## 2026-08-22 — complete-info seller opening-ask arm implemented, default OFF
+
+`GLEE_NEGO_CI_ASK_AB=<share>` is a float flag with an inert `0.0` default.  It
+is consulted only for a standalone opening offer when `complete_information` is
+literally true, both role-mapped values are finite and form a positive visible
+ZOPA, our current player is the seller, the action type is `offer`, round is 1,
+history and `last_offer` are empty, the horizon is not 1, and the game id is
+present.  Every eligible game is assigned by
+`sha256("ci_ask|" + game_id) & 1`.  Hash control keeps the already-computed wire
+opening unchanged.  Treatment replaces only that opening with
+`seller_value + flag_share * (buyer_value - seller_value)`, rounds it, then
+clamps the literal wire price to `[seller_value, buyer_value]`; a flag share
+above 1 therefore cannot submit an ask above the visible buyer value.  The arm
+runs as a final action postcondition after heuristic/full-LLM pricing.  Decision
+turns, reject/counter prices, acceptance thresholds, and every offer after the
+opening do not read it.
+
+The motivating longer-horizon observations remain hypothesis-generating only:
+horizon 10 had 94.1% closes at the existing 0.50-0.65-span opening (n=188,
+mean percentile .5571), and unbounded had 97.7% (n=217, .5024).  Horizon and ask
+band were perfectly confounded, so the implementation comment explicitly says
+that these observations establish no ask effect and that the hash experiment is
+the identifying variation.
+
+`scripts/live_percentile.py --ab ci-ask` recovers the identical pure hash and
+cohorts from the actual eligible round-1 turn timestamp, not a later result-fetch
+timestamp.  Use `--since T0 --until T1` (opening-time bounds, upper exclusive)
+and `--slots` to isolate the period in which a chosen value was armed.  It joins
+both `results.jsonl` and the continuous collector's `games/<id>.json`, prefers a
+recognized terminal record over an active snapshot, and reports mean percentile
+and close rate separately for each arm and pooled.  Agreement is a close;
+`no_deal`, `timeout`, and `walked_away` are non-closes.  Unknown-CDF games remain
+in the close denominator.  Missing results older than the calibrated 6,000s
+orphan threshold and behind a later collection watermark count as percentile
+.05 abandonments and non-closes.  Fresh pending and malformed terminal records
+are shown separately with arm-wise best/worst close-rate bounds and make the
+read non-promotion-grade.  A zero-eligible window exits nonzero.  Strategy
+exception fallbacks now write the actual returned action as an ordinary turn in
+addition to the error record, so fallback openings cannot disappear from this
+intent-to-treat cohort; this changes logging only, not the returned action.
+
+Reachability knows `GLEE_NEGO_CI_ASK_AB` as a final-action postcondition and its
+eligibility predicate reuses the live visible-ZOPA coercion.  Codex did not run
+the checker because it imports `replay_eval`/`sim.arena`, which the operator
+explicitly prohibited.  Claude should later run the registered check with the
+real target control stack and require eligible>0, fired>0, action_changed>0.
+
+Verification: 97 focused/interaction tests passed.  The exact mandated full
+suite produced 702 passed and only the two pre-existing AGENTS.md failures:
+`test_bargaining_horizon_floor` (expected 450, current 468) and
+`test_sim_grid[bargaining]` (`horizon_known` live-grid drift).  Tests cover flag
+absent/0 and hash-control identity, both horizon 10 and unbounded treatment,
+64-game runtime/analyzer hash parity, horizon-1 and hidden-information
+exclusions, missing visible value, buyer and later-turn exclusions, history-only
+and `last_offer`-only opening guards, decision/accept/counter isolation, a share
+1.5 fractional-boundary clamp, non-finite flag behavior, exception-fallback
+cohorting, exact opening-time bounds, collector-only results, duplicate finals,
+terminal labels, unknown CDFs, aged abandonment, unresolved bounds, and the
+zero-eligible exit.  The stale current-state snapshot was regenerated before
+review; no live flag or process was changed, and no file under `arms.json`,
+`control.json`, `.env`, or `logs/` was modified.  Arena, replay evaluation, and
+red-team scripts were not run.
+
+**Objections / proposed validation:**
+1. Arm exposure is not persisted by design.  The operator must record the exact
+   per-slot code-deploy/flag-arm `T0`, disarm/value-change `T1`, and analyze each
+   homogeneous interval with `--since T0 --until T1`; a broad `--hours` window
+   can hash control-only games into a false treatment after disarm.
+2. Promotion requires unresolved=0 and no treatment close-rate loss.  No sample
+   size or uncertainty rule was supplied, so none was invented; pre-commit it
+   before inspecting the live arm contrast.
+3. A missing outcome becomes an abandonment only under the repository's
+   measured 6,000s-plus-watermark rule.  Inspect the reported abandonment count
+   per arm and backfill/fetch questionable outcomes before the final verdict.
+4. Historical strategy-error records created before this patch lack the state
+   needed for opening-time eligibility.  Start `T0` after this code is live so
+   those records cannot enter the experiment cohort.
+
 ## 2026-08-22 — bargaining no-regression guard and message arms implemented, default OFF
 
 `GLEE_BARG_NO_REGRESS=1` now changes only a decision that every existing rule

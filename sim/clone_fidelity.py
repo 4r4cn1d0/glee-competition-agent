@@ -4,8 +4,8 @@
 WHY THIS IS THE GATE. Training a policy against a clone teaches it to beat THE
 CLONE. If the clone is wrong the learned policy is tuned to a fiction, and the
 arena will report a confident win either way -- it has no way to know. We have a
-direct measurement of how much this matters: the same GLEE_NEGO_CI_ASK_AB
-experiment, same games and same flags, scored
+direct measurement of how much this matters: the now-superseded
+GLEE_NEGO_CI_ASK_AB experiment, same games and same flags, scored
 
     legacy clone   +0.0059 percentile, CI [+0.0041, +0.0080]   "candidate better"
     V2 clone       -0.0003 percentile, CI [-0.0008, +0.0000]   "cannot distinguish"

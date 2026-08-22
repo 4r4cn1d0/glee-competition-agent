@@ -10,6 +10,7 @@ back to a conservative legal move rather than raising.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 
@@ -93,9 +94,57 @@ def _complete_negotiation_zopa(game: dict) -> tuple[float, float, bool] | None:
     return seller_value, buyer_value, me == seller
 
 
+def _open_claim_treatment(game: dict) -> tuple[float, float] | None:
+    """Return (opening claim, claim floor) for an assigned treatment game.
+
+    Hidden-information games return before either opponent role or value can be
+    read.  Each non-finite or non-positive float is independently inert; when
+    both are inert, or the game hashes to control, the existing price is kept.
+    """
+    state = game.get("game_state") or {}
+    if state.get("complete_information") is not True:
+        return None
+
+    opening = runtime_flags.as_float("GLEE_NEGO_OPEN_CLAIM", 0.0)
+    floor = runtime_flags.as_float("GLEE_NEGO_CLAIM_FLOOR", 0.0)
+    opening = opening if math.isfinite(opening) and opening > 0.0 else 0.0
+    floor = floor if math.isfinite(floor) and floor > 0.0 else 0.0
+    if opening == 0.0 and floor == 0.0:
+        return None
+
+    gid = str(game.get("game_id") or "")
+    if not gid:
+        return None
+    bit = int(hashlib.sha256(("open_claim|" + gid).encode()).hexdigest(), 16) & 1
+    return (opening, floor) if bit else None
+
+
+def _is_negotiation_opening(game: dict) -> bool:
+    """Whether this is our first outgoing price in the game's visible record."""
+    state = game.get("game_state") or {}
+    me = state.get("current_player") or game.get("your_player")
+    if me not in ("player_1", "player_2"):
+        return False
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        for key in ("offer", "counteroffer"):
+            prior = entry.get(key) or {}
+            if isinstance(prior, dict) and prior.get("from_player") == me:
+                return False
+    last = state.get("last_offer") or {}
+    if isinstance(last, dict) and last.get("from_player") == me:
+        return False
+    return True
+
+
 def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     """Apply flagged complete-information postconditions to an outgoing price."""
     if "product_price" not in action:
+        return
+    # Hidden games have no visible ZOPA.  Return on the information marker before
+    # `_complete_negotiation_zopa` can inspect either opponent role or value.
+    if (game.get("game_state") or {}).get("complete_information") is not True:
         return
     zopa = _complete_negotiation_zopa(game)
     if zopa is None:
@@ -142,6 +191,43 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
         elif share > ult_cap:
             price = (seller_value + ult_cap * span if i_am_seller
                      else buyer_value - ult_cap * span)
+
+    # COMPLETE-INFORMATION OPEN-CLAIM A/B.  Against seven ranked opponents, the
+    # agents above 2195 opened at 0.92-1.05 of visible ZOPA and ended at 0.82-0.93;
+    # our corresponding levels were 0.681 and 0.581.  Across 1,612 complete-info
+    # games the field median moved 0.900 -> 0.657 and 58% conceded over 0.05, so
+    # treatment games set each seat's first outgoing price to OPEN_CLAIM
+    # and keep every later outgoing offer at or above CLAIM_FLOOR.  Both knobs use
+    # the same per-game `open_claim|` hash; control games keep the prior wire price.
+    # This postcondition runs after strategy/LLM decisions and only sees an emitted
+    # product_price, so it cannot change an accept/reject threshold.  Any affected
+    # price is clamped into the visible ZOPA; this prevents the guaranteed zero
+    # seen with the measured 84.2% impossible-offer rate on one agent.
+    claim = _open_claim_treatment(game)
+    if claim is not None:
+        opening_claim, claim_floor = claim
+        affected = False
+        if opening_claim > 0.0 and _is_negotiation_opening(game):
+            price = (seller_value + opening_claim * span if i_am_seller
+                     else buyer_value - opening_claim * span)
+            affected = True
+
+        floor_price = None
+        if claim_floor > 0.0:
+            floor_price = (seller_value + claim_floor * span if i_am_seller
+                           else buyer_value - claim_floor * span)
+            price = (max(price, floor_price) if i_am_seller
+                     else min(price, floor_price))
+            affected = True
+
+        if affected:
+            price = max(0.0, round(price, 2))
+            # Reapply a fractional floor after cent rounding so the literal wire
+            # number never gives us less than the requested share.
+            if floor_price is not None:
+                price = (max(price, floor_price) if i_am_seller
+                         else min(price, floor_price))
+            price = min(max(price, seller_value), buyer_value)
 
     # This is the final numeric postcondition in coerce(), after cent rounding.
     # With the clamp armed, the seller never submits above the visible buyer value

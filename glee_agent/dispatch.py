@@ -40,16 +40,28 @@ def make_strategy(cfg, log=None):
         except Exception as exc:           # nothing may escape into the SDK
             logger.exception("Strategy failed for game %s", game.get("game_id"))
             if log is not None:
-                log.error(game, exc, stage="strategy")
+                try:
+                    log.error(game, exc, stage="strategy")
+                except Exception:
+                    logger.exception("Could not record strategy error")
             try:
                 # The fallback uses the same final postconditions as every
                 # ordinary action, including flagged complete-info price guards.
-                return coerce(safe_action(game), game)
+                action = coerce(safe_action(game), game)
             except Exception:
                 # safe_action is written not to fail; if it somehow does, still
                 # submit something shaped like the phase rather than nothing.
                 logger.exception("Fallback failed for game %s", game.get("game_id"))
-                return _last_resort(game)
+                action = _last_resort(game)
+            # Record the action actually returned after an exception.  Outcome
+            # analyzers cohort from ordinary turn records, so omitting fallback
+            # turns would select failures out of per-game close-rate estimates.
+            if log is not None:
+                try:
+                    log.turn(game, action, None, source="fallback:strategy-error")
+                except Exception:
+                    logger.exception("Could not record strategy fallback")
+            return action
 
     return strategy
 
