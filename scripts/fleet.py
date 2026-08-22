@@ -315,10 +315,47 @@ def safe_restart() -> int:
     print(f"quiet: no cycles pending, no drainers, all agents settled.")
     print(f"stopping supervisor {sup} ({cmdline})")
     os.kill(int(sup), signal.SIGTERM)
-    for _ in range(20):
-        if subprocess.run(["ps", "-p", str(sup)], capture_output=True).returncode != 0:
-            break
-        time.sleep(0.5)
+    # The supervisor's SIGTERM handler does NOT exit promptly: it sets a stop
+    # flag, SIGINTs every agent, and then blocks until each one exits on its own
+    # -- deliberately, because killing an agent mid-game abandons scored games.
+    # That takes MINUTES, not milliseconds. The old code waited 10s and then
+    # launched a replacement, which found the lock still held by the live old
+    # supervisor and refused to start. safe_restart then read the STALE state
+    # file and printed "relaunched: ... agents adopted unchanged", so the caller
+    # was told it had succeeded while the fleet was in fact draining to zero with
+    # no supervisor to bring it back. On 2026-08-22 that cost ~31 timed-out games
+    # and a 30-minute queue ban on four agents.
+    #
+    # Wait for the process to ACTUALLY be gone, report honestly if it is not, and
+    # never launch a replacement while the lock is still held.
+    deadline = time.time() + 1800
+    warned = False
+    while subprocess.run(["ps", "-p", str(sup)], capture_output=True).returncode == 0:
+        if time.time() > deadline:
+            print(f"REFUSED to relaunch: supervisor {sup} is STILL draining after "
+                  f"30 minutes. It is waiting for agents to finish their games and "
+                  f"will not be interrupted. No replacement was started; re-run "
+                  f"safe-restart once it has exited.")
+            return 1
+        if not warned:
+            print("  supervisor is draining its agents -- this takes minutes, not "
+                  "seconds. Waiting; nothing will be killed.", flush=True)
+            warned = True
+        time.sleep(5)
+    lock = os.path.join(REPO, "logs", "supervisor.lock")
+    if os.path.exists(lock):
+        try:
+            held = int(open(lock).read().strip())
+        except (OSError, ValueError):
+            held = None
+        if held and subprocess.run(["ps", "-p", str(held)],
+                                   capture_output=True).returncode == 0:
+            print(f"REFUSED to relaunch: {lock} is held by LIVE pid {held}. "
+                  f"A replacement would refuse to start and this command would "
+                  f"report a success that did not happen.")
+            return 1
+        os.remove(lock)          # provably stale: the pid in it is not running
+        print(f"  cleared stale lock (held dead pid {held})")
     log = open(os.path.join(REPO, "logs", "supervisor.out"), "ab")
     subprocess.Popen(cmdline, shell=True, cwd=REPO, stdout=log, stderr=log,
                      start_new_session=True)
@@ -327,8 +364,14 @@ def safe_restart() -> int:
     new_pid = new.get("supervisor_pid")
     same = sum(1 for p, pid in (new.get("agents") or {}).items()
                if pid and pid == (state.get("agents") or {}).get(p))
+    # Report the TRUTH. The old version printed success whenever it could read a
+    # state file, including when that file was the dead supervisor's own.
+    if not new_pid or new_pid == sup:
+        print(f"FAILED: no new supervisor recorded (state still shows {new_pid}). "
+              f"The fleet may have no supervisor -- check `fleet.py status` NOW.")
+        return 1
     print(f"relaunched: supervisor pid {new_pid}, {same} agents adopted unchanged.")
-    return 0 if new_pid and new_pid != sup else 1
+    return 0
 
 
 def main() -> int:
