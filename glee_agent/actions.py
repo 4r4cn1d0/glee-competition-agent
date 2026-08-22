@@ -13,6 +13,8 @@ from __future__ import annotations
 import logging
 import math
 
+from . import runtime_flags
+
 MAX_MESSAGE_LEN = 2000
 
 BARGAINING_DECISIONS = {"accept", "reject", "walkaway"}
@@ -65,6 +67,94 @@ def _clean_message(action: dict, state: dict) -> None:
         action["message"] = msg
 
 
+def _complete_negotiation_zopa(game: dict) -> tuple[float, float, bool] | None:
+    """Return (seller cost, buyer value, whether we sell) when both are visible."""
+    state = game.get("game_state") or {}
+    if state.get("complete_information") is not True:
+        return None
+
+    seller = next((p for p in ("player_1", "player_2")
+                   if state.get(f"{p}_role") == "seller"), None)
+    buyer = next((p for p in ("player_1", "player_2")
+                  if state.get(f"{p}_role") == "buyer"), None)
+    if seller is None or buyer is None:
+        return None
+
+    seller_value = _num(state.get(f"{seller}_value"), math.nan)
+    buyer_value = _num(state.get(f"{buyer}_value"), math.nan)
+    if not math.isfinite(seller_value) or not math.isfinite(buyer_value):
+        return None
+    if buyer_value <= seller_value:
+        return None
+
+    me = state.get("current_player") or game.get("your_player")
+    if me not in (seller, buyer):
+        return None
+    return seller_value, buyer_value, me == seller
+
+
+def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
+    """Apply flagged complete-information postconditions to an outgoing price."""
+    if "product_price" not in action:
+        return
+    zopa = _complete_negotiation_zopa(game)
+    if zopa is None:
+        return
+
+    seller_value, buyer_value, i_am_seller = zopa
+    span = buyer_value - seller_value
+    price = _num(action["product_price"])
+    ult_bounds = None
+
+    # When ULT_FLOOR is positive, every complete-information one-round proposal
+    # is placed inside [ULT_FLOOR, ULT_CAP] as our share of the visible span.
+    # At 0.72 this moves the measured <45% cluster (n=154, percentile .484) into
+    # the 70-85% band (245/245 closed, percentile .787). The 0.85 default is read
+    # only inside this default-off gate: 85-100% is unmeasured and >=100% closed
+    # 0/69.
+    ult_floor = runtime_flags.as_float("GLEE_NEGO_ULT_FLOOR", 0.0)
+    one_round_offer = ((game.get("valid_actions") or {}).get("type") == "offer"
+                       and _num((game.get("game_state") or {}).get("max_rounds"), 0.0)
+                       == 1.0)
+    if math.isfinite(ult_floor) and ult_floor > 0.0 and one_round_offer:
+        ult_cap = runtime_flags.as_float("GLEE_NEGO_ULT_CAP", 0.85)
+        if not math.isfinite(ult_cap):
+            ult_cap = 0.85
+        ult_cap = min(max(ult_cap, 0.0), 1.0)
+        ult_floor = min(max(ult_floor, 0.0), ult_cap)
+        share = ((price - seller_value) / span if i_am_seller
+                 else (buyer_value - price) / span)
+        share = min(max(share, ult_floor), ult_cap)
+        price = (seller_value + share * span if i_am_seller
+                 else buyer_value - share * span)
+        ult_bounds = (ult_floor, ult_cap)
+
+    price = max(0.0, round(price, 2))
+    # Rounding can move a fractional-boundary ask back outside the configured
+    # share interval, so the interval is re-applied to the literal wire number.
+    if ult_bounds is not None:
+        ult_floor, ult_cap = ult_bounds
+        share = ((price - seller_value) / span if i_am_seller
+                 else (buyer_value - price) / span)
+        if share < ult_floor:
+            price = (seller_value + ult_floor * span if i_am_seller
+                     else buyer_value - ult_floor * span)
+        elif share > ult_cap:
+            price = (seller_value + ult_cap * span if i_am_seller
+                     else buyer_value - ult_cap * span)
+
+    # This is the final numeric postcondition in coerce(), after cent rounding.
+    # With the clamp armed, the seller never submits above the visible buyer value
+    # and the buyer never submits below the visible seller cost. It repairs the
+    # 727/2,800 measured complete-info games containing an impossible offer;
+    # hidden games returned above before either bound is read, so their probing
+    # prices are unchanged.
+    if runtime_flags.enabled("GLEE_NEGO_ZOPA_CLAMP"):
+        price = min(price, buyer_value) if i_am_seller else max(price, seller_value)
+
+    action["product_price"] = price
+
+
 def _split_exactly(my_gain: float, money: float) -> tuple[float, float]:
     """Return (my_gain, other_gain) summing to ``money`` under float arithmetic.
 
@@ -92,29 +182,45 @@ def coerce(action, game: dict) -> dict:
 
     if not isinstance(action, dict):
         logger.warning("Non-dict action %r; using safe fallback", action)
-        return safe_action(game)
+        out = safe_action(game)
+    else:
+        action = dict(action)
+        try:
+            if action_type == "offer" and family == "bargaining":
+                out = _coerce_bargaining_offer(action, game)
+            elif action_type == "offer" and family == "negotiation":
+                out = _coerce_negotiation_offer(action, state)
+            elif action_type == "decision" and family == "bargaining":
+                out = _coerce_bargaining_decision(action)
+            elif action_type == "decision" and family == "negotiation":
+                out = _coerce_negotiation_decision(action, state)
+            elif action_type in ("seller_recommendation", "buyer_decision"):
+                out = _coerce_yes_no(action)
+            elif action_type == "seller_message":
+                out = _coerce_seller_message(action)
+            else:
+                logger.warning("Unknown action type %r; using safe fallback", action_type)
+                out = safe_action(game)
+        except InvalidAction as exc:
+            logger.warning("Could not repair action %r (%s); using safe fallback", action, exc)
+            out = safe_action(game)
 
-    action = dict(action)
-    try:
-        if action_type == "offer" and family == "bargaining":
-            out = _coerce_bargaining_offer(action, game)
-        elif action_type == "offer" and family == "negotiation":
-            out = _coerce_negotiation_offer(action, state)
-        elif action_type == "decision" and family == "bargaining":
-            out = _coerce_bargaining_decision(action)
-        elif action_type == "decision" and family == "negotiation":
-            out = _coerce_negotiation_decision(action, state)
-        elif action_type in ("seller_recommendation", "buyer_decision"):
-            out = _coerce_yes_no(action)
-        elif action_type == "seller_message":
-            out = _coerce_seller_message(action)
-        else:
-            logger.warning("Unknown action type %r; using safe fallback", action_type)
-            return safe_action(game)
-    except InvalidAction as exc:
-        logger.warning("Could not repair action %r (%s); using safe fallback", action, exc)
-        return safe_action(game)
-
+    if family == "negotiation":
+        try:
+            _apply_negotiation_price_guards(out, game)
+        except Exception:
+            # A failed live flag read or malformed guard input falls back to our
+            # own valuation, which is a legal visible-ZOPA boundary, rather than
+            # escaping the dispatcher and submitting nothing.
+            logger.exception("Negotiation price guard failed; using safe fallback")
+            out = safe_action(game)
+            if (game.get("valid_actions") or {}).get("type") == "offer":
+                me = state.get("current_player") or game.get("your_player") or ""
+                own_value = _num(state.get(f"{me}_value"), math.nan)
+                if math.isfinite(own_value):
+                    # Sub-cent prices are legal; keeping the exact valuation
+                    # prevents fallback rounding from crossing a narrow ZOPA.
+                    out["product_price"] = max(0.0, own_value)
     _clean_message(out, state)
     return out
 

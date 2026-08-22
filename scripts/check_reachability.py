@@ -79,6 +79,21 @@ def _p_decision(game, p):
     return game.get("valid_actions", {}).get("type") == "decision"
 
 
+def _p_complete_price(game, p):
+    state = game.get("game_state") or {}
+    return (state.get("complete_information") is True
+            and state.get("player_1_value") is not None
+            and state.get("player_2_value") is not None
+            and game.get("valid_actions", {}).get("type") in ("offer", "decision"))
+
+
+def _p_complete_ultimatum(game, p):
+    state = game.get("game_state") or {}
+    return (_p_complete_price(game, p)
+            and game.get("valid_actions", {}).get("type") == "offer"
+            and state.get("max_rounds") == 1)
+
+
 def _p_barg_midgame_decision(game, p):
     return _p_decision(game, p) and p.get("rounds_left", 0) > 2
 
@@ -99,6 +114,9 @@ def _p_barg_no_regress(game, p):
 
 
 KNOWN = {
+    "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
+    "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
+    "GLEE_NEGO_ULT_CAP": ("negotiation", (), _p_complete_ultimatum),
     "GLEE_NEGO_ULTIMATUM_SHARE": ("negotiation", ("ultimatum",), _p_ultimatum),
     "GLEE_NEGO_RANK_PRICE_AB": ("negotiation", ("rank_price",), _p_rank_price),
     "GLEE_NEGO_POSTERIOR": ("negotiation", ("posterior",), _p_final_hidden),
@@ -138,6 +156,13 @@ KNOWN = {
     "GLEE_BARG_UNKNOWN_DELTA": ("bargaining", (), lambda g, p: True),
     "GLEE_NEGO_SELLER_ANCHOR": ("negotiation", (), lambda g, p: True),
     "GLEE_NEGO_BUYER_ANCHOR": ("negotiation", (), lambda g, p: True),
+}
+
+# These flags execute after the strategy plan is removed, in actions.coerce().
+# Their firing evidence is consultation plus a changed final numeric action,
+# rather than a name in plan["gates_fired"].
+POSTCONDITION_FLAGS = {
+    "GLEE_NEGO_ZOPA_CLAMP", "GLEE_NEGO_ULT_FLOOR", "GLEE_NEGO_ULT_CAP",
 }
 
 #: names consulted by runtime_flags.get during the current decide() call
@@ -192,6 +217,7 @@ def _replay(states, flags):
     """
     replay_eval._set_flags(flags)
     from glee_agent.config import Config
+    from glee_agent.actions import coerce
     from glee_agent.dispatch import STRATEGIES
     from glee_agent.probes import make_probe
 
@@ -201,6 +227,9 @@ def _replay(states, flags):
         _CONSULTED.clear()
         action = STRATEGIES[game["game_family"]](copy.deepcopy(game), cfg)
         plan = action.pop("_plan", None) if isinstance(action, dict) else None
+        # Final-action guards run here in production, after strategy planning.
+        # Replaying through coerce makes action_changed describe the wire action.
+        action = coerce(action, game)
         out.append((action, plan if isinstance(plan, dict) else {},
                     frozenset(_CONSULTED)))
     return out
@@ -233,8 +262,10 @@ def main() -> int:
                          "flag prefix, else both)")
     ap.add_argument("--n", type=int, default=800, help="games to draw")
     ap.add_argument("--seed", type=int, default=20260821)
-    ap.add_argument("--control", default=json.dumps(replay_eval.DEFAULT_CONTROL),
-                    help="JSON control flag dict (default: live composite)")
+    default_control = json.dumps(replay_eval.DEFAULT_CONTROL)
+    ap.add_argument("--control", default=default_control,
+                    help="JSON control flag dict (default: simulator snapshot; "
+                         "pass the target's current stack before deployment)")
     args = ap.parse_args()
 
     if "=" not in args.flag:
@@ -256,6 +287,10 @@ def main() -> int:
         families = ["bargaining", "negotiation"]
 
     control = dict(json.loads(args.control))
+    if args.control == default_control:
+        print("warning: using replay_eval.DEFAULT_CONTROL, which is a simulator "
+              "snapshot; pass the actual target fleet stack with --control "
+              "before treating this as deployment evidence.")
     control[TRACE_FLAG] = "1"
     candidate = dict(control)
     candidate[name] = value
@@ -298,7 +333,9 @@ def main() -> int:
         if ok:
             eligible += 1
 
-        if gate_names:
+        if name in POSTCONDITION_FLAGS:
+            hit = name in consulted and _action_differs(a_ctl, a_cnd)
+        elif gate_names:
             hit = any(g in g_cnd for g in gate_names)
         else:
             # No gate of its own: count states where arming the flag changed
@@ -320,9 +357,12 @@ def main() -> int:
     print()
     print(f"  eligible_count       {eligible:6d}   "
           "(states where the gate's preconditions held)")
-    print(f"  fired_count          {fired:6d}   "
-          f"(gate {sorted(gate_names) if gate_names else '<trace diff>'} "
-          "in plan['gates_fired'])")
+    if name in POSTCONDITION_FLAGS:
+        fired_basis = "final-action postcondition consulted and changed wire action"
+    else:
+        fired_basis = (f"gate {sorted(gate_names) if gate_names else '<trace diff>'} "
+                       "in plan['gates_fired']")
+    print(f"  fired_count          {fired:6d}   ({fired_basis})")
     print(f"  action_changed_count {changed:6d}   "
           "(submitted actions differ between the two arms)")
     for line in examples:

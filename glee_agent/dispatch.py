@@ -14,6 +14,7 @@ anywhere below it degrades to the conservative fallback rather than escaping.
 from __future__ import annotations
 
 import logging
+import math
 import os
 import random
 
@@ -41,7 +42,9 @@ def make_strategy(cfg, log=None):
             if log is not None:
                 log.error(game, exc, stage="strategy")
             try:
-                return safe_action(game)
+                # The fallback uses the same final postconditions as every
+                # ordinary action, including flagged complete-info price guards.
+                return coerce(safe_action(game), game)
             except Exception:
                 # safe_action is written not to fail; if it somehow does, still
                 # submit something shaped like the phase rather than nothing.
@@ -190,6 +193,19 @@ def _last_resort(game: dict) -> dict:
         if game.get("game_family") == "bargaining":
             money = ((game.get("game_state") or {}).get("money_to_divide")) or 0
             return {"alice_gain": money / 2, "bob_gain": money / 2}
+        if game.get("game_family") == "negotiation":
+            # This branch is reached only after coerce itself failed, so it does
+            # not re-enter coerce. Our own finite valuation is already on the
+            # visible ZOPA boundary in either seat.
+            state = game.get("game_state") or {}
+            me = state.get("current_player") or game.get("your_player") or ""
+            try:
+                price = float(state.get(f"{me}_value"))
+            except (TypeError, ValueError):
+                price = 1.0
+            if not math.isfinite(price):
+                price = 1.0
+            return {"product_price": max(0.0, price)}
         return {"product_price": 1}
     if game.get("game_family") == "negotiation":
         return {"decision": "AcceptOffer"}

@@ -205,3 +205,129 @@ I found nothing new on this surface.
 The live `.48` span veto, `.40` outgoing invariant, and final any-positive ordering at [negotiation.py:1075](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1075>)–[1234](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1234>) reduce to the two attacks already logged. The apparent 48%/54% `FINAL_OPTION` equality cliff is not a new strategic channel: a 48.1% offer already succeeds in both ZOPA arms—immediate acceptance in control, rejection followed by reoffering in treatment. No new decision-rule fix.
 
 One `FINDINGS.md` claim is wrong: [lines 266–270](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:266>) call 115–126 observations exact complete-information cells. The percentile key omits opponent value and `messages_allowed` ([sim/percentile.py:48](</Users/spiderishi/Coding/GLEE Competition/sim/percentile.py:48>)), although both define negotiation configurations ([sim/grid.py:334](</Users/spiderishi/Coding/GLEE Competition/sim/grid.py:334>)). For the exact `B=1m`, seller `.8B`, buyer `1.5B`, `H=10` cell, deduplicated logs contain only `n=27` without messages and `n=31` with messages. Therefore the claimed `SE≈.014` and prior percentile magnitudes are pooled proxies, not same-configuration estimates.
+
+## 2026-08-22 08:55Z — surface: the concession schedule and stall detection
+
+live RejectOffer 900000.0 900000.0 True ['stall_park']
+no_stall RejectOffer 1400527.14 1400527.1363950663 True []
+
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c '
+import json
+line=next(x for i,x in enumerate(open(\"logs/composite/turns.jsonl\",errors=\"replace\"),1) if i==185460);r=json.loads(line);print(r.get(\"game_id\"));s=r.get(\"state\") or {};p=r.get(\"plan\") or {};print({k:s.get(k) for k in (\"round\",\"horizon_known\",\"max_rounds\",\"complete_information\",\"messages_allowed\",\"current_player\",\"money_to_divide\",\"delta_1\",\"delta_2\")},s.get(\"last_offer\"),{k:p.get(k) for k in (\"effective_horizon\",\"offered_to_me\",\"realistic_continuation\",\"accept_floor_applied\",\"gates_fired\")},r.get(\"action\"))
+'" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 70ms:
+d32b410a-fd05-4833-9404-f30c20732f95
+{'round': 15, 'horizon_known': False, 'max_rounds': None, 'complete_information': True, 'messages_allowed': False, 'current_player': 'player_2', 'money_to_divide': 10000, 'delta_1': 1.0, 'delta_2': 0.8} {'player_1_gain': 8000.0, 'player_2_gain': 2000.0, 'message': '', 'proposer': 'player_1', 'round': 15} {'effective_horizon': 14, 'offered_to_me': 2000.0, 'realistic_continuation': 1600.0, 'accept_floor_applied': 0.2, 'gates_fired': ['floor_gain', 'accept_floor', 'inflation_accept']} {'decision': 'accept'}
+
+exec
+/bin/zsh -lc "rg -n 'd32b410a-fd05-4833-9404-f30c20732f95' logs/composite/results.jsonl | cut -d: -f1
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c '
+import json
+for i,line in enumerate(open(\"logs/composite/results.jsonl\",errors=\"replace\"),1):
+ try:r=json.loads(line)
+ except Exception:continue
+ if r.get(\"game_id\")==\"d32b410a-fd05-4833-9404-f30c20732f95\" or (r.get(\"final\") or {}).get(\"game_id\")==\"d32b410a-fd05-4833-9404-f30c20732f95\": print(i,(r.get(\"final\") or {}).get(\"result\"))
+'" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 53ms:
+exec
+/bin/zsh -lc 'rg -n -i "inflation_accept|effective_horizon|survival=0|continuation.*zero|stall_park|stale stall|round 10" .ai/REDTEAM_LOG.md .ai/FINDINGS.md' in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 0ms:
+.ai/REDTEAM_LOG.md:44:   Exact attack: complete-info, H=10, our buyer `1.5B`, seller `0.8B`. Seller repeatedly asks `1.499B`; on round 9 we veto but counter `1.22B`, keeping only 40%. Seller accepts round 10. Estimated percentiles: us `.565`, attacker `.940`; versus the live 80%-span final policy, this costs us **36.1 percentile points**. Live confirmation: [turn](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:115611>) / [result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:8481>). A read-only census found 41 vetoed `[40%,48%)` counters immediately accepted; opponents outranked us in 28, mean gap **14.61 points**.
+.ai/REDTEAM_LOG.md:61:   Exact attack: complete-info, H=10, our buyer `1.5B`, seller `0.8B`. Seller repeatedly asks `1.499B`; on round 9 we veto but counter `1.22B`, keeping only 40%. Seller accepts round 10. Estimated percentiles: us `.565`, attacker `.940`; versus the live 80%-span final policy, this costs us **36.1 percentile points**. Live confirmation: [turn](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:115611>) / [result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:8481>). A read-only census found 41 vetoed `[40%,48%)` counters immediately accepted; opponents outranked us in 28, mean gap **14.61 points**.
+
+context compacted
+codex
+Three new holes:
+
+1. **Uncapped continuation collapses at round 10.** With `NEGO_CONTINUATION_ACCEPT=1`, [`_rounds_left`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:170>) returns `(1, false)` from round 10; the [survival formula](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:918>) therefore sets continuation to zero, and the [acceptance gate](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1211>) accepts any positive surplus. An opponent varies losing bids until round 10, then offers value plus epsilon. In [live turn 113914](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:113914>), our 800,000-value seller accepted 808,203.48; [result 8470](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:8470>) paid us 8,203 versus 391,797. Observable-cell percentile estimate: `.336` versus `.965`, costing **62.9 points**.  
+   **Rule:** In uncapped games, accept iff current-offer percentile exceeds the history-conditioned expected percentile of continuing; use a smooth, private randomized band around indifference.
+
+2. **Stall detection ignores the opponent’s current jump.** [`_their_stall_price`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) examines only three prior offers; [`stall_park`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:609>) then overwrites the schedule. In [turn 143501](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:143501>), prior bids were `0/0/0`, but the current bid jumped to 440,780. The stale signal reduced our ask from 1,400,527 to 900,000, immediately accepted: 100,000 versus 600,000, a **44.4-point** percentile gap.  
+   **Rule:** Use every current echo-collapsed offer in a continuous change-point posterior. Stall evidence may freeze or strengthen the scheduled price, never make it more concessionary.
+
+3. **Bargaining has a public time-only surrender cliff.** [`bargaining.py:859`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:859>) accepts any positive offer after `effective_horizon`. In [turn 185460](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:185460>), repeating 20% until round 15 yielded us only 87.96 discounted payoff versus 8,000: estimated `.013` versus `.972`; waiting alone cost **6.6 points**.  
+   **Rule:** Replace time-only acceptance with the same percentile-versus-continuation comparison.
+
+No measured `FINDINGS.md` claim is false. Its [“strongest live hole” heading](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:277>) is stale because composite disables `BARG_ECON_STALL`; the evidence itself remains valid.
+
+
+tokens used
+273,347
+Three new holes:
+
+1. **Uncapped continuation collapses at round 10.** With `NEGO_CONTINUATION_ACCEPT=1`, [`_rounds_left`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:170>) returns `(1, false)` from round 10; the [survival formula](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:918>) therefore sets continuation to zero, and the [acceptance gate](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1211>) accepts any positive surplus. An opponent varies losing bids until round 10, then offers value plus epsilon. In [live turn 113914](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:113914>), our 800,000-value seller accepted 808,203.48; [result 8470](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:8470>) paid us 8,203 versus 391,797. Observable-cell percentile estimate: `.336` versus `.965`, costing **62.9 points**.  
+   **Rule:** In uncapped games, accept iff current-offer percentile exceeds the history-conditioned expected percentile of continuing; use a smooth, private randomized band around indifference.
+
+2. **Stall detection ignores the opponent’s current jump.** [`_their_stall_price`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) examines only three prior offers; [`stall_park`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:609>) then overwrites the schedule. In [turn 143501](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:143501>), prior bids were `0/0/0`, but the current bid jumped to 440,780. The stale signal reduced our ask from 1,400,527 to 900,000, immediately accepted: 100,000 versus 600,000, a **44.4-point** percentile gap.  
+   **Rule:** Use every current echo-collapsed offer in a continuous change-point posterior. Stall evidence may freeze or strengthen the scheduled price, never make it more concessionary.
+
+3. **Bargaining has a public time-only surrender cliff.** [`bargaining.py:859`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:859>) accepts any positive offer after `effective_horizon`. In [turn 185460](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:185460>), repeating 20% until round 15 yielded us only 87.96 discounted payoff versus 8,000: estimated `.013` versus `.972`; waiting alone cost **6.6 points**.  
+   **Rule:** Replace time-only acceptance with the same percentile-versus-continuation comparison.
+
+No measured `FINDINGS.md` claim is false. Its [“strongest live hole” heading](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:277>) is stale because composite disables `BARG_ECON_STALL`; the evidence itself remains valid.
+
+## 2026-08-22 09:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 09:32Z — surface: the persuasion buyer DP and its belief update
+
+  1121	   },
+  1122	   "games_observed": 656,
+  1123	   "negotiation": {
+  1124	    "close_rate": 0.5362,
+  1125	    "median_price_over_their_value": 0.8462,
+  1126	    "n_games": 69,
+  1127	    "n_offers": 35
+  1128	   },
+  1129	   "persuasion": {
+  1130	    "as_buyer_buy_rate": 0.4625,
+  1131	    "as_buyer_n": 2638,
+  1132	    "as_seller_n": 792,
+  1133	    "as_seller_truth_rate": 0.6806
+  1134	   }
+  1135	  },
+  1136	  "RESERVE": {
+  1137	   "bargaining": {
+  1138	    "accept_rate": 0.2258,
+  1139	    "accept_threshold": null,
+  1140	    "highest_rejected_below": null,
+  1141	    "n": 31
+  1142	   },
+
+codex
+### New hole
+
+1. **Disclosed-opponent amnesia enables a fresh-prior attack every game.** Live composite enables Buyer V2 ([arms.json:51](/Users/spiderishi/Coding/GLEE%20Competition/arms.json:51)), but its prior uses only `(mode, p-bin)` ([persuasion.py:313](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:313)); only current-game history is supplied ([persuasion.py:364](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:364)). The disclosed opponent name is ignored.
+
+   Exact live state: known seller `Quantile`, round 1, empty history, binary, `P=100,p=1/3,v=200`, low quality, message `yes`. The reset posterior produced `p_high=.578875`, so the deterministic rule bought ([turn 64641](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/turns.jsonl:64641)). Quantile then sent `yes` all 20 rounds; buyer finished −100, seller +100 ([result 3800](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/results.jsonl:3800)).
+
+   **New evidence:** before this game, Quantile had already produced 40/40 unbought `yes` messages in two identical configurations ([earlier game 1](/Users/spiderishi/Coding/GLEE%20Competition/logs/conceder.pre-fix/results.jsonl:18), [game 2](/Users/spiderishi/Coding/GLEE%20Competition/logs/conceder/results.jsonl:1442)). Carrying those observations forward gives `P(q=1)=.999695`, `p_high=.328876`, and rejection—no decline laundering or token switching required.
+
+   Exact-cell CDF (`n=52/role`): buyer −100 ranks `.06731`; passing for 0 ranks `.48077`: **−41.35 percentile points**. Seller ranks `.74038`, out-ranking us by **67.31 points**.
+
+   **Decision rule:** persist a hierarchical posterior keyed by disclosed opponent and exact public cell; shrink thin identities to the population prior and apply change-point decay. Buy with a private smooth probability based on posterior expected final-cell percentile gain, including information value—not the raw-EV cliff at [line 456](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:456).
+
+### FINDINGS check
+
+Nothing is disproved.
+
+
+tokens used
+231,852
+### New hole
+
+1. **Disclosed-opponent amnesia enables a fresh-prior attack every game.** Live composite enables Buyer V2 ([arms.json:51](/Users/spiderishi/Coding/GLEE%20Competition/arms.json:51)), but its prior uses only `(mode, p-bin)` ([persuasion.py:313](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:313)); only current-game history is supplied ([persuasion.py:364](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:364)). The disclosed opponent name is ignored.
+
+   Exact live state: known seller `Quantile`, round 1, empty history, binary, `P=100,p=1/3,v=200`, low quality, message `yes`. The reset posterior produced `p_high=.578875`, so the deterministic rule bought ([turn 64641](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/turns.jsonl:64641)). Quantile then sent `yes` all 20 rounds; buyer finished −100, seller +100 ([result 3800](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/results.jsonl:3800)).
+
+   **New evidence:** before this game, Quantile had already produced 40/40 unbought `yes` messages in two identical configurations ([earlier game 1](/Users/spiderishi/Coding/GLEE%20Competition/logs/conceder.pre-fix/results.jsonl:18), [game 2](/Users/spiderishi/Coding/GLEE%20Competition/logs/conceder/results.jsonl:1442)). Carrying those observations forward gives `P(q=1)=.999695`, `p_high=.328876`, and rejection—no decline laundering or token switching required.
+
+   Exact-cell CDF (`n=52/role`): buyer −100 ranks `.06731`; passing for 0 ranks `.48077`: **−41.35 percentile points**. Seller ranks `.74038`, out-ranking us by **67.31 points**.
+
+   **Decision rule:** persist a hierarchical posterior keyed by disclosed opponent and exact public cell; shrink thin identities to the population prior and apply change-point decay. Buy with a private smooth probability based on posterior expected final-cell percentile gain, including information value—not the raw-EV cliff at [line 456](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:456).
+
+### FINDINGS check
+
+Nothing is disproved.

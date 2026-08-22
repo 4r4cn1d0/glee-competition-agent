@@ -302,3 +302,44 @@ project-scoped MCP server (`.mcp.json`) and callable non-interactively with
    same selection problem the response model died of?
 3. Persuasion is stuck: no identified defect, play at the 0.548 percentile,
    ratings drifting with the field. Is there a measurement we have not made?
+
+## 2026-08-22 — complete-information negotiation price guards implemented
+
+Three default-inert flags now guard the final numeric action in
+`glee_agent/actions.py`, after heuristic or full-LLM selection and after action
+repair: `GLEE_NEGO_ZOPA_CLAMP` (boolean, default OFF),
+`GLEE_NEGO_ULT_FLOOR` (float, default `0.0`), and `GLEE_NEGO_ULT_CAP` (float,
+default `0.85`, read only while the floor gate is armed). The same postcondition
+covers offers and reject/counter prices; hidden-information states return before
+either visible opponent bound is read.
+
+Diagnosis: `GLEE_BARG_OPPONENT_FLOOR=0.39` does not leak into negotiation. The
+0.390 one-shot mode is negotiation's independent `nego_zopa_share=0.39` under
+ENDGAME_V3. The 0.020 mode is `GLEE_NEGO_MIN_MARGIN=0.02` without that endgame
+floor. The 1.440/1.800 modes are the HORIZON_V2-off hardliner branch: visible
+opponent value is ignored, and a 4.0x anchor with 0.12 margin emits 1.36x cost.
+
+Focused verification: `tests/test_nego_zopa_guards.py` passes 13 tests covering
+default-off behavior, seller and buyer clamps, an impossible 14,000 seller ask
+after a full-LLM replacement, reject/counter prices, a hidden-information
+non-clamp, the 0.72 floor in both seats, the default 0.85 cap, and a live-tuned
+0.80 cap, including fractional valuation boundaries after wire rounding. Full
+suite: 653 passed; only the two AGENTS.md-documented bargaining failures remain
+(`test_bargaining_horizon_floor`, `test_sim_grid[bargaining]`).
+
+**Objections / proposed validation:**
+1. `ULT_CAP` is deliberately nested under `ULT_FLOOR > 0`; applying its required
+   0.85 default unconditionally would violate the default-off deployment rule.
+2. The ZOPA clamp removes dominated, impossible proposals but does not identify
+   the best interior share. Keep 0.72/0.85 as explicit runtime settings and use
+   the supplied one-round evidence; do not generalize the cap to multi-round
+   complete-information play.
+3. `scripts/check_reachability.py` now coerces replayed decisions so it can see
+   these post-plan wire guards. Before deployment, run it separately for
+   `GLEE_NEGO_ZOPA_CLAMP=1` and `GLEE_NEGO_ULT_FLOOR=0.72`; the latter control
+   must set the older `GLEE_NEGO_ULTIMATUM_SHARE=0`, or its existing 0.80 ask
+   masks a 0.72 floor. Prove the cap knob separately with
+   `GLEE_NEGO_ULT_CAP=0.80` and ULT_FLOOR armed in the control; an explicit 0.85
+   candidate is identical to the code default and correctly changes nothing.
+   Each meaningful run must show eligible, fired, and action_changed above zero.
+   Claude remains the only fleet deployer.
