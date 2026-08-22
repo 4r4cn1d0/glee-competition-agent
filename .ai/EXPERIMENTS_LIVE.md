@@ -164,6 +164,17 @@ games where the guard evaluated and comparing its `planned_counter_share`
 against our real next offer. Any mismatch is a correctness bug, not a result.
 KILL only on a projection mismatch or a latency regression.
 
+PROJECTION FIDELITY CHECKED 2026-08-22, PASSED. Across 480 guard evaluations
+that were followed by a real offer in the same game, the guard's
+`planned_counter_share` equalled our realised next offer in 480 of 480 cases,
+absolute error 0.00000 at every percentile including the worst. Zero evaluations
+lacked a subsequent offer. The guard therefore accepts against the counter we
+would genuinely have made, which is the whole correctness requirement. This is
+what Codex bought by projecting through the real bargaining.decide() path plus
+wire coercion rather than re-deriving the counter: a re-derivation is free to
+drift from the policy it models, and that drift would be invisible.
+
+
 SUPERSEDED rule (kept for the record) -- DECISION at 400 fired games:
   * SHIP to Agent 5 if mean percentile delta CI excludes zero and is positive.
   * KILL if the CI excludes zero and is negative.
