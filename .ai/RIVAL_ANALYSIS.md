@@ -69,3 +69,48 @@ within the losing regime.
 The next step is a live randomised arm that holds a high share and does not
 concede, measured against the current policy. That is a regime change, not a
 parameter tweak, and it must not go on the agent that carries our rank.
+
+
+---
+
+## CORRECTION, same night: it is the LEVEL, not the stonewalling
+
+The section above generalised from opus 5 alone. With the negotiation-only
+leaderboard we could check every ranked opponent we have played. Seven of them,
+157 complete-information games, share of the ZOPA the proposer claims:
+
+| opponent | nego rating | opens | ends | our pct vs them |
+|---|---|---|---|---|
+| opus 5(4) | 2555.8 | 0.970 | 0.884 | 0.3641 |
+| Clod | 2355.4 | 0.958 | 0.816 | 0.4140 |
+| MACH2 | 2278.3 | 1.050 | 0.816 | 0.4696 |
+| Fortuna | 2258.1 | 0.970 | 0.929 | 0.3691 |
+| NegoMind-B | 2195.4 | 0.925 | 0.925 | 0.3994 |
+| velocity | 2148.8 | 0.701 | 0.777 | 0.3840 |
+| Neo | 2135.4 | 0.774 | 0.674 | 0.5010 |
+| **US** | **1994.5** | **0.681** | **0.581** | |
+
+**Correlation between negotiation rating and opening claim: +0.60.**
+
+Everyone above 2195 opens at 0.92-1.05. We open at 0.681, lowest in the group.
+MACH2 opens at 1.050 -- above the whole zone -- and is rated 2278.
+
+The sharpest way to say it: **their FINAL position (0.82-0.93) is above our
+OPENING position (0.68).**
+
+CONCESSION AMOUNT DOES NOT TRACK RATING. It ranges 0.000 (NegoMind-B) to 0.234
+(MACH2) among agents rated 2195-2278. So "never concede", inferred above from
+opus 5 alone, was the wrong lesson from a sample of one. What tracks rating is
+the LEVEL: where you open and what floor you concede to.
+
+Field context, 1,612 complete-info games: the median opponent opens at 0.900 and
+walks to 0.657, and 58% concede more than 5 points. We concede into a field that
+opens high and settles near 0.65-0.80.
+
+## Why waiting for gill bates / Mythos01 data is not a plan
+
+In negotiation we hold 1 game against gill bates and 2 against Mythos01, and none
+of them has a final game_state. Over a 3.3-day log window that is 0.30 gill bates
+negotiation games per day: about 2 more before the competition closes on Aug 29.
+The data will not arrive. opus 5(4) at 2555.8 is 45 points off the top and we have
+real data on it, so that is the window we use.
