@@ -284,6 +284,28 @@ _Q_GRID = (0.0, 0.125, 0.25, 0.5, 0.75, 1.0)
 #: Chance a seller declines to recommend a HIGH unit; keeps likelihoods off 0.
 _EPS = 0.02
 
+# Independent of every existing persuasion salt.  The pure assignment helper is
+# also imported by scripts/live_percentile.py, so the analysis cannot silently
+# disagree with the action path about which games were treatment.
+PERS_BUYER_SELECTIVITY_SALT = "pers_buyer_selectivity_v1|"
+
+
+def buyer_selectivity_assignment(game_id) -> bool | None:
+    """Stable per-game selectivity arm, without consulting live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256((PERS_BUYER_SELECTIVITY_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def _buyer_selectivity_arm(game_id) -> bool | None:
+    """Treatment bit when the buyer-selectivity experiment is armed."""
+    if not runtime_flags.enabled("GLEE_PERS_BUYER_SELECTIVITY_AB"):
+        return None
+    return buyer_selectivity_assignment(game_id)
+
 _PRIOR_STATE = {"checked": 0.0, "mtime": None, "doc": None}
 
 
@@ -539,6 +561,128 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
                 lcb_extra["seller_declines"] = 0
                 lcb_extra["prior_margin"] = round(_margin, 4)
 
+    # BUYER SELECTIVITY ARM (default OFF, assigned per game).
+    #
+    # Live buyer games whose prior money value did not beat price numbered 5,181
+    # at the measurement snapshot.  The supplied full-game split associated an
+    # eventual no-decline record with percentile .4636 and an eventual decline
+    # with .5167, but that split is post-treatment: the buyer cannot know at round
+    # one whether a seller will decline later.  This arm tests the reachable rule
+    # using only the history available now and never revives a purchase rejected
+    # by the existing buyer.
+    #
+    # A decline is NOT trusted as a costly signal.  While this arm is waiting, a
+    # seller's yes would be refused too, so a round-one no costs it no on-path
+    # sale and can launder the q posterior.  The treatment therefore combines:
+    #   1. no purchase before an explicit historical decline;
+    #   2. current message must be an explicit recommendation;
+    #   3. posterior-mean P(high|recommend) must STRICTLY clear money breakeven;
+    #   4. after the first bought low unit, no more purchases in this game.
+    # Against decline-on-high/recommend-on-low, item 4 caps buyer loss at one
+    # product price instead of the 19 prices exposed by the proposed permanent
+    # one-decline unlock.  The mechanism hypothesis is that a payoff-maximising
+    # seller earns more future sales by declining lows and recommending highs,
+    # with at most a terminal lie.  This is not proof that one no is informative;
+    # same-cell percentile A/B evidence decides it.  On the oldest
+    # 5,181 eligible transcripts, a fixed-stream veto shadow moved fitted
+    # percentile +.01445 before the strike and +.01209 after it, while the strike
+    # cut another 5,604 purchases.  The strike is therefore adversarial insurance,
+    # not an empirically identified improvement; seller adaptation makes that
+    # shadow non-causal.
+    #
+    # The estimator remains the field-fitted bimodal q-grid posterior above
+    # (4,191 games in models/pers_buyer_prior_v1.json), not a Beta/Laplace fit:
+    # the measured seller population has mass near both q=0 and q=1, which a
+    # single Beta family erases.  No supplied measurement identifies a positive
+    # probability margin, and the earlier blanket guard/LCB arms measured
+    # negative, so the pre-registered first arm uses margin 0.0 plus strict `>`.
+    # A later margin remains live-tunable but is read only inside treatment, so it
+    # cannot contaminate the hash-control decision.
+    selectivity_extra = {}
+    prior_value = p * v + (1.0 - p) * u
+    value_scale = max(1.0, abs(price), abs(prior_value))
+    prior_not_profitable = prior_value <= price + 1e-9 * value_scale
+    if v > u and price > u and prior_not_profitable:
+        selectivity_arm = _buyer_selectivity_arm(game.get("game_id"))
+        if selectivity_arm is not None:
+            selectivity_extra["buyer_selectivity_arm"] = (
+                "candidate" if selectivity_arm else "control")
+            selectivity_extra["buyer_selectivity_prior_value"] = prior_value
+            if selectivity_arm:
+                selectivity_margin = runtime_flags.as_float(
+                    "GLEE_PERS_BUYER_SELECTIVITY_MARGIN", 0.0)
+                if not 0.0 <= selectivity_margin <= 1.0:
+                    selectivity_margin = 0.0
+                signals = [_recommendation_signal(entry) for entry in history]
+                declines = sum(signal is False for signal in signals)
+                caught_low = any(
+                    entry.get("bought")
+                    and str(entry.get("quality", "")).lower() == "low"
+                    for entry in history
+                )
+                # Do not reuse ``recommended_now`` here.  With the legacy
+                # parser stack an ambiguous string is intentionally coerced to
+                # True for the control policy; this treatment's safety claim
+                # requires an actually readable positive signal.
+                selectivity_current = _recommendation_signal(current)
+                # The treatment likewise keeps parser abstentions out of its
+                # q likelihood even when the legacy control parser is live.
+                # Otherwise unreadable historical copy would be silently
+                # counted as a recommendation and the asserted estimator would
+                # differ by fleet flag stack.
+                selectivity_post = _q_posterior(
+                    history, p, mode, preserve_abstentions=True)
+                if selectivity_current is None:
+                    selectivity_p_high = p
+                else:
+                    selectivity_post_now = []
+                    for weight, q in zip(selectivity_post, _Q_GRID):
+                        pr_yes = p * (1.0 - _EPS) + (1.0 - p) * q
+                        likelihood = (pr_yes if selectivity_current
+                                      else (1.0 - pr_yes))
+                        selectivity_post_now.append(weight * likelihood)
+                    selectivity_z = sum(selectivity_post_now)
+                    if selectivity_z > 1e-12:
+                        selectivity_post_now = [
+                            weight / selectivity_z
+                            for weight in selectivity_post_now
+                        ]
+                    else:
+                        selectivity_post_now = list(selectivity_post)
+                    selectivity_p_high = 0.0
+                    for weight, q in zip(selectivity_post_now, _Q_GRID):
+                        if selectivity_current:
+                            numerator = p * (1.0 - _EPS)
+                            denominator = numerator + (1.0 - p) * q
+                        else:
+                            numerator = p * _EPS
+                            denominator = numerator + (1.0 - p) * (1.0 - q)
+                        selectivity_p_high += (
+                            weight * numerator / max(denominator, 1e-9))
+                posterior_gap = selectivity_p_high - breakeven
+                reason = None
+                if caught_low:
+                    reason = "bought_low_strike"
+                elif declines == 0:
+                    reason = "no_prior_decline"
+                elif selectivity_current is not True:
+                    reason = "current_not_explicit_yes"
+                elif posterior_gap <= selectivity_margin:
+                    reason = "posterior_not_strictly_profitable"
+
+                selectivity_extra.update({
+                    "buyer_selectivity_margin": selectivity_margin,
+                    "buyer_selectivity_declines": declines,
+                    "buyer_selectivity_caught_low": caught_low,
+                    "buyer_selectivity_p_high": selectivity_p_high,
+                    "buyer_selectivity_posterior_gap": posterior_gap,
+                })
+                if buy and reason is not None:
+                    buy = False
+                    selectivity_extra["buyer_selectivity_veto"] = reason
+                    if runtime_flags.enabled("GLEE_TRACE_GATES"):
+                        selectivity_extra["gates_fired"] = ["buyer_selectivity"]
+
     parser_extra = {}
     if parse_tri and recommended_now is False:
         # Apply last so no posterior, audit, or optional LCB path can revive an
@@ -553,6 +697,7 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
 
     return {
         **lcb_extra,
+        **selectivity_extra,
         **parser_extra,
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,

@@ -331,3 +331,326 @@ tokens used
 ### FINDINGS check
 
 Nothing is disproved.
+
+## 2026-08-22 10:14Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c '
+import json
+for path,n in [(\"logs/composite/turns.jsonl\",133847),(\"logs/composite/turns.jsonl\",133856),(\"logs/composite/results.jsonl\",9513)]:
+ r=json.loads(next(x for i,x in enumerate(open(path,errors=\"replace\"),1) if i==n));print(path,n)
+ if \"turns\" in path:
+  s=r.get(\"state\") or {};p=r.get(\"plan\") or {};print(r.get(\"game_id\"),{k:s.get(k) for k in [\"round\",\"max_rounds\",\"horizon_known\",\"complete_information\",\"messages_allowed\",\"current_player\",\"player_1_value\",\"player_2_value\"]},s.get(\"last_offer\"),{k:p.get(k) for k in [\"target\",\"surplus_now\",\"continuation_value\",\"continuation_evidence\",\"gates_fired\"]},r.get(\"action\"))
+ else:print((r.get(\"final\") or {}).get(\"result\"))
+'" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 165ms:
+logs/composite/turns.jsonl 165208
+415fb705-ef12-44e1-8832-4591794b223a {'round': 6, 'max_rounds': 10, 'horizon_known': True, 'complete_information': False, 'messages_allowed': False, 'current_player': 'player_1', 'player_1_value': 800000.0, 'player_2_value': None} {'price': 917264.57, 'message': '', 'from_player': 'player_2', 'round': 6} {'surplus_now': 117264.56999999995, 'continuation_value': 147955.15279999995, 'continuation_evidence': {'offers_seen': 3, 'survival': 0.52, 'basis': 'projected from concession trend', 'rate': 41816.14249999999, 'projected_surplus': 284529.1399999999, 'continuation_value': 147955.15279999995}, 'elapsed': 0.6, 'gates_fired': ['table_accept']} {'decision': 'AcceptOffer'}
+logs/composite/results.jsonl 10424
+{'player_1_payoff': 117264.57, 'player_2_payoff': 582735.43, 'outcome': 'agreement', 'agreed_price': 917264.57, 'agreed_round': 6}
+
+ succeeded in 243ms:
+logs/composite/turns.jsonl 133847
+0b9f51c0-fa9a-48a0-90ec-8a8189f34ea5 {'round': 2, 'max_rounds': 10, 'horizon_known': True, 'complete_information': False, 'messages_allowed': False, 'current_player': 'player_1', 'player_1_value': 10000.0, 'player_2_value': None} {'price': 10040.0, 'message': '', 'from_player': 'player_2', 'round': 2} {'target': 38824.0, 'surplus_now': 40.0, 'continuation_value': 16653.866666666665, 'continuation_evidence': {'offers_seen': 1, 'survival': 0.5777777777777777, 'basis': 'no trend; our own target as the ceiling', 'projected_surplus': 28824.0, 'continuation_value': 16653.866666666665}, 'gates_fired': []} {'decision': 'RejectOffer', 'product_price': 38824.0}
+logs/composite/turns.jsonl 133856
+0b9f51c0-fa9a-48a0-90ec-8a8189f34ea5 {'round': 4, 'max_rounds': 10, 'horizon_known': True, 'complete_information': False, 'messages_allowed': False, 'current_player': 'player_1', 'player_1_value': 10000.0, 'player_2_value': None} {'price': 10040.0, 'message': '', 'from_player': 'player_2', 'round': 4} {'target': 35296.0, 'surplus_now': 40.0, 'continuation_value': 22.285714285714285, 'continuation_evidence': {'offers_seen': 2, 'survival': 0.5571428571428572, 'basis': 'opponent not conceding', 'rate': 0.0, 'projected_surplus': 40.0, 'continuation_value': 22.285714285714285}, 'gates_fired': []} {'decision': 'AcceptOffer'}
+logs/composite/results.jsonl 9513
+{'player_1_payoff': 40.0, 'player_2_payoff': 4960.0, 'outcome': 'agreement', 'agreed_price': 10040.0, 'agreed_round': 4}
+
+codex
+Four new cliffs, ordered by rank swing:
+
+1. **Bargaining floor release — 73.53 percentile points.** The live `.50` floor ([arms.json:159](</Users/spiderishi/Coding/GLEE Competition/arms.json:159>)) applies only while `rounds_left>2` ([bargaining.py:596](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:596>)). In complete-info `H=12`, no messages, `M=10k`, attacker δ=1, our Bob δ=.95: repeatedly offer Bob `4,999.99` and reject his offers. We reject rounds 1–9, then accept round 11 for discounted `2,993.68`. Bob’s exact-role CDF (`n=17`) falls `.9412→.2059`; attacker ranks `.2778`, still above us. [Live rejection](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:77707>), [acceptance](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:77727>).  
+   **Rule:** smooth private acceptance probability based on `rank(now)−E[rank(continue)]`; remove the hard two-round cutoff. This is distinct from the logged uncapped `effective_horizon` surrender.
+
+2. **Persuasion zero-margin pooling — 71.25 points.** At exact `p·v=P`, [`>=`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:119>) makes every low-quality message “yes,” bypassing `HONEST_ROUNDS=99`. Binary `P=100,p=.5,v=200`, realized 10H/10L: the opponent boycotted all 20; both earned zero ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:1405>)). Seller-role exact-cell rank (`n=40`) is `.0375`; truthful separation’s `10P` ranks `.7500`. Buyer zero ranks `.6250`.  
+   **Rule:** only in zero-margin cells, privately mix according to immediate sale-rank gain minus continuation-reputation rank loss. Preserve strict `p·v>P` all-push—the global backload arm already measured negative.
+
+3. **Negotiation table phase cliff — 58.0-point deficit.** The hidden-seller threshold jumps `.436318B→.034464B` at a quartile boundary ([table_policy.py:35](</Users/spiderishi/Coding/GLEE Competition/glee_agent/table_policy.py:35>), [policy](</Users/spiderishi/Coding/GLEE Competition/models/nego_policy_v1.json:1>)). At `H=10`, seller `.8B`, buyer `1.5B`, bids `.75B,.79B,.834464B` trigger acceptance despite higher continuation. Us `.405`, attacker `.985`.  
+   **Rule:** continuous monotone expected-rank frontier, privately smoothed near indifference.
+
+4. **Second-identical-offer surrender — 42.5-point deficit.** Offer count `1→2` changes continuation from our target to `same surplus × survival` ([negotiation.py:927](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:927>)). Repeating `1.004B` made our `1.0B` seller reject round 2, accept round 4: us `.532`, attacker `.957` ([trace](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:133856>)).  
+   **Rule:** repetition may update transition odds, never mechanically devalue the identical current payoff.
+
+Negotiation figures use the finest identifiable role cells; hidden no-deal opponent types prevent exact private-pair CDFs. Nothing validated in `FINDINGS.md` is disproved.
+
+
+tokens used
+277,907
+Four new cliffs, ordered by rank swing:
+
+1. **Bargaining floor release — 73.53 percentile points.** The live `.50` floor ([arms.json:159](</Users/spiderishi/Coding/GLEE Competition/arms.json:159>)) applies only while `rounds_left>2` ([bargaining.py:596](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:596>)). In complete-info `H=12`, no messages, `M=10k`, attacker δ=1, our Bob δ=.95: repeatedly offer Bob `4,999.99` and reject his offers. We reject rounds 1–9, then accept round 11 for discounted `2,993.68`. Bob’s exact-role CDF (`n=17`) falls `.9412→.2059`; attacker ranks `.2778`, still above us. [Live rejection](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:77707>), [acceptance](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:77727>).  
+   **Rule:** smooth private acceptance probability based on `rank(now)−E[rank(continue)]`; remove the hard two-round cutoff. This is distinct from the logged uncapped `effective_horizon` surrender.
+
+2. **Persuasion zero-margin pooling — 71.25 points.** At exact `p·v=P`, [`>=`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:119>) makes every low-quality message “yes,” bypassing `HONEST_ROUNDS=99`. Binary `P=100,p=.5,v=200`, realized 10H/10L: the opponent boycotted all 20; both earned zero ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:1405>)). Seller-role exact-cell rank (`n=40`) is `.0375`; truthful separation’s `10P` ranks `.7500`. Buyer zero ranks `.6250`.  
+   **Rule:** only in zero-margin cells, privately mix according to immediate sale-rank gain minus continuation-reputation rank loss. Preserve strict `p·v>P` all-push—the global backload arm already measured negative.
+
+3. **Negotiation table phase cliff — 58.0-point deficit.** The hidden-seller threshold jumps `.436318B→.034464B` at a quartile boundary ([table_policy.py:35](</Users/spiderishi/Coding/GLEE Competition/glee_agent/table_policy.py:35>), [policy](</Users/spiderishi/Coding/GLEE Competition/models/nego_policy_v1.json:1>)). At `H=10`, seller `.8B`, buyer `1.5B`, bids `.75B,.79B,.834464B` trigger acceptance despite higher continuation. Us `.405`, attacker `.985`.  
+   **Rule:** continuous monotone expected-rank frontier, privately smoothed near indifference.
+
+4. **Second-identical-offer surrender — 42.5-point deficit.** Offer count `1→2` changes continuation from our target to `same surplus × survival` ([negotiation.py:927](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:927>)). Repeating `1.004B` made our `1.0B` seller reject round 2, accept round 4: us `.532`, attacker `.957` ([trace](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:133856>)).  
+   **Rule:** repetition may update transition odds, never mechanically devalue the identical current payoff.
+
+Negotiation figures use the finest identifiable role cells; hidden no-deal opponent types prevent exact private-pair CDFs. Nothing validated in `FINDINGS.md` is disproved.
+
+## 2026-08-22 12:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 15:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 17:50Z — surface: the concession schedule and stall detection
+
+     8	### rollout_summary_files
+     9	
+    10	- rollout_summaries/2026-08-20T15-55-36-3kf4-glee_competition_project_audit.md (cwd=/Users/spiderishi/Coding/GLEE Competition, rollout_path=/Users/spiderishi/.codex/sessions/2026/08/20/rollout-2026-08-20T21-25-36-01a01fe2-8f24-7fd2-8fbc-06f718b53a9e.jsonl, updated_at=2026-08-20T16:07:44+00:00, thread_id=01a01fe2-8f24-7fd2-8fbc-06f718b53a9e, success)
+    11	
+    12	### keywords
+    13	
+    14	- run_agent.py, glee_agent.dispatch, glee_agent.actions, arms.json, runtime_flags.py, scripts/fleet.py, scripts/collect.py, persuasion, JSON-envelope, horizon_known, pytest, selftest
+    15	
+    16	## User preferences
+    17	
+    18	- when requesting project inspection, the user asked: “look up everything regarding this project” -> provide an end-to-end briefing of repository structure, runtime behavior, tests, logs, deployment/fleet state, and concrete risks rather than a README-only or narrow code walkthrough. [Task 1]
+    19	
+    20	## Reusable knowledge
+    21	
+    22	- Main execution path is `run_agent.py` → `glee_agent/probes.py` → `glee_agent/dispatch.py` → family strategy → `glee_agent/actions.py` coercion/fallback. Total action safety is an invariant: a strategy exception means the SDK submits nothing and the game times out; a rejected move burns one of five attempts. [Task 1]
+    23	- `actions.py` repairs malformed actions, message limits, bargaining-sum arithmetic, and decision aliases, then supplies conservative legal fallbacks. Dispatcher exceptions must never escape. [Task 1]
+    24	- Live policy can change without restart: `runtime_flags.py` reads `arms.json` with cached mtime checks and retains the last valid state on malformed/partial files; `scripts/fleet.py` writes atomically, while `scripts/supervise.py` uses drain-and-relaunch shifts. [Task 1]
+    25	- At audit time, bargaining was strongest (roughly 0–0.5% no-deal); negotiation was the dominant weakness (roughly 38–47% no-deal and 46–58% zero-payoff in major variants); persuasion was comparatively competitive but uses seller lie-budget policy, buyer type-posterior v2, heuristic classification, and optional LLM wording. Treat those metrics as historical snapshots. [Task 1]
+    26	- Before deploying strategy changes, use paired arena evaluation against the percentile objective and preserve controls. Commit `845b2c6` had already rejected gamma, reciprocal-concession damping, and Boulware-glide changes; reciprocal damping remains gated by `GLEE_NEGO_RECIP_DAMP`. [Task 1]
+    27	- Audit verification snapshot: `.venv/bin/python -m pytest tests/ -q` yielded `545 passed, 2 failed`; `scripts/selftest.py` passed 2,077 states and 5,941 legality assertions; framing tests passed 109; compilation and `git diff --check` passed. [Task 1]
+    28	
+    29	## Failures and how to do differently
+    30	
+    31	- Do not rely on the README claim that there is “no LLM, no fitted policy in the decision path”: live persuasion uses LLM wording and fitted artifacts, so inspect the actual submission path. [Task 1]
+    32	- Symptom: literal `{"message": "..."}` envelopes reach opponents or specialized persuasion wording is overwritten. Cause: dispatcher runs `pers_seller_message` then generic `write_message` on the same move. Fix: use one validated message path; unwrap/validate the final string once and prevent generic rewriting from contradicting the solver policy. [Task 1]
+    33	- Symptom: known-low persuasion rounds get “high quality”/“verified” language. Cause: generic LLM wording bypasses the specialized recommendation guard. Fix: centralize truth/intent validation before submission. [Task 1]
+    34	- Symptom: incomplete outcomes and unreliable fleet analysis. Cause: continuous agents do not naturally finalize outcomes and `scripts/collect.py` was stale/stopped. Fix: run the collector separately, monitor its singleton lock/outstanding IDs, and respect shared API budgets. [Task 1]
+    35	- Do not silently ignore the two test alarms: bargaining expected 450 continuation but code returned 468 (configured 52% vs 50% floor), and the live-grid test detected statistically significant `horizon_known` drift. Decide whether the assertion is stale and recalibrate the grid explicitly. [Task 1]
+    36	- Before restarting or modifying fleet processes, inspect `scripts/fleet.py status`, `logs/supervisor.json`, active processes, API cooldowns, and shared rate budgets. A stopped but queued agent can still be matched and fail to finish. `GameLog.write_game_record` scanning all interleaved `turns.jsonl` for each game is also a shutdown/finalization scaling risk; prefer per-game indexing or append-only per-game files. [Task 1]
+
+collab: Wait
+codex
+Using a best-response/rank lens, I found two new holes.
+
+1. **Alice’s hidden-horizon offer glide is waitable.** [`bargaining.py:330–337`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:330>) deterministically glides below the live `.57` offer floor toward the opponent-controlled observed offer; the Bob-only repair at [line 510](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:510>) does not apply. Exact live state: hidden horizon, Alice, `M=1m`, `δ1=δ2=1`, complete information, no messages. Lab2a.ai repeatedly offered us `350k` and rejected our asks. Our offer fell from `610k` ([round 1](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:173022>)) to `352,889` at round 57, which it accepted ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:10526>)). Exact configuration/role CDF, `n=36`: us `.0556`, attacker `.9444`—**88.89 percentile points**. This precedes the already-reported round-60 acceptance override.
+
+   **Rule:** maximize `P_accept(a)·F(a)+(1−P_accept(a))·V_continue`. With no discount and no new response evidence, elapsed time alone must never lower the ask; privately mix near rank indifference.
+
+2. **Acceptance-side stale-stall cliff.** [`negotiation.py:148–167`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) excludes the current offer; [lines 1204–1209](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1204>) then directly accept within 1%. Current-stack replay: hidden uncapped buyer `1.5B`, round 9, after `4B,1.515B×3` unprofitable asks. At `B=1m`, `1,499,851` is accepted for `149` despite continuation `101,616.98`; the **$2 better** `1,499,849` is rejected. Finest identifiable CDF: us `.2632`, attacker `.8B` seller `1.0000`—**73.68 points**.
+
+   **Rule:** use a current-inclusive, echo-collapsed continuous stall posterior. Stall evidence may update continuation, never force acceptance; smooth/private-randomize around rank indifference.
+
+3. **FINDINGS correction:** [lines 79–90](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:79>) wrongly label faster concession validated-negative. Its later clone audit [invalidates ask-moving measurements](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:320>), and V2 holdouts disagreed on BOULWARE ([evidence](</Users/spiderishi/Coding/GLEE Competition/.ai/TEST4_EXPERIMENT.md:19>)). The sign is unproven.
+
+
+tokens used
+253,324
+Using a best-response/rank lens, I found two new holes.
+
+1. **Alice’s hidden-horizon offer glide is waitable.** [`bargaining.py:330–337`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:330>) deterministically glides below the live `.57` offer floor toward the opponent-controlled observed offer; the Bob-only repair at [line 510](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:510>) does not apply. Exact live state: hidden horizon, Alice, `M=1m`, `δ1=δ2=1`, complete information, no messages. Lab2a.ai repeatedly offered us `350k` and rejected our asks. Our offer fell from `610k` ([round 1](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:173022>)) to `352,889` at round 57, which it accepted ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:10526>)). Exact configuration/role CDF, `n=36`: us `.0556`, attacker `.9444`—**88.89 percentile points**. This precedes the already-reported round-60 acceptance override.
+
+   **Rule:** maximize `P_accept(a)·F(a)+(1−P_accept(a))·V_continue`. With no discount and no new response evidence, elapsed time alone must never lower the ask; privately mix near rank indifference.
+
+2. **Acceptance-side stale-stall cliff.** [`negotiation.py:148–167`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) excludes the current offer; [lines 1204–1209](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1204>) then directly accept within 1%. Current-stack replay: hidden uncapped buyer `1.5B`, round 9, after `4B,1.515B×3` unprofitable asks. At `B=1m`, `1,499,851` is accepted for `149` despite continuation `101,616.98`; the **$2 better** `1,499,849` is rejected. Finest identifiable CDF: us `.2632`, attacker `.8B` seller `1.0000`—**73.68 points**.
+
+   **Rule:** use a current-inclusive, echo-collapsed continuous stall posterior. Stall evidence may update continuation, never force acceptance; smooth/private-randomize around rank indifference.
+
+3. **FINDINGS correction:** [lines 79–90](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:79>) wrongly label faster concession validated-negative. Its later clone audit [invalidates ask-moving measurements](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:320>), and V2 holdouts disagreed on BOULWARE ([evidence](</Users/spiderishi/Coding/GLEE Competition/.ai/TEST4_EXPERIMENT.md:19>)). The sign is unproven.
+
+## 2026-08-22 18:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 18:51Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+        0.0041
+      ]
+    },
+    "seller|1.6-1.9": {
+      "n": 65,
+      "p": [
+        0.0615,
+        0.2154,
+        0.7231,
+        0.0
+      ]
+    },
+    "seller|1.9-2.3": {
+      "n": 49,
+      "p": [
+        0.6531,
+        0.1429,
+        0.0816,
+        0.1224
+      ]
+    },
+    "seller|2.3-3.0": {
+      "n": 23,
+      "p": [
+        0.0,
+        0.6522,
+        0.2174,
+        0.1304
+      ]
+    }
+  }
+}
+
+exec
+/bin/zsh -lc "env PYTHONDONTWRITEBYTECODE=1 GLEE_PROBE=composite .venv/bin/python -c 'from glee_agent.pricing import posterior_final_ask; vals=(0.5,0.8,1.0,1.1,1.3,1.5,1.7,2.0,2.5,4.0); print(\"seller\",[(x,posterior_final_ask(800000,\"buyer\",x,True)) for x in vals]); print(\"buyer\",[(x,posterior_final_ask(1500000,\"seller\",x,False)) for x in vals])'" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 0ms:
+seller [(0.5, 1150000.0), (0.8, 1150000.0), (1.0, 1150000.0), (1.1, 1150000.0), (1.3, 1425000.0), (1.5, 1150000.0), (1.7, 1150000.0), (2.0, 1150000.0), (2.5, 1150000.0), (4.0, 1150000.0)]
+buyer [(0.5, 1050000.0), (0.8, 850000.0000000001), (1.0, 850000.0000000001), (1.1, 1050000.0), (1.3, 1050000.0), (1.5, 1050000.0), (1.7, 1275000.0), (2.0, 850000.0000000001), (2.5, 1050000.0), (4.0, 1050000.0)]
+
+exec
+/bin/zsh -lc "rg -n -i 'posterior|first offer|first bid|first ask|first_over|1\\.275|1275000|value posterior' .ai/REDTEAM_LOG.md .ai/FINDINGS.md" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 0ms:
+.ai/REDTEAM_LOG.md:103:1. **Costless declines launder a seller’s reputation.** [`_q_posterior()`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:313>) treats every unbought `no` as evidence of low deception, despite its being free strategic speech. Live against `velocity`, a passed `no` at [turn 14](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95399>) raised the next `yes` to `p_high=.84879`; the buyer purchased, and it was low ([turn 15](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95408>)). That purchase changed buyer payoff from −0.2P to −1.2P: estimated percentile `.34135 → .02885`, costing **31.25 points**.
+.ai/REDTEAM_LOG.md:107:2. **The public break-even cliff lets the seller select the favorable posterior.** Buying is deterministic at `EV >= price` ([line 456](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:456>)). At text `p=.5, v=2P`, after five bought low `yes` messages, `yes` yields `.49935` and rejection, while `no` yields `.53420` and purchase; afterward `yes` yields `.57898`. A seller who observes quality and chooses whichever token clears can sell every low unit. Over 20 rounds, buyer expected percentile is `.41656` versus `.54393` for passing: **−12.74 points**; an 8-high/12-low realization costs **52.09 points**. Seller reaches percentile `.95816`.
+.ai/REDTEAM_LOG.md:122:1. **Costless declines launder a seller’s reputation.** [`_q_posterior()`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:313>) treats every unbought `no` as evidence of low deception, despite its being free strategic speech. Live against `velocity`, a passed `no` at [turn 14](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95399>) raised the next `yes` to `p_high=.84879`; the buyer purchased, and it was low ([turn 15](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:95408>)). That purchase changed buyer payoff from −0.2P to −1.2P: estimated percentile `.34135 → .02885`, costing **31.25 points**.
+.ai/REDTEAM_LOG.md:126:2. **The public break-even cliff lets the seller select the favorable posterior.** Buying is deterministic at `EV >= price` ([line 456](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:456>)). At text `p=.5, v=2P`, after five bought low `yes` messages, `yes` yields `.49935` and rejection, while `no` yields `.53420` and purchase; afterward `yes` yields `.57898`. A seller who observes quality and chooses whichever token clears can sell every low unit. Over 20 rounds, buyer expected percentile is `.41656` versus `.54393` for passing: **−12.74 points**; an 8-high/12-low realization costs **52.09 points**. Seller reaches percentile `.95816`.
+.ai/REDTEAM_LOG.md:247:   **Rule:** Use every current echo-collapsed offer in a continuous change-point posterior. Stall evidence may freeze or strengthen the scheduled price, never make it more concessionary.
+.ai/REDTEAM_LOG.md:263:   **Rule:** Use every current echo-collapsed offer in a continuous change-point posterior. Stall evidence may freeze or strengthen the scheduled price, never make it more concessionary.
+.ai/REDTEAM_LOG.md:304:   Exact live state: known seller `Quantile`, round 1, empty history, binary, `P=100,p=1/3,v=200`, low quality, message `yes`. The reset posterior produced `p_high=.578875`, so the deterministic rule bought ([turn 64641](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/turns.jsonl:64641)). Quantile then sent `yes` all 20 rounds; buyer finished −100, seller +100 ([result 3800](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/results.jsonl:3800)).
+.ai/REDTEAM_LOG.md:310:   **Decision rule:** persist a hierarchical posterior keyed by disclosed opponent and exact public cell; shrink thin identities to the population prior and apply change-point decay. Buy with a private smooth probability based on posterior expected final-cell percentile gain, including information value—not the raw-EV cliff at [line 456](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:456).
+.ai/REDTEAM_LOG.md:323:   Exact live state: known seller `Quantile`, round 1, empty history, binary, `P=100,p=1/3,v=200`, low quality, message `yes`. The reset posterior produced `p_high=.578875`, so the deterministic rule bought ([turn 64641](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/turns.jsonl:64641)). Quantile then sent `yes` all 20 rounds; buyer finished −100, seller +100 ([result 3800](/Users/spiderishi/Coding/GLEE%20Competition/logs/composite/results.jsonl:3800)).
+.ai/REDTEAM_LOG.md:329:   **Decision rule:** persist a hierarchical posterior keyed by disclosed opponent and exact public cell; shrink thin identities to the population prior and apply change-point decay. Buy with a private smooth probability based on posterior expected final-cell percentile gain, including information value—not the raw-EV cliff at [line 456](/Users/spiderishi/Coding/GLEE%20Competition/glee_agent/strategies/persuasion.py:456).
+.ai/REDTEAM_LOG.md:423:    25	- At audit time, bargaining was strongest (roughly 0–0.5% no-deal); negotiation was the dominant weakness (roughly 38–47% no-deal and 46–58% zero-payoff in major variants); persuasion was comparatively competitive but uses seller lie-budget policy, buyer type-posterior v2, heuristic classification, and optional LLM wording. Treat those metrics as historical snapshots. [Task 1]
+.ai/REDTEAM_LOG.md:446:   **Rule:** use a current-inclusive, echo-collapsed continuous stall posterior. Stall evidence may update continuation, never force acceptance; smooth/private-randomize around rank indifference.
+.ai/REDTEAM_LOG.md:461:   **Rule:** use a current-inclusive, echo-collapsed continuous stall posterior. Stall evidence may update continuation, never force acceptance; smooth/private-randomize around rank indifference.
+
+ERROR: This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. To get authorized for security work, join the Trusted Access for Cyber program: https://chatgpt.com/cyber
+ERROR: This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. To get authorized for security work, join the Trusted Access for Cyber program: https://chatgpt.com/cyber
+tokens used
+419,474
+
+## 2026-08-22 21:23Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+.ai/HANDOFF.md-644-   as P(accept) x surplus off fitted curves, and refuses to accept below it.
+.ai/HANDOFF.md:645:   Arena +0.0004..+0.0012 across two seeds. Is the option value correctly
+.ai/HANDOFF.md-646-   specified, and does the buyer branch (pooled `buyer_final` curve) carry the
+.ai/HANDOFF.md-647-   same selection problem the response model died of?
+.ai/HANDOFF.md-648-3. Persuasion is stuck: no identified defect, play at the 0.548 percentile,
+.ai/HANDOFF.md-649-   ratings drifting with the field. Is there a measurement we have not made?
+.ai/HANDOFF.md-650-
+--
+.ai/REDTEAM_LOG.md-409-    11	
+.ai/REDTEAM_LOG.md-410-    12	### keywords
+.ai/REDTEAM_LOG.md-411-    13	
+.ai/REDTEAM_LOG.md-412-    14	- run_agent.py, glee_agent.dispatch, glee_agent.actions, arms.json, runtime_flags.py, scripts/fleet.py, scripts/collect.py, persuasion, JSON-envelope, horizon_known, pytest, selftest
+.ai/REDTEAM_LOG.md-413-    15	
+.ai/REDTEAM_LOG.md:414:    16	## User preferences
+.ai/REDTEAM_LOG.md-415-    17	
+.ai/REDTEAM_LOG.md-416-    18	- when requesting project inspection, the user asked: “look up everything regarding this project” -> provide an end-to-end briefing of repository structure, runtime behavior, tests, logs, deployment/fleet state, and concrete risks rather than a README-only or narrow code walkthrough. [Task 1]
+.ai/REDTEAM_LOG.md-417-    19	
+.ai/REDTEAM_LOG.md-418-    20	## Reusable knowledge
+.ai/REDTEAM_LOG.md-419-    21	
+41:    "GLEE_BARG_ECON_STALL": "0"
+82:    "GLEE_BARG_ECON_STALL": "0"
+123:    "GLEE_BARG_ECON_STALL": "0"
+164:    "GLEE_BARG_ECON_STALL": "0",
+208:    "GLEE_BARG_ECON_STALL": "0"
+
+collab: Wait
+codex
+The cross-family ordering is now clear: bargaining has the largest new reversal, persuasion the largest observed information leak, and negotiation a smaller but literal one-cent branch cliff. I’m checking that each percentile number uses the finest locally identifiable role cell, since the repo’s fitted CDF collapses some true configuration axes.
+collab: Wait
+codex
+Using best-response and dynamic-consistency tests, I found three new live-composite cliffs, ordered by payoff swing.
+
+1. **Bargaining: second-offer preference reversal.** [`bargaining.py:148–167`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:148>) replaces the continuation prior after two observations; a worsening offer becomes `latest × δ`, then [`:588–657`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:588>) accepts it. Exact state: hidden horizon, complete information, no messages, `M=100`, attacker Alice `δ=1`, our Bob `δ=.8`. Offer Bob 44; reject our counter; worsen Bob to 20.01. We reject 44 but accept 20.01. Bob’s rank falls `.975→.175`: **80.0-point path regret**; attacker leads by 67.5 points. Live confirmation rejects 45 then accepts 42 ([r1](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:210304>), [r3](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:210318>)), a 38.71-point loss.  
+   **Rule:** Bellman-optimize expected percentile and enforce dynamic consistency: unchanged evidence cannot make a worse offer acceptable. Replace `offers_seen==2` with an echo-collapsed continuous concession posterior and private smoothing.
+
+2. **Persuasion: buyer-controlled revelation cliff.** [`persuasion.py:83–90`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:83>) makes low-quality messages truthful once public buy rate drops below `.5`. In text, `P=10k`, `p=1/3`, hidden `v=40k`, the buyer declined two initial high recommendations; our first low became “no” ([turn](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:103013>)), then the buyer bought only highs. Seller rank `.2447`, buyer `.8511`: **60.64-point lead** ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:7451>), exact local cell `n=47`).  
+   **Rule:** treat purchases as strategic censored evidence; choose low-message probability by marginal expected-rank value, smoothly and privately randomized.
+
+3. **Negotiation: one-cent equality cliff.** At [`negotiation.py:1164–1200`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1164>), hidden `H=10`, round 9, buyer `1.5B`: replaying [this history](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:224075>), an `.8B` seller asks `1.335246B`. Surplus exactly equals `FINAL_OPTION`, so we accept; one cent higher makes us reject and counter `1.237095B`. Acceptance costs **17.72 percentile points**; attacker leads 41.87. New versus `REDTEAM_LOG:196/205`: that cleared complete-information case reoffered the same price; this hidden path materially improves our counter.  
+   **Rule:** compare `F(now)` with expected `F(terminal policy)` and privately smooth around indifference.
+
+**Wrong in FINDINGS:** [`FINDINGS.md:93–103`](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:93>) is stale about live contamination: composite now has `NEGO_SURPLUS_PROBE=0` ([arms.json:195](</Users/spiderishi/Coding/GLEE Competition/arms.json:195>)). The instrument defect itself remains valid.
+
+
+tokens used
+390,560
+Using best-response and dynamic-consistency tests, I found three new live-composite cliffs, ordered by payoff swing.
+
+1. **Bargaining: second-offer preference reversal.** [`bargaining.py:148–167`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:148>) replaces the continuation prior after two observations; a worsening offer becomes `latest × δ`, then [`:588–657`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:588>) accepts it. Exact state: hidden horizon, complete information, no messages, `M=100`, attacker Alice `δ=1`, our Bob `δ=.8`. Offer Bob 44; reject our counter; worsen Bob to 20.01. We reject 44 but accept 20.01. Bob’s rank falls `.975→.175`: **80.0-point path regret**; attacker leads by 67.5 points. Live confirmation rejects 45 then accepts 42 ([r1](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:210304>), [r3](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:210318>)), a 38.71-point loss.  
+   **Rule:** Bellman-optimize expected percentile and enforce dynamic consistency: unchanged evidence cannot make a worse offer acceptable. Replace `offers_seen==2` with an echo-collapsed continuous concession posterior and private smoothing.
+
+2. **Persuasion: buyer-controlled revelation cliff.** [`persuasion.py:83–90`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/persuasion.py:83>) makes low-quality messages truthful once public buy rate drops below `.5`. In text, `P=10k`, `p=1/3`, hidden `v=40k`, the buyer declined two initial high recommendations; our first low became “no” ([turn](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:103013>)), then the buyer bought only highs. Seller rank `.2447`, buyer `.8511`: **60.64-point lead** ([result](</Users/spiderishi/Coding/GLEE Competition/logs/composite/results.jsonl:7451>), exact local cell `n=47`).  
+   **Rule:** treat purchases as strategic censored evidence; choose low-message probability by marginal expected-rank value, smoothly and privately randomized.
+
+3. **Negotiation: one-cent equality cliff.** At [`negotiation.py:1164–1200`](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1164>), hidden `H=10`, round 9, buyer `1.5B`: replaying [this history](</Users/spiderishi/Coding/GLEE Competition/logs/composite/turns.jsonl:224075>), an `.8B` seller asks `1.335246B`. Surplus exactly equals `FINAL_OPTION`, so we accept; one cent higher makes us reject and counter `1.237095B`. Acceptance costs **17.72 percentile points**; attacker leads 41.87. New versus `REDTEAM_LOG:196/205`: that cleared complete-information case reoffered the same price; this hidden path materially improves our counter.  
+   **Rule:** compare `F(now)` with expected `F(terminal policy)` and privately smooth around indifference.
+
+**Wrong in FINDINGS:** [`FINDINGS.md:93–103`](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:93>) is stale about live contamination: composite now has `NEGO_SURPLUS_PROBE=0` ([arms.json:195](</Users/spiderishi/Coding/GLEE Competition/arms.json:195>)). The instrument defect itself remains valid.
+
+## 2026-08-22 21:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 22:03Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+   225	#: pairs, so a zone of agreement always exists: 143 of 143 observed games,
+   226	#: uniform over these six (chi2 = 1.13, df = 5, p = 0.95).
+   227	NEGOTIATION_VALUE_PAIRS_COMPLETE = tuple(
+   228	    (seller, buyer)
+   229	    for seller in NEGOTIATION_VALUE_FACTORS
+   230	    for buyer in NEGOTIATION_VALUE_FACTORS
+   231	    if seller < buyer
+   232	)
+   233	
+   234	#: Under incomplete information the two factors are drawn independently and
+   235	#: uniformly, so every pair occurs -- including the 6 with no zone of agreement
+   236	#: and the 4 with exactly zero surplus. Identified from the uncensored own-value
+   237	#: marginals plus the agreement-rate profile; see the module docstring.
+   238	NEGOTIATION_VALUE_PAIRS_INCOMPLETE = tuple(
+   239	    itertools.product(NEGOTIATION_VALUE_FACTORS, NEGOTIATION_VALUE_FACTORS))
+   240	
+
+collab: Wait
+exec
+/bin/zsh -lc "nl -ba /Users/spiderishi/.codex/memories/MEMORY.md | sed -n '8,27p'" in /Users/spiderishi/Coding/GLEE Competition
+ succeeded in 0ms:
+     8	### rollout_summary_files
+     9	
+    10	- rollout_summaries/2026-08-20T15-55-36-3kf4-glee_competition_project_audit.md (cwd=/Users/spiderishi/Coding/GLEE Competition, rollout_path=/Users/spiderishi/.codex/sessions/2026/08/20/rollout-2026-08-20T21-25-36-01a01fe2-8f24-7fd2-8fbc-06f718b53a9e.jsonl, updated_at=2026-08-20T16:07:44+00:00, thread_id=01a01fe2-8f24-7fd2-8fbc-06f718b53a9e, success)
+    11	
+    12	### keywords
+    13	
+    14	- run_agent.py, glee_agent.dispatch, glee_agent.actions, arms.json, runtime_flags.py, scripts/fleet.py, scripts/collect.py, persuasion, JSON-envelope, horizon_known, pytest, selftest
+    15	
+    16	## User preferences
+    17	
+    18	- when requesting project inspection, the user asked: “look up everything regarding this project” -> provide an end-to-end briefing of repository structure, runtime behavior, tests, logs, deployment/fleet state, and concrete risks rather than a README-only or narrow code walkthrough. [Task 1]
+    19	
+    20	## Reusable knowledge
+    21	
+    22	- Main execution path is `run_agent.py` → `glee_agent/probes.py` → `glee_agent/dispatch.py` → family strategy → `glee_agent/actions.py` coercion/fallback. Total action safety is an invariant: a strategy exception means the SDK submits nothing and the game times out; a rejected move burns one of five attempts. [Task 1]
+    23	- `actions.py` repairs malformed actions, message limits, bargaining-sum arithmetic, and decision aliases, then supplies conservative legal fallbacks. Dispatcher exceptions must never escape. [Task 1]
+    24	- Live policy can change without restart: `runtime_flags.py` reads `arms.json` with cached mtime checks and retains the last valid state on malformed/partial files; `scripts/fleet.py` writes atomically, while `scripts/supervise.py` uses drain-and-relaunch shifts. [Task 1]
+    25	- At audit time, bargaining was strongest (roughly 0–0.5% no-deal); negotiation was the dominant weakness (roughly 38–47% no-deal and 46–58% zero-payoff in major variants); persuasion was comparatively competitive but uses seller lie-budget policy, buyer type-posterior v2, heuristic classification, and optional LLM wording. Treat those metrics as historical snapshots. [Task 1]
+    26	- Before deploying strategy changes, use paired arena evaluation against the percentile objective and preserve controls. Commit `845b2c6` had already rejected gamma, reciprocal-concession damping, and Boulware-glide changes; reciprocal damping remains gated by `GLEE_NEGO_RECIP_DAMP`. [Task 1]
+    27	- Audit verification snapshot: `.venv/bin/python -m pytest tests/ -q` yielded `545 passed, 2 failed`; `scripts/selftest.py` passed 2,077 states and 5,941 legality assertions; framing tests passed 109; compilation and `git diff --check` passed. [Task 1]
+
+collab: Wait
+codex
+I found nothing new on this surface.
+
+The current composite remains `.48` span veto, `.40` invariant, and `.6` final option ([arms.json:179](</Users/spiderishi/Coding/GLEE Competition/arms.json:179>)). Boundary probes across both roles, capped rounds 6–10, uncapped states, and shares around `.40/.48/.60` produced only the already-logged exploit classes. No new decision-rule fix follows.
+
+New `FINDINGS.md` correction: [lines 226–234](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:226>) say Test 2 lacks `ULTIMATUM_SHARE` and remains a guaranteed no-deal. That current-state diagnosis is now false: hardliner carries `.80` ([arms.json:71](</Users/spiderishi/Coding/GLEE Competition/arms.json:71>)). The historical measurement itself is not disproved.
+
+
+tokens used
+190,274
+I found nothing new on this surface.
+
+The current composite remains `.48` span veto, `.40` invariant, and `.6` final option ([arms.json:179](</Users/spiderishi/Coding/GLEE Competition/arms.json:179>)). Boundary probes across both roles, capped rounds 6–10, uncapped states, and shares around `.40/.48/.60` produced only the already-logged exploit classes. No new decision-rule fix follows.
+
+New `FINDINGS.md` correction: [lines 226–234](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:226>) say Test 2 lacks `ULTIMATUM_SHARE` and remains a guaranteed no-deal. That current-state diagnosis is now false: hardliner carries `.80` ([arms.json:71](</Users/spiderishi/Coding/GLEE Competition/arms.json:71>)). The historical measurement itself is not disproved.

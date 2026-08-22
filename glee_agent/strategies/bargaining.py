@@ -858,7 +858,20 @@ def _decide(game: dict, cfg) -> dict:
         decision = "accept" if my_gain >= threshold else "reject"
         # Last resort where inflation, not the cap, is the real deadline: past
         # that point any positive offer beats grinding the pot down to nothing.
+        # When GLEE_BARG_CLIFF_GUARD is armed, this fallback applies only while
+        # our payoff decays. The grid is exactly {0.8, 0.9, 0.95, 1.0}, so
+        # delta_me < 1.0 excludes the sole non-decaying value without a tolerance.
+        # At delta_me=1.0 the cliff-fired games kept 0.467 of the pot at the
+        # 0.4979 percentile (n=52), versus 0.565 and 0.7894 when it did not fire
+        # (n=618). Reaching the synthetic horizon selects games already going
+        # badly, so the 0.2915 gap is an upper bound on damage, not a causal gain
+        # this guard recovers. The delta_me=0.95 fired row is also selected and
+        # small (n=17, share 0.023, percentile 0.0189), so the flag leaves every
+        # decaying grid value on the existing any-positive fallback rather than
+        # imposing an unidentified offer floor.
         if (decision == "reject" and p["effective_horizon"] is not None and my_gain > 0
+                and (not runtime_flags.enabled("GLEE_BARG_CLIFF_GUARD")
+                     or p["delta_me"] < 1.0)
                 and _num(state.get("round"), 1) >= p["effective_horizon"]):
             decision = "accept"
             _gate(p, "inflation_accept")

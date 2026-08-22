@@ -107,6 +107,45 @@ def _p_open_claim(game, p):
             and _is_negotiation_opening(game))
 
 
+def _p_hidden_floor(game, p):
+    from glee_agent.actions import _num
+    from glee_agent.pricing import infer_base
+
+    state = game.get("game_state") or {}
+    seat = game.get("your_player") or state.get("current_player")
+    return (state.get("complete_information") is False
+            and state.get(f"{seat}_role") in ("seller", "buyer")
+            and infer_base(_num(state.get(f"{seat}_value"))) is not None
+            and bool(game.get("game_id"))
+            and game.get("valid_actions", {}).get("type") in ("offer", "decision"))
+
+
+def _p_hidden_policy(game, p):
+    """Whether the new own-grid policy can replace an outgoing hidden price."""
+    from glee_agent.actions import _num
+    from glee_agent.pricing import infer_base
+
+    if not _p_hidden_floor(game, p):
+        return False
+    state = game.get("game_state") or {}
+    max_rounds = state.get("max_rounds")
+    if max_rounds is not None and _num(max_rounds, -1.0) == 1.0:
+        return False
+    seat = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{seat}_role")
+    own_value = _num(state.get(f"{seat}_value"))
+    base = infer_base(own_value)
+    if base is None:
+        return False
+    own_mult = next(
+        (m for m in (0.8, 1.0, 1.2, 1.5)
+         if abs(own_value / base - m) <= 1e-6),
+        None,
+    )
+    return (own_mult is not None
+            and (own_mult < 1.5 if role == "seller" else own_mult > 0.8))
+
+
 def _p_barg_midgame_decision(game, p):
     return _p_decision(game, p) and p.get("rounds_left", 0) > 2
 
@@ -132,6 +171,8 @@ KNOWN = {
     "GLEE_NEGO_ULT_CAP": ("negotiation", (), _p_complete_ultimatum),
     "GLEE_NEGO_OPEN_CLAIM": ("negotiation", (), _p_open_claim),
     "GLEE_NEGO_CLAIM_FLOOR": ("negotiation", (), _p_complete_price),
+    "GLEE_NEGO_HIDDEN_FLOOR": ("negotiation", (), _p_hidden_floor),
+    "GLEE_NEGO_HIDDEN_POLICY_V1": ("negotiation", (), _p_hidden_policy),
     "GLEE_NEGO_ULTIMATUM_SHARE": ("negotiation", ("ultimatum",), _p_ultimatum),
     "GLEE_NEGO_RANK_PRICE_AB": ("negotiation", ("rank_price",), _p_rank_price),
     "GLEE_NEGO_POSTERIOR": ("negotiation", ("posterior",), _p_final_hidden),
@@ -179,6 +220,7 @@ KNOWN = {
 POSTCONDITION_FLAGS = {
     "GLEE_NEGO_ZOPA_CLAMP", "GLEE_NEGO_ULT_FLOOR", "GLEE_NEGO_ULT_CAP",
     "GLEE_NEGO_OPEN_CLAIM", "GLEE_NEGO_CLAIM_FLOOR",
+    "GLEE_NEGO_HIDDEN_FLOOR", "GLEE_NEGO_HIDDEN_POLICY_V1",
 }
 
 #: names consulted by runtime_flags.get during the current decide() call
@@ -219,7 +261,12 @@ def _collect_states(field, draws, flags, families):
             params["opponent_name"] = opponent.name
             params["disclose_opponent"] = random.Random(game_seed + 2).random() < 0.5
         s1, s2 = (recorder, opponent) if seat == "player_1" else (opponent, recorder)
-        play(SimConfig(family, dict(params)), s1, s2, grng)
+        # A stable distinct id gives per-game hash arms both treatment bits while
+        # keeping the banked control state paired with both direct replays.  The
+        # old implicit id was the literal "local", so a salted arm assigned every
+        # banked state to one bit and could report a false zero-reachability null.
+        gid = f"sim-{game_seed:08x}"
+        play(SimConfig(family, dict(params)), s1, s2, grng, game_id=gid)
     return banked
 
 

@@ -14,9 +14,20 @@ import hashlib
 import logging
 import math
 
-from . import runtime_flags
+from . import pricing, runtime_flags
 
 MAX_MESSAGE_LEN = 2000
+
+# Hidden negotiation values are the public four-point research grid.  The live
+# 22-cell joint support is a repository reconstruction, not an organizer-published
+# fact, so the policy that uses it stays inside a default-off randomized arm.
+_HIDDEN_VALUE_MULTS = (0.8, 1.0, 1.2, 1.5)
+_HIDDEN_POLICY_OPEN_CLAIM = 0.85
+_HIDDEN_POLICY_FLOOR_CLAIM = 0.75
+_HIDDEN_POLICY_SALT = "hidden_policy_v1|"
+_HIDDEN_POLICY_BOULWARE = 2.0
+_HIDDEN_POLICY_UNCAPPED_STEPS = 5
+_HIDDEN_POLICY_UNCAPPED_PROGRESS_CAP = 0.85
 
 BARGAINING_DECISIONS = {"accept", "reject", "walkaway"}
 NEGOTIATION_DECISIONS = {"AcceptOffer", "RejectOffer", "WalkAway"}
@@ -119,6 +130,224 @@ def _open_claim_treatment(game: dict) -> tuple[float, float] | None:
     return (opening, floor) if bit else None
 
 
+def _hidden_floor_treatment(game: dict) -> tuple[float, float, bool] | None:
+    """Return (floor multiple, base, whether we sell) for a treatment game.
+
+    Only an explicit hidden-information marker is eligible.  The base is
+    recovered from our own visible value; no opponent value is consulted.
+    Invalid settings, off-grid values, missing ids, and hash-control games keep
+    the existing outgoing price.
+    """
+    state = game.get("game_state") or {}
+    if state.get("complete_information") is not False:
+        return None
+
+    floor = runtime_flags.as_float("GLEE_NEGO_HIDDEN_FLOOR", 0.0)
+    if not math.isfinite(floor) or floor <= 0.0 or floor > 2.0:
+        return None
+
+    gid = str(game.get("game_id") or "")
+    if not gid:
+        return None
+    bit = int(hashlib.sha256(("hidden_floor|" + gid).encode()).hexdigest(), 16) & 1
+    if not bit:
+        return None
+
+    me = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{me}_role")
+    if role not in ("seller", "buyer"):
+        return None
+    my_value = _num(state.get(f"{me}_value"), math.nan)
+    if not math.isfinite(my_value):
+        return None
+    base = pricing.infer_base(my_value)
+    if base is None:
+        return None
+    return floor, base, role == "seller"
+
+
+def _hidden_policy_context(game: dict) -> dict | None:
+    """Return the armed hidden-policy assignment, including hash controls.
+
+    ``None`` means the new policy is off or the information regime is outside
+    its scope.  An armed but ineligible context is returned as ``eligible=False``
+    so this policy owns the hidden price path and cannot be mixed with the older
+    flat HIDDEN_FLOOR arm if both flags are set accidentally.
+    """
+    state = game.get("game_state") or {}
+    if state.get("complete_information") is not False:
+        return None
+    if not runtime_flags.enabled("GLEE_NEGO_HIDDEN_POLICY_V1"):
+        return None
+
+    context = {"eligible": False}
+    gid = str(game.get("game_id") or "")
+    me = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{me}_role")
+    my_value = _num(state.get(f"{me}_value"), math.nan)
+    base = pricing.infer_base(my_value) if math.isfinite(my_value) else None
+    if not gid or role not in ("seller", "buyer") or base is None:
+        return context
+
+    own_mult = next(
+        (m for m in _HIDDEN_VALUE_MULTS
+         if abs(my_value / base - m) <= 1e-6),
+        None,
+    )
+    if own_mult is None:
+        return context
+
+    # A one-round offer is a terminal posted-price problem, not an opening that
+    # can screen types over a concession path.  Seller 1.5B and buyer 0.8B have
+    # no strictly positive-ZOPA type under the reconstructed grid; DEADGAME_V1
+    # already owns those cells.
+    max_rounds = state.get("max_rounds")
+    if max_rounds is not None and _num(max_rounds, math.nan) == 1.0:
+        return context
+    feasible = [
+        m for m in _HIDDEN_VALUE_MULTS
+        if (m > own_mult + 1e-9 if role == "seller"
+            else m < own_mult - 1e-9)
+    ]
+    if not feasible:
+        return context
+
+    bit = int(hashlib.sha256((_HIDDEN_POLICY_SALT + gid).encode()).hexdigest(), 16) & 1
+    return {
+        "eligible": True,
+        "treatment": bool(bit),
+        "base": base,
+        "my_value": my_value,
+        "own_mult": own_mult,
+        "feasible": tuple(feasible),
+        "i_am_seller": role == "seller",
+    }
+
+
+def _hidden_opponent_prices(state: dict, me: str) -> list[float]:
+    """Finite prices named by the opponent, without reading their hidden value."""
+    prices: list[float] = []
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        for key in ("offer", "counteroffer"):
+            offer = entry.get(key)
+            if (isinstance(offer, dict)
+                    and offer.get("from_player") not in (None, me)):
+                price = _num(offer.get("price"), math.nan)
+                if math.isfinite(price):
+                    prices.append(price)
+    last = state.get("last_offer") or {}
+    if (isinstance(last, dict)
+            and last.get("from_player") not in (None, me)):
+        price = _num(last.get("price"), math.nan)
+        if math.isfinite(price):
+            prices.append(price)
+    return prices
+
+
+def _hidden_own_price_count(state: dict, me: str) -> int:
+    """Number of our prior price utterances, collapsing the record echo."""
+    prices: list[float] = []
+    previous_key = None
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        for key in ("offer", "counteroffer"):
+            offer = entry.get(key)
+            if (not isinstance(offer, dict) or offer.get("from_player") != me
+                    or offer.get("price") is None):
+                continue
+            price = _num(offer["price"], math.nan)
+            if not math.isfinite(price):
+                continue
+            if (key == "offer" and previous_key == "counteroffer"
+                    and prices and price == prices[-1]):
+                previous_key = key
+                continue
+            prices.append(price)
+            previous_key = key
+    return len(prices)
+
+
+def _hidden_policy_progress(state: dict, me: str, i_am_seller: bool) -> float:
+    """Squared concession progress for this outgoing price opportunity."""
+    index = _hidden_own_price_count(state, me)
+    max_rounds = state.get("max_rounds")
+    if max_rounds is None:
+        linear = min(
+            index / _HIDDEN_POLICY_UNCAPPED_STEPS,
+            _HIDDEN_POLICY_UNCAPPED_PROGRESS_CAP,
+        )
+    else:
+        horizon = max(1, int(_num(max_rounds, 1.0)))
+        opportunities = ((horizon + 1) // 2 if i_am_seller else horizon // 2)
+        linear = (index / (opportunities - 1)
+                  if opportunities > 1 else 0.0)
+        linear = min(max(linear, 0.0), 1.0)
+    return linear ** _HIDDEN_POLICY_BOULWARE
+
+
+def _hidden_policy_prices(game: dict, context: dict) -> tuple[float, float, float]:
+    """Return scheduled price, credible opening, and current floor/cap.
+
+    The opening claims 85% of the largest support-compatible zone.  The
+    concession boundary claims 75% of the smallest still-compatible positive
+    zone.  Opponent prices can only harden that boundary when they cross a grid
+    point that a rational type could not cross; concession speed is never read.
+    A squared path runs over this interval by our outgoing-offer index, rather
+    than clipping the old 4x/0.15x curve whose scale is seat-asymmetric.
+    """
+    state = game.get("game_state") or {}
+    me = game.get("your_player") or state.get("current_player")
+    base = context["base"]
+    my_value = context["my_value"]
+    feasible = context["feasible"]
+    i_am_seller = context["i_am_seller"]
+
+    extreme = max(feasible) if i_am_seller else min(feasible)
+    extreme_value = extreme * base
+    opening = (my_value + _HIDDEN_POLICY_OPEN_CLAIM * (extreme_value - my_value)
+               if i_am_seller else
+               my_value - _HIDDEN_POLICY_OPEN_CLAIM * (my_value - extreme_value))
+
+    # The nearest positive-ZOPA type sets the prior boundary.  A best opponent
+    # bid/ask supplies a one-sided rational bound: buyer bid <= buyer value;
+    # seller ask >= seller cost.  Out-of-support prices are preserved as offers
+    # below, but do not manufacture a type inference outside the known grid.
+    compatible = min(feasible) if i_am_seller else max(feasible)
+    opponent_prices = _hidden_opponent_prices(state, me)
+    best = ((max(opponent_prices) if i_am_seller else min(opponent_prices))
+            if opponent_prices else None)
+    if best is not None:
+        bound = best / base
+        if i_am_seller and bound <= max(_HIDDEN_VALUE_MULTS) + 1e-9:
+            possible = [m for m in feasible if m + 1e-9 >= bound]
+            if possible:
+                compatible = max(compatible, min(possible))
+        elif not i_am_seller and bound >= min(_HIDDEN_VALUE_MULTS) - 1e-9:
+            possible = [m for m in feasible if m <= bound + 1e-9]
+            if possible:
+                compatible = min(compatible, max(possible))
+
+    compatible_value = compatible * base
+    boundary = (
+        my_value + _HIDDEN_POLICY_FLOOR_CLAIM * (compatible_value - my_value)
+        if i_am_seller else
+        my_value - _HIDDEN_POLICY_FLOOR_CLAIM * (my_value - compatible_value)
+    )
+
+    # Never counter with a price worse for us than one the opponent already
+    # named.  This changes the ambitious end of the interval, not its floor.
+    if best is not None:
+        opening = max(opening, best) if i_am_seller else min(opening, best)
+    progress = _hidden_policy_progress(state, me, i_am_seller)
+    scheduled = opening + (boundary - opening) * progress
+    if best is not None:
+        scheduled = max(scheduled, best) if i_am_seller else min(scheduled, best)
+    return scheduled, opening, boundary
+
+
 def _is_negotiation_opening(game: dict) -> bool:
     """Whether this is our first outgoing price in the game's visible record."""
     state = game.get("game_state") or {}
@@ -139,12 +368,72 @@ def _is_negotiation_opening(game: dict) -> bool:
 
 
 def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
-    """Apply flagged complete-information postconditions to an outgoing price."""
+    """Apply flagged information-regime postconditions to an outgoing price."""
     if "product_price" not in action:
         return
-    # Hidden games have no visible ZOPA.  Return on the information marker before
-    # `_complete_negotiation_zopa` can inspect either opponent role or value.
-    if (game.get("game_state") or {}).get("complete_information") is not True:
+    state = game.get("game_state") or {}
+
+    # HIDDEN POLICY V1 A/B.  In 319 selected hidden no-deals our opening demand
+    # was 3.97x our own limit versus 1.54x for opponents, yet both paths ended at
+    # 1.17x/1.13x.  In 3,104 hidden closes our median reconstructed-zone share
+    # was 0.520 while top-rated agents were near 0.75, and the field's recent
+    # claimed share reached 0.830.  Candidate games therefore replace every
+    # multi-round outgoing price with a squared Boulware path from an on-support
+    # 0.85 opening to a 0.75 boundary for the narrowest feasible grid type.
+    # Capped progress is indexed by our actual price opportunities, so both seats
+    # reach the boundary on their last H=10 price opportunity.  In an uncapped
+    # game the linear clock caps at 0.85, so the squared path concedes at most
+    # 72.25% of the opening-to-boundary distance because there is no real deadline.
+    # Opponent prices can harden the boundary only by crossing a rational
+    # grid-value bound; their concession rate is not used.
+    #
+    # This runs after strategy/LLM choice and only when product_price exists, so
+    # AcceptOffer/RejectOffer selection and every acceptance input are unchanged.
+    # The 0.85/0.75 values are unproved and are tested only through the independent
+    # `hidden_policy_v1|` game hash.  When the new flag is armed it owns both hash
+    # arms and suppresses the older flat HIDDEN_FLOOR path, preventing a mixed
+    # control if both flags are set accidentally.
+    policy = _hidden_policy_context(game)
+    if policy is not None:
+        if policy.get("eligible") and policy.get("treatment"):
+            price, opening, boundary = _hidden_policy_prices(game, policy)
+            price = max(0.0, round(price, 2))
+            # Reapply both literal wire bounds after cent rounding.
+            if policy["i_am_seller"]:
+                price = max(min(price, opening), boundary)
+            else:
+                price = min(max(price, opening), boundary)
+            action["product_price"] = price
+        return
+
+    # HIDDEN-INFORMATION FLOOR A/B.  Over 30h our seller path moved from 2.624B
+    # in rounds 1-3 to 1.375B at round 10+, while counterparty buyer bids moved
+    # 1.630B to 1.449B; our buyer path moved 0.251B to 0.979B while counterparty
+    # seller asks moved 0.729B to 0.826B.  In assigned treatment games this final
+    # wire postcondition keeps seller prices at or above floor*B and buyer prices
+    # at or below (2-floor)*B.  The buyer expression is the additive reflection
+    # around B: floor=1.15 protects the same 0.15B distance on each side (seller
+    # >=1.15B, buyer <=0.85B).
+    # It runs only after a product_price exists, so AcceptOffer/RejectOffer choice
+    # and every acceptance input are unchanged.  Complete-information games take
+    # the separate OPEN_CLAIM/CLAIM_FLOOR path below, and B comes only from our
+    # visible value through pricing.infer_base.
+    hidden = _hidden_floor_treatment(game)
+    if hidden is not None:
+        floor, base, i_am_seller = hidden
+        protected = (floor * base if i_am_seller else (2.0 - floor) * base)
+        price = _num(action["product_price"])
+        price = max(price, protected) if i_am_seller else min(price, protected)
+        price = max(0.0, round(price, 2))
+        # Reapply after cent rounding so the literal wire price cannot cross a
+        # fractional configured boundary in the conceding direction.
+        price = max(price, protected) if i_am_seller else min(price, protected)
+        action["product_price"] = price
+        return
+
+    # Hidden/control games have no visible ZOPA.  Return on the information
+    # marker before `_complete_negotiation_zopa` can inspect an opponent value.
+    if state.get("complete_information") is not True:
         return
     zopa = _complete_negotiation_zopa(game)
     if zopa is None:

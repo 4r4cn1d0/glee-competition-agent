@@ -13,6 +13,7 @@ that quietly moves them fails here rather than on the live server.
 
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 
 import pytest
@@ -26,6 +27,7 @@ from glee_agent.strategies.bargaining import (
 )
 
 MONEY = 1000.0
+CLIFF_GUARD_FLAG = "GLEE_BARG_CLIFF_GUARD"
 
 
 def game(phase="offer", *, me="player_1", rnd=1, max_rounds=12, horizon_known=True,
@@ -62,6 +64,23 @@ def their_offer(rnd, my_gain, me="player_1", money=MONEY):
 
 def my_share(action, me="player_1"):
     return action["alice_gain" if me == "player_1" else "bob_gain"] / MONEY
+
+
+@pytest.fixture
+def cliff_flags(monkeypatch):
+    """Isolate the synthetic-cliff tests from live or developer flag state."""
+    for key in list(os.environ):
+        if key.startswith(("GLEE_BARG", "GLEE_OPP", "GLEE_PROBE", "GLEE_TRACE")):
+            monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("GLEE_TRACE_GATES", "1")
+    return monkeypatch
+
+
+def cliff_decision(delta_me, rnd):
+    g = game("decision", rnd=rnd, horizon_known=False,
+             delta_1=delta_me, delta_2=0.8,
+             last_offer=their_offer(rnd, 0.01 * MONEY))
+    return decide(g, Config())
 
 
 # --- (a) the undisclosed horizon is 99, not infinity ------------------------
@@ -110,6 +129,35 @@ def test_a_disclosed_games_keep_their_concession_clock_off():
     assert plan(game(rnd=1, delta_1=0.9, delta_2=0.9), Config())["effective_horizon"] is None
     assert plan(game(rnd=1, horizon_known=False, delta_1=0.9, delta_2=0.9),
                 Config())["effective_horizon"] == 29
+
+
+def test_a_cliff_guard_suppresses_the_synthetic_cliff_without_decay(cliff_flags):
+    cliff_flags.setenv(CLIFF_GUARD_FLAG, "1")
+
+    action = cliff_decision(1.0, 30)
+
+    assert action["_plan"]["effective_horizon"] == 30
+    assert action["decision"] == "reject"
+    assert "inflation_accept" not in action["_plan"]["gates_fired"]
+
+
+def test_a_cliff_guard_keeps_the_cliff_for_decaying_money(cliff_flags):
+    cliff_flags.setenv(CLIFF_GUARD_FLAG, "1")
+
+    action = cliff_decision(0.8, 14)
+
+    assert action["_plan"]["effective_horizon"] == 14
+    assert action["decision"] == "accept"
+    assert "inflation_accept" in action["_plan"]["gates_fired"]
+
+
+def test_a_cliff_guard_is_inert_by_default(cliff_flags):
+    assert CLIFF_GUARD_FLAG not in os.environ
+
+    action = cliff_decision(1.0, 30)
+
+    assert action["decision"] == "accept"
+    assert "inflation_accept" in action["_plan"]["gates_fired"]
 
 
 # --- (b) the empirical floor ------------------------------------------------

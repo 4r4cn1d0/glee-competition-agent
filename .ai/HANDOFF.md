@@ -3,6 +3,312 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-23 — persuasion buyer selectivity arm implemented, default OFF
+
+`GLEE_PERS_BUYER_SELECTIVITY_AB=1` arms a per-game A/B only in persuasion buyer
+games with `v>u`, `price>u`, and prior money value
+`p*v+(1-p)*u <= price`. Assignment is
+`sha256("pers_buyer_selectivity_v1|" + game_id) & 1`. The flag is absent/OFF by
+default. Candidate is strictly an extra veto over the current buyer; it cannot
+revive an existing rejection. Prior-positive games return before assignment,
+so the protected `p*r>1` corpus (3,452 games, 84.08% of rounds bought, mean
+payoff `21.429P`) is byte-identical with the arm armed.
+
+The candidate requires all four conditions for a purchase:
+
+1. at least one historical message is an explicit decline;
+2. the current message is an explicit recommendation under the tri-state
+   parser, independent of the fleet's legacy-parser flag;
+3. the fitted posterior `P(high | current recommendation)` strictly exceeds
+   `(price-u)/(v-u) + margin`;
+4. no previously purchased unit in the game was low.
+
+The permanent one-low strike is deliberate. A decline is not a costly or
+directional signal under this gate: while the buyer waits, a pre-decline yes
+would also make no sale, so the seller can decline a low at zero on-path cost
+and unlock 19 later rounds. One decline only proves
+`P(no|high)>0` or `P(no|low)>0`; it does not prove recommendations favor highs.
+The strike caps direct post-unlock loss at one price. Hard never-buy is the only
+zero-loss minimax rule, but it discards every selective-seller winner; the
+strike is a bounded-loss hypothesis whose effect must be randomized.
+
+The probability estimator is the existing six-point seller-type mixture over
+low-quality recommendation rate `q={0,.125,.25,.5,.75,1}`, with a 2% high-unit
+decline likelihood and mode/prior-bin weights fitted on 4,191 games. Candidate
+recomputes it with parser abstentions preserved even when control uses the
+legacy optimistic coercion. A single Beta/Laplace count model was rejected: the
+fitted population is bimodal, and the declined unit's hidden quality supplies
+no Bernoulli success/failure with which to bootstrap a Beta posterior. The
+first-arm probability margin is `0.0` plus strict `>` because no measurement
+identifies a positive margin and the blanket guard/LCB family is already
+measured negative. `GLEE_PERS_BUYER_SELECTIVITY_MARGIN` exists only inside
+candidate and must remain `0.0` in the first window.
+
+The motivating money-EV algebra is valid with an important scope correction:
+for posterior `q`, buyer payoff is
+`q(v-price)+(1-q)(u-price)`, so buy iff
+`q>(price-u)/(v-u)`; live `u=0` gives `q>1/r`. A genuinely always-recommend
+seller has `P(high|yes)=p`. Therefore `p*r<1` is strictly negative money EV,
+while `p*r=1` is zero EV, not negative. T2 and T3 are equality cells (`.8*1.25
+= 1`, `(1/3)*3 = 1`). T6's stated 11 highs / 8 lows yields `+25P`, not `+13P`;
+`+13P` corresponds to 8 highs / 11 lows. T3's five initial lows are not seller
+front-loading if it said yes on every unit: nature draws iid and the event has
+probability `(2/3)^5 = 13.17%`.
+
+The universal claim is also false for the competition objective. Rank applies a
+nonlinear same-cell CDF `F` to total payoff. In the fitted text `p=.5,r=1.2`
+cell at zero accumulated payoff, `F(-P)=.0284`, `F(0)=.4498`, and
+`F(+.2P)=.8734`; one blind buy has expected percentile
+`.5*.0284+.5*.8734=.4509`, narrowly above passing, despite money EV `-.4P`.
+This is a counterexample, not evidence to buy that cell.
+
+Read-only shadow reconstruction of the oldest 5,181 eligible games found
+27,493 historical buys. The full candidate retains 8,683, blocking 12,720 high
+winners and 6,090 lows. Mean payoff falls `1.1555P -> .7774P`, while fitted
+percentile changes `+0.01209`, normal 95% CI `[+.00718,+.01701]` over 5,170
+scoreable paired games. The pure pre-decline veto alone blocks 11,974 buys
+(8,605 highs, 3,369 lows) and forgoes a net 1,150.9 price-units of historical
+payoff. The one-strike insurance removes 5,604 additional buys and reduces the
+shadow percentile gain from `+.01445` to `+.01209`. This replay holds seller
+messages fixed and observes no quality on skipped rounds, so it is screening
+evidence only, not a causal estimate.
+
+The supplied never/sometimes split is not exactly reproducible without its
+semantic classifier. On the same 5,181 games, explicit tri-state parsing yields
+1,443 never-decline / 3,738 eventual-decline games; alternate committed parsers
+yield 1,174/4,007 or 1,266/3,915, not 1,058/4,123. More importantly, eventual
+decline is future, post-treatment information and cannot define the primary
+policy comparison.
+
+**Pre-committed falsification:** arm only after recording exact T0 and hashes
+`pers_buyer_prior_v1.json=173e00273db5b2d5121080be0e6192c4ab12e1ea553b61ab22896bfb4a31787a`
+and
+`percentile_cdf_v3.json=bd3b313792951465624543612b09fb0ca5cc1708aee08a7a3dfb85f269e58ff9`;
+do not refit either mid-window. Use
+`scripts/live_percentile.py --ab pers-selectivity --since T0 --until T1`.
+Primary is candidate-control mean percentile over every assigned eligible game,
+never the eventual-decline subgroup. Promote only if the 95% CI is wholly above
+zero; reject if wholly below; unresolved outcomes block promotion. Any candidate
+pre-decline purchase or second bought-low is a mechanism failure. Report exact
+cell/equality strata and one-decline sellers as diagnostics. The one-decline
+attack is decline a low, then recommend 19 indiscriminately: a permanent unlock
+would cost `19P(p*r-1)` in expectation (`-.76P` at `.8*1.2`, `-6.333P` at
+`(1/3)*2`); this candidate permits at most one low purchase.
+
+The prescribed `check_reachability.py` was not run because its import path uses
+the explicitly prohibited replay/arena modules and it has no persuasion family.
+Focused decision tests instead require eligible>0, veto-fired>0, and
+action-changed>0, alongside default-off/hash-control identity and protected-cell
+identity. Claude still owns independent verification and any live deployment.
+
+Verification: 173 focused persuasion tests and 95 live-percentile tests passed.
+The mandated full suite produced 840 passed and only the two failures explicitly
+pre-declared by AGENTS.md: the bargaining horizon-floor expectation is
+450/current 468, and the live bargaining `horizon_known` grid drift remains
+significant. Scoped `git diff --check` and `py_compile` pass. No replay-eval,
+arena, red-team, fleet, or reachability command was run; no live flag was armed,
+and no restricted file or running process was changed.
+
+## 2026-08-23 — grid-aware hidden negotiation policy implemented, default OFF
+
+`GLEE_NEGO_HIDDEN_POLICY_V1=1` arms a new offer-only experiment.  The default
+is absent/OFF.  Eligible games require `complete_information=false`, a
+multi-round horizon, a supported own value/base, a present game id, and an own
+type with positive prior probability of a strict ZOPA.  Each eligible game is
+assigned by `sha256("hidden_policy_v1|" + game_id) & 1`, an independent salt.
+Complete-information games, one-round games, seller `1.5B`, and buyer `0.8B`
+are unchanged.  When the new flag is armed, it owns both hash arms and
+suppresses the older `GLEE_NEGO_HIDDEN_FLOOR` path, so an accidental second
+flag cannot contaminate control.
+
+The candidate is a grid-aware screening curve:
+
+| Role / own type | assumed P(strict ZOPA) | opening | prior terminal boundary |
+|---|---:|---:|---:|
+| seller `0.8B` | 75% | `1.395B` | `0.950B` |
+| seller `1.0B` | 50% | `1.425B` | `1.150B` |
+| seller `1.2B` | 25% | `1.455B` | `1.425B` |
+| seller `1.5B` | 0% | unchanged | existing dead-game path |
+| buyer `1.0B` | 25% | `0.830B` | `0.850B` |
+| buyer `1.2B` | 50% | `0.860B` | `1.050B` |
+| buyer `1.5B` | 75% | `0.905B` | `1.275B` |
+| buyer `0.8B` | 0% | unchanged | existing dead-game path |
+
+The opening claims 85% of the largest support-compatible positive zone.  Its
+purpose is screening: it is inside a possible opponent's support, unlike the
+measured 3.97x-own-limit opening, so a favorable type can accept while paying
+us a high share.  The terminal boundary claims 75% of the narrowest still
+compatible positive zone.  This makes the answer to “higher or lower than flat
+1.15?” type-dependent: seller `0.8B` must go lower (`0.95B`) to retain the
+buyer-`1.0B` zone, while seller `1.2B` can hold higher (`1.425B`) because only
+buyer `1.5B` is feasible.  The buyer side is the exact zone-share analogue.
+
+For capped games, the five H=10 price opportunities follow a squared clock
+with progress `0, .0625, .25, .5625, 1`; both seats reach their boundary on
+their last price opportunity.  In an uncapped game the linear clock is capped
+at `.85`, so its square traverses at most 72.25% of the opening-to-boundary
+distance.  The uncapped cap, squared timing, `.85` opening share, and `.75`
+boundary share are judgments, not identified constants.
+
+The schedule never reads opponent concession speed.  A static price therefore
+cannot make us concede faster.  It uses only the best price level as a rational
+one-sided type bound (`buyer bid <= buyer value`, `seller ask >= seller cost`):
+crossing a grid threshold can harden the terminal boundary, and a favorable
+opponent price is never given back.  This is also a judgment: an irrational or
+strategic loss-making offer invalidates the type inference, which the live arm
+must test.
+
+The implementation is a final `actions.coerce()` postcondition after strategy
+and LLM planning.  It replaces an emitted candidate `product_price` but never
+changes the selected decision or any plan/acceptance input.  Tests cover both
+roles, every 75/50/25/0 own signal, the full H=10 wire sequence, uncapped cap,
+history echo counting, static opponents, crossed type bounds, favorable offers,
+hash parity, hidden-value sentinels, complete-info/one-round/dead exclusions,
+default-off identity, and legacy-arm isolation.
+
+`scripts/live_percentile.py --ab hidden-policy --since T0 --until T1` now
+reports, per slot and pooled:
+
+- mean same-cell percentile with 95% CI;
+- close rate with 95% CI;
+- median/IQR reconstructed-zone share among positive-zone agreements;
+- mean zone-capture ITT, where every non-close/abandonment contributes zero;
+- role, own type, P(ZOPA), and horizon strata plus reconstructed closed-pair
+  composition.
+
+For an agreement, the seller and buyer payoffs sum to the true zone, so own
+share is `own_payoff / (p1_payoff + p2_payoff)`.  Missing payoffs, off-grid
+reconstructions, and zero/negative zones are counted explicitly and cannot
+silently enter that ratio.  Cross-slot fleet self-play ids are detected before
+eligibility and `--slots` filtering and excluded from the pooled independent
+estimate.  First-exposure signal metadata survives abandonment, keeping its
+zero in the correct stratum.  Conditional share remains selected on closing;
+the ITT capture metric exists specifically to expose a false “share gain” made
+by deleting low-share deals.
+
+**Evidence versus judgment:** the evidence supports replacing the off-support
+journey, conditioning on our own feasibility signal, avoiding reciprocal
+concession, and targeting more than the measured 0.520 median closed-zone
+share.  The 319 no-deal opening comparison is selected on failure and does not
+prove openings have no causal effect.  The four-value axis is official, but
+uniform independent hidden draws and the current joint support are local
+reconstructions.  The field's move from 0.776 to 0.830 says any fixed constants
+must be tested in a short contemporaneous window; it does not identify 0.85 or
+0.75 as optimal.
+
+**Pre-committed falsification / promotion rule:**
+
+1. Primary outcome is candidate-control mean percentile.  Promote only if its
+   95% CI is above zero; reject if its 95% CI is below zero; otherwise continue
+   or call the arm inconclusive.
+2. Close-rate non-inferiority margin is -2 percentage points (judgment, chosen
+   because close rate is near its structural ceiling).  Promotion requires the
+   delta's lower 95% bound above -2pp; reject if its upper bound is below -2pp.
+3. Mechanism requires positive zone-capture ITT and at least +0.05 conditional
+   median closed-zone share.  A higher conditional share with lower ITT capture
+   is survivorship, not success.  Treat a non-positive median-share delta as a
+   mechanism rejection after at least 200 reconstructed positive-zone closes
+   per arm; the +0.05 and n=200 thresholds are judgments.
+4. Inspect pair composition and role/horizon strata before promotion.  A gain
+   produced only by dropping narrow zones, a seller/buyer sign split, or an H=10
+   gain paired with an uncapped loss falsifies the proposed mechanism even if a
+   pooled descriptive metric looks good.
+
+Verification: prescribed reachability at 200 negotiation draws against
+`replay_eval.DEFAULT_CONTROL` reported eligible 1,168, fired 589,
+action_changed 589, PASS; the checker warns that this is a simulator snapshot,
+so Claude must repeat against the exact intended live stack.  Focused
+policy/reporting/floor tests passed 104/104.  The mandated full suite produced
+811 passed and only the two AGENTS.md-declared bargaining failures
+(`test_bargaining_horizon_floor`, expected 450/current 468, and
+`test_sim_grid[bargaining]`, live `horizon_known` drift).  No live flag, fleet
+process, `arms.json`, `control.json`, `.env`, or file under `logs/` was changed.
+No replay-eval, arena, or red-team command was run; only the prescribed
+reachability checker was invoked.  Claude still owns verification and deploy.
+
+## 2026-08-23 — hidden-information concession floor implemented, default OFF
+
+`GLEE_NEGO_HIDDEN_FLOOR=<F>` is a float flag with inert default `0.0`.  It is
+eligible only when `complete_information` is literally false, our public role
+is seller/buyer, our own visible value maps to a supported base through
+`pricing.infer_base`, the game id is present, and
+`sha256("hidden_floor|" + game_id) & 1` assigns treatment.  Hash-control games,
+missing/off-grid inputs, non-finite/non-positive settings, and `F > 2` retain
+the existing wire price.
+
+The implementation is a final `actions.coerce()` price postcondition, after
+heuristic/full-LLM choice and action repair.  For every emitted treatment
+`product_price`, a seller submits `max(price, F*B)` and a buyer submits
+`min(price, (2-F)*B)`.  The buyer expression is the additive reflection of
+`F*B` around `B`: `B-(F-1)B=(2-F)B`; using `max` there would silently reverse
+the protection.  The boundary is reapplied after cent rounding.  An
+`AcceptOffer` has no price and returns before the flag is read, so neither the
+plan nor any accept/reject threshold changes.  Complete-information games
+continue through OPEN_CLAIM/CLAIM_FLOOR and are tested identical with this flag
+armed.  A sentinel test also proves no hidden opponent-value key is read.
+
+`scripts/live_percentile.py --ab hidden-floor` recovers the same hash and
+reports mean percentile AND close rate for each arm, per agent and pooled.  It
+uses the existing robust first-outgoing-price exposure cohort rather than the
+results-only A/B path: both seats/all horizons are eligible; the result join
+covers `results.jsonl` plus collector `games/<id>.json`; unknown-CDF outcomes
+remain in the close denominator; cold abandonments count as percentile `.05`
+non-closes; pending/invalid finals block promotion; and any negative terminal
+close-rate point estimate prints the veto.  `--since/--until` bound the first
+price exposure, so Claude must record the exact activation/disarm timestamps.
+
+The generic reachability checker had its own hash-arm defect: its control play
+left every game id at the simulator literal `local`, assigning all banked
+states to one bit.  It now supplies the stable per-draw `sim-<seed>` id already
+used by the paired harness.  Required checker result at `F=1.15`, 200
+negotiation draws against `replay_eval.DEFAULT_CONTROL`: eligible 1,354, fired
+301, action_changed 301, PASS.  The checker warned that this control is a
+simulator snapshot, so Claude must repeat it against the intended live stack
+before deployment.
+
+Read-only 30h calibration over five active result streams, deduplicated by
+game id: 4,074 hidden negotiations, 1,300 closes.  Recommended first treatment
+is **F=1.15** (seller `>=1.15B`, buyer `<=0.85B`), chosen from the observed
+accepted-price support rather than a midpoint:
+
+| F | buyer cap | games whose historical price would change | existing closes whose accepted own price would change |
+|---:|---:|---:|---:|
+| 1.10 | 0.90B | 553 / 4,074 | 168 / 1,300 |
+| 1.15 | 0.85B | 713 / 4,074 | 183 / 1,300 |
+| 1.175 | 0.825B | 894 / 4,074 | 257 / 1,300 |
+| 1.20 | 0.80B | 944 / 4,074 | 262 / 1,300 |
+
+Moving 1.10 -> 1.15 buys another `.05B` while exposing only 15 additional
+historical closes; moving just above 1.15 crosses a large accepted-price atom
+and exposes 74 more.  At 1.15, sellers expose 146/2,053 games and 52 accepted
+own offers; buyers expose 567/2,021 and 131 accepted own offers.  The buyer arm
+is the veto: 131/143 accepted buyer-originated offers would have been clipped,
+and observational logs cannot say whether those unplayed prices would close.
+
+**Objections / proposed validation:**
+1. The supplied “field seller 1.449” row is actually counterparty buyer bids in
+   games where we sell, and “field buyer 0.826” is counterparty seller asks in
+   games where we buy; neither is a same-role policy path.  Round buckets also
+   change type composition as games close.  Use them as price-support context,
+   not causal proof that matching either endpoint wins.
+2. Retrospective hash balance before treatment is control n=2,050, close 31.32%,
+   percentile .4939 versus candidate n=2,024, close 32.51%, percentile .4960.
+   Thirty hours leaves roughly +/-2.9pp uncertainty on the close-rate
+   difference.  Use a clean activation boundary and do not call a sub-1pp close
+   difference identified at that sample size.
+3. Any credible candidate close-rate loss, especially in buyer games, rejects
+   or lowers 1.15 regardless of mean percentile.  If percentile improves with
+   no close-rate penalty, test 1.175 in a separate randomized window; do not
+   extrapolate through the accepted-price cliff.
+
+Verification: 88 focused hidden/open-claim tests passed; the mandated full
+suite produced 741 passed and only the two AGENTS.md-declared bargaining
+failures (`test_bargaining_horizon_floor`, expected 450/current 468, and
+`test_sim_grid[bargaining]`, live `horizon_known` drift).  No live flag, fleet
+process, `arms.json`, `control.json`, `.env`, or file under `logs/` was changed.
+No replay-eval, arena, or red-team command was run; only the prescribed
+reachability checker was invoked.  Claude still owns verification and deploy.
+
 ## 2026-08-23 — complete-info opening claim + concession floor implemented, default OFF
 
 This supersedes the never-deployed `GLEE_NEGO_CI_ASK_AB` entry immediately
