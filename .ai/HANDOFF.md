@@ -3,6 +3,51 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-22 — negotiation rank optimisation derived; no behaviour changed
+
+The finite-horizon policy is a belief-state dynamic programme with terminal
+utility equal to the exact-cell payoff midrank, not money.  At a terminal offer
+the correct objective is `F(0) + P_accept(p) * (F(u(p)) - F(0))`; at continuing
+states it also needs the full accept/counter/walk transition kernel and Bayesian
+updates over the four opponent types.  The three shipped artifacts do not supply
+that kernel, so a full backward-induction implementation is not yet identified.
+
+**Exact correction in the one-round complete-information cell:** the seller is
+the sole proposer and the buyer only decides.  The seller's rational price is
+buyer value minus one cent; the buyer's exact best response is already shipped:
+accept every strictly profitable offer.  The reported 0.7183 seller versus
+0.3336 buyer percentile is proposer advantage, not a missing buyer ask policy.
+
+**Terminal hidden-type benchmark (uniform four-point prior):** combining the
+rational acceptance steps with the shipped CDF moves the actual one-round seller
+policy away from the money optimum by up to 0.30B.  Seller own factors
+0.8/1.0/1.2 choose money asks 1.20/1.50/1.50B versus rank asks
+1.00/1.20/1.50B.  A separate v5 fitted-curve proxy over the actual terminal
+proposer cells (one-round seller; round-10 buyer) shifts price by up to 0.275B
+and estimated rank by up to +0.111.  Rank always weakly buys more acceptance on
+the supported grid.  Structural argmaxes are exact conditional on the rational
+response step and shipped CDF; their percentile levels and every v5 result are
+fitted proxies.
+
+**Visible-span correction:** current hidden games have `zopa=None`; the opponent
+bid bound changes only the anchor, and the span veto is unreachable.  The cited
+12,000/15,000 transcript was accepted by the absolute learned-table threshold,
+not because a latest-bid span scored 100%.  If a share diagnostic is retained,
+use the posterior distribution of `(P-c)/(v-c)` (seller) or `(b-P)/(b-c)`
+(buyer), conditional on a ZOPA, never the ratio to a bid-created denominator.
+
+**Objections / required tests before implementation:**
+1. The CDF omits opponent type and messages, while hidden cells are heavily
+   own-policy contaminated; verify that its key matches the server's scoring
+   cell and refit complete-information cells by the full value pair if required.
+2. The v2 posterior and v5 type curves label hidden types mainly after agreement,
+   so they are selected-on-close.  Start from the exact uniform prior, fit offer
+   likelihoods on uncensored complete-info data, and validate calibration by
+   hidden first-offer bucket before using them for belief updates.
+3. Fit an identified accept/counter/walk kernel (including counter-price
+   distribution), then solve H=10 on a cent/breakpoint grid and test a default-OFF
+   per-game randomised arm.  Until then, do not ship a rank-DP behavioural flag.
+
 ## 2026-08-22 — negotiation opponent clone V2 implemented, default OFF
 
 `GLEE_SIM_NEGO_RESP_V2` now switches the simulator's negotiation clone from the

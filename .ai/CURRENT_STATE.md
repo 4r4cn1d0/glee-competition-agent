@@ -1,6 +1,6 @@
 # CURRENT STATE — regenerate with `scripts/refresh_state.py`
 
-_Snapshot 2026-08-22 00:08Z · repo commit `2d5e920`_
+_Snapshot 2026-08-22 00:16Z · repo commit `1d230aa`_
 
 **This file is the single source of truth for what is LIVE.** Any agent (human
 or model) reasoning about strategy must read it first. Reasoning from a stale
