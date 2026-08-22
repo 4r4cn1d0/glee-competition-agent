@@ -142,6 +142,6 @@
     "GLEE_PERS_BACKLOAD_AB": "0",
     "GLEE_BARG_NO_REGRESS": "0",
     "GLEE_BARG_MSG": "0",
-    "GLEE_NEGO_RANK_PRICE_AB": "0"
+    "GLEE_NEGO_RANK_PRICE_AB": "1"
   }
 }
