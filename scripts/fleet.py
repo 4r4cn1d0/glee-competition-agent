@@ -6,6 +6,7 @@
     python scripts/fleet.py clear conceder
     python scripts/fleet.py stop randomized
     python scripts/fleet.py start randomized
+    python scripts/fleet.py llm composite off
     python scripts/fleet.py shift 600
     python scripts/fleet.py safe-restart   # supervisor code update, interlocked
 
@@ -122,7 +123,7 @@ def shift(seconds: int) -> int:
 
 
 def _slot_setting(key: str, probe: str, value: str | None, label: str) -> int:
-    """Set or clear one per-slot launch override (policy / families).
+    """Set or clear one per-slot launch override (policy / families / llm).
 
     These apply at the slot's NEXT launch, not immediately: which policy an agent
     plays and which families it queues for are fixed when the process starts.
@@ -355,6 +356,11 @@ def main() -> int:
         return drain(rest[0], int(rest[1]) if len(rest) > 1 else 1800)
     if cmd == "families" and rest:
         return _slot_setting("families", rest[0], rest[1] if len(rest) > 1 else None, "families")
+    # llm is the third per-slot launch override. It had no command, so the only
+    # way to make control.json symmetric across slots was to hand-edit it -- the
+    # one thing this tool exists to prevent.
+    if cmd == "llm" and rest:
+        return _slot_setting("llm", rest[0], rest[1] if len(rest) > 1 else None, "llm mode")
     print(__doc__)
     return 1
 

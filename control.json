@@ -10,10 +10,17 @@
     "composite": "champion"
   },
   "families": {
-    "conceder": "bargaining,negotiation,persuasion"
+    "conceder": "bargaining,negotiation,persuasion",
+    "champion": "bargaining,negotiation,persuasion",
+    "hardliner": "bargaining,negotiation,persuasion",
+    "randomized": "bargaining,negotiation,persuasion",
+    "composite": "bargaining,negotiation,persuasion"
   },
   "llm": {
     "conceder": "off",
-    "composite": "off"
+    "composite": "off",
+    "champion": "off",
+    "hardliner": "off",
+    "randomized": "off"
   }
 }
