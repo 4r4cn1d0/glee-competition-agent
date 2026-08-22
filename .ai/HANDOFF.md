@@ -3,6 +3,60 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-22 — negotiation opponent clone V2 implemented, default OFF
+
+`GLEE_SIM_NEGO_RESP_V2` now switches the simulator's negotiation clone from the
+legacy value-first price lookup to a separately fitted V2 instrument.  When both
+values are directly visible and the span is positive, V2 keys responses on the
+candidate proposer's 4%-binned share of span.  Hidden/no-span games use the
+coarser `price/base` observable, with buyer/seller directions normalized onto one
+greed axis.  Terminal and continuing responses have separate keys so one-round
+ultimata cannot contaminate round-one continuation play.  The tracked model was
+refitted on 29,105 games and carries 701 pooled V2 response cells (528 share,
+173 price; 588 continuing, 113 final) with zero private-value keys.
+
+The hidden value-conditioned table is deliberately dropped, not reweighted:
+the responder value is recoverable in hidden games only after agreements, and
+the measured buyer m1.5 / round-4+ / price-bin-1.0 cell was 0.640 acceptance
+(n=25) against 0.027 (n=2,793) without that selected label.  Weighted PAVA makes
+acceptance non-increasing in proposer greed; interior gaps take the greedier
+neighbor, the generous edge stays flat, and asks beyond greedy support get zero
+acceptance.  There is no profitable-price auto-accept fallback.  Structural
+no-loss checks prevent pooled hidden curves or counters from accepting/offering
+through the clone's own reservation value.
+
+The same flag selects unconditioned counter distributions represented by
+equally weighted quantile midpoints.  This replaces the legacy
+`sorted(values)[:400]` left-tail truncation under V2 only; the old algorithm is
+still the default.  Final-round V2 rejection omits the otherwise-invalid
+counteroffer.  `sim/replay_eval.py` now clears `GLEE_SIM*` between arms.
+
+Verification: focused field-clone tests 18 passed.  Full suite: 599 passed and
+only the two pre-existing bargaining failures named in AGENTS.md failed
+(`test_bargaining_horizon_floor`, `test_sim_grid[bargaining]`).  No arena,
+replay_eval, red-team run, live flag, fleet process, or deployment file was
+touched.  The required regression pins the old clone accepting an unseen but
+profitable 95%-of-span ask, then proves V2 rejects it rather than assigning
+acceptance probability one.  A schema smoke test prevents committing a stale
+four-part/reject-all model artifact.
+
+**Objections / proposed validation:**
+1. `scripts/check_reachability.py` replays our strategy, while this flag executes
+   inside the opponent clone, so its standard eligible/fired/action_changed
+   contract cannot observe this simulator gate.  The direct old/new clone test
+   is the reachability proof; Claude should run the paired negotiation arena
+   with V2 present in BOTH control and candidate before trusting a strategy A/B.
+2. `Field._field_weight` computes `unnamed_games - named_games`; on this refit it
+   is 40, making behavior draws almost entirely named clones before opponent-name
+   redaction.  This may be an accidental weight bug or an undocumented way to
+   model hidden identity separately from hidden behavior.  Do not change it
+   without first deciding that estimand; test the intended named/pooled mixture.
+3. Even after the terminal split, round buckets 2-3 and 4+ remain deliberately
+   coarse.  Validate calibration by seat/terminal/round bucket before promoting
+   any price-moving negotiation flag.  These are observational, shape-restricted
+   response curves rather than identified off-policy effects, and conservative
+   tails may create false negatives; arena evidence still beats this model.
+
 ## 2026-08-22 — persuasion: buyer parser tri-state correction implemented
 
 `GLEE_PERS_PARSE_TRI` is implemented default OFF. When armed, buyer v1 and v2

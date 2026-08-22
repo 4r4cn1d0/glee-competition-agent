@@ -40,7 +40,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 
-FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS", "GLEE_OPP")
+FLAG_PREFIXES = ("GLEE_NEGO", "GLEE_BARG", "GLEE_PERS", "GLEE_OPP", "GLEE_SIM")
 
 #: The flag set composite ran live before today's changes -- the natural control.
 #: The live champion/composite stack. This MUST track what the fleet actually

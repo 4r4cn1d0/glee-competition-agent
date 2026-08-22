@@ -30,6 +30,8 @@ import os
 import random
 from collections import Counter, defaultdict
 
+from glee_agent import runtime_flags
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "models", "sim_field_v1.json")
 
@@ -37,6 +39,11 @@ OUT = os.path.join(REPO, "models", "sim_field_v1.json")
 #: thinner opponents fold into the pooled field clone rather than becoming a
 #: lookup table of noise.
 MIN_CLONE_OBS = 60
+
+#: Switch the negotiation clone as one unit: the legacy price-bin/value-key
+#: lookup algorithm remains the default until an evaluator explicitly opts
+#: into the repaired instrument.
+NEGO_RESP_V2_FLAG = "GLEE_SIM_NEGO_RESP_V2"
 
 _BASES = (100.0, 1e4, 1e6)
 _MULTS = (0.8, 1.0, 1.2, 1.5)
@@ -62,6 +69,92 @@ def _share_bin(x):
 
 def _price_bin(x):
     return round(min(max(x, 0.0), 4.0) * 10) / 10
+
+
+def _proposer_share(price, proposer_role, proposer_value, responder_value):
+    """Share of a positive visible span claimed by the player making ``price``."""
+    values = (price, proposer_value, responder_value)
+    if any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in values):
+        return None
+    if proposer_role == "seller":
+        seller_value, buyer_value = proposer_value, responder_value
+        proposer_gain = price - seller_value
+    elif proposer_role == "buyer":
+        seller_value, buyer_value = responder_value, proposer_value
+        proposer_gain = buyer_value - price
+    else:
+        return None
+    span = buyer_value - seller_value
+    return proposer_gain / span if span > 0 else None
+
+
+def _even_order_stats(values, limit=400):
+    """At most ``limit`` equally weighted empirical quantile midpoints."""
+    ordered = sorted(values)
+    if len(ordered) <= limit:
+        return ordered
+    n = len(ordered)
+    return [ordered[min((2 * i + 1) * n // (2 * limit), n - 1)]
+            for i in range(limit)]
+
+
+def _monotone_response(points, query):
+    """Weighted non-increasing P(accept) and nonaccept mix at ``query``.
+
+    ``points`` maps a scalar greed coordinate to accept/counter/walk counts.
+    Weighted PAVA removes sampling-driven upward jumps.  Interior gaps use the
+    greedier observed point, the generous edge is held flat, and a query beyond
+    observed greedy support gets zero acceptance.  Those one-sided choices keep
+    the clone from inventing willingness to accept an ask the logs never tested.
+    """
+    merged = defaultdict(Counter)
+    for x, counts in points.items():
+        try:
+            x = float(x)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(counts, dict):
+            merged[x].update(counts)
+
+    blocks = []
+    for x in sorted(merged):
+        counts = merged[x]
+        n = sum(counts.values())
+        if n <= 0:
+            continue
+        blocks.append({"xs": [x], "counts": Counter(counts)})
+        # Acceptance must be non-increasing as the candidate claims more.  A
+        # lower-greed block below a higher-greed acceptance rate violates that
+        # shape, so pool adjacent violators using their actual sample counts.
+        while len(blocks) >= 2:
+            left, right = blocks[-2], blocks[-1]
+            ln = sum(left["counts"].values())
+            rn = sum(right["counts"].values())
+            lp = left["counts"].get("accept", 0) / ln
+            rp = right["counts"].get("accept", 0) / rn
+            if lp >= rp:
+                break
+            left["xs"].extend(right["xs"])
+            left["counts"].update(right["counts"])
+            blocks.pop()
+
+    if not blocks:
+        return None
+    support = [x for block in blocks for x in block["xs"]]
+    if query > support[-1] + 1e-12:
+        return 0.0, None
+
+    chosen = support[-1]
+    for x in support:
+        if x + 1e-12 >= query:
+            chosen = x
+            break
+    for block in blocks:
+        if chosen in block["xs"]:
+            counts = block["counts"]
+            n = sum(counts.values())
+            return counts.get("accept", 0) / n, counts
+    return None
 
 
 def _iter_finals():
@@ -104,11 +197,15 @@ def fit() -> dict:
     #: name -> {"barg_resp": {(share_bin, rbin): Counter(accept/reject)},
     #:          "barg_prop": {rbin: [share_they_keep]},
     #:          "nego_resp": {(pbin, seat, rbin): Counter(accept/counter/walk)},
-    #:          "nego_counter": {(seat, rbin): [price_over_B]}}
+    #:          "nego_resp_v2": {(axis, bin, seat, rbin, terminal): Counter(...)},
+    #:          "nego_counter": {(seat, rbin): [price_over_B]},
+    #:          "nego_counter_v2": {(seat, rbin): [price_over_B]}}
     clones = defaultdict(lambda: {"barg_resp": defaultdict(Counter),
                                   "barg_prop": defaultdict(list),
                                   "nego_resp": defaultdict(Counter),
+                                  "nego_resp_v2": defaultdict(Counter),
                                   "nego_counter": defaultdict(list),
+                                  "nego_counter_v2": defaultdict(list),
                                   "games": 0})
     delta_pairs = Counter()
     nego_value_marginal = Counter()
@@ -166,6 +263,8 @@ def fit() -> dict:
                 continue
             my_mult = round(my_value / base, 2)
             their_value = gs.get(f"{them}_value")
+            visible_their_value = (their_value
+                                   if bool(gs.get("complete_information")) else None)
             cfg = {"base": base,
                    "my_mult": my_mult,
                    "their_mult": (round(their_value / base, 2) if their_value else None),
@@ -210,6 +309,38 @@ def fit() -> dict:
                     for key in keys:
                         for tgt in (who, "__field__"):
                             clones[tgt]["nego_resp"][key][kind] += 1
+
+                    # V2 never conditions on the responder's private multiplier.
+                    # In hidden games that label is recoverable only by inverting
+                    # an AGREEMENT payoff: round 4+, buyer m1.5, price-bin 1.0
+                    # measured 0.640 acceptance (n=25) versus 0.027 (n=2,793) in
+                    # the all-outcome plain cell.  Reweighting cannot recover the
+                    # missing types of no-deal games, so V2 drops the selected
+                    # value key and records each response exactly once.
+                    share = _proposer_share(price, gs.get(f"{me}_role"), my_value,
+                                            visible_their_value)
+                    max_rounds = gs.get("max_rounds")
+                    terminal = ("final" if max_rounds is not None
+                                and int(rnd.get("round") or 1) >= int(max_rounds)
+                                else "continuing")
+                    if share is not None:
+                        v2_key = ("s", _share_bin(share), their_seat, rb, terminal)
+                    else:
+                        # Hidden offers do not reveal a truthful reservation
+                        # bound, and using an agreement-inverted value recreates
+                        # the selection above.  price/base is therefore the only
+                        # scale-invariant observable shared by fitting and replay;
+                        # responder seat supplies its monotonic direction.
+                        v2_key = ("p", _price_bin(price / base), their_seat, rb,
+                                  terminal)
+                    # Round bin "1" otherwise mixes one-round ultimata with
+                    # round-one play in longer games.  In the freshly fitted
+                    # pooled share table that mixture rose from 3.9% acceptance
+                    # at share 0.60 to 99.3% at 0.80; marking terminal state keeps
+                    # the ultimatum mechanism out of the continuation curve.
+                    v2_targets = (who,) if who == "__field__" else (who, "__field__")
+                    for tgt in v2_targets:
+                        clones[tgt]["nego_resp_v2"][v2_key][kind] += 1
                 elif offer.get("from_player") == them:
                     ckeys = [(their_seat, rb)]
                     if their_mult is not None:
@@ -218,6 +349,9 @@ def fit() -> dict:
                         for tgt in (who, "__field__"):
                             clones[tgt]["nego_counter"][ck].append(
                                 round(price / base, 4))
+                    for tgt in ((who,) if who == "__field__" else (who, "__field__")):
+                        clones[tgt]["nego_counter_v2"][(their_seat, rb)].append(
+                            round(price / base, 4))
 
     def _pack(c):
         total = (sum(sum(v.values()) for v in c["barg_resp"].values())
@@ -227,8 +361,17 @@ def fit() -> dict:
             "barg_resp": {f"{k[0]}|{k[1]}": dict(v) for k, v in c["barg_resp"].items()},
             "barg_prop": {k: sorted(v)[:400] for k, v in c["barg_prop"].items()},
             "nego_resp": {f"{k[0]}|{k[1]}|{k[2]}": dict(v) for k, v in c["nego_resp"].items()},
+            "nego_resp_v2": {f"{k[0]}|{k[1]}|{k[2]}|{k[3]}|{k[4]}": dict(v)
+                             for k, v in c["nego_resp_v2"].items()},
             "nego_counter": {f"{k[0]}|{k[1]}": sorted(v)[:400]
                              for k, v in c["nego_counter"].items()},
+            # Legacy ``sorted(v)[:400]`` kept only the lowest tail (the tracked
+            # pooled buyer round-4+ sample ends at 0.1259*base and seller
+            # round-4+ at 0.8000*base).  V2 retains equally weighted quantile
+            # midpoints, so rejecting an ask does not manufacture a low
+            # counteroffer next or overweight a singleton extreme.
+            "nego_counter_v2": {f"{k[0]}|{k[1]}": _even_order_stats(v)
+                                for k, v in c["nego_counter_v2"].items()},
         }
 
     packed = {}
@@ -242,6 +385,7 @@ def fit() -> dict:
     total_games = sum(census["bargaining"].values()) + sum(census["negotiation"].values())
     return {
         "_schema": "glee.sim_field/v1",
+        "_nego_resp_schema": "share-price-terminal/v2",
         "_games": total_games,
         "census": {fam: [[json.loads(k), n] for k, n in cnt.most_common()]
                    for fam, cnt in census.items()},
@@ -276,6 +420,53 @@ class Clone:
             hit = (src.get(section) or {}).get(key)
             if hit:
                 return hit
+        return None
+
+    @staticmethod
+    def _v2_points(src, axis, seat, rb, terminal):
+        points = defaultdict(Counter)
+        for key, counts in (src.get("nego_resp_v2") or {}).items():
+            parts = key.split("|")
+            if len(parts) != 5 or parts[0] != axis or parts[2] != seat \
+                    or parts[3] != rb or parts[4] != terminal:
+                continue
+            try:
+                value = float(parts[1])
+            except ValueError:
+                continue
+            # Proposer share already increases with greed for either seat.  On
+            # the coarse price backstop a seller proposer asks a buyer for MORE
+            # as price rises, while a buyer proposer asks a seller for more as
+            # price falls; negating seller-response prices unifies direction.
+            greed = value if axis == "s" or seat == "buyer" else -value
+            if isinstance(counts, dict):
+                points[greed].update(counts)
+        return points
+
+    def _v2_curve(self, axis, seat, rb, terminal, query):
+        personal = self._v2_points(self._t, axis, seat, rb, terminal)
+        pooled = (personal if self._t is self._f
+                  else self._v2_points(self._f, axis, seat, rb, terminal))
+
+        # A named clone owns interpolation only within its observed support.
+        # Outside it, the all-opponent curve has much more relevant support and
+        # supplies the conservative edge extrapolation.  Never add the tables:
+        # the pooled table already contains each named observation once.
+        if self._t is not self._f and personal:
+            xs = sorted(personal)
+            if xs[0] - 1e-12 <= query <= xs[-1] + 1e-12:
+                result = _monotone_response(personal, query)
+                # MIN_CLONE_OBS already defines when a personal clone is more
+                # than lookup-table noise.  Apply the same evidence floor to
+                # the fitted block that would decide this response; a one-game
+                # personal cell must not override the all-field curve with p=1.
+                if result is not None and result[1] is not None \
+                        and sum(result[1].values()) >= MIN_CLONE_OBS:
+                    return result
+        if pooled:
+            return _monotone_response(pooled, query)
+        if personal:
+            return _monotone_response(personal, query)
         return None
 
     def __call__(self, game: dict) -> dict:
@@ -313,7 +504,46 @@ class Clone:
                 my_mult = g_
                 break
 
-        def counter_price():
+        v2_enabled = runtime_flags.enabled(NEGO_RESP_V2_FLAG)
+
+        def counter_price(v2=False):
+            if v2:
+                key = f"{seat}|{rb}"
+                sources = ((self._t,) if self._t is self._f else (self._t, self._f))
+                for src in sources:
+                    xs = (src.get("nego_counter_v2") or {}).get(key)
+                    if xs:
+                        # Match the response-side evidence floor: 178 of 637
+                        # fitted personal counter cells had fewer than 10 draws,
+                        # so a singleton proposal must defer to the pooled field.
+                        if src is self._t and self._t is not self._f \
+                                and len(xs) < MIN_CLONE_OBS:
+                            continue
+                        # Pooling without the selected private-value key is
+                        # identified, but can draw a bid above this buyer's
+                        # value or an ask below this seller's cost (49-60% in
+                        # the vulnerable low/high-value cells).  Filter by the
+                        # clone's known reservation value before sampling.
+                        feasible = [x for x in xs
+                                    if ((role == "seller" and x * base >= my_value)
+                                        or (role == "buyer" and x * base <= my_value))]
+                        if feasible:
+                            return round(self._rng.choice(feasible) * base, 2)
+                # A pre-V2 artifact has no evenly sampled table.  Falling back
+                # only to the all-outcome plain key keeps private-value
+                # survivorship out; it does not revive the selected |m key.
+                for src in sources:
+                    xs = (src.get("nego_counter") or {}).get(key)
+                    if xs:
+                        if src is self._t and self._t is not self._f \
+                                and len(xs) < MIN_CLONE_OBS:
+                            continue
+                        feasible = [x for x in xs
+                                    if ((role == "seller" and x * base >= my_value)
+                                        or (role == "buyer" and x * base <= my_value))]
+                        if feasible:
+                            return round(self._rng.choice(feasible) * base, 2)
+                return round(my_value * (1.3 if role == "seller" else 0.8), 2)
             keys = ([f"{seat}|m{my_mult}|{rb}"] if my_mult is not None else []) \
                 + [f"{seat}|{rb}"]
             for src in (self._t, self._f):
@@ -324,8 +554,57 @@ class Clone:
             return round(my_value * (1.3 if role == "seller" else 0.8), 2)
 
         if game["valid_actions"]["type"] == "offer":
-            return {"product_price": counter_price()}
+            return {"product_price": counter_price(v2_enabled)}
         price = (state.get("last_offer") or {}).get("price") or 0.0
+
+        if v2_enabled:
+            curve = None
+            other = "player_2" if me == "player_1" else "player_1"
+            final = (state.get("max_rounds") is not None
+                     and int(state.get("round") or 1) >= int(state["max_rounds"]))
+            terminal = "final" if final else "continuing"
+            if bool(state.get("complete_information")):
+                share = _proposer_share(price, state.get(f"{other}_role"),
+                                        state.get(f"{other}_value"), my_value)
+                if share is not None:
+                    curve = self._v2_curve("s", seat, rb, terminal,
+                                           _share_bin(share))
+            if curve is None:
+                normalized = price / base
+                binned = _price_bin(normalized)
+                # Preserve the fitted key identity inside the [0,4] backstop.
+                # Above its clamp, a seller ask to a buyer is greedier than all
+                # represented bins and must remain outside support, not alias to
+                # p=4.0 and inherit acceptance there.
+                outside_greedy_clamp = ((seat == "buyer" and normalized > 4.0)
+                                        or (seat == "seller" and normalized < 0.0))
+                price_point = normalized if outside_greedy_clamp else binned
+                price_greed = price_point if seat == "buyer" else -price_point
+                curve = self._v2_curve("p", seat, rb, terminal, price_greed)
+
+            # No curve and a greedier-than-support query both mean p=0.  Unlike
+            # the legacy profitable-price fallback, this can withhold observed
+            # acceptance but can never manufacture it in an untested region.
+            p_accept, mix = curve if curve is not None else (0.0, None)
+            profitable = (price >= my_value if role == "seller"
+                          else price <= my_value)
+            # Dropping outcome-selected value keys intentionally pools hidden
+            # private types, but the clone still knows its own reservation.  A
+            # raw pooled curve otherwise predicted acceptance as high as 0.646
+            # for buyer m0.8 at p=1.0B and 0.208 for seller m1.5 at p=1.3B,
+            # both losing trades.  Structural no-loss support overrides the fit.
+            if not profitable:
+                p_accept = 0.0
+            if self._rng.random() < p_accept:
+                return {"decision": "AcceptOffer"}
+            nonaccept = ((mix.get("counter", 0) + mix.get("walk", 0))
+                         if mix is not None else 0)
+            if nonaccept and self._rng.random() < mix.get("walk", 0) / nonaccept:
+                return {"decision": "WalkAway"}
+            if final:
+                return {"decision": "RejectOffer"}
+            return {"decision": "RejectOffer", "product_price": counter_price(True)}
+
         hit = None
         if my_mult is not None:
             hit = self._lookup("nego_resp",
