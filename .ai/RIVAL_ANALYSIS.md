@@ -175,3 +175,54 @@ there is NOT lie rate; both are at ceiling. Unexplained and worth a look.
 
 Negotiation has the largest gap, the clearest mechanism and the strongest
 evidence. It is the only one worth a regime change.
+
+---
+
+## RECENCY: the field is moving, and pooled history hides it (2026-08-23)
+
+Prompted by the operator asking whether the logs hold opponents' UPDATED
+strategies. They do, and pooling 3.3 days of them was hiding it.
+
+**Negotiation — the field is HARDENING.** Claimed ZOPA share in opponents' offers:
+
+| window | mean claim | n |
+|---|---|---|
+| older than 24h | 0.776 | 7,222 |
+| 24h-6h ago | 0.813 | 2,636 |
+| last 6h | **0.830** | 985 |
+
+Individual agents visibly updating: Zeus 0.726 -> 0.856, opus 5(2) 0.908 -> 0.965,
+gamma flat at ~0.91. Our 0.681 is now far below the AVERAGE opponent, not just the
+leaders, and the gap is widening while we sit still. This strengthens the
+GLEE_NEGO_OPEN_CLAIM=0.95 change already on Test 4.
+
+**Persuasion — this INVALIDATES the knife-edge recommendation.** Sellers' lie
+rates on low-quality units, same windows:
+
+| cell | >24h ago | 24h-6h | last 6h |
+|---|---|---|---|
+| knife | 88.8% | 93.5% | **97.0%** |
+| free | 86.4% | 93.2% | 95.1% |
+| costly | 87.0% | 92.7% | 96.2% |
+
+The inverted-U reported earlier -- 40-80% lying appearing optimal at the knife
+edge, versus 38% for near-honest and 55% for near-always -- was POOLED ACROSS
+TIME. Those low-lie bands are almost entirely OLD games. The current field lies
+97% there. "Moderate lying wins" may be nothing more than "older opponents lied
+less", and a flag built on it would have been built on a time artifact.
+
+A second defect in that same table: its "units sold" column comes from games where
+WE were the buyer, so it reflects our own buying policy as much as the seller's
+skill. It is not a clean read of their strategy in either direction.
+
+**The knife-edge persuasion flag is therefore NOT justified and was not built.**
+
+What survives is our own randomised evidence: our costly-cell lie rate went
+20.8% -> 8.1% -> 0.0% across the unification, and Test 3's percentile there went
+0.6243 -> 0.7235. Own agents, own change, holding.
+
+**Method note.** This is the third distinct way a comparison fooled us in one day:
+realised-q instead of assigned arm (persuasion), clone support instead of policy
+space (the local search), and now pooled time instead of current behaviour. All
+three produced a confident number pointing the wrong way. Any cross-sectional
+comparison against the field must be cut by time window before it is believed.
