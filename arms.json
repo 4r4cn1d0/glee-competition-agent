@@ -36,7 +36,9 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_BARG_ECON_STALL": "0"
   },
   "hardliner": {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
@@ -75,7 +77,9 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_BARG_ECON_STALL": "0"
   },
   "conceder": {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
@@ -114,7 +118,9 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_BARG_ECON_STALL": "0"
   },
   "randomized": {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
@@ -153,7 +159,9 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_BARG_ECON_STALL": "0"
   },
   "composite": {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
@@ -192,6 +200,8 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_BARG_BOB_OFFER": "1",
+    "GLEE_BARG_ECON_STALL": "0"
   }
 }
