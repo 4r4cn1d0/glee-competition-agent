@@ -7,7 +7,10 @@
     "GLEE_NEGO_CLOSE_AB": "1.2",
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_PERS_BACKLOAD_AB": "0"
+    "GLEE_PERS_BACKLOAD_AB": "0",
+    "GLEE_BARG_NO_REGRESS": "1",
+    "GLEE_BARG_MSG": "1",
+    "GLEE_NEGO_RANK_PRICE_AB": "1"
   },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -99,7 +102,10 @@
     "GLEE_NEGO_ZOPA_AB": "0.10",
     "GLEE_NEGO_CLOSE_AB": "1.2",
     "GLEE_PERS_KEEP_MSG": "1",
-    "GLEE_PERS_BACKLOAD_AB": "0"
+    "GLEE_PERS_BACKLOAD_AB": "0",
+    "GLEE_BARG_NO_REGRESS": "1",
+    "GLEE_BARG_MSG": "1",
+    "GLEE_NEGO_RANK_PRICE_AB": "1"
   },
   "champion": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
@@ -132,6 +138,9 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_PARSE_TRI": "1",
     "GLEE_PERS_TOKEN_MAX_P": "0.5",
-    "GLEE_PERS_BACKLOAD_AB": "0"
+    "GLEE_PERS_BACKLOAD_AB": "0",
+    "GLEE_BARG_NO_REGRESS": "1",
+    "GLEE_BARG_MSG": "1",
+    "GLEE_NEGO_RANK_PRICE_AB": "1"
   }
 }
