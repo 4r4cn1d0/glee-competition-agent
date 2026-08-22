@@ -164,7 +164,8 @@
     "GLEE_BARG_ECON_STALL": "0",
     "GLEE_NEGO_ZOPA_SHARE": "0.39",
     "GLEE_NEGO_OPEN_CLAIM": "0.95",
-    "GLEE_NEGO_CLAIM_FLOOR": "0.80"
+    "GLEE_NEGO_CLAIM_FLOOR": "0.80",
+    "GLEE_BARG_OBSERVED_GAIN": "1"
   },
   "composite": {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",

@@ -5,7 +5,7 @@
 UPDATED: AUG 23 - 02:25 IST.
 LEADER: Test 3, 2168 overall (Test 1 2143, Test 2 2113, Agent 5 2061, Test 4 2056). Leader flips between Test 1 and Test 3 on the hour -- always re-check from the API before deploying, never from memory.
 CONTROLS: Test 1, Agent 5, Test 2 and Test 3 run the identical 39-flag `champion` baseline; no behavioural differences among them.
-TREATMENT: Test 4 = baseline + hidden-info anchors (SELLER 1.8 / BUYER 0.50, FULL not arm) + complete-info OPEN_CLAIM 0.95 / CLAIM_FLOOR 0.80 (hash arm). The anchors bind only in hidden games (hidden opens 3.97x cost, complete-info 1.24x), so the two do not confound.
+TREATMENT: Test 4 = baseline + hidden-info anchors (SELLER 1.8 / BUYER 0.50, FULL not arm) + complete-info OPEN_CLAIM 0.95 / CLAIM_FLOOR 0.80 (hash arm). The anchors bind only in hidden games (hidden opens 3.97x cost, complete-info 1.24x), so the two do not confound. ALSO GLEE_BARG_OBSERVED_GAIN=1 from 03:33 (bargaining, provisional).
 LIVE EXPERIMENT: Test 4 open-claim/floor; prediction +0.02 to +0.06 percentile, lower close rate, genuine negative risk.
 KILL RULE: At 150+ complete-information games, revert if percentile is negative with CI excluding zero, or close rate falls >20pp without a percentile gain.
 DEPLOY BASELINE: Test 4 negotiation 1811.6 and already +0.0104 versus the control mean; judge by difference-in-differences, not versus zero or displayed rating.
@@ -13,6 +13,12 @@ FIRST READ: 02:00, n=24; zone share 0.544 -> 0.775, close rate 100% -> 91.7%, pe
 BUILT BUT OFF: `BARG_NO_REGRESS`, `BARG_MSG`, `NEGO_RANK_PRICE_AB`, `NEGO_SURPLUS_PROBE`, `NEGO_ZOPA_AB`, `NEGO_CLOSE_AB`, `PERS_BACKLOAD_AB`, and the ZOPA clamp/ultimatum floor/cap guards; the knife-edge persuasion fix was not built.
 WORKTREE, OFF/UNDEPLOYED: `NEGO_HIDDEN_FLOOR` and `NEGO_HIDDEN_POLICY_V1`.
 LOCAL SIM: Always enable opponent clone V2; the legacy clone is invalid for pricing work.
+
+## AUG 23 - 03:33 IST
+
+WHAT: Turned GLEE_BARG_OBSERVED_GAIN=1 on TEST 4 only. Provisional -- revert if Codex's transcript analysis disagrees.
+WHY: bargaining.py:610 already documents the defect: the haggling-gain constant G is hardcoded at 0.05 pot/round but measured at +0.0012 median over 899 games, "wrong by 40x". With G=0.05 the accept floor demands 0.20/0.45/0.50 of the pot at delta 0.8/0.9/0.95; with the real G it is 0.012/0.027/0.057. So we refuse early money and hold for a concession that never comes. Six operator transcripts show it: one ran 42 rounds and kept $609 of a $10,000 pot where the round-1 offer was worth $4,000.
+RESULT: Pending. Baseline Test 4 bargaining 2379.0 (1,229 games) -- our BEST bargainer, so this is being tested on the agent with the most to lose. Flag is runtime-read, so reverting takes 3 seconds. KILL: revert if Test 4 bargaining percentile drops below the control mean by more than 0.03 over 200+ games, or if Codex names a different primary cause.
 
 ## AUG 23 - 02:53 IST
 
