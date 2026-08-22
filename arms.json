@@ -11,7 +11,8 @@
     "GLEE_BARG_NO_REGRESS": "1",
     "GLEE_BARG_MSG": "1",
     "GLEE_NEGO_RANK_PRICE_AB": "1",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_NEGO_HORIZON_V2": "1"
   },
   "randomized": {
     "GLEE_NEGO_BOUND_AS_FLOOR": "1",
