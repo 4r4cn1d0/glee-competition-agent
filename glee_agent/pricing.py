@@ -23,7 +23,9 @@ entire pile in its configuration.
 """
 from __future__ import annotations
 
+import bisect
 import json
+import math
 import os
 import threading
 import time
@@ -32,13 +34,21 @@ from . import runtime_flags
 
 _MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                            "models", "negotiation_acceptance_v5.json")
+_CDF_PATH = os.path.join(os.path.dirname(_MODEL_PATH), "percentile_cdf_v3.json")
 _BASES = (100.0, 1e4, 1e6)
 _MULTS = (0.8, 1.0, 1.2, 1.5)
 #: Trust no bin thinner than this; a 3-observation acceptance estimate is noise.
 _MIN_BIN_N = 20
+#: Conditional responder-type bins are sparse; this is the existing v5 fallback
+#: contract used by posterior_final_ask before it substitutes the pooled rate.
+_MIN_TYPE_BIN_N = 8
+#: A 30-sample empirical CDF still has worst-case pointwise SE about 0.091;
+#: below it, a single result moves rank by more than 3.3 percentile points.
+_MIN_CDF_N = 30
 
 _LOCK = threading.Lock()
 _STATE = {"checked": 0.0, "mtime": None, "curves": None}
+_CDF_STATE = {"checked": 0.0, "mtime": None, "cells": None}
 
 
 def infer_base(value: float) -> float | None:
@@ -107,6 +117,211 @@ def seller_final_ask(my_value: float) -> float | None:
         if score > best_score:
             best_score, best_ask = score, ask
     return best_ask
+
+
+# ---------------------------------------------------------------------------
+# Rank-optimal pricing for a real terminal offer.
+# ---------------------------------------------------------------------------
+
+def _cdf_cells() -> dict | None:
+    """Load the exact-cell payoff samples without importing simulator code."""
+    now = time.monotonic()
+    with _LOCK:
+        if now - _CDF_STATE["checked"] < 10.0:
+            return _CDF_STATE["cells"]
+        _CDF_STATE["checked"] = now
+        try:
+            mtime = os.stat(_CDF_PATH).st_mtime_ns
+        except OSError:
+            return _CDF_STATE["cells"]       # keep last good; never flip live
+        if mtime == _CDF_STATE["mtime"]:
+            return _CDF_STATE["cells"]
+        try:
+            with open(_CDF_PATH, encoding="utf-8") as fh:
+                cells = json.load(fh).get("cells")
+        except (OSError, ValueError):
+            return _CDF_STATE["cells"]
+        if isinstance(cells, dict):
+            _CDF_STATE.update(mtime=mtime, cells=cells)
+        return _CDF_STATE["cells"]
+
+
+def _midrank(samples: list[float], payoff_over_b: float) -> float:
+    """Empirical CDF using the competition proxy's half-credit-for-ties rule."""
+    lo = bisect.bisect_left(samples, payoff_over_b - 1e-9)
+    hi = bisect.bisect_right(samples, payoff_over_b + 1e-9)
+    return (lo + hi) / 2.0 / len(samples)
+
+
+def _nego_cdf_key(base: float, my_value: float, role: str, state: dict) -> str:
+    """Mirror scripts/fit_percentile.py's negotiation cell key exactly."""
+    return "|".join(str(x) for x in (
+        "negotiation", base, round(my_value / base, 2), role,
+        state.get("max_rounds"), bool(state.get("horizon_known")),
+        bool(state.get("complete_information"))))
+
+
+def rank_terminal_price(my_value: float, i_am_seller: bool, state: dict,
+                        opponent_value: float | None = None) -> dict:
+    """Price a take-it-or-leave-it offer for expected payoff percentile.
+
+    The bounded grid is the midpoint of every adequately observed pooled
+    ``seller_final`` or ``buyer_final`` acceptance bin. Acceptance v5 estimates
+    no within-bin slope, so a finer price grid would manufacture precision and
+    extrapolating beyond those bins would manufacture coverage.
+
+    In hidden games A(P) is the uniform mixture over the four responder-value
+    curves, with the pooled rate substituted wherever a type bin has fewer than
+    eight observations. Uniform is the structural hidden-type prior; deliberately
+    do not reweight it with the selected v2 posterior. When the responder value is
+    visible, use that type's curve with the same pooled fallback.
+
+    This is still a fitted proxy, not an identified structural result. The CDF
+    contains some of OUR OWN games. FINDINGS shows persuasion percentile
+    calibration is coarse; negotiation cells are better populated, but that does
+    not make them ground truth. Both the v2 posterior and v5 hidden-type labels are
+    learned mainly from agreements (scripts/fit_posterior.py's label path), so
+    those labels are selected-on-close even though we refuse v2's selected weights.
+    """
+    base = infer_base(my_value)
+    if base is None:
+        return {"status": "fallback", "reason": "unknown_base"}
+
+    role = "seller" if i_am_seller else "buyer"
+    cell_key = _nego_cdf_key(base, my_value, role, state)
+    cells = _cdf_cells()
+    raw_samples = cells.get(cell_key) if isinstance(cells, dict) else None
+    if not isinstance(raw_samples, list) or not raw_samples:
+        return {"status": "fallback", "reason": "unknown_cdf_cell",
+                "cell": cell_key}
+    try:
+        samples = sorted(float(x) for x in raw_samples if math.isfinite(float(x)))
+    except (TypeError, ValueError):
+        return {"status": "fallback", "reason": "invalid_cdf_cell",
+                "cell": cell_key}
+    if len(samples) < _MIN_CDF_N:
+        return {"status": "fallback", "reason": "thin_cdf_cell",
+                "cell": cell_key, "cdf_n": len(samples)}
+
+    curves = _curves()
+    if not isinstance(curves, dict):
+        return {"status": "fallback", "reason": "acceptance_curve_unavailable",
+                "cell": cell_key, "cdf_n": len(samples)}
+    rows = curves.get(f"{role}_final")
+    if not isinstance(rows, list):
+        return {"status": "fallback", "reason": "acceptance_curve_unavailable",
+                "cell": cell_key, "cdf_n": len(samples)}
+
+    my_over_b = my_value / base
+    complete_information = bool(state.get("complete_information"))
+    opponent_over_b = None
+    if complete_information:
+        try:
+            opponent_over_b = float(opponent_value) / base
+        except (TypeError, ValueError):
+            return {"status": "fallback", "reason": "unknown_responder_type",
+                    "cell": cell_key, "cdf_n": len(samples)}
+    known_mult = None
+    if complete_information:
+        if not math.isfinite(opponent_over_b):
+            return {"status": "fallback", "reason": "unknown_responder_type",
+                    "cell": cell_key, "cdf_n": len(samples)}
+        for mult in _MULTS:
+            if abs(opponent_over_b - mult) <= 1e-6:
+                known_mult = mult
+                break
+        if known_mult is None:
+            return {"status": "fallback", "reason": "unknown_responder_type",
+                    "cell": cell_key, "cdf_n": len(samples)}
+    acceptance_basis = ("known_responder_type" if known_mult is not None
+                        else "uniform_hidden_types")
+    f_zero = _midrank(samples, 0.0)
+    candidates = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            lo, hi = float(row["lo"]), float(row["hi"])
+            n = int(row.get("n", 0))
+            p_accept = float(row["p_accept"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (n < _MIN_BIN_N or not all(math.isfinite(x) for x in (lo, hi, p_accept))
+                or lo < 0.0 or hi <= lo or not 0.0 <= p_accept <= 1.0):
+            continue
+        type_mults = (known_mult,) if known_mult is not None else _MULTS
+        type_rates = []
+        for mult in type_mults:
+            rate = None
+            type_rows = curves.get(f"{role}|m{mult}_final") or []
+            for type_row in type_rows:
+                if not isinstance(type_row, dict):
+                    continue
+                try:
+                    same_bin = (float(type_row["lo"]) == lo
+                                and float(type_row["hi"]) == hi)
+                    type_n = int(type_row.get("n", 0))
+                    type_rate = float(type_row["p_accept"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if (same_bin and type_n >= _MIN_TYPE_BIN_N
+                        and math.isfinite(type_rate) and 0.0 <= type_rate <= 1.0):
+                    rate = type_rate
+                    break
+            type_rates.append(p_accept if rate is None else rate)
+        p_accept = sum(type_rates) / len(type_rates)
+        if p_accept <= 0.0:
+            continue
+        price_over_b = (lo + hi) / 2.0
+        payoff_over_b = ((price_over_b - my_over_b) if i_am_seller
+                         else (my_over_b - price_over_b))
+        if payoff_over_b <= 0.0:
+            continue                         # never trade through our own value
+        if opponent_over_b is not None:
+            if i_am_seller and price_over_b >= opponent_over_b:
+                continue                     # visible buyer gets no positive gain
+            if not i_am_seller and price_over_b <= opponent_over_b:
+                continue                     # visible seller gets no positive gain
+        f_payoff = _midrank(samples, payoff_over_b)
+        expected_rank = (p_accept * f_payoff
+                         + (1.0 - p_accept) * f_zero)
+        candidates.append({
+            "price": price_over_b * base,
+            "p_accept": p_accept,
+            "acceptance_n": n,
+            "expected_money_over_b": p_accept * payoff_over_b,
+            "expected_rank": expected_rank,
+        })
+
+    if not candidates:
+        return {"status": "fallback", "reason": "no_acceptance_coverage",
+                "cell": cell_key, "cdf_n": len(samples)}
+
+    # Rank ties go to the higher-acceptance action. Money ties go to the action
+    # with the higher rank, so neither comparator is needlessly rejection-prone.
+    generosity = (lambda x: -x["price"]) if i_am_seller else (lambda x: x["price"])
+    rank_best = max(candidates,
+                    key=lambda x: (x["expected_rank"], x["p_accept"],
+                                   generosity(x)))
+    money_best = max(candidates,
+                     key=lambda x: (x["expected_money_over_b"],
+                                    x["expected_rank"], x["p_accept"],
+                                    generosity(x)))
+    return {
+        "status": "applied",
+        "reason": "max_expected_rank",
+        "cell": cell_key,
+        "acceptance_basis": acceptance_basis,
+        "chosen_price": rank_best["price"],
+        "money_optimal_price": money_best["price"],
+        "chosen_acceptance": rank_best["p_accept"],
+        "money_acceptance": money_best["p_accept"],
+        "chosen_expected_rank": rank_best["expected_rank"],
+        "money_expected_rank": money_best["expected_rank"],
+        "cdf_at_zero": f_zero,
+        "cdf_n": len(samples),
+        "grid_points": len(candidates),
+    }
 
 
 # ---------------------------------------------------------------------------

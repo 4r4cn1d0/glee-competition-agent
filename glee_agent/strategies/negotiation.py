@@ -255,6 +255,23 @@ def _zopa_share(gid, default: float) -> float:
     return ab if bit else default
 
 
+def _rank_price_arm(gid) -> bool | None:
+    """Per-game treatment bit for terminal rank pricing, or None when OFF.
+
+    The salt is deliberately independent of ``zopa_ab|``: that greedy-price
+    experiment is live, and sharing its bit would confound the two arms. A pure
+    game-id hash makes assignment stable across every turn and lets
+    scripts/live_percentile.py recover it after the game without mutable logs.
+    """
+    if not runtime_flags.enabled("GLEE_NEGO_RANK_PRICE_AB"):
+        return None
+    gid = str(gid or "")
+    if not gid:
+        return None
+    import hashlib as _h
+    return bool(int(_h.sha256(("rank_price_ab|" + gid).encode()).hexdigest(), 16) & 1)
+
+
 def _close_harder(game: dict, i_am_seller: bool, my_value, complete: bool) -> bool:
     """Is this a hidden game we should be PUSHING to close, and is it in the arm?
 
@@ -753,6 +770,50 @@ def plan(game: dict, cfg) -> dict:
                 _tr.append("curve_final")
             target = curve_ask
 
+    # TERMINAL RANK PRICING is the final writer on an outgoing REAL-final offer.
+    # The measured hidden-state proxy moved seller asks DOWN by as much as 0.275B
+    # and buyer offers UP, buying acceptance; examples gained +0.111 expected rank
+    # over the money argmax. Each armed GAME hashes to control or treatment, and
+    # only an offer turn may move target, so the arm cannot leak into accept/reject
+    # thresholds as the invalid surplus probe did. Treatment searches v5's covered
+    # final-bin midpoints and maximises A(P)F(payoff)+(1-A(P))F(0); missing/thin
+    # inputs leave every preceding path, including the 0.80 ultimatum, untouched.
+    # This remains a proxy: the CDF includes our own games, and v2/v5 hidden-type
+    # labels are agreement-selected. We keep the structural uniform hidden prior
+    # instead of v2's selected weights, but the four v5 component curves are fitted.
+    rank_price = None
+    rank_arm = _rank_price_arm(game.get("game_id"))
+    if (rank_arm is not None and game.get("valid_actions", {}).get("type") == "offer"
+            and capped and rounds_left <= 1):
+        previous_target = target
+        if not rank_arm:
+            rank_price = {"arm": "control", "status": "control",
+                          "reason": "hash_control",
+                          "previous_target": round(previous_target, 2)}
+        else:
+            visible_value = state.get(f"{other}_value")
+            try:
+                rank_price = pricing.rank_terminal_price(
+                    my_value, i_am_seller, state, visible_value)
+            except Exception:
+                # A model artifact must never turn a legal terminal offer into a
+                # strategy exception and therefore a timeout/no-submission.
+                rank_price = {"status": "fallback", "reason": "pricing_error"}
+            rank_price = {"arm": "candidate", **rank_price,
+                          "previous_target": round(previous_target, 2)}
+            for _k in ("chosen_price", "money_optimal_price"):
+                if _k in rank_price:
+                    rank_price[_k] = round(rank_price[_k], 2)
+            for _k in ("chosen_acceptance", "money_acceptance",
+                       "chosen_expected_rank", "money_expected_rank",
+                       "cdf_at_zero"):
+                if _k in rank_price:
+                    rank_price[_k] = round(rank_price[_k], 6)
+            if rank_price.get("status") == "applied":
+                target = rank_price["chosen_price"]
+                if _tr is not None and target != previous_target:
+                    _tr.append("rank_price")
+
     out = {
         "close_push": p_close,
         # Carried so _final_option_value() can resolve the SAME A/B arm this
@@ -779,6 +840,8 @@ def plan(game: dict, cfg) -> dict:
         "ultimatum": ultimatum,
         "surplus_probe": probe_arm,
     }
+    if rank_price is not None:
+        out["rank_price"] = rank_price
     if _tr is not None:
         out["gates_fired"] = _tr
     return out
@@ -987,7 +1050,11 @@ def _decide(game: dict, cfg) -> dict:
     p = plan(game, cfg)
 
     if game["valid_actions"]["type"] == "offer":
-        price = _maybe_split(state, p, p["target"])
+        # Rank pricing is already the argmax over every supported terminal price.
+        # A later split transform could greedify a seller ask (or lowball a buyer
+        # offer) and silently submit a different price than the plan records.
+        rank_applied = (p.get("rank_price") or {}).get("status") == "applied"
+        price = p["target"] if rank_applied else _maybe_split(state, p, p["target"])
         p["split_taken"] = price != p["target"]
         if p["split_taken"]:
             _gate(p, "split")

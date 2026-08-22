@@ -6,11 +6,12 @@ Live data shows opponents using it well: they cite discount asymmetry, claim
 reservation prices, and spend a round declining to recommend in order to buy
 credibility for later ones.
 
-We were sending two fixed strings. These templates are the floor: they say
-something true and specific drawn from the solver's own reasoning, which is what
-makes a message move an opponent rather than decorate an offer. When an LLM
-provider key is configured, llm.write_message supersedes this — but a failed or
-slow provider call falls back here rather than to nothing.
+Older reachable builders sent fixed templates. Bargaining's prior bank was not
+reachable in the measured fleet, so no wording in it has evidence of rating
+impact; the randomised arms below test the channel instead of assuming an
+effect. Negotiation and persuasion may still use a configured wording provider.
+The bargaining experiment is hand-written only: its silent and sentence-bank
+arms never call, fall back to, or expose a hook for an LLM.
 
 Nothing here changes a single number. The move is already decided; this only
 chooses how to say it.
@@ -20,9 +21,11 @@ from __future__ import annotations
 
 from . import runtime_flags
 
+import hashlib
+import json
 import random
 
-from .actions import _num
+from .actions import _num, coerce
 
 
 def _pick(rng: random.Random, options: list[str]) -> str:
@@ -30,71 +33,335 @@ def _pick(rng: random.Random, options: list[str]) -> str:
     return rng.choice(options)
 
 
+# --------------------------------------------------------------------------
+# BARGAINING MESSAGE ARMS — the randomised bank behind GLEE_BARG_MSG.
+#
+# Reachability is measured, effect is not: Test 1 sent text on 0/1,851 offer
+# turns in 493 message-enabled games while opponents sent it on 1,583/1,830.
+# B0 therefore preserves fleet silence and B1-B3 measure the language channel;
+# none is a default policy claim about rating impact.
+#
+# Every non-silent arm is assembled from the same FRAME, REQUEST and FILLER
+# pools into the same length band. The composer reads the submitted split and
+# public offer history only. It does not read discount factors, reservation or
+# floor values, continuation estimates, planned concessions, or ``plan`` at all.
+# --------------------------------------------------------------------------
+
+BARG_MSG_FLAG = "GLEE_BARG_MSG"
+BARG_ARM_GRAMMAR_VERSION = "barg-msg-grammar-1"
+BARG_ARM_LEN_LO, BARG_ARM_LEN_HI = 292, 308
+BARG_ARM_TARGET_LEN = 300
+BARG_ARM_SALT = "barg_msg|"
+
+BARG_ARM_SEMANTICS = {
+    "B0": "silent control — no message is attached although the channel is "
+          "open. This reproduces the fleet behaviour that the channel test is "
+          "measured against.",
+    "B1": "neutral split recap — states only the submitted allocations and "
+          "returns the decision to the opponent. It is the length-matched text "
+          "reference with no bargaining argument.",
+    "B2": "no-agreement frame — pairs the submitted allocations with the public "
+          "rule that an eventual no-agreement outcome pays both sides zero.",
+    "B3": "public-movement frame — states a concession only when transmitted "
+          "offer history proves it, otherwise it uses public allocation "
+          "arithmetic. It makes no claim about a future move.",
+}
+
+BARG_ARMS = ("B0", "B1", "B2", "B3")
+
+
+def bargaining_arm(game_id) -> str | None:
+    """Stable per-game arm, matching ``_zopa_share``'s hash assignment shape."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    digest = hashlib.sha256((BARG_ARM_SALT + gid).encode()).hexdigest()
+    return BARG_ARMS[int(digest, 16) % len(BARG_ARMS)]
+
+
+def _barg_fmt(value: float) -> str:
+    return f"{value:,.2f}"
+
+
+def _barg_public_facts(game: dict, action: dict) -> dict | None:
+    """Public split/history facts used by every bargaining message arm."""
+    if not isinstance(action, dict):
+        return None
+    state = game.get("game_state") or {}
+    money = _num(state.get("money_to_divide"), 0.0)
+    if money <= 0.0:
+        return None
+    me = game.get("your_player") or state.get("current_player") or "player_1"
+    other = "player_2" if me == "player_1" else "player_1"
+    mine_key = "alice_gain" if me == "player_1" else "bob_gain"
+    theirs_key = "bob_gain" if me == "player_1" else "alice_gain"
+    if action.get(mine_key) is None or action.get(theirs_key) is None:
+        return None
+    mine = _num(action[mine_key], -1.0)
+    theirs = _num(action[theirs_key], -1.0)
+    if mine < 0.0 or theirs < 0.0:
+        return None
+
+    previous_to_them = None
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        offer = entry.get("offer") or {}
+        if not isinstance(offer, dict):
+            continue
+        proposer = offer.get("proposer") or entry.get("proposer")
+        if proposer != me:
+            continue
+        prior = offer.get(f"{other}_gain")
+        if prior is not None:
+            prior_gain = _num(prior, -1.0)
+            if 0.0 <= prior_gain <= money:
+                previous_to_them = prior_gain
+
+    public_step = None
+    # The retained "serious move" language follows a publicly visible move of
+    # at least five percent of the pot; a one-cent change does not qualify.
+    if (previous_to_them is not None
+            and theirs - previous_to_them >= 0.05 * money):
+        public_step = theirs - previous_to_them
+    return {
+        "money": money,
+        "mine": mine,
+        "theirs": theirs,
+        "round": int(_num(state.get("round"), 1)),
+        "public_step": public_step,
+    }
+
+
+def _barg_arm_frames(facts: dict) -> list[str]:
+    mine, theirs, money = facts["mine"], facts["theirs"], facts["money"]
+    return [
+        f"You take {_barg_fmt(theirs)} of the {_barg_fmt(money)} nominal pot.",
+        f"My submitted split assigns {_barg_fmt(theirs)} to you and "
+        f"{_barg_fmt(mine)} to me.",
+        f"The proposal is {_barg_fmt(theirs)} to you and {_barg_fmt(mine)} to me.",
+    ]
+
+
+def _barg_arm_claim(arm: str, facts: dict,
+                    rng: random.Random) -> tuple[str, str | None]:
+    if arm == "B1":
+        return "", None
+    if arm == "B2":
+        return ("If this bargaining ends without an accepted agreement, both "
+                "sides receive zero; the submitted split is the agreement "
+                "available on this turn.", "b2_no_agreement")
+    if arm == "B3":
+        step = facts.get("public_step")
+        if step is not None:
+            # These closers used to fire only below a 45% own-share gate. They
+            # now follow a concession proved by public offer history, so either
+            # closer can be emitted above or below that former share threshold.
+            closer = _pick(rng, [
+                "That is a serious move toward you. I would like to close here.",
+                "I have come a long way to you on this. Let us finish it.",
+            ])
+            return (f"Relative to my previous submitted split, this assigns "
+                    f"{_barg_fmt(step)} more of the nominal pot to you. {closer}",
+                    "b3_public_move")
+        return ("The two submitted allocations add to the full nominal pot, and "
+                "no side condition changes either number.", "b3_public_allocation")
+    return "", None
+
+
+def _barg_arm_requests() -> list[str]:
+    return [
+        "Please decide on the split as submitted.",
+        "The decision on this submitted split is yours.",
+        "Please evaluate the two submitted amounts and decide.",
+        "You can accept or reject the allocation as written.",
+    ]
+
+
+def _barg_arm_fillers(facts: dict) -> list[str]:
+    return [
+        f"This is the complete allocation submitted for round {facts['round']}.",
+        f"The two submitted amounts sum to {_barg_fmt(facts['money'])}.",
+        "No side payment or additional condition is attached.",
+        "Only the two allocations shown are part of this proposal.",
+        "The offer stands with exactly the amounts written above.",
+        "Nothing else is bundled into the division of the pot.",
+        "The amounts are explicit.",
+        "Those are the full terms.",
+        "The split is fully stated.",
+        "The proposal has no add-ons.",
+        "Both amounts are shown.",
+        "That is the entire split.",
+        "As written.",
+        "No extras.",
+        "This is exact.",
+        "Nothing is implied.",
+    ]
+
+
+def _assemble_barg_arm(facts: dict, claim: str,
+                       rng: random.Random) -> str:
+    """Assemble every non-silent arm around one common character target."""
+    def joined(parts):
+        return " ".join(p.strip() for p in parts if p and p.strip())
+
+    frames = _barg_arm_frames(facts)
+    requests = _barg_arm_requests()
+    rng.shuffle(frames)
+    rng.shuffle(requests)
+    frame = min(frames, key=len)
+    request = min(requests, key=len)
+    for candidate in frames:
+        if len(joined([candidate, claim, request])) <= BARG_ARM_LEN_HI:
+            frame = candidate
+            break
+    parts = [frame, claim, request]
+    if len(joined(parts)) > BARG_ARM_LEN_HI:
+        parts = [min(frames, key=len), claim]
+    text = joined(parts)
+
+    # A broad shared ceiling still leaves register confounded with mean
+    # verbosity. Track one reachable sentence-bank rendering per length and
+    # choose the length nearest 300 characters, so every arm actually occupies
+    # the same narrow realised band without truncating a truth qualifier.
+    candidates = {len(text): text}
+    fillers = _barg_arm_fillers(facts)
+    rng.shuffle(fillers)
+    for filler in fillers:
+        additions = {}
+        for candidate in list(candidates.values()):
+            extended = joined([candidate, filler])
+            if len(extended) <= BARG_ARM_LEN_HI:
+                additions.setdefault(len(extended), extended)
+        for length, candidate in additions.items():
+            candidates.setdefault(length, candidate)
+    in_band = [candidate for candidate in candidates.values()
+               if BARG_ARM_LEN_LO <= len(candidate) <= BARG_ARM_LEN_HI]
+    if not in_band:
+        return text.strip()
+    distance = min(abs(len(candidate) - BARG_ARM_TARGET_LEN)
+                   for candidate in in_band)
+    closest = [candidate for candidate in in_band
+               if abs(len(candidate) - BARG_ARM_TARGET_LEN) == distance]
+    return rng.choice(closest).strip()
+
+
+def bargaining_arm_message(arm: str, game: dict, action: dict,
+                           plan: dict | None = None,
+                           rng: random.Random | None = None) -> dict:
+    """Compose one hand-written arm; ``plan`` is accepted and never inspected."""
+    out = {"arm": arm, "grammar_version": BARG_ARM_GRAMMAR_VERSION,
+           "text": None, "claim_id": None, "claim_kind": None, "reason": None}
+    try:
+        if arm not in BARG_ARMS:
+            out["reason"] = "unknown-arm"
+            return out
+        if arm == "B0":
+            out["reason"] = "silent-arm"
+            return out
+        facts = _barg_public_facts(game, action)
+        if facts is None:
+            out["reason"] = "facts-unavailable"
+            return out
+        if rng is None:
+            state = game.get("game_state") or {}
+            rng = random.Random(f"barg-msg:{game.get('game_id')}:{state.get('round')}")
+        claim, claim_id = _barg_arm_claim(arm, facts, rng)
+        text = _assemble_barg_arm(facts, claim, rng)
+        if not text or not BARG_ARM_LEN_LO <= len(text) <= BARG_ARM_LEN_HI:
+            out["reason"] = "length-band-failure"
+            return out
+        out.update(text=text, claim_id=claim_id,
+                   claim_kind="fact" if claim_id else None, reason="ok")
+        return out
+    except Exception:
+        out["reason"] = "exception"
+        out["text"] = None
+        return out
+
+
+def bargaining_numeric_fingerprint(action: dict) -> str:
+    payload = {k: v for k, v in action.items()
+               if k != "message" and not str(k).startswith("_")}
+    blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
+    return hashlib.sha256(blob.encode()).hexdigest()
+
+
+def attach_bargaining_arm(game: dict, action: dict) -> dict | None:
+    """Attach the per-game hand-written arm without changing any numeric field."""
+    try:
+        if not runtime_flags.enabled(BARG_MSG_FLAG):
+            return None
+        if game.get("game_family") != "bargaining":
+            return None
+        if (game.get("valid_actions") or {}).get("type") != "offer":
+            return None
+        if (game.get("game_state") or {}).get("messages_allowed") is not True:
+            return None
+        arm = bargaining_arm(game.get("game_id"))
+        if arm is None:
+            return None
+
+        plan = action.get("_plan")
+        before_action = dict(action)
+        before = bargaining_numeric_fingerprint(action)
+        # Dispatch coerces integer-pot bargaining gains to whole units. Compose
+        # from that same wire action so a sentence never quotes 432.87 while the
+        # submitted split says 433; attachment still changes only ``message``.
+        wire_action = coerce(action, game)
+        try:
+            composed = bargaining_arm_message(arm, game, wire_action)
+        except Exception:
+            composed = {"text": None, "reason": "exception"}
+        record = {
+            "experiment_id": "barg-msg-1",
+            "arm": arm,
+            "assignment": f"sha256({BARG_ARM_SALT}<game_id>) mod {len(BARG_ARMS)}",
+            "p_assign": 1.0 / len(BARG_ARMS),
+            "game_id": game.get("game_id"),
+            "round": (game.get("game_state") or {}).get("round"),
+            "grammar_version": BARG_ARM_GRAMMAR_VERSION,
+            "numeric_sha256_before": before,
+        }
+        text = composed.get("text") if isinstance(composed, dict) else None
+        if arm == "B0":
+            action.pop("message", None)
+            record.update(outcome="silent", message_len=0,
+                          claim_id=None, claim_kind=None)
+        elif isinstance(text, str) and text.strip():
+            action["message"] = text.strip()
+            record.update(outcome="sent", message_len=len(action["message"]),
+                          claim_id=composed.get("claim_id"),
+                          claim_kind=composed.get("claim_kind"))
+        else:
+            failure_reason = (composed.get("reason")
+                              if isinstance(composed, dict)
+                              else "invalid-composer-result")
+            record.update(outcome="compose_failed",
+                          reason=failure_reason,
+                          message_len=0, claim_id=None, claim_kind=None)
+
+        after = bargaining_numeric_fingerprint(action)
+        if after != before:
+            action.clear()
+            action.update(before_action)
+            record.update(outcome="invariance_violation",
+                          numeric_sha256_after=after,
+                          numeric_invariant_ok=False)
+        else:
+            record.update(numeric_sha256_after=after, numeric_invariant_ok=True)
+        if isinstance(plan, dict):
+            plan["barg_msg_arm"] = record
+        return record
+    except Exception:
+        return None
+
+
 def bargaining_message(game: dict, action: dict, plan: dict | None,
                        rng: random.Random) -> str | None:
-    state = game.get("game_state") or {}
-    if not plan:
-        return None
-    money = _num(state.get("money_to_divide"), 0.0)
-    me_is_alice = game.get("your_player") == "player_1"
-    mine = _num(action.get("alice_gain" if me_is_alice else "bob_gain"), 0.0)
-    theirs = money - mine
-    delta_me = plan.get("delta_me", 1.0)
-    delta_opp = plan.get("delta_opp", 1.0)
-    rounds_left = plan.get("rounds_left")
-    share = (mine / money) if money else 0.5
-
-    parts = []
-    # Lead with the split, stated plainly — vagueness invites a counteroffer.
-    parts.append(_pick(rng, [
-        f"You take {theirs:,.0f} of {money:,.0f}.",
-        f"My proposal leaves you {theirs:,.0f}.",
-        f"{theirs:,.0f} to you, {mine:,.0f} to me.",
-    ]))
-
-    # The strongest true argument available, in order of force. Conceding hard
-    # and claiming leverage in the same breath reads as bluster, so the
-    # leverage lines are gated on actually holding some.
-    holding_ground = share >= 0.45
-    knows_their_delta = state.get("complete_information") is True
-    if rounds_left is not None and rounds_left <= 1:
-        parts.append(_pick(rng, [
-            "This is the last round — if you reject, we both take nothing.",
-            "There is no round after this one. Rejecting pays us both zero.",
-        ]))
-    elif knows_their_delta and holding_ground and delta_opp < delta_me - 0.01:
-        parts.append(_pick(rng, [
-            "Delay costs you more per round than it costs me, so waiting shrinks "
-            "your side of this faster than mine.",
-            "Your value decays faster than mine here. Time is not on your side.",
-        ]))
-    elif delta_me < 1.0 or delta_opp < 1.0:
-        parts.append(_pick(rng, [
-            "Every round we spend costs us both real value — settling now beats a "
-            "marginally better split later.",
-            "Inflation takes a bite out of this each round. Closing now is worth "
-            "more than haggling.",
-        ]))
-    if rounds_left is not None and 1 < rounds_left <= 3:
-        parts.append(f"We have {int(rounds_left)} rounds left before this pays nothing.")
-
-    evidence = plan.get("opponent_evidence") or {}
-    if evidence.get("basis", "").startswith("opponent not conceding") and holding_ground:
-        parts.append(_pick(rng, [
-            "You have not moved in several rounds. I am willing to close, but not "
-            "to keep trading the same offer until it is worthless.",
-            "Neither of us gains by repeating ourselves into a zero.",
-        ]))
-    elif share >= 0.6 and knows_their_delta:
-        parts.append("I have priced this off the discount rates, not off a "
-                     "fairness norm.")
-    elif not holding_ground:
-        # We are conceding. Say so as a closing move rather than posturing.
-        parts.append(_pick(rng, [
-            "That is a serious move toward you. I would like to close here.",
-            "I have come a long way to you on this. Let us finish it.",
-        ]))
-    return " ".join(parts)[:1800]
+    """Legacy builder: the neutral arm, using the same leak-audited pools."""
+    composed = bargaining_arm_message("B1", game, action, plan, rng)
+    return composed.get("text") if isinstance(composed, dict) else None
 
 
 def negotiation_message(game: dict, action: dict, plan: dict | None,

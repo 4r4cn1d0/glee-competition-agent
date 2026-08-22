@@ -70,7 +70,10 @@ def _play(game: dict, cfg, log) -> dict:
     # 2. In "full" mode the model may override, but only through the same
     #    repair path — a bad override degrades to the heuristic, never to an
     #    invalid move.
-    if (cfg.llm_mode == "full" and game.get("game_family") in
+    # Bargaining is sentence-bank only. Even a stale custom allowlist cannot
+    # route its action or message through an LLM; GLEE_BARG_MSG owns that channel
+    # downstream of the already-final numeric split.
+    if (family != "bargaining" and cfg.llm_mode == "full" and family in
             set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))):
         proposed = llm.propose_action(game, raw, plan, cfg)
         if proposed:
@@ -99,10 +102,10 @@ def _play(game: dict, cfg, log) -> dict:
 
     # 3. Attach a message. The numbers are already fixed at this point, so a
     #    slow or failed call costs nothing but the message itself.
-    # Default-DENY outside persuasion: the operator's standing rule is that LLM
-    # spend works persuasion only, so a process launched without the env var
-    # must fence itself rather than inherit an open door. Non-persuasion
-    # messages fall through to the grounded template bank, which is free.
+    # Default-DENY outside persuasion: a process launched without the env var
+    # must fence itself rather than inherit an open door. Bargaining is excluded
+    # from this branch entirely; its GLEE_BARG_MSG arm was already attached by
+    # the hand-written bank and B0 must remain silent rather than be back-filled.
     llm_fams = set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))
     # A message the randomised negotiation arms already attached is the
     # treatment; recomposing over it would replace it with the un-randomised
@@ -110,6 +113,7 @@ def _play(game: dict, cfg, log) -> dict:
     # GLEE_NEGO_MSG_ARMS is set, so with the flag unset this condition is
     # exactly the one that was here before.
     armed = isinstance(plan, dict) and bool(plan.get("msg_arm"))
+    barg_armed = isinstance(plan, dict) and bool(plan.get("barg_msg_arm"))
     # In persuasion TEXT mode the message IS the recommendation -- it is the
     # whole action, not decoration on a number. Recomposing over it replaced the
     # strategy's chosen wording with a generic template and made
@@ -140,7 +144,7 @@ def _play(game: dict, cfg, log) -> dict:
                   and action["message"].strip()
                   and not _downgraded
                   and _rf.enabled("GLEE_PERS_KEEP_MSG"))
-    if _wants_message(game) and game.get("game_family") in llm_fams \
+    if _wants_message(game) and family != "bargaining" and family in llm_fams \
             and not armed and not pers_final:
         message = None
         if cfg.llm_mode in ("messages", "full"):
@@ -160,6 +164,8 @@ def _play(game: dict, cfg, log) -> dict:
         # Name the arm in the turn's source so the assignment is visible in a
         # grep of turns.jsonl, not only inside the plan record.
         source += f"+arm-{(plan.get('msg_arm') or {}).get('arm')}"
+    elif barg_armed:
+        source += f"+barg-arm-{(plan.get('barg_msg_arm') or {}).get('arm')}"
 
     if log is not None:
         log.turn(game, action, plan, source=source)

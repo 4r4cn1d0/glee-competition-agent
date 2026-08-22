@@ -40,13 +40,15 @@ what the field measurably accepts — see ``Config.barg_offer_floor``.
 
 from __future__ import annotations
 
+import copy
+import math
+
 from .. import barg_offer
+from .. import messages
 from .. import opponents
 from .. import runtime_flags
 
-import math
-
-from ..actions import _num
+from ..actions import _num, coerce
 
 # Rubinstein converges geometrically; past this many rounds the finite and
 # infinite horizon answers are identical to well beyond float precision.
@@ -248,8 +250,8 @@ def _rounds_left(state: dict, undisclosed_horizon: int) -> tuple[int, bool]:
 def plan(game: dict, cfg) -> dict:
     """Compute this turn's numbers and the reasoning behind them.
 
-    Returned separately from the action so the LLM message layer and the game
-    log can both see *why* the agent moved as it did.
+    Returned separately from the action so the hand-written message layer and
+    the game log can both see *why* the agent moved as it did.
     """
     state = game["game_state"]
     money = _num(state.get("money_to_divide"), 0.0)
@@ -365,7 +367,48 @@ def _gate(p: dict, name: str) -> None:
         g.append(name)
 
 
-def decide(game: dict, cfg) -> dict:
+def _post_reject_offer(game: dict, cfg) -> dict:
+    """Run the actual offer policy on the deterministic state after rejection.
+
+    Bargaining has no intervening opponent move: rejecting records the live
+    offer, advances the round, and makes the rejecter the next proposer. The
+    projected observation follows ``sim.bargaining``'s API transition shape and
+    is then sent through public ``decide`` plus wire coercion, so endgame caps,
+    opponent floors, Bob pricing, profile exploitation, and future offer writers
+    are shared with the next real turn rather than copied here.
+    """
+    projected = copy.deepcopy(game)
+    state = projected.get("game_state") or {}
+    live = state.get("last_offer") or {}
+    me = state.get("current_player") or projected.get("your_player")
+    round_no = int(_num(state.get("round"), 1))
+
+    recorded_offer = {
+        key: live.get(key)
+        for key in ("player_1_gain", "player_2_gain", "message")
+        if key in live
+    }
+    history = list(state.get("history") or [])
+    history.append({
+        "round": round_no,
+        "proposer": live.get("proposer") or state.get("proposer"),
+        "offer": recorded_offer,
+        "decision": "reject",
+    })
+    state.update(
+        phase="offer",
+        current_player=me,
+        proposer=me,
+        round=round_no + 1,
+        history=history,
+    )
+    projected["phase"] = "offer"
+    projected["game_state"] = state
+    projected["valid_actions"] = {"type": "offer", "fields": {}}
+    return coerce(decide(projected, cfg), projected)
+
+
+def _decide(game: dict, cfg) -> dict:
     state = game["game_state"]
     p = plan(game, cfg)
     money, mine = p["money"], p["me_is_alice"]
@@ -820,5 +863,50 @@ def decide(game: dict, cfg) -> dict:
             decision = "accept"
             _gate(p, "inflation_accept")
 
+    # NO-REGRESSION GUARD. In nine measured games the old decision path rejected
+    # a live offer and the next outgoing policy kept no more of the pot; the
+    # avoidable delay forfeited 17.36 pot-points and -44.9 rating in aggregate.
+    # When armed, the code above still owns every ordinary accept condition. A
+    # remaining Reject is changed only when the wire-coerced offer produced by
+    # the exact next-turn policy keeps no more than the live offer plus the
+    # configured share epsilon. Projection failure leaves the Reject unchanged.
+    if (decision == "reject" and money > 0.0
+            and p["rounds_left"] > 1
+            and runtime_flags.enabled("GLEE_BARG_NO_REGRESS")):
+        epsilon = runtime_flags.as_float("GLEE_BARG_NO_REGRESS_EPS", 0.0)
+        if not math.isfinite(epsilon):
+            epsilon = 0.0
+        epsilon = min(max(epsilon, 0.0), 1.0)
+        try:
+            counter = _post_reject_offer(game, cfg)
+            own_key = "alice_gain" if mine else "bob_gain"
+            counter_gain = _num(counter.get(own_key), -1.0)
+            if 0.0 <= counter_gain <= money:
+                offered_share = my_gain / money
+                counter_share = counter_gain / money
+                p["no_regress"] = {
+                    "offered_share": round(offered_share, 6),
+                    "planned_counter_share": round(counter_share, 6),
+                    "epsilon": epsilon,
+                    "projected_round": int(_num(state.get("round"), 1)) + 1,
+                }
+                if counter_share <= offered_share + epsilon:
+                    decision = "accept"
+                    _gate(p, "no_regress")
+        except Exception:
+            p["no_regress"] = {"status": "projection_failed"}
+
     p["offered_to_me"] = my_gain
     return {"decision": decision, "_plan": p}
+
+
+def decide(game: dict, cfg) -> dict:
+    """Choose numeric bargaining behaviour, then attach the assigned text arm."""
+    action = _decide(game, cfg)
+    try:
+        record = messages.attach_bargaining_arm(game, action)
+        if record is not None and isinstance(action.get("_plan"), dict):
+            _gate(action["_plan"], "barg_msg")
+    except Exception:
+        pass                         # a message is never worth risking the move
+    return action

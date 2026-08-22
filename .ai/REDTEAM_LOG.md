@@ -132,3 +132,76 @@ The concurrent `PARSE_TRI` patch is default-off and absent from the live composi
 ### FINDINGS check
 
 Nothing is disproved. The pooled `p=.8` result remains descriptive, not evidence of robustness against adaptive sellers.
+
+## 2026-08-22 00:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 03:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 06:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-22 08:23Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+   340	    "persuasion": (
+   341	        ("p", PERSUASION_PRIORS),
+   342	        ("value_factor", PERSUASION_VALUE_FACTORS),
+   343	        ("product_price", MONEY_SCALES),
+   344	        ("is_seller_know_cv", (True, False)),
+   345	        ("seller_message_type", PERSUASION_MESSAGE_TYPES),
+   150	            chosen = x
+   151	            break
+   152	    for block in blocks:
+   153	        if chosen in block["xs"]:
+   154	            counts = block["counts"]
+   155	            n = sum(counts.values())
+   156	            return counts.get("accept", 0) / n, counts
+   157	    return None
+   158	
+   159	
+   160	def _iter_finals():
+   161	    seen = set()
+   162	    for path in glob.glob(os.path.join(REPO, "logs", "*", "results.jsonl")):
+   163	        with open(path, encoding="utf-8", errors="replace") as fh:
+   164	            for line in fh:
+   165	                try:
+   166	                    rec = json.loads(line)
+   167	                except ValueError:
+   168	                    continue
+   169	                gid = rec.get("game_id")
+   170	                if gid in seen:
+   171	                    continue
+   172	                seen.add(gid)
+   173	                final = rec.get("final") or {}
+   174	                if final.get("game_state"):
+   175	                    final.setdefault("_ts", rec.get("ts"))
+   176	                    yield final
+   177	    for path in glob.glob(os.path.join(REPO, "logs", "*", "games", "*.json")):
+   178	        try:
+   179	            with open(path, encoding="utf-8", errors="replace") as fh:
+   180	                rec = json.load(fh)
+   181	        except (ValueError, OSError):
+   182	            continue
+   183	        gid = rec.get("game_id")
+   184	        if gid in seen:
+   185	            continue
+
+codex
+I found nothing new on this surface.
+
+The live `.48` span veto, `.40` outgoing invariant, and final any-positive ordering at [negotiation.py:1075](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1075>)–[1234](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1234>) reduce to the two attacks already logged. The apparent 48%/54% `FINAL_OPTION` equality cliff is not a new strategic channel: a 48.1% offer already succeeds in both ZOPA arms—immediate acceptance in control, rejection followed by reoffering in treatment. No new decision-rule fix.
+
+One `FINDINGS.md` claim is wrong: [lines 266–270](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:266>) call 115–126 observations exact complete-information cells. The percentile key omits opponent value and `messages_allowed` ([sim/percentile.py:48](</Users/spiderishi/Coding/GLEE Competition/sim/percentile.py:48>)), although both define negotiation configurations ([sim/grid.py:334](</Users/spiderishi/Coding/GLEE Competition/sim/grid.py:334>)). For the exact `B=1m`, seller `.8B`, buyer `1.5B`, `H=10` cell, deduplicated logs contain only `n=27` without messages and `n=31` with messages. Therefore the claimed `SE≈.014` and prior percentile magnitudes are pooled proxies, not same-configuration estimates.
+
+
+tokens used
+184,448
+I found nothing new on this surface.
+
+The live `.48` span veto, `.40` outgoing invariant, and final any-positive ordering at [negotiation.py:1075](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1075>)–[1234](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:1234>) reduce to the two attacks already logged. The apparent 48%/54% `FINAL_OPTION` equality cliff is not a new strategic channel: a 48.1% offer already succeeds in both ZOPA arms—immediate acceptance in control, rejection followed by reoffering in treatment. No new decision-rule fix.
+
+One `FINDINGS.md` claim is wrong: [lines 266–270](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:266>) call 115–126 observations exact complete-information cells. The percentile key omits opponent value and `messages_allowed` ([sim/percentile.py:48](</Users/spiderishi/Coding/GLEE Competition/sim/percentile.py:48>)), although both define negotiation configurations ([sim/grid.py:334](</Users/spiderishi/Coding/GLEE Competition/sim/grid.py:334>)). For the exact `B=1m`, seller `.8B`, buyer `1.5B`, `H=10` cell, deduplicated logs contain only `n=27` without messages and `n=31` with messages. Therefore the claimed `SE≈.014` and prior percentile magnitudes are pooled proxies, not same-configuration estimates.

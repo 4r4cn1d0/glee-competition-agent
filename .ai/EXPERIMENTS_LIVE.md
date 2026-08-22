@@ -130,3 +130,60 @@ and makes it the fleet's strongest agent.
 resolve +0.17 needs only ~50/arm, so this is readable in HOURS, not a day —
 much faster than either negotiation experiment. First read once ~100 post-fix
 games exist in the cell.
+
+## GLEE_BARG_NO_REGRESS  (Test 1/2/3, deployed 2026-08-22)
+
+Guard, not a policy retune: before a reject, project the actual next-turn offer
+through bargaining.decide() and accept the standing offer instead if the
+projected counter is no better than it. Measured basis: 9 games rejected an
+offer then countered with the same or less and were accepted, -44.9 rating
+strictly forfeited.
+
+WINDOW. The analysis window opens at the FIRST turn whose plan carries the
+`no_regress` key, NOT at the arms.json write. Flag-gated code lands inert and
+only becomes live when the agent next loads it, so the two differ by up to one
+rotation. Recovered arm assignment intersected with the wrong window is what
+made GLEE_PERS_BACKLOAD_AB read as null for nine hours while it was losing
+0.391 percentile per game.
+
+DECISION at 400 fired games (a fire = a turn carrying `no_regress`):
+  * SHIP to Agent 5 if mean percentile delta CI excludes zero and is positive.
+  * KILL if the CI excludes zero and is negative.
+  * KILL if fires < 40, i.e. the guard is too rare to pay for its risk.
+  * Otherwise extend once to 800, then kill if still unresolved.
+This flag cannot be judged on rating drift; use scripts/live_percentile.py.
+
+## GLEE_BARG_MSG  (Test 1/2/3, deployed 2026-08-22)
+
+Four arms by sha256("barg_msg|"+game_id) mod 4. B0 is SILENT and is the control,
+because silence is what the fleet does today -- 0 messages sent across 1,851
+offer turns while opponents sent text on 1,583 of 1,830. B1-B3 are length-matched
+at 299-301 chars so register is not confounded with verbosity.
+
+Rating impact is UNMEASURED. Only reachability was measured. This ships as an
+experiment and must never be defaulted on without clearing the rule below.
+
+DECISION at 600 message-enabled games per arm:
+  * PRIMARY: B0 vs pooled B1/B2/B3 mean percentile. Ship text only if the CI
+    excludes zero and is positive.
+  * The B1/B2/B3 contrasts are EXPLORATORY. A winning register among them is a
+    hypothesis for a fresh randomisation, never a deployment -- picking the best
+    of three post hoc is the same error that made the persuasion closer-phrase
+    table meaningless.
+  * KILL on any evidence of timeout or latency regression; the bank is local and
+    must cost nothing.
+
+## GLEE_NEGO_RANK_PRICE_AB  (Test 1/2/3, deployed 2026-08-22)
+
+Terminal price chosen to maximise A(P)*F(payoff) + (1-A(P))*F(0) over acceptance
+-curve bin midpoints, rather than to maximise expected money. Rationale: the
+score is a percentile, 51% of live negotiation outcomes sit on the $0 atom, and
+E[F(X)] != F(E[X]) -- so the money-maximising price is not the rank-maximising
+price. Thin cells below 30 observations fall back to the existing pricing.
+
+DECISION at 1,000 games per arm:
+  * SHIP to Agent 5 if the percentile CI excludes zero and is positive.
+  * KILL if negative, or if close rate drops more than 3pp with no percentile
+    gain -- a rank gain bought purely by abandoning deals is the failure mode
+    this design is most exposed to.
+  * Report zero-rate alongside; it is the percentile-relevant column.

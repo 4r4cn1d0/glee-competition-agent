@@ -3,7 +3,7 @@
 
 Answers, BEFORE a 3,000-game arena run or a live deploy, the three questions a
 "clean +0.0000 null" cannot: did the gate's preconditions ever hold, did the
-gate actually fire, and did firing ever change a submitted number? Each of the
+gate actually fire, and did firing ever change a submitted action? Each of the
 known traps this repo has already paid for shows up as a specific zero here:
 
   * a flag nested under a gate the control omits (the GLEE_BARG_STONEWALL /
@@ -61,6 +61,11 @@ def _p_final_hidden(game, p):
             and p.get("rounds_left", 99) <= 1)
 
 
+def _p_rank_price(game, p):
+    return (game.get("valid_actions", {}).get("type") == "offer"
+            and p.get("capped") and p.get("rounds_left", 99) <= 1)
+
+
 def _p_span(game, p):
     return (p.get("zopa") is not None and p.get("rounds_left", 0) >= 2
             and game.get("valid_actions", {}).get("type") == "decision")
@@ -83,8 +88,19 @@ def _p_bob_offer(game, p):
             and p.get("rounds_left", 0) > 2)
 
 
+def _p_barg_message(game, p):
+    return (_p_offer(game, p)
+            and (game.get("game_state") or {}).get("messages_allowed") is True)
+
+
+def _p_barg_no_regress(game, p):
+    return (_p_decision(game, p) and p.get("rounds_left", 0) > 1
+            and p.get("money", 0) > 0)
+
+
 KNOWN = {
     "GLEE_NEGO_ULTIMATUM_SHARE": ("negotiation", ("ultimatum",), _p_ultimatum),
+    "GLEE_NEGO_RANK_PRICE_AB": ("negotiation", ("rank_price",), _p_rank_price),
     "GLEE_NEGO_POSTERIOR": ("negotiation", ("posterior",), _p_final_hidden),
     "GLEE_NEGO_CURVE_PRICING": ("negotiation", ("curve_final",), _p_final_hidden),
     "GLEE_NEGO_ACCEPT_SPAN": ("negotiation", ("span_veto",), _p_span),
@@ -108,6 +124,9 @@ KNOWN = {
     "GLEE_BARG_STONEWALL_MIN": ("bargaining", ("stonewall_extortion",),
                                 _p_barg_midgame_decision),
     "GLEE_BARG_BOB_OFFER": ("bargaining", ("bob_offer",), _p_bob_offer),
+    "GLEE_BARG_NO_REGRESS": ("bargaining", ("no_regress",),
+                             _p_barg_no_regress),
+    "GLEE_BARG_MSG": ("bargaining", ("barg_msg",), _p_barg_message),
     "GLEE_BARG_OPPONENT_FLOOR": ("bargaining", ("opp_floor",), _p_offer),
     "GLEE_OPP_EXPLOIT": ("bargaining", ("opp_exploit",), lambda g, p: True),
     # Pure value knobs read through Config.from_env — no gate of their own.
@@ -192,6 +211,8 @@ _NUMERIC_KEYS = ("product_price", "alice_gain", "bob_gain")
 
 def _action_differs(a: dict, b: dict) -> bool:
     if (a.get("decision") or None) != (b.get("decision") or None):
+        return True
+    if (a.get("message") or None) != (b.get("message") or None):
         return True
     for k in _NUMERIC_KEYS:
         va, vb = a.get(k), b.get(k)
@@ -303,7 +324,7 @@ def main() -> int:
           f"(gate {sorted(gate_names) if gate_names else '<trace diff>'} "
           "in plan['gates_fired'])")
     print(f"  action_changed_count {changed:6d}   "
-          "(submitted numbers differ between the two arms)")
+          "(submitted actions differ between the two arms)")
     for line in examples:
         print(line)
 

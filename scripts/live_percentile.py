@@ -26,6 +26,8 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py                      # last 24h, by agent
     python scripts/live_percentile.py --hours 6 --by cell
     python scripts/live_percentile.py --split 1787342160   # A/B across a deploy
+    python scripts/live_percentile.py --ab rank-price      # terminal-price arm
+    python scripts/live_percentile.py --ab barg-msg        # B0 silence vs B1-B3
 
 CAVEAT, stated because it decides how far the numbers can be pushed: the cell
 CDF is fitted from logged field payoffs, OUR OWN GAMES INCLUDED, so it is a
@@ -48,6 +50,7 @@ from collections import defaultdict
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 from sim.percentile import percentile          # noqa: E402
+from glee_agent.messages import BARG_ARMS, bargaining_arm  # noqa: E402
 
 NAMES = {"champion": "Test 1", "hardliner": "Test 2", "conceder": "Test 3",
          "randomized": "Test 4", "composite": "Agent 5"}
@@ -67,7 +70,7 @@ def mean_ci(xs):
 
 
 def games(hours):
-    """Yield (slot, ts, family, cell_key, our_percentile) for finished games."""
+    """Yield score and message eligibility fields for finished games."""
     cut = time.time() - hours * 3600
     for path in sorted(glob.glob(os.path.join(REPO, "logs", "*", "results.jsonl"))):
         slot = os.path.basename(os.path.dirname(path))
@@ -98,7 +101,61 @@ def games(hours):
                 pct = percentile(fam, params, seat, float(pay))
                 if pct is None:            # unknown cell -- no opinion, skip
                     continue
-                yield slot, ts, fam, pct, rec.get("game_id")
+                yield (slot, ts, fam, pct, rec.get("game_id"),
+                       gs.get("messages_allowed"))
+
+
+def report_barg_msg(rows, hours):
+    """Report the primary silence/text contrast and each assigned text register."""
+    arms = defaultdict(lambda: defaultdict(list))
+    for slot, _ts, fam, pct, gid, messages_allowed in rows:
+        if fam != "bargaining" or messages_allowed is not True or not gid:
+            continue
+        arm = bargaining_arm(gid)
+        if arm is not None:
+            arms[slot][arm].append(pct)
+
+    print(f"GLEE_BARG_MSG, bargaining only, last {hours:g}h")
+    print("eligibility: messages_allowed=true; scope --hours/--slots to an era "
+          "where GLEE_BARG_MSG was armed")
+    print("primary contrast: B0 assigned silence vs pooled B1-B3 assigned text")
+    print(f"{'agent':9} {'silence':>20} {'text':>20} {'delta':>20}")
+    pooled = defaultdict(list)
+    for slot, assigned in sorted(arms.items()):
+        for arm, values in assigned.items():
+            pooled[arm].extend(values)
+        silent = assigned.get("B0", [])
+        text_arms = [pct for arm in BARG_ARMS[1:] for pct in assigned.get(arm, [])]
+        c, _clo, chi, cn = mean_ci(silent)
+        d, _dlo, dhi, dn = mean_ci(text_arms)
+        if c is None or d is None or cn < 30 or dn < 30:
+            continue
+        se = math.sqrt(((chi - c) / 1.96) ** 2 + ((dhi - d) / 1.96) ** 2)
+        print(f"{NAMES[slot]:9} {c:.4f} (n={cn:>5}) {d:.4f} (n={dn:>5}) "
+              f"{d - c:+.4f} +/-{1.96*se:.4f}")
+
+    silent = pooled.get("B0", [])
+    text_arms = [pct for arm in BARG_ARMS[1:] for pct in pooled.get(arm, [])]
+    c, _clo, chi, cn = mean_ci(silent)
+    d, _dlo, dhi, dn = mean_ci(text_arms)
+    if c is not None and d is not None and cn and dn:
+        se = math.sqrt(((chi - c) / 1.96) ** 2 + ((dhi - d) / 1.96) ** 2)
+        delta = d - c
+        verdict = ("TEXT BETTER" if delta > 1.96 * se else
+                   "TEXT WORSE" if delta < -1.96 * se else
+                   "cannot distinguish yet")
+        print(f"{'POOLED':9} {c:.4f} (n={cn:>5}) {d:.4f} (n={dn:>5}) "
+              f"{delta:+.4f} +/-{1.96*se:.4f}   -> {verdict}")
+
+    print("\nexploratory register contrasts against B0 silence")
+    print(f"{'arm':9} {'silence':>20} {'register':>20} {'delta':>20}")
+    for arm in BARG_ARMS[1:]:
+        d, _dlo, dhi, dn = mean_ci(pooled.get(arm, []))
+        if c is None or d is None or not cn or not dn:
+            continue
+        se = math.sqrt(((chi - c) / 1.96) ** 2 + ((dhi - d) / 1.96) ** 2)
+        print(f"{arm:9} {c:.4f} (n={cn:>5}) {d:.4f} (n={dn:>5}) "
+              f"{d - c:+.4f} +/-{1.96*se:.4f}")
 
 
 def main() -> int:
@@ -107,24 +164,32 @@ def main() -> int:
     ap.add_argument("--split", type=float, default=None,
                     help="unix ts; compare games before vs after it")
     ap.add_argument("--slots", default="")
-    ap.add_argument("--ab", action="store_true",
-                    help="split negotiation games by the GLEE_NEGO_ZOPA_AB arm")
+    ap.add_argument("--ab", nargs="?", const="zopa",
+                    choices=("zopa", "rank-price", "barg-msg"),
+                    help="split games by a recoverable hash arm; bare --ab "
+                         "keeps the legacy GLEE_NEGO_ZOPA_AB report")
     args = ap.parse_args()
     keep = {s.strip() for s in args.slots.split(",") if s.strip()}
 
     rows = [r for r in games(args.hours) if not keep or r[0] in keep]
 
     if args.ab:
+        if args.ab == "barg-msg":
+            report_barg_msg(rows, args.hours)
+            return 0
         # Recompute the arm from the game id -- the SAME pure function the agent
-        # used (negotiation.py _zopa_share). Nothing is logged and nothing can
-        # drift out of sync.
+        # used. Nothing is logged and nothing can drift out of sync.
+        if args.ab == "rank-price":
+            label, salt = "GLEE_NEGO_RANK_PRICE_AB", "rank_price_ab|"
+        else:
+            label, salt = "GLEE_NEGO_ZOPA_AB", "zopa_ab|"
         arms = defaultdict(lambda: defaultdict(list))
-        for slot, ts, fam, pct, gid in rows:
+        for slot, ts, fam, pct, gid, _messages_allowed in rows:
             if fam != "negotiation" or not gid:
                 continue
-            bit = int(hashlib.sha256(("zopa_ab|" + str(gid)).encode()).hexdigest(), 16) & 1
+            bit = int(hashlib.sha256((salt + str(gid)).encode()).hexdigest(), 16) & 1
             arms[slot]["candidate" if bit else "control"].append(pct)
-        print(f"GLEE_NEGO_ZOPA_AB, negotiation only, last {args.hours:g}h")
+        print(f"{label}, negotiation only, last {args.hours:g}h")
         print(f"{'agent':9} {'control':>20} {'candidate':>20} {'delta':>20}")
         pooled = defaultdict(list)
         for slot, a in sorted(arms.items()):
@@ -156,7 +221,7 @@ def main() -> int:
 
     if args.split:
         buckets = defaultdict(lambda: defaultdict(list))
-        for slot, ts, fam, pct, _gid in rows:
+        for slot, ts, fam, pct, _gid, _messages_allowed in rows:
             arm = "after" if ts >= args.split else "before"
             buckets[(slot, fam)][arm].append(pct)
         print(f"{'agent':9} {'family':12} {'before':>22} {'after':>22} {'delta':>18}")
@@ -174,7 +239,7 @@ def main() -> int:
         return 0
 
     agg = defaultdict(list)
-    for slot, ts, fam, pct, _gid in rows:
+    for slot, ts, fam, pct, _gid, _messages_allowed in rows:
         agg[(slot, fam)].append(pct)
         agg[(slot, "ALL")].append(pct)
     print(f"our REALISED percentile, last {args.hours:g}h "
