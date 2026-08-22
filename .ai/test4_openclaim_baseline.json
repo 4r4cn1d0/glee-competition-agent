@@ -1,0 +1,98 @@
+{
+ "ts": 1787424941.992227,
+ "label": "open-claim deploy 00:24",
+ "server": {
+  "Test 1": {
+   "bargaining": {
+    "rating": 2335.05,
+    "games": 7278
+   },
+   "negotiation": {
+    "rating": 1933.04,
+    "games": 7275
+   },
+   "persuasion": {
+    "rating": 2275.83,
+    "games": 7235
+   }
+  },
+  "Test 2": {
+   "bargaining": {
+    "rating": 2116.53,
+    "games": 7809
+   },
+   "negotiation": {
+    "rating": 1981.22,
+    "games": 7791
+   },
+   "persuasion": {
+    "rating": 2249.76,
+    "games": 7781
+   }
+  },
+  "Test 3": {
+   "bargaining": {
+    "rating": 2139.05,
+    "games": 5218
+   },
+   "negotiation": {
+    "rating": 1953.99,
+    "games": 5186
+   },
+   "persuasion": {
+    "rating": 2320.05,
+    "games": 8669
+   }
+  },
+  "Test 4": {
+   "bargaining": {
+    "rating": 2240.41,
+    "games": 819
+   },
+   "negotiation": {
+    "rating": 1811.59,
+    "games": 818
+   },
+   "persuasion": {
+    "rating": 2019.49,
+    "games": 816
+   }
+  },
+  "Agent 5": {
+   "bargaining": {
+    "rating": 2126.31,
+    "games": 6823
+   },
+   "negotiation": {
+    "rating": 1987.87,
+    "games": 6802
+   },
+   "persuasion": {
+    "rating": 2200.31,
+    "games": 6801
+   }
+  }
+ },
+ "nego_pct": {
+  "Test 3": [
+   0.46039563112886683,
+   146
+  ],
+  "Test 4": [
+   0.5099999859104147,
+   279
+  ],
+  "Agent 5": [
+   0.5313319521703855,
+   118
+  ],
+  "Test 1": [
+   0.5227665571357324,
+   116
+  ],
+  "Test 2": [
+   0.48377390422309874,
+   111
+  ]
+ }
+}
