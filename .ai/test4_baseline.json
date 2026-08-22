@@ -1,0 +1,67 @@
+{
+ "ts": 1787420972.129659,
+ "server": {
+  "Test 1": {
+   "ratings": {
+    "bargaining": 2227.84,
+    "negotiation": 1991.8,
+    "persuasion": 2298.17
+   },
+   "games": 21342
+  },
+  "Test 2": {
+   "ratings": {
+    "bargaining": 2169.07,
+    "negotiation": 1949.92,
+    "persuasion": 2214.65
+   },
+   "games": 22959
+  },
+  "Test 3": {
+   "ratings": {
+    "bargaining": 2173.34,
+    "negotiation": 1987.02,
+    "persuasion": 2254.36
+   },
+   "games": 18705
+  },
+  "Test 4": {
+   "ratings": {
+    "bargaining": 2236.37,
+    "negotiation": 1730.16,
+    "persuasion": 1962.18
+   },
+   "games": 2087
+  },
+  "Agent 5": {
+   "ratings": {
+    "bargaining": 2192.3,
+    "negotiation": 2017.59,
+    "persuasion": 2266.21
+   },
+   "games": 19986
+  }
+ },
+ "nego_pct": {
+  "Test 3": [
+   0.4454286953318522,
+   112
+  ],
+  "Test 4": [
+   0.5169417991734575,
+   245
+  ],
+  "Agent 5": [
+   0.510004911368389,
+   84
+  ],
+  "Test 1": [
+   0.5392039356159968,
+   85
+  ],
+  "Test 2": [
+   0.47836959654418054,
+   92
+  ]
+ }
+}
