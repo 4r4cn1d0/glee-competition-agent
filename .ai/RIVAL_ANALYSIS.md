@@ -226,3 +226,56 @@ realised-q instead of assigned arm (persuasion), clone support instead of policy
 space (the local search), and now pooled time instead of current behaviour. All
 three produced a confident number pointing the wrong way. Any cross-sectional
 comparison against the field must be cut by time window before it is believed.
+
+---
+
+## Hidden zones are RECONSTRUCTIBLE, and we take half of them (2026-08-23)
+
+`game_state` hides the opponent's value in every one of 10,604 logged
+hidden-information games. But for any game that CLOSED, it falls straight out of
+the payoff identity:
+
+    buyer  value = buyer_payoff  + closing_price
+    seller cost  = closing_price - seller_payoff
+
+Verified against the known value grid -- derived values come back as exactly
+800,000 / 120 / 100 / 1,500,000, the grid points. This works on **3,104 games**
+(29.3% of hidden games) with no transcript pull required.
+
+### What it shows
+
+Hidden deals we closed, n=3,205, share of the TRUE zone we captured:
+
+    median 0.520     p25 0.307     p75 0.750
+    as buyer 0.558   (the seller mean is corrupted by near-zero zones; use medians)
+
+And the payoff to taking more is steep:
+
+| our share of the true zone | n | mean percentile |
+|---|---|---|
+| 0.0-0.2 | 514 | 0.5517 |
+| 0.2-0.4 | 551 | 0.6499 |
+| 0.4-0.6 | 850 | 0.7591 |
+| 0.6-0.8 | 637 | 0.8277 |
+| **0.8+** | 645 | **0.8680** |
+
+**+0.316 percentile from end to end.** The same shape as complete information,
+where we take 0.525 and the top agents take 0.75+.
+
+### Why this matters for the hidden-floor design
+
+The concession data (we go 2.624 -> 1.375 of base as seller while the field goes
+1.630 -> 1.449) said we concede seven times as much as the field. This is an
+INDEPENDENT measurement of the same disease from the outcome side: we end up with
+half the zone. Two different instruments, same conclusion, which is more than any
+single-source finding today has had.
+
+It also relocates the prize. The operator's transcript bot found that of 30 hidden
+no-agreement games, only 2 walked away from strictly positive surplus (19 had no
+ZOPA at all, 9 were exact ties). So the games we FAILED to close are mostly
+genuinely infeasible and are NOT the opportunity. The opportunity is the 3,104 we
+DID close and won cheaply -- taking 0.520 where the leaders take 0.75.
+
+**Design implication: a hidden-information floor should be judged on the SHARE of
+the reconstructed zone we capture in closed games, not on close rate.** Close rate
+was already near its structural ceiling; the share was not.
