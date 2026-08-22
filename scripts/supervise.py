@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import datetime
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -52,6 +54,37 @@ ARMS_PATH = os.path.join(REPO, "arms.json")
 #: self-timeouts suspend queue joins for 30 minutes. Catching the FIRST one is
 #: the difference between a blip and a half-hour outage.
 STALL_SECONDS = 100
+
+
+#: A queue-banned agent legitimately holds ZERO games, which is indistinguishable
+#: from a stall by active_games alone. Restarting it drops whatever it grabs the
+#: instant the ban lifts, that game times out, and the ban is EXTENDED -- so the
+#: watchdog re-arms the very condition it is reacting to. On 2026-08-22 this loop
+#: pushed the retry-after from 13:07Z to 14:08Z while every agent sat idle.
+#: The agent already logs the server's retry-after; read it rather than guess.
+_COOLDOWN_RE = re.compile(r"try again after (\d{4}-\d{2}-\d{2}T[\d:.]+)Z")
+
+
+def cooldown_until(probe: str) -> float:
+    """Unix ts of this agent's queue-ban expiry, or 0.0 if it is not banned."""
+    path = os.path.join(REPO, "logs", f"{probe}.out")
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as fh:
+            fh.seek(max(0, size - 20000))
+            tail = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return 0.0
+    best = 0.0
+    for m in _COOLDOWN_RE.finditer(tail):
+        try:
+            ts = datetime.datetime.strptime(
+                m.group(1).split(".")[0], "%Y-%m-%dT%H:%M:%S"
+            ).replace(tzinfo=datetime.timezone.utc).timestamp()
+        except ValueError:
+            continue
+        best = max(best, ts)
+    return best if best > time.time() else 0.0
 
 
 def active_games(env_key: str) -> int | None:
@@ -202,6 +235,7 @@ class Agent:
         #: games and queueing none, for over an hour. The process was up the
         #: whole time, so nothing here noticed until a human asked.
         self.zero_since = 0.0        # when active_games first read 0
+        self.ban_noted = False       # already logged this queue ban
         self.last_health = 0.0       # last time we spent an API call on it
         self.stall_kills = 0
 
@@ -509,9 +543,22 @@ def main() -> int:
                         and now - agent.last_health >= HEALTH_EVERY):
                     agent.last_health = now
                     live = active_games(agent.env_key)
+                    banned_until = cooldown_until(agent.probe)
                     if live is None or live > 0:
                         agent.zero_since = 0.0        # unknown counts as busy
+                    elif banned_until:
+                        # Zero games because the SERVER is refusing queue joins,
+                        # not because we are stuck. Killing here is what extends
+                        # the ban. Wait it out; the agent retries on its own.
+                        if agent.zero_since != 0.0 or not agent.ban_noted:
+                            print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} is "
+                                  f"queue-banned until "
+                                  f"{time.strftime('%H:%M:%S', time.localtime(banned_until))}"
+                                  f" -- idle is EXPECTED, not restarting.", flush=True)
+                            agent.ban_noted = True
+                        agent.zero_since = 0.0
                     else:
+                        agent.ban_noted = False
                         if agent.zero_since == 0.0:
                             agent.zero_since = now
                         elif now - agent.zero_since >= IDLE_SECONDS:
