@@ -1,96 +1,72 @@
-# Test 4 negotiation experiment — deployed 2026-08-22 23:19 IST
+# Test 4 negotiation experiment v2 — OPEN CLAIM — 2026-08-23 00:24 IST
 
-**Treatment:** Test 4 (`randomized` slot) only. The other four agents are the
-control and remain byte-identical to each other.
+Supersedes the parameter-search config deployed 23:19, which ran ~1 hour and was
+reverted before it produced a readable result. It was reverted deliberately: it
+tuned parameters INSIDE the conceding regime that the rival evidence says is the
+actual problem, and leaving it on would have confounded this test.
+
+**Treatment: Test 4 only.** The other four agents are the control and remain
+byte-identical to each other.
 
 | knob | control | Test 4 |
 |---|---|---|
-| GLEE_NEGO_ACCEPT_SPAN | 0.48 | 0.70 |
-| GLEE_NEGO_ZOPA_SHARE | 0.39 (default) | 0.20 |
-| GLEE_NEGO_MARGIN_WEIGHT | 0.40 | 0.16 |
-| GLEE_NEGO_MIN_MARGIN | 0.02 | 0.070 |
-| GLEE_NEGO_FINAL_OPTION | 0.60 | 0.68 |
+| GLEE_NEGO_OPEN_CLAIM | (inert) | **0.95** |
+| GLEE_NEGO_CLAIM_FLOOR | (inert) | **0.80** |
 
-All five are read through `runtime_flags`, so this took effect on the 3s poll.
-No restart, nothing stranded.
+Everything else matches the control exactly.
 
-## Where the numbers came from
+## Why these numbers
 
-`sim/nego_search.py`, two independent 30-config searches with hold-out validation.
-They reached similar gains through DIFFERENT values, so the specific numbers are
-noise and only the agreed DIRECTIONS were taken. BOULWARE, ULTIMATUM_SHARE and
-SPAN_INVARIANT are deliberately untouched — the two searches disagreed on them.
+From our own logs, complete-information games against ranked opponents, the share
+of the ZOPA the proposer claims:
 
-Consensus config on a third game set neither search selected on:
-**+0.0102 percentile = +82 rating-equivalent, close rate +0.001.**
+| opponent | nego | opens | ends |
+|---|---|---|---|
+| opus 5(4) | 2555.8 | 0.970 | 0.884 |
+| Clod | 2355.4 | 0.958 | 0.816 |
+| MACH2 | 2278.3 | 1.050 | 0.816 |
+| Fortuna | 2258.1 | 0.970 | 0.929 |
+| NegoMind-B | 2195.4 | 0.925 | 0.925 |
+| **US** | **1994.5** | **0.681** | **0.581** |
 
-## PRE-REGISTERED PREDICTION
+Correlation between negotiation rating and opening claim: **+0.60** over 7 agents,
+157 games. 0.95/0.80 places us inside the band every 2195+ agent occupies.
 
-Negotiation percentile on Test 4 minus the mean of the other four rises by
-**+0.0102** (about +82 rating). Close rate moves less than 1pp. Written down
-before the fact so it can be scored rather than rationalised.
+## ACTIVATION
 
-## BASELINE, 2026-08-22 23:19 IST
+The flags are read live via runtime_flags, but the CODE that reads them shipped at
+00:21 and Test 4's process started at 23:06. The running process does not have it.
+This arms at Test 4's next restart. Confirm by grepping its turns for the plan key
+before treating any number as a read.
 
-Server ratings:
+## PREDICTION, on the record
 
-| agent | barg | nego | pers | games |
-|---|---|---|---|---|
-| Test 1 | 2228 | 1992 | 2298 | 21,342 |
-| Test 2 | 2169 | 1950 | 2215 | 22,959 |
-| Test 3 | 2173 | 1987 | 2254 | 18,705 |
-| **Test 4** | 2236 | **1730** | 1962 | **2,087** |
-| Agent 5 | 2192 | 2018 | 2266 | 19,986 |
+1. **Mechanism (high confidence).** Our mean claimed share in complete-info games
+   rises from ~0.68 opening / ~0.58 closing to ~0.95 / ~0.80.
+2. **Our share of closed deals** rises from ~0.35 toward 0.55+.
+3. **Close rate FALLS.** Holding high must cost some deals; the rivals close less
+   than we do and win anyway.
+4. **Percentile: +0.02 to +0.06, with genuine risk of NEGATIVE.** This is a regime
+   change, not a tuned parameter, and the clone could not screen it because we have
+   never played this regime. I am less sure of the sign here than of 1-3.
 
-Negotiation percentile since 19:41 (play resumed):
+## KILL RULE, fixed in advance
 
-| agent | n | pct |
-|---|---|---|
-| Test 1 | 85 | 0.5392 |
-| Test 2 | 92 | 0.4784 |
-| Test 3 | 112 | 0.4454 |
-| **Test 4** | **245** | **0.5169** |
-| Agent 5 | 84 | 0.5100 |
+Revert if, at 150+ scoreable complete-info games, EITHER:
+* mean percentile is negative with its CI excluding zero, OR
+* close rate falls more than 20pp AND percentile is not positive.
 
-control mean (excl. Test 4): **0.4933**;  Test 4 minus control: **+0.0236**
-Test 4 already sits above control before the change, so the morning read must be
-a DIFFERENCE IN DIFFERENCES against this +0.0236, not against zero.
+A percentile gain bought purely by converting deals into zeros is not a gain, and
+a close-rate collapse with nothing to show for it is the failure mode this design
+is most exposed to.
 
-## HOW TO READ IT IN THE MORNING
+## READ IT WITH
 
-**Do not use Test 4's rating.** CORRECTED 23:25 -- the earlier "2,087 vs ~20,000"
-compared SUMS across all three families and was misleading. Like for like, in
-NEGOTIATION only:
+    python scripts/live_percentile.py --ab open-claim
 
-| agent | nego games | nego rating |
-|---|---|---|
-| Test 1 | 7,141 | 1993 |
-| Test 2 | 7,665 | 1981 |
-| Test 3 | 5,081 | 1982 |
-| **Test 4** | **714** | **1735** |
-| Agent 5 | 6,655 | 2018 |
+which reports mean percentile AND close rate per arm. Note both flags share one
+treatment bit, so this identifies the JOINT policy, not each flag separately.
 
-Test 4 has 9.3x fewer negotiation games than the others average. The rating steps
-toward each game at 1% falling to 0.2% by about game 120, so after 714 games
-**9.1% of Test 4's displayed rating is still the 1000 starting anchor**: a true
-level X shows as 0.909*X + 91. Its 1735 therefore implies a true level near
-**1808**, and the number will drift up overnight on convergence alone.
-
-The tell that this is anchor and not weakness: Test 4's per-game percentile
-(0.5169) is ABOVE the control mean (0.4933) while its rating is 250 points below.
-Those are consistent -- percentile is what it earns per game, the rating still
-carries where it started. Which is the whole reason the read below uses
-percentile.
-
-Use PERCENTILE, which is per-game and immune to convergence:
-
-    python scripts/live_percentile.py --hours <hours since 23:19>
-
-Then: (Test 4 pct − mean of other four) now, minus the same quantity at baseline
-(+0.0236). That difference is the effect. The prediction is +0.0102.
-
-Known confound to state rather than hide: Test 4 is a new agent with a low
-rating, and if matchmaking is rating-sensitive it may face a different opponent
-pool than the others. That would bias the comparison in an unknown direction.
-The clean version is a WITHIN-agent randomised arm; this between-agent design was
-chosen for speed and its result should be treated as a screen, not a verdict.
+Do NOT use Test 4's rating: 733 negotiation games against ~7,000 on the others,
+and 9.1% of its displayed rating is still the 1000 starting anchor. Use percentile,
+and read it as a difference-in-differences against the control mean.
