@@ -58,9 +58,29 @@ a DIFFERENCE IN DIFFERENCES against this +0.0236, not against zero.
 
 ## HOW TO READ IT IN THE MORNING
 
-**Do not use Test 4's rating.** It has 2,087 games against ~20,000 on the others
-and is still converging up from 1000, so its rating will rise overnight whatever
-we do. Attributing that climb to this change would be wrong.
+**Do not use Test 4's rating.** CORRECTED 23:25 -- the earlier "2,087 vs ~20,000"
+compared SUMS across all three families and was misleading. Like for like, in
+NEGOTIATION only:
+
+| agent | nego games | nego rating |
+|---|---|---|
+| Test 1 | 7,141 | 1993 |
+| Test 2 | 7,665 | 1981 |
+| Test 3 | 5,081 | 1982 |
+| **Test 4** | **714** | **1735** |
+| Agent 5 | 6,655 | 2018 |
+
+Test 4 has 9.3x fewer negotiation games than the others average. The rating steps
+toward each game at 1% falling to 0.2% by about game 120, so after 714 games
+**9.1% of Test 4's displayed rating is still the 1000 starting anchor**: a true
+level X shows as 0.909*X + 91. Its 1735 therefore implies a true level near
+**1808**, and the number will drift up overnight on convergence alone.
+
+The tell that this is anchor and not weakness: Test 4's per-game percentile
+(0.5169) is ABOVE the control mean (0.4933) while its rating is 250 points below.
+Those are consistent -- percentile is what it earns per game, the rating still
+carries where it started. Which is the whole reason the read below uses
+percentile.
 
 Use PERCENTILE, which is per-game and immune to convergence:
 
