@@ -114,7 +114,20 @@ def _play_arm(field, draws, flags):
             params["opponent_name"] = opponent.name
             params["disclose_opponent"] = random.Random(game_seed + 2).random() < 0.5
         s1, s2 = (strategy, opponent) if seat == "player_1" else (opponent, strategy)
-        result = play(SimConfig(family, dict(params)), s1, s2, grng)
+        # A DISTINCT game id per draw, stable across arms. Every randomised arm we
+        # ship assigns by sha256("<salt>|" + game_id), and sim/arena.play defaults
+        # game_id to the literal "local" -- so before this, EVERY simulated game
+        # hashed to the same bit and an arm was 100% control or 100% treatment,
+        # never a comparison. Arms whose salt happens to hash to 0 (ci_ask,
+        # rank_price_ab, barg_msg) therefore returned a byte-identical FALSE NULL
+        # with a zero-width CI, while arms hashing to 1 (zopa, close_ab, backload)
+        # ran treatment-everywhere and looked fine. That asymmetry is worse than a
+        # uniform break because it is invisible in exactly half of cases.
+        # Deriving the id from the draw seed keeps the two arms paired: the same
+        # game carries the same id, so it lands in the same arm in both runs and
+        # the comparison stays like-for-like.
+        gid = f"sim-{game_seed:08x}"
+        result = play(SimConfig(family, dict(params)), s1, s2, grng, game_id=gid)
         mine = result.payoff(seat)
         scale = params.get("money_to_divide") or params.get("player_1_value") or 1.0
         from sim.percentile import percentile as _pct
