@@ -114,3 +114,64 @@ of them has a final game_state. Over a 3.3-day log window that is 0.30 gill bate
 negotiation games per day: about 2 more before the competition closes on Aug 29.
 The data will not arrive. opus 5(4) at 2555.8 is 45 points off the top and we have
 real data on it, so that is the window we use.
+
+---
+
+## The other two families, same method (2026-08-23)
+
+### Bargaining — we are #3 (2306.6), 145 behind #1. NO lever found.
+
+Share of the pot the opponent demands, from our games against ranked agents:
+
+| opponent | barg | opens | ends | our pct vs them |
+|---|---|---|---|---|
+| opus 5(4) | 2451.6 | 0.731 | 0.790 (hardens) | **0.6172** |
+| jeff zeboss | 2302.8 | 0.658 | 0.635 | 0.4615 |
+| Priori | 2292.3 | 0.570 | 0.587 | 0.4812 |
+| Morphling | 2235.4 | 0.617 | 0.535 | 0.4801 |
+| P-agent | 2219.9 | 0.609 | 0.554 | 0.4827 |
+| the field | -- | 0.608 | 0.573 | 0.4986 |
+
+Opening demand does NOT track rating here (the #1 opens 0.731, the #5 opens
+0.570), and we score our BEST result of any matchup against the top bargainer.
+Nothing to copy.
+
+### Persuasion — we are #4 (2293.1), 216 behind #1. Our difference is an EDGE.
+
+Lie rate on low-quality units, measured from 8,369 games where we were the BUYER
+so the true quality is visible:
+
+    median seller across 70 opponents   96.0%
+    Zeus (persuasion 2400.7, #2)        91.7%
+    Mythos01 (2308.2, #3)              100.0%
+    US                                  59.9%
+
+Only 4 of 70 sellers lie less than we do. That looked like a deficiency until it
+was split by whether lying is punished:
+
+| cell | our lie rate | field | our percentile | rating-equiv |
+|---|---|---|---|---|
+| p*r < 1 (lying punished) | **17.6%** | ~96% | **0.6485** [.6354,.6615] | **3188** |
+| p*r >= 1 (lying free) | 96.2% | ~96% | 0.5097 [.4986,.5208] | 2078 |
+
+**Our restraint in the costly cells is the single biggest edge we have in any
+family.** We score the 65th percentile there precisely BECAUSE we do not do what
+the other 66 sellers do. Copying the field would have destroyed it. This is also
+consistent with our own randomised evidence (Agent 5's never-lie beat Test 1's
+shading by +0.0457, CI [+0.0030,+0.0883], in exactly those cells) and with the
+theory: when p*r < 1 a caught lie costs every remaining round.
+
+The persuasion opportunity is therefore in the FREE cells, where we already lie
+96.2% and score only 0.5097 -- dead average. Whatever separates gill bates from us
+there is NOT lie rate; both are at ceiling. Unexplained and worth a look.
+
+### Priority
+
+| family | rank | gap to #1 | lever |
+|---|---|---|---|
+| negotiation | last of 15 | -606 | YES: we open 0.681, winners 0.92-1.05, r=+0.60 over 7 agents |
+| persuasion | #4 | -216 | partly: free cells average and unexplained |
+| bargaining | #3 | -145 | none found |
+
+Negotiation has the largest gap, the clearest mechanism and the strongest
+evidence. It is the only one worth a regime change.
