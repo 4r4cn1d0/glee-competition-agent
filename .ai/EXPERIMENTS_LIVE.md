@@ -146,7 +146,25 @@ rotation. Recovered arm assignment intersected with the wrong window is what
 made GLEE_PERS_BACKLOAD_AB read as null for nine hours while it was losing
 0.391 percentile per game.
 
-DECISION at 400 fired games (a fire = a turn carrying `no_regress`):
+REVISED 2026-08-22, after measuring the base rate. The regression this guard
+catches occurs in 0.45% of bargaining games (47 of 10,529 over 48h, 4 agents).
+On Test 2 + Test 3 that is ~12 fires a day, so the original 400-fire decision
+point needs 33 days and is unreachable before the Aug 29 close.
+
+It does not need a powered A/B. Accepting an offer at least as good as the
+counter you were about to make -- one round earlier and undiscounted --
+DOMINATES making that counter. That is a theorem, not a hypothesis, and the
+measured 47 cases give up a mean 5.26 pot-points with the opponent accepting
+the weaker ask 85% of the time; the worst rejects an offer worth 0.950 of the
+pot and then asks 0.610.
+
+What must be checked instead is PROJECTION FIDELITY: does the offer the guard
+projects equal the offer actually made next turn? Verify by replaying logged
+games where the guard evaluated and comparing its `planned_counter_share`
+against our real next offer. Any mismatch is a correctness bug, not a result.
+KILL only on a projection mismatch or a latency regression.
+
+SUPERSEDED rule (kept for the record) -- DECISION at 400 fired games:
   * SHIP to Agent 5 if mean percentile delta CI excludes zero and is positive.
   * KILL if the CI excludes zero and is negative.
   * KILL if fires < 40, i.e. the guard is too rare to pay for its risk.
