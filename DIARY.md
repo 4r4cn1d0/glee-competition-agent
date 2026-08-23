@@ -14,6 +14,70 @@ BUILT BUT OFF: `BARG_NO_REGRESS`, `BARG_MSG`, `NEGO_RANK_PRICE_AB`, `NEGO_SURPLU
 WORKTREE, OFF/UNDEPLOYED: `NEGO_HIDDEN_FLOOR` and `NEGO_HIDDEN_POLICY_V1`.
 LOCAL SIM: Always enable opponent clone V2; the legacy clone is invalid for pricing work.
 
+## AUG 24 - 02:40 IST
+
+WHAT: DEPLOYED `GLEE_NEGO_FIRST_PRINCIPLES=1` on TEST 4. A ground-up negotiation
+policy that owns 6 of the 24 cells outright and lets the other 18 fall through
+untouched. 50/50 within-agent split on sha256("nego_fp|"+game_id), so both arms
+meet the same opponents in the same hour.
+
+DEPLOY BASELINE (logged at deploy, from the API not from memory):
+  Test 4 negotiation 2020, n=4172. Fleet negotiation spans 1990-2055 -- we are
+  exactly average at this family, on every agent.
+  Test 4 overall 2271.9 (barg 2357 / nego 2020 / pers 2448), active_games 0.
+  Test 2 overall 2278.0 (barg 2472 / nego 1994 / pers 2341).
+  Test 4 and Test 2 are within ~6 points and flip between pulls. TEST 4 IS A
+  CO-LEADER, NOT A FREE PROBE SLOT. Accepted because the change touches only
+  negotiation -- Test 4's weakest family and the one NOT carrying its average --
+  and because only half its negotiation games are treated.
+
+WHY: three facts from the 17,361 logged games that we were not using.
+  1. The two information conditions run DIFFERENT generators. Complete info draws
+     an ordered pair (seller {80,100,120}, buyer {100,120,150}) so a zone always
+     exists -- 0 of 4,771 games had none. Hidden info draws both seats iid uniform
+     over all four points, so P(zone)=6/16=37.5%. Agreement rate tracks that at
+     76-95% efficiency. ~45% of all games are dead by construction, not 12%, and
+     your own value tells you which before you offer.
+  2. Turn order never varies (229,848 offers). The last offer belongs to the
+     seller at max_rounds=1 and the buyer at max_rounds=10, and at a
+     complete-info terminal node the field accepts any positive share and rejects
+     every non-positive one: 892/892 and 0/159. Whoever offers last takes the
+     zone for a cent. Only 18% of the field does it.
+  3. Hidden-info payoffs have a ~70% atom at exactly zero: F(0)=0.370,
+     F($0.01)=0.739. One cent of CLOSING is worth +0.369 percentile; the entire
+     rest of the zone is worth +0.09. So the rank-optimal ask is the LOWEST
+     profitable grid point, not the money-optimal one (cost 80: money says 120 at
+     EV $20.0, rank says 100 at EV $15.0, +0.103).
+
+PREDICTION: single/CI/seller +0.143 and +0.138; cap10/CI/buyer +0.140 and +0.123;
+single/HI/seller +0.069 and +0.059. Weighted over all games +0.020 percentile,
+~+160 rating. Floor, not ceiling -- 18 cells are undesigned.
+
+WHY THE HOLD-OUT IS NOT REFUTED: our hardliner looked like it disproved the
+cap-10 buyer hold-out (83% reach rate, close rate collapsing to 61.4%). It did
+not. 46.4% of its round-10 bids were priced BELOW the seller's cost and were
+rejected 0/71; the 82 feasible ones were accepted 82/82. The strategy was sound
+and a downstream rewriter owned the price. `first_principles.owns()` is now the
+single ownership predicate, imported by BOTH negotiation.py and actions.py, and
+the guard chain returns before it can touch a terminal price.
+
+REACHABILITY (against Test 4's own 43-flag stack, not the sim default):
+eligible 10069, fired 142, action_changed 185, PASS. Sample diffs
+1150000.0 -> 999999.99 and 115.0 -> 99.99: we stop asking above the likely buyer
+value and start pricing to close.
+
+KILL RULE: read the hash-recovered arms offline. Revert if, at 300+ treated
+games, the treated arm's percentile is negative with a bootstrap CI excluding
+zero. The noise floor is 0.048 at n~300, so anything smaller is unmeasurable.
+FALSIFIERS, checkable in tens of games not hundreds: any feasible terminal offer
+rejected breaks the acceptance law; any odd-round player_2 offer breaks turn
+parity; any off-grid value breaks the generator model. Those kill it outright
+regardless of percentile.
+
+CAVEAT: the field payoff distribution is measured from opponents who played US,
+so it is sound for locating the zero atom (62.5% of which is structural) and
+unsound for anything needing the field's behaviour against itself.
+
 ## AUG 23 - 07:10 IST
 
 WHAT: DEPLOYED `GLEE_NEGO_ZOPA_AB=0.10` on TEST 4. Treated games leave the
