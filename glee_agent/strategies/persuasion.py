@@ -24,6 +24,8 @@ early purchases carry information value on top of their payoff.
 
 from __future__ import annotations
 
+import math
+
 from .. import runtime_flags
 
 from ..actions import _num
@@ -296,6 +298,75 @@ PERS_BUYER_SELECTIVITY_SALT = "pers_buyer_selectivity_v1|"
 # 5,604 more purchases, so silently bundling it into the main arm would make its
 # cost impossible to identify.
 PERS_BUYER_SELECTIVITY_STRIKE_SALT = "pers_buyer_selectivity_strike_v1|"
+
+
+#: Independent salt for the rank-buy arm. Must not collide with the selectivity
+#: salts above or the two experiments would be correlated and neither readable.
+PERS_RANK_BUY_SALT = "pers_rank_buy_v1|"
+
+
+def rank_buy_assignment(game_id) -> bool | None:
+    """Stable per-game rank-buy arm, without consulting live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    return bool(int(_hashlib.sha256((PERS_RANK_BUY_SALT + gid).encode()).hexdigest(), 16) & 1)
+
+
+def _rank_buy_arm(game: dict) -> bool:
+    """Whether THIS game is assigned to buy through the p*r <= threshold cell.
+
+    WHY THIS EXISTS. We gate purchases on money EV -- buy iff the posterior beats
+    (price-u)/(v-u), which with u=0 is 1/r -- and at p*r <= 1 an always-recommend
+    seller leaves the posterior at the prior exactly, so that gate refuses every
+    purchase. THE COMPETITION DOES NOT SCORE MONEY, IT SCORES RANK. The
+    rank-indifference threshold is
+
+        q_rank = [F(S) - F(S+u-P)] / [F(S+v-P) - F(S+u-P)]
+
+    for the cell payoff CDF F at accumulated payoff S, and it is not equal to
+    (P-u)/(v-u). On fitted numbers for the text p=.5, r=1.2 cell -- F(-P)=.0284,
+    F(0)=.4498, F(+.2P)=.8734 -- q_rank is 0.4987 against a money gate of 0.8333,
+    so the gate is 33 probability points stricter than the objective, and on the
+    prior alone rank says BUY where money says REFUSE.
+
+    The logs agree in shape. Across 3,800 buyer games at p*r < 1 we score 0.4813
+    and refuse outright in 2,882 of them (75.8%), for percentile 0.4651; games
+    where we bought 75-99% scored 0.7329 and the 34 where we bought everything
+    scored 0.8173. The mirror cell is the tell: as SELLER at p*r < 1 we score
+    0.6505, our best cell anywhere, which is only possible because the buyers
+    facing us there do buy. We are on the losing side of a trade we win from the
+    other seat.
+
+    That evidence is observational and our buyer is adaptive -- it buys more
+    after a seller looks honest -- so the monotone table is confounded by reverse
+    causation and cannot be trusted on its own. This arm exists to settle it the
+    only way that removes the confound: randomise. Assignment is a hash of the
+    game id, independent of every other persuasion salt, so both arms run inside
+    one agent against the same opponent pool in the same hour.
+
+    Deliberately one-directional: it may only turn a refusal INTO a purchase,
+    never the reverse, so it cannot damage the cells we already win. It is scoped
+    to p*r <= GLEE_PERS_RANK_BUY_AB and cannot fire at p*r > 1, where we already
+    score 0.5521 and buy 84% of rounds.
+    """
+    thr = runtime_flags.as_float("GLEE_PERS_RANK_BUY_AB", 0.0)
+    # Fail CLOSED on a malformed flag: NaN comparisons are all False, so an
+    # unguarded value would slip past a bare `<= 0` check and arm the treatment.
+    if not math.isfinite(thr) or thr <= 0.0:
+        return False
+    state = game.get("game_state") or {}
+    if (state.get(f"{game.get('your_player')}_role") or "") != "buyer":
+        return False
+    p = _num(state.get("p"), 0.0)
+    v = _num(state.get("v"), 0.0)
+    price = _num(state.get("product_price"), 0.0)
+    if not (p > 0.0 and v > 0.0 and price > 0.0):
+        return False                      # blind cell: no p*r to test against
+    if not (p * v / price) <= thr:
+        return False
+    return bool(rank_buy_assignment(game.get("game_id")))
 
 
 def buyer_selectivity_assignment(game_id) -> bool | None:
@@ -877,6 +948,16 @@ def decide(game: dict, cfg) -> dict:
         p = buyer_plan_v2(game, cfg)
     else:
         p = buyer_plan(game, cfg)
+
+    # RANK-BUY ARM (see _rank_buy_arm). One-directional by construction: it may
+    # only convert a refusal into a purchase inside the p*r <= threshold cell it
+    # is scoped to, so no cell we already win can be damaged by it, and a game
+    # the buyer already wanted to buy is left exactly as the buyer decided.
+    if not p.get("buy") and _rank_buy_arm(game):
+        p["buy"] = True
+        p["rank_buy_arm"] = True
+        p.setdefault("gates_fired", []).append("rank_buy")
+
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
 _DP_STATE = {"checked": 0.0, "mtime": None, "doc": None}
