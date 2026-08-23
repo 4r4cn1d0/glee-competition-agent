@@ -177,6 +177,50 @@ def _grid_ask(my_value: float) -> float:
     return min(above) * s - EPS
 
 
+def _reject_with_counter(state: dict, i_am_seller: bool, my_value: float,
+                         their_value: float) -> dict:
+    """Reject, carrying our own counteroffer.
+
+    Off the final round the server requires a rejection to name a counteroffer.
+    If we omit it, ``actions._coerce_negotiation_decision`` supplies one -- and
+    its fallback is OUR OWN VALUATION, which is the worst legal number on the
+    board: it hands the counterparty the entire zone and leaves us exactly $0.
+    A bare ``{"decision": "RejectOffer"}`` from this module therefore silently
+    surrenders the very games the hold-out exists to win, so the price is named
+    here or not at all.
+    """
+    out = {"decision": "RejectOffer"}
+    rnd = _num(state.get("round"), 0.0)
+    mr = _num(state.get("max_rounds"), math.inf)
+    if state.get("horizon_known") is True and rnd >= mr:
+        return out                      # final round: no counteroffer exists
+    if math.isfinite(their_value):
+        # Complete information: counter at our own terminal price. If they take
+        # it early we capture the zone a round sooner, which is strictly better
+        # than waiting; if they refuse we simply repeat it at the terminal node.
+        span = abs(their_value - my_value)
+        if span > 2 * EPS:
+            price = (their_value - EPS) if i_am_seller else (their_value + EPS)
+        else:
+            price = (my_value + their_value) / 2.0
+    else:
+        price = _grid_ask(my_value) if i_am_seller else _grid_bid(my_value)
+    out["product_price"] = round(price, 2)
+    return out
+
+
+def _grid_bid(my_value: float) -> float:
+    """Highest grid point strictly below our value, plus a cent -- the buyer's
+    mirror of :func:`_grid_ask`. Rank-optimal for the same reason: it maximises
+    P(close) subject to leaving us a positive payoff."""
+    s = scale_of(my_value)
+    base = my_value / s
+    below = [b for b in GRID if b < base - 1e-9]
+    if not below:
+        return max(0.0, my_value / 2.0)
+    return max(below) * s + EPS
+
+
 def action(game: dict) -> dict | None:
     """The move.  Returns None only if something is malformed, never a bad price."""
     c = cell(game)
@@ -221,7 +265,9 @@ def action(game: dict) -> dict | None:
             # the opponent walks.
             if share >= HOLD_ACCEPT:
                 return {"decision": "AcceptOffer"}
-            return {"decision": "RejectOffer"}
-        return {"decision": "AcceptOffer" if gain > 0 else "RejectOffer"}
+            return _reject_with_counter(state, i_am_seller, my_value, their_value)
+        if gain > 0:
+            return {"decision": "AcceptOffer"}
+        return _reject_with_counter(state, i_am_seller, my_value, their_value)
 
     return None

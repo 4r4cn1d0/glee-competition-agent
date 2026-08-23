@@ -224,3 +224,55 @@ def test_fp_always_off_keeps_the_5050_split(monkeypatch):
     ids = [f"split-{i}" for i in range(3000)]
     t = sum(1 for i in ids if fp.in_treatment({"game_id": i}))
     assert 0.45 < t / len(ids) < 0.55
+
+
+# --- regression: a bare rejection surrenders the zone -------------------
+def test_non_final_rejection_always_names_its_own_counteroffer(monkeypatch):
+    """Found live on the leaderboard agent.
+
+    coerce() fills a missing counteroffer with OUR OWN VALUATION, which leaves us
+    exactly $0 and gives the counterparty the whole zone -- the precise opposite
+    of the hold-out's purpose.
+    """
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    g = treated(complete=True, seller=False, mr=10, rnd=3, my=1000000.0, their=800000.0,
+                phase="decision", offered=1470000.0)
+    a = negotiation.decide(g, Config())
+    assert a["decision"] == "RejectOffer"
+    assert "product_price" in a, "bare rejection: coerce will fall back to our own value"
+    assert a["product_price"] == pytest.approx(800000.01)
+    out = actions.coerce(dict(a), g)
+    assert out["product_price"] == pytest.approx(800000.01)
+    assert out["product_price"] != pytest.approx(1000000.0), "surrendered the entire zone"
+
+
+def test_counteroffer_survives_the_whole_coerce_path(monkeypatch):
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    for rnd in (1, 3, 5, 7, 9):
+        g = treated(complete=True, seller=False, mr=10, rnd=rnd, my=150.0, their=80.0,
+                    phase="decision", offered=140.0)
+        out = actions.coerce(dict(negotiation.decide(g, Config())), g)
+        assert out["decision"] == "RejectOffer"
+        assert out["product_price"] == pytest.approx(80.01), f"round {rnd}"
+
+
+def test_final_round_rejection_carries_no_counteroffer(monkeypatch):
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    g = treated(complete=True, seller=False, mr=10, rnd=10, my=150.0, their=80.0,
+                phase="decision", offered=200.0)
+    a = negotiation.decide(g, Config())
+    assert a["decision"] == "RejectOffer" and "product_price" not in a
+
+
+def test_a_bare_reject_would_indeed_have_surrendered_the_zone():
+    """Pins the failure mode itself, so nobody reintroduces it."""
+    state = {"current_player": "player_2", "player_2_value": 1000000.0,
+             "round": 3, "max_rounds": 10, "horizon_known": True}
+    out = actions._coerce_negotiation_decision({"decision": "RejectOffer"}, state)
+    assert out["product_price"] == pytest.approx(1000000.0)
