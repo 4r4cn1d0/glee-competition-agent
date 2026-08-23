@@ -731,3 +731,11 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-23 09:47Z — surface: the bargaining accept/offer floors and their exact boundary values
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-23 12:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-23 15:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
