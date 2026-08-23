@@ -369,6 +369,127 @@ def _rank_buy_arm(game: dict) -> bool:
     return bool(rank_buy_assignment(game.get("game_id")))
 
 
+#: Independent salt for the continuation-aware rank gate.
+PERS_RANK_GATE_SALT = "pers_rank_gate_v1|"
+
+#: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
+#: small (231 states at T=20) and the bucketing is what keeps this off the hot
+#: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
+_RANK_DP_CACHE: dict = {}
+
+
+def rank_gate_assignment(game_id) -> bool | None:
+    """Stable per-game rank-gate arm, without consulting live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    return bool(int(_hashlib.sha256((PERS_RANK_GATE_SALT + gid).encode()).hexdigest(), 16) & 1)
+
+
+def _cell_samples(state: dict, seat: str):
+    """The buyer payoff sample vector for this exact configuration, or None.
+
+    Keyed identically to sim/percentile.py so the DP optimises the same ladder
+    the competition scores us on. Any drift between the two makes the threshold
+    an answer to the wrong question.
+    """
+    price = _num(state.get("product_price"), 0.0)
+    p = state.get("p")
+    v = _num(state.get("v"), 0.0)
+    rounds = int(_num(state.get("total_rounds"), 20)) or 20
+    if not price or p is None or not v:
+        return None
+    mode = state.get("seller_message_type") or "text"
+    ratio = min((1.2, 1.25, 2.0, 3.0, 4.0), key=lambda g: abs(g - v / price))
+    role = "seller" if seat == "player_1" else "buyer"
+    key = "|".join(str(x) for x in
+                   ("persuasion", mode, round(float(p), 2), ratio, role, rounds))
+    try:
+        from sim.percentile import _load
+        return _load().get(key)
+    except Exception:
+        return None
+
+
+def _midrank(samples, x: float) -> float:
+    """F(x): the percentile this payoff would score in its own cell."""
+    import bisect
+    lo = bisect.bisect_left(samples, x - 1e-9)
+    hi = bisect.bisect_right(samples, x + 1e-9)
+    return (lo + hi) / 2.0 / len(samples)
+
+
+def _rank_dp(samples, total: int, v: float, u: float, price: float,
+             m_hat: float, q_hat: float):
+    """Solve for V(t,a,b), the expected PERCENTILE from state (t, a, b).
+
+    WHY A DP AND NOT THE ONE-SHOT FORMULA. The rank-indifference threshold
+
+        q_rank = [F(S) - F(S+u-P)] / [F(S+v-P) - F(S+u-P)]
+
+    is exact only in the LAST round, where there is no continuation to protect.
+    Applied as a standing rule it is rank-negative in every p*r <= 1 cell --
+    measured: buy-iff-recommended at q=0.50 scores 0.056 against 0.4498 for
+    refusing, because the effective 20-round threshold is 0.80-0.85, i.e. right
+    back at the money gate. The gap between money and rank is real in 16 of 30
+    cells and worth +0.0585 buyer percentile, but ONLY in continuation-aware
+    form, where the threshold runs 0.50 at the horizon up to 0.97 early on. A
+    myopic rank gate is worse than the money gate it replaces; that error cost us
+    a live arm today.
+
+    a = units bought that proved high, b = bought and proved low. Quality is
+    revealed only on rounds we bought, which is exactly why (a,b) is the state:
+    everything we know about this seller is in it.
+    """
+    T = total
+    terminal = {}
+    for a in range(T + 1):
+        for b in range(T + 1 - a):
+            payoff = (a * (v - price) - b * (price - u)) / (price * T)
+            terminal[(a, b)] = _midrank(samples, payoff)
+    layers = [terminal]
+    for _ in range(T):
+        nxt, cur = layers[-1], {}
+        for a in range(T + 1):
+            for b in range(T + 1 - a):
+                refuse = nxt.get((a, b), 0.0)
+                take = (q_hat * nxt.get((a + 1, b), refuse)
+                        + (1.0 - q_hat) * nxt.get((a, b + 1), refuse))
+                # A recommendation arrives with probability m_hat; with the
+                # remainder the seller declines and there is nothing to buy.
+                cur[(a, b)] = m_hat * max(refuse, take) + (1.0 - m_hat) * refuse
+        layers.append(cur)
+    return layers
+
+
+def _q_rank_threshold(samples, t: int, total: int, a: int, b: int,
+                      v: float, u: float, price: float,
+                      m_hat: float, q_hat: float):
+    """The posterior P(high) at which buying and refusing are rank-indifferent."""
+    key = (id(samples), total, round(m_hat / 0.05), round(q_hat / 0.05))
+    layers = _RANK_DP_CACHE.get(key)
+    if layers is None:
+        layers = _rank_dp(samples, total, v, u, price, m_hat, q_hat)
+        if len(_RANK_DP_CACHE) > 512:
+            _RANK_DP_CACHE.clear()
+        _RANK_DP_CACHE[key] = layers
+    # layers[0] is t = T+1; the value function at t+1 is layers[total - t].
+    idx = total - t
+    if idx < 0 or idx >= len(layers):
+        return None
+    nxt = layers[idx]
+    hold = nxt.get((a, b))
+    win = nxt.get((a + 1, b))
+    lose = nxt.get((a, b + 1))
+    if hold is None or win is None or lose is None:
+        return None
+    denom = win - lose
+    if denom <= 1e-12:
+        return None                       # no rank separation: fall through
+    return (hold - lose) / denom
+
+
 def buyer_selectivity_assignment(game_id) -> bool | None:
     """Stable per-game selectivity arm, without consulting live flags."""
     gid = str(game_id or "")
@@ -574,6 +695,53 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
         bonus = audit * price * (rounds_remaining / max(total, 1))
 
     buy = (not blocked) and (expected + bonus >= threshold)
+
+    rank_gate_extra: dict = {}
+    # CONTINUATION-AWARE RANK GATE (see _rank_dp). Scoped to `tight` cells only,
+    # which is the entire safety argument: tight means breakeven >= 0.75, i.e.
+    # r <= 1.333, and on the live (1.2, 1.25, 2, 3, 4) x (1/3, 0.5, 0.8) grid the
+    # set {tight} and {p*r > 1} are DISJOINT. So this provably cannot reach the
+    # buyer p*r>1 cell we already win at 0.5521, and being buyer-only it cannot
+    # reach seller p*r<1 at 0.6505. Do not relax the `tight` guard.
+    _rg = runtime_flags.as_float("GLEE_PERS_RANK_GATE_AB", 0.0)
+    if (tight and math.isfinite(_rg) and _rg > 0.0
+            and rank_gate_assignment(game.get("game_id"))):
+        _samples = _cell_samples(state, game.get("your_player"))
+        # The threshold is lowest at the horizon (0.50-0.54) exactly where the
+        # measured P(high|recommended) collapses -- 0.88 -> 0.699 at margin <0.5.
+        # Letting the DP-only branch fire there buys the seller's endgame dump,
+        # so the last three rounds keep the money gate.
+        _late = round_no > max(1, total - 3)
+        if _samples and not _late and recommended_now is not None:
+            _a = sum(1 for h in history if h.get("bought")
+                     and str(h.get("quality", "")).lower() == "high")
+            _b = sum(1 for h in history if h.get("bought")
+                     and str(h.get("quality", "")).lower() == "low")
+            _recs = sum(1 for h in history
+                        if ((_recommendation_signal(h) is True) if parse_tri
+                            else _recommended(h)))
+            _declines = sum(1 for h in history
+                            if ((_recommendation_signal(h) is False) if parse_tri
+                                else not _recommended(h)))
+            # Shrunk prefix recommendation rate: four pseudo-observations keep a
+            # one-round prefix from asserting a rate of 0 or 1.
+            _m = (_recs + 4.0) / ((round_no - 1) + 4.0)
+            _m = min(max(_m, 1e-6), 1.0)
+            _q = min(1.0, p / _m) if _m > 0 else 1.0
+            _thr = _q_rank_threshold(_samples, round_no, total, _a, _b,
+                                     v, u, price, _m, _q)
+            if _thr is not None:
+                # The second clause scopes the weaker rank bar to sellers who
+                # have shown they will decline: it costs 0.0017 of the gain and
+                # stops the rule from acting on a pure spammer, whose every
+                # "yes" carries no information at all.
+                _ok = p_high >= _thr and (p_high >= breakeven or _declines >= 1)
+                rank_gate_extra = {"rank_gate_arm": True,
+                                   "rank_gate_threshold": round(_thr, 4),
+                                   "rank_gate_flipped": _ok != buy,
+                                   "rank_gate_a": _a, "rank_gate_b": _b,
+                                   "rank_gate_m": round(_m, 3)}
+                buy = _ok
 
     # Posterior LOWER-CONFIDENCE-BOUND buying, aimed at exactly the cells the
     # tight-prior gate leaves open: tight (breakeven >= 0.75) hi-prior cells,
@@ -806,6 +974,7 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
         **lcb_extra,
         **selectivity_extra,
         **parser_extra,
+        **rank_gate_extra,
         "price": price, "p": p, "v": v, "u": u,
         "recommended": recommended_now,
         "p_high": p_high, "expected_value": expected,

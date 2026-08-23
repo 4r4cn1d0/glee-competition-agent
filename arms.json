@@ -206,6 +206,7 @@
     "GLEE_PERS_KEEP_MSG": "1",
     "GLEE_PERS_LIE_SHADING": "0.0",
     "GLEE_PERS_MSG_STYLE": "token",
-    "GLEE_TRACE_GATES": "1"
+    "GLEE_TRACE_GATES": "1",
+    "GLEE_PERS_RANK_GATE_AB": "0.5"
   }
 }
