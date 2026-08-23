@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 
-from .. import nego_arms, pricing, runtime_flags
+from .. import first_principles, nego_arms, pricing, runtime_flags
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1141,6 +1141,16 @@ def decide(game: dict, cfg) -> dict:
 
 
 def _decide(game: dict, cfg) -> dict:
+    # The first-principles policy owns its cells outright: it is consulted before
+    # plan() so no concession schedule, stall detector or span invariant can see
+    # -- let alone rewrite -- the price it returns.  actions.py yields to it too.
+    # Cells it does not claim fall through untouched.
+    if first_principles.owns(game):
+        fp_action = first_principles.action(game)
+        if fp_action is not None:
+            fp_action["_plan"] = {"source": "first_principles"}
+            return fp_action
+
     state = game["game_state"]
     p = plan(game, cfg)
 

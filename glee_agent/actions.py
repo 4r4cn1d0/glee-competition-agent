@@ -14,7 +14,7 @@ import hashlib
 import logging
 import math
 
-from . import pricing, runtime_flags
+from . import first_principles, pricing, runtime_flags
 
 MAX_MESSAGE_LEN = 2000
 
@@ -370,6 +370,12 @@ def _is_negotiation_opening(game: dict) -> bool:
 def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     """Apply flagged information-regime postconditions to an outgoing price."""
     if "product_price" not in action:
+        return
+    # A first-principles price is terminal by construction -- it is the
+    # opponent's own visible value plus a cent, or an exact grid point.  Every
+    # postcondition below would move it off that point and break the acceptance
+    # law it relies on, so ownership ends here.
+    if first_principles.owns(game):
         return
     state = game.get("game_state") or {}
 
