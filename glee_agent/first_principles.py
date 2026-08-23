@@ -87,6 +87,12 @@ def in_treatment(game: dict) -> bool:
     phase, opponent pool and hour of day, and placebo-treating an untouched
     agent produced a -0.12 'effect'.
     """
+    # Exploit mode. The 50/50 split exists to MEASURE the policy; once measured,
+    # halving its exposure only halves the gain. Test 4 keeps the split and stays
+    # the measurement arm; the agent that actually carries our leaderboard row
+    # runs it on every eligible game.
+    if runtime_flags.enabled("GLEE_NEGO_FP_ALWAYS"):
+        return True
     gid = str(game.get("game_id") or "")
     if not gid:
         return False

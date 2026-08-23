@@ -196,3 +196,31 @@ def test_arm_assignment_is_stable_and_balanced():
     assert 0.45 < t / len(ids) < 0.55
     g = {"game_id": "abc"}
     assert fp.in_treatment(g) == fp.in_treatment(g)
+
+
+def test_fp_always_treats_every_eligible_game(monkeypatch):
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    for i in range(80):
+        g = game(gid=f"any-{i}", complete=True, seller=True, mr=1, my=80.0, their=150.0)
+        assert fp.in_treatment(g) and fp.owns(g)
+
+
+def test_fp_always_still_respects_cell_coverage(monkeypatch):
+    """Always-on widens the arm, never the cell set."""
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    assert not fp.owns(game(gid="u", complete=True, seller=True, mr=None, hk=False))
+    assert not fp.owns(game(gid="v", complete=True, seller=True, mr=10))
+    assert not fp.owns(game(gid="w", complete=False, seller=False, mr=1, my=150.0))
+
+
+def test_fp_always_off_keeps_the_5050_split(monkeypatch):
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("GLEE_NEGO_FP_ALWAYS", raising=False)
+    ids = [f"split-{i}" for i in range(3000)]
+    t = sum(1 for i in ids if fp.in_treatment({"game_id": i}))
+    assert 0.45 < t / len(ids) < 0.55
