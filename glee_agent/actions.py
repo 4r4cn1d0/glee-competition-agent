@@ -123,6 +123,28 @@ def _open_claim_treatment(game: dict) -> tuple[float, float] | None:
     if opening == 0.0 and floor == 0.0:
         return None
 
+    # PROMOTION TO ALWAYS-ON.  Measured on Test 4's own hash arms, the claim is
+    # strongly positive in three cells -- single/seller +0.150, cap10/buyer
+    # +0.338, unknown/seller +0.336, all with CIs excluding zero and no loss of
+    # close rate -- and inert in two others.  The one exception is the
+    # unknown-horizon BUYER, where treatment closed 42% against 94% control.
+    # That is structural, not noise: round 99 is odd, so in an unknown-horizon
+    # game the SELLER makes the final offer.  A seller who holds a floor is
+    # eventually handed the dictatorship; a buyer who holds one has no deadline
+    # working for them and simply never closes -- a guard that stops rather than
+    # slows.  So the always-on path keeps the opening claim for that seat but
+    # drops its floor.  With the flag unset every line below is unreachable and
+    # the existing 50/50 hash experiment is byte-identical.
+    if runtime_flags.enabled("GLEE_NEGO_OPEN_CLAIM_ALWAYS"):
+        me = state.get("current_player") or game.get("your_player") or ""
+        i_sell = state.get(f"{me}_role") == "seller"
+        unbounded = state.get("horizon_known") is not True
+        if unbounded and not i_sell:
+            floor = 0.0
+        if opening == 0.0 and floor == 0.0:
+            return None
+        return (opening, floor)
+
     gid = str(game.get("game_id") or "")
     if not gid:
         return None
