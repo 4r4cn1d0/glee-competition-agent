@@ -739,3 +739,7 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-23 15:47Z — surface: the concession schedule and stall detection
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-23 18:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
