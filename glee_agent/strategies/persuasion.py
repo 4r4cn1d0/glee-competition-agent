@@ -288,6 +288,14 @@ _EPS = 0.02
 # also imported by scripts/live_percentile.py, so the analysis cannot silently
 # disagree with the action path about which games were treatment.
 PERS_BUYER_SELECTIVITY_SALT = "pers_buyer_selectivity_v1|"
+# The one-low stop is a separate, unmeasured hypothesis.  When its own flag is
+# armed, this independent salt creates a nested 2x2 design: the selectivity
+# candidate is split into strike/no-strike games while both corresponding main-
+# arm controls remain behaviorally identical.  The historical fixed-stream
+# proxy fell from +.01445 without the stop to +.01209 with it while removing
+# 5,604 more purchases, so silently bundling it into the main arm would make its
+# cost impossible to identify.
+PERS_BUYER_SELECTIVITY_STRIKE_SALT = "pers_buyer_selectivity_strike_v1|"
 
 
 def buyer_selectivity_assignment(game_id) -> bool | None:
@@ -300,11 +308,30 @@ def buyer_selectivity_assignment(game_id) -> bool | None:
     return bool(int(digest, 16) & 1)
 
 
+def buyer_selectivity_strike_assignment(game_id) -> bool | None:
+    """Stable independent strike bit, without consulting live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(
+        (PERS_BUYER_SELECTIVITY_STRIKE_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
 def _buyer_selectivity_arm(game_id) -> bool | None:
     """Treatment bit when the buyer-selectivity experiment is armed."""
     if not runtime_flags.enabled("GLEE_PERS_BUYER_SELECTIVITY_AB"):
         return None
     return buyer_selectivity_assignment(game_id)
+
+
+def _buyer_selectivity_strike_arm(game_id) -> bool | None:
+    """Independent strike bit only when its default-off experiment is armed."""
+    if not runtime_flags.enabled("GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB"):
+        return None
+    return buyer_selectivity_strike_assignment(game_id)
+
 
 _PRIOR_STATE = {"checked": 0.0, "mtime": None, "doc": None}
 
@@ -577,18 +604,14 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     #   1. no purchase before an explicit historical decline;
     #   2. current message must be an explicit recommendation;
     #   3. posterior-mean P(high|recommend) must STRICTLY clear money breakeven;
-    #   4. after the first bought low unit, no more purchases in this game.
-    # Against decline-on-high/recommend-on-low, item 4 caps buyer loss at one
-    # product price instead of the 19 prices exposed by the proposed permanent
-    # one-decline unlock.  The mechanism hypothesis is that a payoff-maximising
-    # seller earns more future sales by declining lows and recommending highs,
-    # with at most a terminal lie.  This is not proof that one no is informative;
-    # same-cell percentile A/B evidence decides it.  On the oldest
-    # 5,181 eligible transcripts, a fixed-stream veto shadow moved fitted
-    # percentile +.01445 before the strike and +.01209 after it, while the strike
-    # cut another 5,604 purchases.  The strike is therefore adversarial insurance,
-    # not an empirically identified improvement; seller adaptation makes that
-    # shadow non-causal.
+    # A separately randomised, default-off STRIKE_AB can add a fourth condition:
+    # after the first bought low unit, no more purchases in this game.  Against
+    # decline-on-high/recommend-on-low this caps direct loss at one product price,
+    # but the oldest 5,181-game fixed-stream proxy fell from +.01445 without the
+    # stop to +.01209 with it while removing 5,604 more purchases.  The independent
+    # game hash therefore makes the insurance cost identifiable instead of
+    # silently bundling it into this arm.  Seller adaptation still makes either
+    # historical shadow non-causal.
     #
     # The estimator remains the field-fitted bimodal q-grid posterior above
     # (4,191 games in models/pers_buyer_prior_v1.json), not a Beta/Laplace fit:
@@ -596,6 +619,15 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
     # single Beta family erases.  No supplied measurement identifies a positive
     # probability margin, and the earlier blanket guard/LCB arms measured
     # negative, so the pre-registered first arm uses margin 0.0 plus strict `>`.
+    # The 23 Aug rank audit does not justify replacing this money check with the
+    # raw one-step CDF threshold: at empirical cell medians rank was looser in
+    # 8/18 cells, stricter in 9/18, and tied in one; over all 27,493 historical
+    # purchase states it was stricter 16,973 times versus money's 9,843.  Only 13
+    # full-candidate vetoes were attributable to this check after earlier gates.
+    # More fundamentally, F(S) is a terminal threshold while these are 20-round
+    # decisions whose purchase changes both future payoff and revealed evidence.
+    # The code therefore keeps the explicit money-safety condition; a randomized
+    # final-percentile outcome, not a myopic F(S) substitution, would test it.
     # A later margin remains live-tunable but is read only inside treatment, so it
     # cannot contaminate the hash-control decision.
     selectivity_extra = {}
@@ -608,6 +640,10 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
             selectivity_extra["buyer_selectivity_arm"] = (
                 "candidate" if selectivity_arm else "control")
             selectivity_extra["buyer_selectivity_prior_value"] = prior_value
+            strike_arm = _buyer_selectivity_strike_arm(game.get("game_id"))
+            selectivity_extra["buyer_selectivity_strike_arm"] = (
+                "off" if strike_arm is None
+                else ("strike" if strike_arm else "no-strike"))
             if selectivity_arm:
                 selectivity_margin = runtime_flags.as_float(
                     "GLEE_PERS_BUYER_SELECTIVITY_MARGIN", 0.0)
@@ -661,7 +697,7 @@ def buyer_plan_v2(game: dict, cfg) -> dict:
                             weight * numerator / max(denominator, 1e-9))
                 posterior_gap = selectivity_p_high - breakeven
                 reason = None
-                if caught_low:
+                if strike_arm is True and caught_low:
                     reason = "bought_low_strike"
                 elif declines == 0:
                     reason = "no_prior_decline"

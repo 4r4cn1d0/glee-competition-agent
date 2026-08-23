@@ -20,7 +20,7 @@
 - **Live on**: Test 2 only (`GLEE_PERS_PARSE_V2=1`); other three are controls.
 - **Verdict**: pending trail.
 
-## STAGED — DEFAULT OFF, NOT LIVE
+## REJECTED — DEFAULT OFF, DO NOT RUN
 
 ### Buyer selectivity safety arm (persuasion, prior EV <= price)
 - **Hypothesis**: in cells where the prior does not beat price, the existing
@@ -31,8 +31,11 @@
   `sha256("pers_buyer_selectivity_v1|" + game_id) & 1`. Control is the current
   buyer. Candidate is veto-only: wait for a historical explicit decline,
   require a current explicit recommendation, require the existing fitted
-  q-grid posterior mean to strictly exceed money breakeven, and permanently
-  stop after one bought low. The first-arm margin is exactly `0.0`; a positive
+  q-grid posterior mean to strictly exceed money breakeven. The one-bought-low
+  stop is no longer bundled: `GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB=1` assigns
+  it independently per game with salt `pers_buyer_selectivity_strike_v1|`, so
+  the ITT reader can score the gate with and without that insurance. Both flags
+  are absent/default OFF. The first-arm margin is exactly `0.0`; a positive
   `GLEE_PERS_BUYER_SELECTIVITY_MARGIN` is a separate, unmeasured parameter and
   must not be changed during the window.
 - **Eligibility**: buyer persuasion games with `v>u`, `price>u`, and
@@ -45,8 +48,9 @@
 - **Decision rule**: promote only if the candidate-control percentile 95% CI is
   entirely above zero; reject if entirely below zero; otherwise continue or call
   inconclusive. Pending/invalid outcomes block promotion. A mechanism failure
-  (any candidate buy before a prior explicit decline or any second bought low)
-  rejects regardless of percentile. Stratify, without changing the primary
+  (any candidate buy before a prior explicit decline, or any second bought low
+  in the independently strike-assigned cell) rejects regardless of percentile.
+  Stratify, without changing the primary
   rule, by exact `(p, v/price, message mode)`, equality versus strict-negative
   prior EV, and one-decline sellers. Freeze and record hashes of both the q prior
   and percentile CDF for the whole window.
@@ -54,15 +58,42 @@
   buys, bought highs/lows, and the one-decline subgroup. These are secondary:
   the competition scores percentile, while a seller may adapt its messages to
   treatment.
-- **Historical shadow, not causal evidence**: on the oldest 5,181 eligible
-  games the veto-only reconstruction changes buys `27,493 -> 8,683`, payoff
+- **Rank-threshold red team**: the proposed one-step `q_rank` is not uniformly
+  below money breakeven once accumulated payoff moves across CDF atoms. At the
+  empirical cell medians it is lower in 8/18 cells, higher in 9/18, and tied in
+  one; over the 27,493 actual purchase states it is stricter 16,973 times versus
+  money's 9,843. The full candidate blocks 8,572 one-step-rank-positive buys,
+  including 6,283 highs, but only 13 blocks are caused by the money cutoff after
+  earlier gates. Raw `F(S)` is also a terminal/fixed-continuation calculation,
+  not the dynamic threshold in a 20-round game where buying changes later payoff
+  and information. Do not replace money breakeven with that myopic threshold.
+- **Historical shadow, not causal evidence**: on the frozen oldest 5,181
+  eligible results, full gate changes buys `27,493 -> 8,683`, payoff
   `1.1555P -> 0.7774P`, and fitted percentile `+0.01209` (normal 95% CI
-  `[+0.00718,+0.01701]`). It blocks 12,720 realized highs and 6,090 lows. The
-  strike alone removes another 5,604 buys and reduces the proxy gain from
-  `+0.01445` to `+0.01209`; it is adversarial insurance, not an empirically
-  identified improvement. Historical skipped qualities are unobserved and
-  sellers can react, so only the randomized live arm can decide.
-- **Verdict**: implementation staged; not armed or deployed.
+  `[+0.00718,+0.01701]`). Without strike it retains 14,287 buys, payoff is
+  `0.9123P`, and the proxy is `+0.01445`; the strike removes 5,604 more buys and
+  costs `0.00236` percentile. The money cutoff itself removes only 56 buys in
+  the sequential reconstruction and changes the proxy `+0.01484 -> +0.01445`.
+  Text framing supplies `+0.01248` of the full overall delta while binary
+  framing contributes `-0.00039`.
+- **Held-out failure**: deterministic chronological 70/30 cross-fit, cutoff
+  `2026-08-21 16:52:32Z`. The q prior uses 6,013 earlier buyer games and the CDF
+  9,048 earlier persuasion games; all later cells have CDF n=270-351. On 1,555
+  strictly later eligible games, full gate is `-0.00131` with 95% CI
+  `[-0.01111,+0.00848]`; no-strike is `+0.00684`
+  `[-0.00113,+0.01482]`. The early in-sample estimate is `+0.01442`
+  `[+0.00890,+0.01994]`. The gain does not survive.
+- **No-look-ahead motivation**: the observable state is "any explicit decline
+  before this decision", not eventual seller type. Explicit-yes purchases after
+  a prior decline outperform those before one after exact cell+round adjustment
+  (`+11.72pp` high, `+0.2355P` per buy, local rank `+0.01554`), so the predictive
+  gradient reproduces. But pre-decline explicit-yes buys themselves are
+  money-positive (`+0.1455P/buy`) and locally rank-neutral (`+0.00036`, CI spans
+  zero). This observational, action-selected contrast does not establish that
+  vetoing them helps final rank.
+- **Verdict**: reject the historical performance claim and do not arm either
+  flag. The implementation remains inert for auditability; any reconsideration
+  needs a new prospective design, not another fit to this corpus.
 
 ## NEXT (not built)
 1. General accept/counter/walk response model (item 5 of the operator plan).

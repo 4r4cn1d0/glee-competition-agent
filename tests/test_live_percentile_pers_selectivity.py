@@ -48,8 +48,8 @@ def _state(*, p=0.5, v=30.0, u=10.0, price=20.0, history=None):
     }
 
 
-def _turn(gid, *, ts=9_500.0, seat="player_2", state=None):
-    return {
+def _turn(gid, *, ts=9_500.0, seat="player_2", state=None, plan=None):
+    row = {
         "ts": ts,
         "game_id": gid,
         "game_family": "persuasion",
@@ -59,6 +59,9 @@ def _turn(gid, *, ts=9_500.0, seat="player_2", state=None):
         "state": state or _state(),
         "action": {"decision": "yes"},
     }
+    if plan is not None:
+        row["plan"] = plan
+    return row
 
 
 def _final(gid, *, payoff=-10.0, history=None, outcome="completed"):
@@ -133,6 +136,20 @@ def test_exposure_uses_general_u_and_production_break_even_tolerance():
     wrong_action["action_type"] = "seller_message"
     assert live_percentile._pers_selectivity_exposure_turn(
         "champion", wrong_action) is None
+
+
+def test_exposure_records_pre_treatment_strike_variant_from_action_plan():
+    gid = _gid(True)
+    exposure = live_percentile._pers_selectivity_exposure_turn(
+        "champion", _turn(
+            gid, plan={"buyer_selectivity_strike_arm": "strike"}))
+
+    assert exposure[2]["buyer_selectivity_strike_arm"] == "strike"
+
+    unknown = live_percentile._pers_selectivity_exposure_turn(
+        "champion", _turn(
+            gid, plan={"buyer_selectivity_strike_arm": "unexpected"}))
+    assert "buyer_selectivity_strike_arm" not in unknown[2]
 
 
 def test_terminal_row_reports_normalized_payoff_and_mechanisms(monkeypatch):
@@ -215,8 +232,40 @@ def test_report_is_itt_counts_pending_abandoned_and_excludes_duplicates(capsys):
     assert "pooled exactly-one-decline diagnostic" in output
     assert "descriptive/post-treatment" in output
     assert "pooled pre-treatment exact-cell diagnostics" in output
+    assert "pooled pre-treatment strike variants" not in output
     assert "20 0.5 1.5 10 binary 20 equality" in output
     assert "FALSIFICATION WARNING" in output
+
+
+def test_report_scores_strike_variants_and_only_falsifies_strike_arm(capsys):
+    control_no_strike = _gid(False, "control-no-strike")
+    candidate_no_strike = _gid(True, "candidate-no-strike")
+    control_strike = _gid(False, "control-strike")
+    candidate_strike = _gid(True, "candidate-strike")
+
+    rows = []
+    for gid, arm, variant, pct in (
+        (control_no_strike, "control", "no-strike", 0.40),
+        (candidate_no_strike, "candidate", "no-strike", 0.55),
+        (control_strike, "control", "strike", 0.45),
+        (candidate_strike, "candidate", "strike", 0.60),
+    ):
+        assert live_percentile.pers_selectivity_arm(gid) == arm
+        diagnostic = _diagnostic(declines=1)
+        diagnostic["buyer_selectivity_strike_arm"] = variant
+        diagnostic["pre_decline_buys"] = 0
+        if arm == "candidate":
+            # Multiple lows are permitted in the no-strike cell and are a
+            # mechanism failure only for the independently assigned strike cell.
+            diagnostic["bought_lows"] = 2
+        rows.append(("champion", pct, gid, True, diagnostic, "terminal"))
+
+    assert live_percentile.report_pers_selectivity(rows, 24.0) == 0
+    output = capsys.readouterr().out
+    assert "pooled pre-treatment strike variants" in output
+    assert "no-strike candidate-control (intent-to-treat)" in output
+    assert "strike candidate-control (intent-to-treat)" in output
+    assert ">1 bought-low games=1" in output
 
 
 def test_cli_routes_pers_selectivity(monkeypatch, capsys):

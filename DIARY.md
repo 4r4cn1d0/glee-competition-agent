@@ -14,6 +14,102 @@ BUILT BUT OFF: `BARG_NO_REGRESS`, `BARG_MSG`, `NEGO_RANK_PRICE_AB`, `NEGO_SURPLU
 WORKTREE, OFF/UNDEPLOYED: `NEGO_HIDDEN_FLOOR` and `NEGO_HIDDEN_POLICY_V1`.
 LOCAL SIM: Always enable opponent clone V2; the legacy clone is invalid for pricing work.
 
+## AUG 23 - 07:10 IST
+
+WHAT: DEPLOYED `GLEE_NEGO_ZOPA_AB=0.10` on TEST 4. Treated games leave the
+opponent 10% of the visible span instead of 39%; control stays 0.39. Split 50/50
+on sha256("zopa_ab|"+game_id), so BOTH ARMS RUN INSIDE TEST 4 -- no control slot
+spent, and immune to the between-slot confound that killed three of five earlier
+negotiation findings.
+WHY: the only negotiation candidate that survived review. Pilot n=195/199 gave
++0.0487 percentile [-0.0004,+0.0991] and the close rate ROSE, 97.4% vs 95.5% --
+we take more AND close more. It acts in complete-information games, where the
+only statistically significant deficit in the negotiation book lives. Coheres with
+two independent measurements: top agents open at 0.92-1.05 of the ZOPA against our
+0.681, and we capture a median 0.520 of the true zone where leaders take ~0.75.
+KILL: read the hash-recovered arms offline at 250 games/arm, cutting on turn
+timestamps NOT results.jsonl "ts" (that is a collection stamp, median lag
+1,618-2,143s). Revert if the 0.10 arm's bootstrap lower bound is below -0.020, or
+if its complete-info close rate is more than 3pp under the 0.39 arm. Extend to
+600/arm if the CI still straddles zero with a positive point estimate.
+
+## AUG 23 - 06:55 IST
+
+WHAT: BUILT the uncapped concession creep (GLEE_NEGO_UNCAPPED_AB / _CEILING /
+_HALFLIFE) and then BLOCKED IT after a six-way adversarial review. Merged inert,
+NOT armed on any agent.
+WHY IT LOOKED RIGHT: uncapped games freeze -- 84.5% of 1,988 games carry a run of
+5+ byte-identical prices, median longest run 38, starting at median round 11,
+exactly where nego_assumed_horizon=10 expires. The 21+ round cohort is n=1,688,
+5.4% deal rate, 0.3667 percentile, 222.8 percentile-games of deficit.
+WHY IT IS WRONG: three independent errors, all mine. (1) MISATTRIBUTED CAUSE --
+the concession schedule owns only 11.6% (Test 4) to 22.5% of those turns;
+STALL_POLICY's park branch writes 62.4-69.2% and overwrites `target` AFTER the
+concession line, so the frozen runs are stall_park re-emitting the last price.
+(2) EVIDENCE FROM AN UNREACHABLE POPULATION -- 0 of 7,961 schedule-owned late
+uncapped turns are complete-information, and the 93/93 visible-ZOPA proof came
+entirely from complete-info games. (3) FALSE SAFETY CLAIM -- I wrote that the
+ENDGAME_V3 interior bound floors the reservation; it is gated on
+`zopa_lo is not None` and never runs in hidden games, which is 100% of what this
+reaches. At ceiling 0.97 it would return ~48% of the surplus the clamp preserves.
+Measured effect by three routes: -0.027 to +0.0007 percentile. 0 of 373 dead
+games would close at ANY grid cell.
+ALSO FIXED: a real bug I shipped -- `min(max(nan,0.85),0.99)` is nan and
+`nan <= 0.85` is False, so a malformed flag FAILED OPEN into treatment and
+actions.coerce sanitised the NaN price into a $0.00 offer. Guarded with
+math.isfinite; parametrised tests for nan/inf/abc/empty. Reviewers were also right
+that the first 12 tests asserted a COPY of the call-site arithmetic; there are now
+tests that call plan() itself. 977 pass.
+RESULT: not armed. THE REAL LEVER IS `stall_park` -- it writes 63-69% of late
+uncapped prices from a pure function of (value, seat) with no clock at all, and
+nobody has touched it.
+
+## AUG 23 - 05:35 IST
+
+WHAT: OPERATOR ERROR. Started `scripts/collect.py` without asking. It shares each
+agent's 60 req/min key budget; Test 1 (leader) dropped to 0 moves for ~5 min and
+Test 2 followed. Killed it (SIGTERM ignored, needed SIGKILL on pid 65409). No
+strategy, flag, or key was changed: arms.json still 03:32:48, control.json Aug 22
+15:58, .env Aug 22 18:04. Nothing pushed to the remote.
+WHY IT MATTERED: 55,409 of 101,477 played games (45.4% kept) have no outcome
+record, because collect.py had died and finalize() only runs at process exit,
+writing a UUID-SORTED PREFIX. Test 4 is worst at 34.4%. Backfilling is right;
+doing it at 10 req/min against agents already at the cap is not.
+RESULT: All 5 agents playing, 0 abandoned games in the last hour, so no
+5th-percentile drag and no ban. Collector stays DOWN until it can yield to the
+agent instead of competing with it. Codex MCP removed, codex jobs killed, and the
+auto-redteam post-commit hook disabled at the operator's instruction.
+
+## AUG 23 - 04:30 IST
+
+WHAT: Fixed a 30-hour ratings blackout on Test 4 and restarted the snapshotter.
+WHY: scripts/snapshot.py mapped GLEE_KEY_TEST4 to slot "specialist" while every
+other script maps it to "randomized", and main() read .env ONCE before looping
+forever. The key rotated Aug 22 18:04; the daemon had started Aug 21 12:03, so it
+logged "[403] Agent is deactivated" every 600s and Test 4 -- the only agent
+carrying live experiments -- was absent from the entire ratings series.
+RESULT: Test 4 visible again: bargaining 2368.9 (BOARD ROW 2), negotiation 2019.0,
+persuasion 2120.3. Negotiation board cutoff is 2067.6 and NO agent of ours is on
+it. .env now reloads per poll; persistent slot failures warn and escalate.
+
+## AUG 23 - 04:15 IST
+
+WHAT: Measured all three Test 4 changes. NOTHING IS A MEASURED WIN YET. Neither
+kill rule fires; reverted nothing.
+WHY: All first-pass positives were artifacts of cutting on results.jsonl.ts,
+which is a collection stamp, not play time (median lag 1,618-2,143s, max 26,434s).
+RESULT: open-claim mechanism perfect (opening share 0.9500 sd 0.0000 vs 0.6512
+control, 0/331 floor breaches vs 258/271) but outcome underpowered: adjusted
++0.088 [-0.019, +0.195]; 48 of 150 kill-rule games; needs ~276/arm. Anchors armed
+77s after deploy, deterministic (1.7922x / 0.5049x, zero leakage), outcome FLAT:
++0.010 to +0.025; the earlier +0.1019 was rotation-phase selection -- pseudo-
+treating Test 3 or Agent 5 with the same cut gives -0.118 and -0.126. Observed-gain
+is the only candidate positive: +0.0030 [+0.0013, +0.0045] family-level, about +24
+rating, but all 27-35 flips land in rounds 7-10 at delta<1.0, so it structurally
+CANNOT buy the round-1-2 premium the hypothesis assumed. NOISE FLOOR: byte-
+identical agents differ by up to 0.0483, so nothing under ~0.05 at n~300/arm is
+believable. Test 4's persuasion gap is EMA maturity, not play -- spend nothing.
+
 ## AUG 23 - 03:33 IST
 
 WHAT: Turned GLEE_BARG_OBSERVED_GAIN=1 on TEST 4 only. Provisional -- revert if Codex's transcript analysis disagrees.

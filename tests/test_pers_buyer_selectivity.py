@@ -57,12 +57,16 @@ def _game(
     }
 
 
-def _game_id(candidate: bool) -> str:
+def _game_id(candidate: bool, *, strike: bool | None = None) -> str:
     for index in range(1000):
         game_id = f"selectivity-test-{index}"
-        if persuasion.buyer_selectivity_assignment(game_id) is candidate:
+        if (persuasion.buyer_selectivity_assignment(game_id) is candidate
+                and (strike is None
+                     or persuasion.buyer_selectivity_strike_assignment(
+                         game_id) is strike)):
             return game_id
-    raise AssertionError(f"could not find assignment bit {candidate}")
+    raise AssertionError(
+        f"could not find assignment bits candidate={candidate}, strike={strike}")
 
 
 def _decide(game: dict) -> dict:
@@ -105,6 +109,43 @@ def test_assignment_is_stable_and_enabled_control_is_inert(
         key: value for key, value in control_on["_plan"].items()
         if not key.startswith("buyer_selectivity_")
     } == control_off["_plan"]
+
+
+def test_strike_assignment_is_independent_and_flag_default_off(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    strike_id = _game_id(True, strike=True)
+    no_strike_id = _game_id(True, strike=False)
+    control_strike_id = _game_id(False, strike=True)
+    control_no_strike_id = _game_id(False, strike=False)
+
+    assert persuasion.buyer_selectivity_strike_assignment(strike_id) is True
+    assert persuasion.buyer_selectivity_strike_assignment(no_strike_id) is False
+    assert persuasion.buyer_selectivity_strike_assignment(None) is None
+    assert persuasion.buyer_selectivity_strike_assignment("") is None
+
+    history = [
+        {"seller_message": "no", "bought": False},
+        {"seller_message": "yes", "bought": True, "quality": "low"},
+    ]
+    monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_AB", "1")
+    strike_off = _decide(_game(strike_id, history=history))
+    assert strike_off["decision"] == "yes"
+    assert strike_off["_plan"]["buyer_selectivity_strike_arm"] == "off"
+
+    monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB", "1")
+    no_strike = _decide(_game(no_strike_id, history=history))
+    strike = _decide(_game(strike_id, history=history))
+    control_no_strike = _decide(_game(control_no_strike_id, history=history))
+    control_strike = _decide(_game(control_strike_id, history=history))
+    assert no_strike["decision"] == "yes"
+    assert no_strike["_plan"]["buyer_selectivity_strike_arm"] == "no-strike"
+    assert strike["decision"] == "no"
+    assert strike["_plan"]["buyer_selectivity_strike_arm"] == "strike"
+    assert strike["_plan"]["buyer_selectivity_veto"] == "bought_low_strike"
+    assert control_no_strike["decision"] == control_strike["decision"] == "yes"
+    assert control_no_strike["_plan"]["buyer_selectivity_strike_arm"] == (
+        "no-strike")
+    assert control_strike["_plan"]["buyer_selectivity_strike_arm"] == "strike"
 
 
 def test_candidate_vetoes_without_a_prior_decline(
@@ -270,13 +311,14 @@ def test_positive_margin_can_veto_an_otherwise_profitable_posterior(
 def test_any_bought_low_is_a_permanent_strike(
         monkeypatch: pytest.MonkeyPatch) -> None:
     game = _game(
-        _game_id(True),
+        _game_id(True, strike=True),
         history=[
             {"seller_message": "no", "bought": False},
             {"seller_message": "yes", "bought": True, "quality": "low"},
         ],
     )
     monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_AB", "1")
+    monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB", "1")
     # Even a maximally favorable posterior cannot reopen buying after the loss.
     monkeypatch.setattr(
         persuasion, "_q_posterior", lambda *_args, **_kwargs: [1, 0, 0, 0, 0, 0])
@@ -292,7 +334,8 @@ def test_any_bought_low_is_a_permanent_strike(
 def test_decline_once_then_nineteen_lows_costs_at_most_one_purchase(
         monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_AB", "1")
-    game_id = _game_id(True)
+    monkeypatch.setenv("GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB", "1")
+    game_id = _game_id(True, strike=True)
     history = [{"seller_message": "no", "bought": False}]
     decisions = []
 

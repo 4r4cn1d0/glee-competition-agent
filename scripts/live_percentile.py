@@ -366,6 +366,14 @@ def _pers_selectivity_exposure_turn(slot: str, rec: dict):
     ts = _number(rec.get("ts"))
     if ts is None:
         return None
+    plan = rec.get("plan") or {}
+    strike_arm = (plan.get("buyer_selectivity_strike_arm")
+                  if isinstance(plan, dict) else None)
+    if strike_arm in ("off", "no-strike", "strike"):
+        # This is assigned before any seller behavior and is copied from the
+        # action path instead of inferred from outcomes.  The reader can thus
+        # estimate the main gate separately with and without the optional stop.
+        signal["buyer_selectivity_strike_arm"] = strike_arm
     return (slot, gid), ts, signal
 
 
@@ -1269,6 +1277,39 @@ def report_pers_selectivity(rows, hours, since=None, until=None):
         _print_delta("decline count", candidate["decline_count"],
                      control["decline_count"])
 
+    strike_variants = defaultdict(list)
+    for observation in pooled_observations:
+        variant = observation["diagnostic"].get(
+            "buyer_selectivity_strike_arm")
+        if variant in ("off", "no-strike", "strike"):
+            strike_variants[variant].append(observation)
+    if strike_variants:
+        print("pooled pre-treatment strike variants:")
+        for variant in ("off", "no-strike", "strike"):
+            variant_observations = strike_variants.get(variant)
+            if not variant_observations:
+                continue
+            variant_stats = {}
+            for arm in ("control", "candidate"):
+                assigned = [observation for observation in variant_observations
+                            if observation["arm"] == arm]
+                if assigned:
+                    variant_stats[arm] = _summarize_pers_selectivity(assigned)
+                    _print_pers_selectivity_line(
+                        variant.upper(), arm, variant_stats[arm])
+            variant_control = variant_stats.get("control")
+            variant_candidate = variant_stats.get("candidate")
+            if variant_control and variant_candidate:
+                print(f"{variant} candidate-control (intent-to-treat):")
+                _print_delta("mean same-cell percentile",
+                             variant_candidate["pct"], variant_control["pct"])
+                _print_delta("mean payoff/price",
+                             variant_candidate["payoff_per_price"],
+                             variant_control["payoff_per_price"])
+                _print_delta("purchase rate",
+                             variant_candidate["purchase_rate"],
+                             variant_control["purchase_rate"], percent=True)
+
     print("pooled exactly-one-decline diagnostic "
           "(descriptive/post-treatment; never a promotion criterion):")
     one_decline = {}
@@ -1331,6 +1372,8 @@ def report_pers_selectivity(rows, hours, since=None, until=None):
     strike_failures = sum(
         (_number(observation["diagnostic"].get("bought_lows")) or 0.0) > 1.0
         for observation in candidate_terminal
+        if observation["diagnostic"].get(
+            "buyer_selectivity_strike_arm") == "strike"
     )
     if pre_decline_failures or strike_failures:
         print("FALSIFICATION WARNING: terminal candidate games violate the "

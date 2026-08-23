@@ -18,6 +18,8 @@ Two ideas carry the strategy:
 
 from __future__ import annotations
 
+import math
+
 from .. import nego_arms, pricing, runtime_flags
 from .. import table_policy
 
@@ -255,6 +257,78 @@ def _zopa_share(gid, default: float) -> float:
     return ab if bit else default
 
 
+#: The historical clamp on the uncapped planning clock. ENDGAME_V3 failure 2 was
+#: real -- letting elapsed reach 1.0 in a game with no deadline bid our full value
+#: by round 12 and paid a stonewaller everything -- so this floor stays.
+_UNCAPPED_FLOOR = 0.85
+
+
+def _uncapped_ceiling(gid) -> float:
+    """How far the planning clock may advance when no real deadline exists.
+
+    WHY THIS IS NOT JUST THE CLAMP. Pinning elapsed at 0.85 does not slow the
+    concession walk, it STOPS it: concession = 0.85**2 = 0.7225 from the round the
+    planning horizon expires (round ~11 at the default horizon of 10) until the
+    game dies, so target never moves again. Measured over 1,988 uncapped games
+    with at least eight of our own offers, 84.5% contain a run of five or more
+    byte-identical prices, the median longest run is 38, and the runs begin at a
+    median round of 11 -- exactly where the horizon expires. The games that reach
+    21+ rounds close 5.4% of the time and score 0.3667, against 87.4% and 0.6023
+    for uncapped games that settle by round 10. In every complete-information
+    game of that grinding cohort (93 of 93) a zone of agreement existed, and our
+    own frozen price sat INSIDE it in 91.4% of them: a deal was available, we were
+    already asking a price the opponent could profitably take, and neither side
+    moved again.
+
+    So the walk must keep approaching without ever arriving. Returning a ceiling
+    above the floor lets the caller advance elapsed asymptotically toward it,
+    which preserves failure 2's guarantee (we never bid our full value, because
+    the ceiling is capped strictly below 1.0) while restoring the movement that
+    actually closes deals.
+
+    Assignment mirrors _zopa_share exactly: GLEE_NEGO_UNCAPPED_AB holds the
+    treatment ceiling and splits games 50/50 on a hash of the game id, so both
+    arms run inside ONE agent and the comparison cannot be confounded by which
+    slot, which opponent pool, or which hour the game was played in. Unset, or
+    at or below the floor, the whole mechanism is inert and behaviour is
+    byte-identical to the clamp it replaces.
+
+    READ THIS BEFORE ARMING. A six-way adversarial review measured, on 44,000
+    logged late uncapped turns, that this walk owns our price on only 11.6%
+    (Test 4) to 22.5% of them: GLEE_NEGO_STALL_POLICY's park branch writes
+    62.4-69.2%, the span veto 5.5-20.5% and DEADGAME_V1 2.6-4.4%, and all three
+    overwrite `target` AFTER the concession line. The byte-identical price runs
+    this was built to break are stall_park re-emitting the previous price, not a
+    frozen clock. Worse, 0 of 7,961 schedule-owned late uncapped turns are
+    complete-information, so the evidence that motivated it -- 93 of 93 grinding
+    games having a visible ZOPA -- comes from a population where this is inert.
+    And the protection is inverted: the ENDGAME_V3 interior bound at :476 is
+    gated on `zopa_lo is not None` and _enforce_span_invariant returns early on a
+    falsy zopa, so in hidden games, which is where 100% of the reachable turns
+    live, the only floor is reservation = value + margin*(anchor - value), about
+    1.06x value as seller. At ceiling 0.97 that hands back roughly half the
+    surplus the clamp exists to preserve. Measured effect across three
+    independent routes: -0.027 to +0.0007 percentile. DO NOT ARM without new
+    evidence; the lever that actually writes these prices is stall_park.
+    """
+    plain = runtime_flags.as_float("GLEE_NEGO_UNCAPPED_CEILING", _UNCAPPED_FLOOR)
+    ab = runtime_flags.as_float("GLEE_NEGO_UNCAPPED_AB", 0.0)
+    # A non-finite flag must fail CLOSED. min/max propagate NaN and every NaN
+    # comparison is False, so an unguarded 'nan' in arms.json would skip the
+    # inert branch, carry NaN through target, and reach actions.coerce -- which
+    # sanitises it into a $0.00 offer. Fail-open on a typo is not acceptable.
+    if not math.isfinite(plain):
+        plain = _UNCAPPED_FLOOR
+    if not math.isfinite(ab) or ab <= 0.0:
+        return plain
+    gid = str(gid or "")
+    if not gid:
+        return plain
+    import hashlib as _h
+    bit = int(_h.sha256(("uncapped_ab|" + gid).encode()).hexdigest(), 16) & 1
+    return ab if bit else plain
+
+
 def _rank_price_arm(gid) -> bool | None:
     """Per-game treatment bit for terminal rank pricing, or None when OFF.
 
@@ -343,12 +417,33 @@ def plan(game: dict, cfg) -> dict:
     # Fraction of the negotiation elapsed, 0 at the start and 1 at the deadline.
     elapsed = 1.0 - (rounds_left - 1) / max(1, horizon)
     elapsed = min(max(elapsed, 0.0), 1.0)
-    if (not capped and elapsed > 0.85
+    if (not capped and elapsed > _UNCAPPED_FLOOR
             and runtime_flags.enabled("GLEE_NEGO_ENDGAME_V3")):
         # No real deadline exists; the planning clock paces concession but must
         # never finish it (failure 2 above -- full-value bids by round 12 of an
         # uncapped game, exactly when a stonewaller profits from waiting).
-        elapsed = 0.85
+        ceiling = min(max(_uncapped_ceiling(game.get("game_id")),
+                          _UNCAPPED_FLOOR), 0.99)
+        if ceiling <= _UNCAPPED_FLOOR:
+            elapsed = _UNCAPPED_FLOOR
+        else:
+            # Hyperbolic approach, never arrival: at `half` rounds past the
+            # horizon we are halfway from the floor to the ceiling, and the 0.99
+            # cap above means concession tops out at 0.9801 at the default
+            # exponent -- the walk closes on the reservation without reaching it.
+            # Monotone in round, and exactly _UNCAPPED_FLOOR at the horizon, so
+            # the schedule is continuous rather than jumping at the boundary.
+            # NO SAFETY NET BELOW THIS. An earlier version of this comment
+            # claimed the ENDGAME_V3 interior bound floors the reservation at
+            # nego_zopa_share of the span. That is false wherever this code can
+            # actually reach: :476 gates the bound on `zopa_lo is not None` and
+            # _enforce_span_invariant returns early on a falsy zopa, and every
+            # turn this walk owns is hidden-information. The floor here is only
+            # reservation itself. See _uncapped_ceiling for the measurements.
+            half = runtime_flags.as_float("GLEE_NEGO_UNCAPPED_HALFLIFE", 10.0)
+            half = max(half if math.isfinite(half) else 10.0, 1e-9)
+            extra = max(0.0, _num(state.get("round"), 1) - horizon)
+            elapsed = _UNCAPPED_FLOOR + (ceiling - _UNCAPPED_FLOOR) * (extra / (extra + half))
 
     anchor = my_value * (cfg.nego_seller_anchor if i_am_seller else cfg.nego_buyer_anchor)
     if not i_am_seller:

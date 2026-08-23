@@ -654,3 +654,76 @@ I found nothing new on this surface.
 The current composite remains `.48` span veto, `.40` invariant, and `.6` final option ([arms.json:179](</Users/spiderishi/Coding/GLEE Competition/arms.json:179>)). Boundary probes across both roles, capped rounds 6–10, uncapped states, and shares around `.40/.48/.60` produced only the already-logged exploit classes. No new decision-rule fix follows.
 
 New `FINDINGS.md` correction: [lines 226–234](</Users/spiderishi/Coding/GLEE Competition/.ai/FINDINGS.md:226>) say Test 2 lacks `ULTIMATUM_SHARE` and remains a guaranteed no-deal. That current-state diagnosis is now false: hardliner carries `.80` ([arms.json:71](</Users/spiderishi/Coding/GLEE Competition/arms.json:71>)). The historical measurement itself is not disproved.
+
+## 2026-08-22 23:01Z — surface: the concession schedule and stall detection
+
+   272	scripts/redteam_cycle.sh: line 51: codex: command not found
+   273	
+   274	## 2026-08-22 09:32Z — surface: the persuasion buyer DP and its belief update
+   275	
+   395	
+   396	## 2026-08-22 12:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+   397	
+   398	scripts/redteam_cycle.sh: line 51: codex: command not found
+   399	
+   400	## 2026-08-22 15:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+   401	
+   402	scripts/redteam_cycle.sh: line 51: codex: command not found
+   403	
+   404	## 2026-08-22 17:50Z — surface: the concession schedule and stall detection
+   405	
+   406	     8	### rollout_summary_files
+   407	     9	
+   408	    10	- rollout_summaries/2026-08-20T15-55-36-3kf4-glee_competition_project_audit.md (cwd=/Users/spiderishi/Coding/GLEE Competition, rollout_path=/Users/spiderishi/.codex/sessions/2026/08/20/rollout-2026-08-20T21-25-36-01a01fe2-8f24-7fd2-8fbc-06f718b53a9e.jsonl, updated_at=2026-08-20T16:07:44+00:00, thread_id=01a01fe2-8f24-7fd2-8fbc-06f718b53a9e, success)
+   409	    11	
+   410	    12	### keywords
+   411	    13	
+   412	    14	- run_agent.py, glee_agent.dispatch, glee_agent.actions, arms.json, runtime_flags.py, scripts/fleet.py, scripts/collect.py, persuasion, JSON-envelope, horizon_known, pytest, selftest
+   413	    15	
+   414	    16	## User preferences
+   415	    17	
+   416	    18	- when requesting project inspection, the user asked: “look up everything regarding this project” -> provide an end-to-end briefing of repository structure, runtime behavior, tests, logs, deployment/fleet state, and concrete risks rather than a README-only or narrow code walkthrough. [Task 1]
+   417	    19	
+   418	    20	## Reusable knowledge
+   419	    21	
+   420	    22	- Main execution path is `run_agent.py` → `glee_agent/probes.py` → `glee_agent/dispatch.py` → family strategy → `glee_agent/actions.py` coercion/fallback. Total action safety is an invariant: a strategy exception means the SDK submits nothing and the game times out; a rejected move burns one of five attempts. [Task 1]
+
+codex
+Two new holes:
+
+1. **Bob’s fitted offer floor switches off as a cliff.** Composite enables it at [arms.json:208](</Users/spiderishi/Coding/GLEE Competition/arms.json:208>), but a low fitted edge returns `None` at [barg_offer.py:196](</Users/spiderishi/Coding/GLEE Competition/glee_agent/barg_offer.py:196>); [bargaining.py:509](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:509>) then silently restores the time glide from [line 330](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:330>). Exact composite probe: hidden horizon, complete information, no messages, `M=100`, our Bob `δ=.9`, attacker Alice `δ=1`. Alice repeatedly offers Bob 35 and rejects. Bob asks `59,61,60`, then abruptly `48` at round 8; Alice accepts. Payoffs: us `22.958`, attacker `52`. Project-CDF ranks (`n=1,086`) are `.09576` versus `.69107`: **59.53-point deficit**; the cliff costs us **18.23 points** versus closing round 6. New evidence: the prior log treated Bob as repaired; this proves that repair expires.
+
+   **Rule:** preserve the prior reservation when the model abstains. Otherwise maximize expected percentile; vary model weight continuously with edge/confidence and privately mix near ties—never revert to the deterministic glide.
+
+2. **A buyer can pace just above the stall threshold.** [negotiation.py:148](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) has a binary 1% test; [lines 913–949](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:913>) apply a time-only survival haircut. Known `H=10`, incomplete/no-message, our seller `.8B`, buyer `1.5B`: bid `.800000,.808100,.816282,.824547B`, rejecting counters. Stall never fires; round 8 accepts. Finest project-CDF ranks are `.38356` versus `.98529`: **60.17-point deficit**. New versus logged cases: capped, improving/current offers, no stall or table gate.
+
+   **Rule:** use a continuous current-inclusive concession posterior and accept only by Bellman percentile comparison; remove the public 1% and time-only survival cliffs, mixing privately near indifference.
+
+`FINDINGS.md`: no additional validated claim is contradicted.
+
+
+tokens used
+314,243
+Two new holes:
+
+1. **Bob’s fitted offer floor switches off as a cliff.** Composite enables it at [arms.json:208](</Users/spiderishi/Coding/GLEE Competition/arms.json:208>), but a low fitted edge returns `None` at [barg_offer.py:196](</Users/spiderishi/Coding/GLEE Competition/glee_agent/barg_offer.py:196>); [bargaining.py:509](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:509>) then silently restores the time glide from [line 330](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/bargaining.py:330>). Exact composite probe: hidden horizon, complete information, no messages, `M=100`, our Bob `δ=.9`, attacker Alice `δ=1`. Alice repeatedly offers Bob 35 and rejects. Bob asks `59,61,60`, then abruptly `48` at round 8; Alice accepts. Payoffs: us `22.958`, attacker `52`. Project-CDF ranks (`n=1,086`) are `.09576` versus `.69107`: **59.53-point deficit**; the cliff costs us **18.23 points** versus closing round 6. New evidence: the prior log treated Bob as repaired; this proves that repair expires.
+
+   **Rule:** preserve the prior reservation when the model abstains. Otherwise maximize expected percentile; vary model weight continuously with edge/confidence and privately mix near ties—never revert to the deterministic glide.
+
+2. **A buyer can pace just above the stall threshold.** [negotiation.py:148](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:148>) has a binary 1% test; [lines 913–949](</Users/spiderishi/Coding/GLEE Competition/glee_agent/strategies/negotiation.py:913>) apply a time-only survival haircut. Known `H=10`, incomplete/no-message, our seller `.8B`, buyer `1.5B`: bid `.800000,.808100,.816282,.824547B`, rejecting counters. Stall never fires; round 8 accepts. Finest project-CDF ranks are `.38356` versus `.98529`: **60.17-point deficit**. New versus logged cases: capped, improving/current offers, no stall or table gate.
+
+   **Rule:** use a continuous current-inclusive concession posterior and accept only by Bellman percentile comparison; remove the public 1% and time-only survival cliffs, mixing privately near indifference.
+
+`FINDINGS.md`: no additional validated claim is contradicted.
+
+## 2026-08-23 00:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-23 03:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-23 06:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

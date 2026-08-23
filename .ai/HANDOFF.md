@@ -3,6 +3,78 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-23 — buyer-selectivity red team rejects the historical gain
+
+The user's `q_rank=0.4987` calculation for text `p=.5,r=1.2,S=0` is correct,
+but it is not a stable policy threshold.  The exact frozen shadow was reproduced
+from the five active-slot `results.jsonl` files only: first-seen game-id
+deduplication, completed persuasion buyer records, prior value no greater than
+price, sorted by `(ts, game_id)`, oldest 5,181.  Window:
+`2026-08-19T11:42:58.172361Z` through `2026-08-22T22:25:54.865690Z`.  Frozen
+q-prior and CDF hashes still match the precommit.
+
+At logged pre-decision accumulated-payoff quartiles, the one-step rank threshold
+is below money breakeven at 35/54 displayed state points and above it at 17/54,
+with two ties.  At the cell median the split is 8 lower / 9 higher / 1 tie.
+Weighting the 27,493 actual purchase states reverses the S=0 intuition:
+`q_rank>q_money` 16,973 times, `q_money>q_rank` 9,843, 664 ties, 13 flat.
+Large empirical-CDF atoms make the sign move with S.  More importantly, raw
+`F(S)` is a terminal/fixed-continuation identity; before the last round the
+correct value includes future payoff, posterior transitions, and information
+revealed by a purchase.  It is not valid to substitute the raw threshold into
+all 20 rounds.
+
+The old full candidate still reproduces exactly: 27,493 historical buys become
+8,683; 12,720 highs and 6,090 lows are blocked.  Under the requested one-step
+proxy and the candidate's counterfactual S, 8,572 blocked buys are rank-positive,
+including 6,283 highs.  Reason precedence:
+
+- bought-low strike: 5,816 blocked / 4,305 rank-positive;
+- no prior decline: 11,974 / 4,208;
+- current signal not explicit yes: 1,007 / 50;
+- posterior below money cutoff: 13 / 9.
+
+So the mass error is not caused by the money threshold.  A sequential shadow
+also shows the cutoff is nearly inert: prior-decline-only `+.01337`, adding
+explicit yes `+.01484`, adding money cutoff `+.01445`, adding strike `+.01209`.
+The fitted gain comes almost entirely from text (`+.01248` overall contribution);
+binary contributes `-.00039`.  Largest positive cells are text `.8/1.25`,
+`.5/2`, and `1/3,3`; binary `.8/1.25`, `1/3,2`, and `.8/1.2` drag.
+
+The overfit objection is decisive.  A chronological 70/30 artifact cross-fit at
+`2026-08-21T16:52:32Z` fitted the q prior on 6,013 earlier buyer games and the
+CDF on 9,048 earlier persuasion games, then scored 1,555 strictly later eligible
+games with every CDF cell supported (n=270-351).  Early in-sample was `+.01442`
+`[+.00890,+.01994]`; later full gate was `-.00131`
+`[-.01111,+.00848]`, and no-strike was `+.00684`
+`[-.00113,+.01482]`.  Neither survives.  This is artifact-disjoint but not a
+pristine model-selection holdout because the policy itself was designed after
+viewing the full corpus; that limitation makes the failure stronger, not weaker.
+
+The no-look-ahead state is "has an explicit decline occurred before this
+decision", never eventual seller type.  In explicit-current-yes purchases,
+post-decline beats pre-decline after exact cell+round adjustment by +11.72pp
+high rate, +.2355 price-units per buy, and +.01554 local fitted rank.  The
+predictive gradient therefore reproduces.  But pre-decline explicit-yes buys
+themselves earn +.1455P/buy and local rank +.00036 with a CI spanning zero.
+This action-selected observation does not identify a benefit from vetoing them.
+
+Implementation response: do NOT replace money breakeven with the myopic raw-rank
+threshold, and do NOT run the main arm.  The one-low stop is no longer bundled.
+`GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB` is a separate default-off, independent
+per-game hash arm (`pers_buyer_selectivity_strike_v1|`).  When both experiments
+are armed this creates strike/no-strike cells inside candidate and matching
+behaviorally inert controls.  `scripts/live_percentile.py` records and reports
+those pre-treatment variants separately; more than one bought low is a
+falsification only in the strike-assigned cell.  Neither flag was armed and no
+live fleet/process or restricted file was changed.
+
+Verification: 24 focused selectivity/ITT tests pass.  The mandated full suite is
+843 passed with only the two failures pre-declared by AGENTS.md: bargaining's
+450-vs-468 horizon-floor expectation and the live `horizon_known` grid drift.
+Scoped `git diff --check` and compilation pass.  No replay-eval, arena, red-team,
+fleet, or reachability command was run.
+
 ## 2026-08-23 — persuasion buyer selectivity arm implemented, default OFF
 
 `GLEE_PERS_BUYER_SELECTIVITY_AB=1` arms a per-game A/B only in persuasion buyer
