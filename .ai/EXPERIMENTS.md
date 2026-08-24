@@ -354,6 +354,23 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   clone-reader tests pass 43/43. Full suite: 1,476 passed with only the same two
   pre-existing bargaining failures. Never restart or alter bargaining to
   accelerate deployment.
+- **Prospective official checkpoint / continue (00:05 IST)**: two independently
+  captured dashboard windows join 25/25 exact scoped games to unique local game
+  ids, with zero unresolved or ambiguous rows. Candidate is 9 games / `+22.2`
+  total / `+2.467/game`; control is 16 / `+17.6` / `+1.100/game`, for an
+  unstratified lift of `+1.367/game` and host-fixed-effect lift of
+  `+1.535/game`. The exact host-stratified sharp-null randomization test is
+  one-sided `p=.1056` (50,400 assignments). Conceder, randomized, and champion
+  host points are positive; composite remains `-1.900/game` on only one
+  candidate versus three controls. This is the first positive prospective
+  official signal, but it is not promotion evidence: neither arm has reached
+  the frozen 20/arm harm look, the interval still crosses zero, and the
+  every-host condition fails. Keep the arm randomized without policy changes.
+  Frozen raw/join artifacts are
+  `.ai/NEGOTIATION_OFFICIAL_{RAW_,}SCOPED_CLONE_2336_2353.json` and
+  `.ai/NEGOTIATION_OFFICIAL_{RAW_,}SCOPED_CLONE_2352_0005.json`; the latter
+  intentionally overlaps one previously captured game, and all analysis
+  deduplicates by the exact joined game id.
 
 ### Direct-leader hidden unknown-horizon opening copy (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1`;

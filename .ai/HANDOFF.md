@@ -1666,3 +1666,21 @@ T0 in game `cdd59547-0b66-4416-94b0-8f2877159e90`; independent assignment is
 candidate and the state is exactly hidden-information, known-horizon, cap-10,
 buyer. That is mechanism proof only. Do not report a winner until the frozen
 20/arm harm or 40/arm final reader gates are reached with official joins.
+
+### 2026-08-25 00:05 IST: scoped clone remains positive, not yet proven
+
+Authenticated dashboard capture now gives 25 unique prospective scoped games
+with 25/25 exact, unique joins and no unresolved or ambiguous rows. Candidate
+is 9 / `+22.2` / `+2.467 per game`; control is 16 / `+17.6` / `+1.100 per
+game`. The point lift is `+1.367/game` unstratified and `+1.535/game` after the
+frozen host adjustment. The exact host-stratified sharp-null test enumerates
+50,400 assignments and gives one-sided `p=.1056` (two-sided `.2033`). Host
+points are positive on Test 1, Test 3, and Test 4; Agent 5 is `-1.900/game` on
+only one candidate versus three controls. Preserve the randomized arm: this is
+the first persistent prospective official signal, but 9/16 is below the frozen
+20/arm harm look, uncertainty crosses zero, and Agent 5 still blocks promotion.
+The checkpoint artifacts are
+`.ai/NEGOTIATION_OFFICIAL_{RAW_,}SCOPED_CLONE_2336_2353.json` and
+`.ai/NEGOTIATION_OFFICIAL_{RAW_,}SCOPED_CLONE_2352_0005.json`; deduplicate the
+single overlapping dashboard capture by exact joined game id. Bargaining and
+Test 2 remain untouched.
