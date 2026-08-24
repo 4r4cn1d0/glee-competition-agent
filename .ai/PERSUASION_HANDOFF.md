@@ -25,6 +25,14 @@ their code, configuration, experiments, or fleet flags.
 - The exact text explicit-decline buyer veto is implemented default OFF and is
   not live on any slot. It must not be armed until the binary-truth experiment
   is decided and disarmed.
+- Before any binary-truth assignment or outcome existed, the research boundary
+  was prospectively expanded to allow Agent 5 and Test 4 after their next
+  natural post-`d79ca92` loads. Test 2 produced zero eligible games in its first
+  14 post-T0 minutes; exact-stack preflight on both research hosts reported
+  `eligible=32/fired=18/action_changed=18` over 800 games. Their prose treatment
+  is text-only and truth is binary-only, so the gates are disjoint. Neither
+  research host is armed yet; each requires its own clean T0. Test 3 remains
+  protected.
 
 ## Rejected rank-gate mechanism
 

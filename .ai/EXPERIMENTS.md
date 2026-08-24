@@ -516,12 +516,12 @@ Test 3 before causal promotion evidence.
   reject if the official 95% CI is wholly negative. Promote only if the final
   official CI is wholly positive, purchase-count point delta is positive,
   zero-outcome point delta is nonpositive, all three scale point estimates are
-  nonnegative, and mechanism, scope, wire, self-play/duplicate, unresolved,
-  invalid, and official-join failures are zero. A final CI crossing zero remains
-  research-only.
-- **Subgroups**: price scale, named versus hidden opponent, and activation era.
-  No subgroup can override the pooled official rule. Local percentile and
-  post-lie continuation counts remain diagnostic only.
+  nonnegative, every deployed host point estimate is nonnegative, and mechanism,
+  scope, wire, self-play/duplicate, unresolved, invalid, and official-join
+  failures are zero. A final CI crossing zero remains research-only.
+- **Subgroups**: price scale, named versus hidden opponent, host slot, and
+  activation era. No subgroup can override the pooled official rule. Local
+  percentile and post-lie continuation counts remain diagnostic only.
 - **Deployment boundary**: Test 2 (`hardliner`) naturally drained PID 71871 and
   loaded pushed code `d79ca92` as PID 76676 at 20:08:48 IST. Fleet tooling set
   only `GLEE_PERS_P08_R125_BINARY_TRUTH_AB=1` at clean arms mtime
@@ -530,6 +530,18 @@ Test 3 before causal promotion evidence.
   prose and buyer-parser flags are absent on Test 2; rank gate and backload are
   explicit zero. A real candidate low-quality `no` remains required before the
   live mechanism is behavior-verified.
+- **Prospective research-host expansion (frozen before any truth assignment or
+  outcome)**: the first 14 post-T0 minutes on Test 2 produced zero eligible
+  games. To reach the unchanged fixed 40/arm official boundary without peeking
+  at any treatment outcome, Agent 5 (`composite`) and Test 4 (`randomized`) may
+  be armed after each naturally loads `d79ca92` or later. Their live prose arm
+  is text-only, while truth is binary-only, so the eligibility sets are
+  disjoint. Exact-stack preflight at seed 2431 reported
+  `eligible=32/fired=18/action_changed=18` on each host over 800 games. Record a
+  host-specific clean T0; pool all declared hosts by stable game hash, retain
+  host/activation-era diagnostics, require every host point estimate
+  nonnegative for promotion, and reject detected cross-fleet duplicates. Test 3
+  remains untouched.
 - **Read with**: `scripts/live_percentile.py --ab pers-truth --since T0
   --slots hardliner --official-json FILE`.
 
