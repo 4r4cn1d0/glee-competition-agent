@@ -296,7 +296,7 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   remains part of archival ITT completeness but cannot reverse this frozen
   decision or justify reviving the broad arm.
 
-## BUILT DEFAULT OFF — PROSPECTIVE RETEST PENDING DEPLOYMENT
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Hidden-information cap-10 buyer leader clone
 - **Why this is a new experiment**: the broad checkpoint's hidden cap-10 slice
@@ -336,21 +336,24 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   message, and scale point estimate is nonnegative; and source, wire, assignment,
   duplicate, outcome, and official-join failures are all zero. Otherwise leave
   it research-only. No optional or post-trigger subset can promote it.
-- **Deployment boundary / verification so far**: intended hosts are champion,
-  composite, conceder, and randomized; hardliner remains protected. Arm only
-  after the pushed commit is loaded by each host through natural shift rotation,
-  the broad flag is explicitly zero, and no eligible game is in flight. Record
-  host-specific clean T0s before viewing any new-salt outcome. Exact champion-
-  stack reachability over 800 paired games produced 335 eligible states, 164
-  firings, and 164 changed wires. Focused strategy tests pass 37/37; the
-  strategy/join/data commit is pushed as `9f87a48`. The prospective reader now
-  encodes the 20/arm harm and complete 40/arm promotion rules, preserves every
-  unresolved/non-close, audits all candidate/control wires and collisions, and
-  reports host/type/message/scale strata; combined clone-reader tests pass
-  43/43. Full suite: 1,476 passed with only the same two pre-existing bargaining
-  failures. Never restart or alter bargaining to accelerate deployment.
-
-## RUNNING — LIVE CAUSAL MEASUREMENT
+- **Deployment boundary / verification so far**: live on conceder from
+  `T0=1787594802` (23:36:42 IST), randomized from `T0=1787594943` (23:39:03),
+  champion from `T0=1787595144` (23:42:24), and composite from
+  `T0=1787595205` (23:43:25). Each T0 is the natural-shift replacement launch
+  on pushed commit `64ec557`, with the broad flag explicitly zero and this
+  scoped flag one in the launch record. Hardliner remains protected and
+  unarmed. The first prospective candidate wire fired on conceder game
+  `cdd59547-0b66-4416-94b0-8f2877159e90` at `1787594922.983`; its independent
+  hash assignment is candidate and its exact scope is hidden/known/cap-10
+  buyer. This proves deployment and reachability, not outcome superiority.
+  Exact champion-stack reachability over 800 paired games produced 335 eligible
+  states, 164 firings, and 164 changed wires. Focused strategy tests pass 37/37;
+  the prospective reader encodes the 20/arm harm and complete 40/arm promotion
+  rules, preserves every unresolved/non-close, audits all candidate/control
+  wires and collisions, and reports host/type/message/scale strata; combined
+  clone-reader tests pass 43/43. Full suite: 1,476 passed with only the same two
+  pre-existing bargaining failures. Never restart or alter bargaining to
+  accelerate deployment.
 
 ### Direct-leader hidden unknown-horizon opening copy (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1`;

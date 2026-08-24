@@ -1655,3 +1655,14 @@ draft, its executable gates now exactly match this experiment's frozen 20/arm
 harm and 40/arm final rules. Combined scoped/broad/Opus clone reader tests are
 43/43. Activation still waits for natural rotation onto `9f87a48` and a clean
 no-eligible-game boundary; the flag remains absent/default OFF.
+
+Follow-up 23:44 IST: prospective activation is complete on pushed commit
+`64ec557`, without signals or abandoned games. Clean launch boundaries are
+conceder `T0=1787594802`, randomized `1787594943`, champion `1787595144`, and
+composite `1787595205`; every launch record has broad clone `0` and scoped
+hidden-cap-10 clone `1`. Hardliner/Test 2 was not enrolled and no bargaining
+flag or behavior changed. The first candidate wire appeared after conceder's
+T0 in game `cdd59547-0b66-4416-94b0-8f2877159e90`; independent assignment is
+candidate and the state is exactly hidden-information, known-horizon, cap-10,
+buyer. That is mechanism proof only. Do not report a winner until the frozen
+20/arm harm or 40/arm final reader gates are reached with official joins.
