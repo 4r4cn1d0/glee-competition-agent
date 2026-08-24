@@ -89,18 +89,34 @@ def _score(text: str, *, expanded_declines: bool | None = None) -> float:
     if expanded_declines is None:
         expanded_declines = _parse_v2()
     total = 0.0
+    negative_spans: list[tuple[int, int]] = []
     for weight, phrases in (
             _NEGATIVE + (_NEGATIVE_V2 if expanded_declines else ())):
         for phrase in phrases:
             if phrase in text:
                 total -= weight
+                # Preserve the semantic scope of phrases such as "I recommend
+                # skipping" and "I recommend against buying".  Their embedded
+                # "I recommend" used to add the same positive weight back and
+                # turn an explicit decline into an abstention.  Only suppress a
+                # positive phrase that physically overlaps the matched decline;
+                # a later contrastive recommendation remains independent.
+                at = text.find(phrase)
+                while at != -1:
+                    negative_spans.append((at, at + len(phrase)))
+                    at = text.find(phrase, at + 1)
     for weight, phrases in _POSITIVE:
         for phrase in phrases:
             at = text.find(phrase)
             while at != -1:
                 # A negated positive is not evidence of a recommendation, and
                 # counting it cancels a genuine decline out to neutral.
-                if not _negated(text, at):
+                end = at + len(phrase)
+                overlaps_decline = any(
+                    at < decline_end and end > decline_start
+                    for decline_start, decline_end in negative_spans
+                )
+                if not _negated(text, at) and not overlaps_decline:
                     total += weight
                     break
                 at = text.find(phrase, at + 1)
@@ -171,9 +187,9 @@ def reads_as_recommendation(message: str) -> bool | None:
 def reads_as_recommendation_expanded(message: str) -> bool | None:
     """Read with the measured expanded decline table, independent of flags.
 
-    This pure helper exists for narrowly randomized buyer arms.  It must not
-    turn on ``GLEE_PERS_PARSE_V2`` globally: doing that would change parsing in
-    every text cell and make the control cease to be the live stack.
+    This pure helper lets an optional buyer guard inspect only the current
+    message.  It must not turn on ``GLEE_PERS_PARSE_V2`` globally: doing that
+    would also reinterpret history and change the underlying buyer policy.
     """
     return _reads_as_recommendation(message, expanded_declines=True)
 

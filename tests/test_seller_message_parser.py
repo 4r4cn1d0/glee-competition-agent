@@ -8,9 +8,10 @@ bought it. Measured across 20h of logs: 373 purchases of messages that
 explicitly declined the sale, 373 of them low quality, 0 high.
 """
 import sys, os
-os.environ.setdefault('GLEE_PERS_PARSE_V2','1')  # the fix under test
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from glee_agent.text import reads_as_recommendation
+from glee_agent.text import reads_as_recommendation_expanded
 
 DECLINES = [
     "Not recommended.", "not recommended",
@@ -30,14 +31,25 @@ BUYS = [
     "This one is worth taking.", "yes",
 ]
 
+
+@pytest.mark.parametrize("message", DECLINES)
+def test_expanded_parser_reads_live_declines(message: str) -> None:
+    assert reads_as_recommendation_expanded(message) is False
+
+
+@pytest.mark.parametrize("message", BUYS)
+def test_expanded_parser_reads_live_recommendations(message: str) -> None:
+    assert reads_as_recommendation_expanded(message) is True
+
+
 def main() -> int:
     bad = 0
     for m in DECLINES:
-        if reads_as_recommendation(m) is not False:
-            print(f"FAIL decline read as {reads_as_recommendation(m)}: {m!r}"); bad += 1
+        if reads_as_recommendation_expanded(m) is not False:
+            print(f"FAIL decline read as {reads_as_recommendation_expanded(m)}: {m!r}"); bad += 1
     for m in BUYS:
-        if reads_as_recommendation(m) is not True:
-            print(f"FAIL buy read as {reads_as_recommendation(m)}: {m!r}"); bad += 1
+        if reads_as_recommendation_expanded(m) is not True:
+            print(f"FAIL buy read as {reads_as_recommendation_expanded(m)}: {m!r}"); bad += 1
     print(f"parser regression: {len(DECLINES)} declines + {len(BUYS)} buys, {bad} failures")
     return 1 if bad else 0
 

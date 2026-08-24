@@ -454,6 +454,32 @@ def _p_p033_r4_binary_postdecline_pulse(game, p):
             and lows > last_pulsed_lows)
 
 
+def _p_buyer_explicit_decline_veto_v1(game, p):
+    """Pre-action scope where the deterministic buyer veto can change BUY."""
+    from glee_agent.strategies import persuasion
+    from glee_agent.text import reads_as_recommendation_expanded
+
+    state = game.get("game_state") or {}
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"
+            or (state.get("current_player") is not None
+                and state.get("current_player") != "player_2")
+            or p.get("buyer_v2") is not True
+            or p.get("buy") is not True):
+        return False
+
+    mode = state.get("seller_message_type")
+    if mode == "text":
+        return reads_as_recommendation_expanded(
+            state.get("seller_message")) is False
+    if mode == "binary":
+        return persuasion._strict_binary_signal({
+            "seller_message": state.get("seller_message"),
+            "recommended": state.get("recommended"),
+        }) is False
+    return False
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -579,6 +605,9 @@ KNOWN = {
     "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB": (
         "persuasion", ("p033_r4_binary_postdecline_pulse",),
         _p_p033_r4_binary_postdecline_pulse),
+    "GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1": (
+        "persuasion", ("buyer_explicit_decline_veto_v1",),
+        _p_buyer_explicit_decline_veto_v1),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those

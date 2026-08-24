@@ -34,6 +34,15 @@ from ..text import (
     reads_as_recommendation_expanded,
 )
 
+# Whole buyer-v2 explicit-decline veto.  This is deliberately not an ``*_AB``
+# flag and never reads a game id: it can only turn an existing BUY into PASS on
+# an expanded text decline or strict binary ``no``.  Legacy buyer v1,
+# positive/unknown signals, history inference, and the seller path are outside
+# its scope.
+PERS_BUYER_EXPLICIT_DECLINE_VETO_V1_FLAG = (
+    "GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1"
+)
+
 # Weight of the prior in the buyer's honesty estimate, in pseudo-observations.
 # Keeps a single unlucky round from swinging the posterior to an extreme.
 _PRIOR_STRENGTH = 2.0
@@ -1668,6 +1677,53 @@ def decide(game: dict, cfg) -> dict:
             p[f"p033_r4_binary_postdecline_pulse_{key}"] = value
         p.setdefault("gates_fired", []).append(
             "p033_r4_binary_postdecline_pulse")
+
+    # DETERMINISTIC EXPLICIT-DECLINE VETO (default OFF).
+    #
+    # Preserve the complete buyer-v2 plan above, including its legacy parser,
+    # posterior and history updates, then make exactly one possible wire change:
+    # an existing BUY becomes PASS when the current expanded text explicitly
+    # declines the sale or the documented binary wire says ``no``.  This block
+    # is deliberately last so no legacy optional overlay can revive the
+    # purchase.  It does not inspect a game id, assign an arm, target a numeric
+    # cell, reinterpret history, or ever turn PASS into BUY.
+    #
+    # In the frozen post-rank-disarm all-five cohort (first buyer turn
+    # 1787570799 <= ts < 1787596351.4207911), all 1,933 assigned buyer games were
+    # retained (1,924 completed, 6 active, 3 no-deal).  Among 981 completed text
+    # games the text rule would remove 156 purchases in 65 games: 155 revealed
+    # LOW and one HIGH.  Literal binary ``no`` adds 20 purchases in 20 games,
+    # all 20 LOW, across every slot, both seller-knowledge states and all scales.
+    # The all-text fixed-stream local-percentile diagnostic was +.009012 (normal
+    # 95% CI +.005948..+.012076).  That is mechanism evidence, not an identified
+    # official effect: changed actions are purchase-selected and seller
+    # adaptation is unobserved.  The policy is justified by the literal decline
+    # contract and one-directional safety, not by treating that diagnostic
+    # interval as causal.
+    if (runtime_flags.enabled(PERS_BUYER_EXPLICIT_DECLINE_VETO_V1_FLAG)
+            and action_type == "buyer_decision"
+            and game.get("your_player") == "player_2"
+            and ((game.get("game_state") or {}).get("current_player")
+                 in (None, "player_2"))
+            and p.get("buyer_v2") is True
+            and p.get("buy") is True):
+        state = game.get("game_state") or {}
+        message_mode = state.get("seller_message_type")
+        current_signal = {
+            "seller_message": state.get("seller_message"),
+            "recommended": state.get("recommended"),
+        }
+        explicit_decline = (
+            (message_mode == "text" and reads_as_recommendation_expanded(
+                current_signal["seller_message"]) is False)
+            or (message_mode == "binary"
+                and _strict_binary_signal(current_signal) is False)
+        )
+        if explicit_decline:
+            p["buy"] = False
+            p["buyer_explicit_decline_veto_v1"] = True
+            p.setdefault("gates_fired", []).append(
+                "buyer_explicit_decline_veto_v1")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
