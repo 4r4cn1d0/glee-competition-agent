@@ -168,10 +168,12 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   bargaining failures.
 
 The first post-boundary assignment was a composite hash control in buyer-1.2;
-its ordinary first counter remained unchanged and the reader reported
-`wire_ok=true`. This proves control preservation, not candidate firing or
-outcome value. Require a literal treatment wire at 1.485B/.81B before declaring
-the live mechanism verified. Do not arm Test 3 before causal promotion evidence.
+its ordinary first counter remained unchanged. The first emitted treatment wire
+was composite seller-.8 at exactly 1.485B, and a Test 4 candidate buyer-1.5
+immediately accepted before emitting a price while remaining in the ITT. All
+eight initial assignments reported `wire_ok=true`. This verifies live control,
+treatment, and immediate-accept cohort semantics, not outcome value. Do not arm
+Test 3 before causal promotion evidence.
 
 ## REJECTED — DEFAULT OFF, DO NOT RUN
 

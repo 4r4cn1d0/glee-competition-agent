@@ -19,8 +19,11 @@ changes only the first hidden unknown-horizon outgoing price in seller
 seller-1.2/buyer-1.0 first-offer probe and cap-10 terminal probe are disjoint;
 `HIDDEN_POLICY_V1` and `HIDDEN_FLOOR` were absent on all four slots at
 activation. The first post-T0 assignment was a composite buyer-1.2 hash control
-and retained its ordinary counter with `wire_ok=true`; treatment-wire firing is
-still pending and must be verified separately.
+and retained its ordinary counter. The first emitted treatment wire was a
+composite seller-.8 ask at exactly 1.485B; a Test 4 candidate buyer-1.5 accepted
+immediately and correctly stayed in the ITT without emitting a treatment price.
+Across the first eight assignments, every applicable wire reported
+`wire_ok=true`. This verifies live mechanism and cohort semantics, not value.
 
 Read with `scripts/live_percentile.py --ab hi-extreme-open --since 1787571320
 --slots champion,composite,hardliner,randomized`. Do not decide before 100
