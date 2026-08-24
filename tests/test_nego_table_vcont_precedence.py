@@ -9,6 +9,7 @@ import pytest
 from glee_agent import runtime_flags
 from glee_agent.config import Config
 from glee_agent.strategies import negotiation as N
+from scripts import live_percentile
 
 
 FLAG = "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB"
@@ -106,6 +107,11 @@ def test_assignment_is_stable_balanced_and_requires_an_id():
                for index in range(500))
     assert N.table_vcont_precedence_assignment("") is None
     assert N.table_vcont_precedence_assignment(None) is None
+    for index in range(500):
+        gid = f"reader-parity-{index}"
+        expected = ("candidate" if N.table_vcont_precedence_assignment(gid)
+                    else "control")
+        assert live_percentile.table_vcont_precedence_arm(gid) == expected
 
 
 def test_default_off_is_byte_identical_to_the_direct_table_accept(monkeypatch):
@@ -217,3 +223,72 @@ def test_hidden_min_share_arm_also_refuses_the_new_overlap(monkeypatch):
     assert action["decision"] == "AcceptOffer"
     assert "hidden_min_share_veto" not in action["_plan"]
     assert "table_vcont_precedence" not in action["_plan"]
+
+
+@pytest.mark.parametrize("treatment", [False, True])
+def test_reader_cohorts_first_direct_table_accept_and_audits_wire(
+        monkeypatch, treatment):
+    _arm(monkeypatch)
+    game = _game(gid=_gid(treatment))
+    action = _decide(game)
+    plan = action.pop("_plan")
+    record = {
+        "ts": 1234.0,
+        "game_id": game["game_id"],
+        "game_family": "negotiation",
+        "your_player": game["your_player"],
+        "action_type": "decision",
+        "state": game["game_state"],
+        "action": action,
+        "plan": plan,
+    }
+    exposure = live_percentile._table_vcont_precedence_exposure_turn(
+        "conceder", record)
+    assert exposure[0] == ("conceder", game["game_id"])
+    assert exposure[1] == 1234.0
+    diagnostic = exposure[2]
+    assert diagnostic["plan_arm"] == ("candidate" if treatment else "control")
+    assert diagnostic["mechanism_ok"] is True
+    assert diagnostic["distinct_opponent_prices"] == 3
+    assert diagnostic["continuation_value"] > diagnostic["surplus_now"]
+    assert diagnostic["action_decision"] == (
+        "RejectOffer" if treatment else "AcceptOffer")
+
+
+def test_reader_rejects_a_malformed_candidate_counter(monkeypatch):
+    _arm(monkeypatch)
+    game = _game(gid=_gid(True))
+    action = _decide(game)
+    plan = action.pop("_plan")
+    action["product_price"] += 1.0
+    record = {
+        "ts": 1234.0,
+        "game_id": game["game_id"],
+        "game_family": "negotiation",
+        "your_player": game["your_player"],
+        "action_type": "decision",
+        "state": game["game_state"],
+        "action": action,
+        "plan": plan,
+    }
+    exposure = live_percentile._table_vcont_precedence_exposure_turn(
+        "conceder", record)
+    assert exposure[2]["mechanism_ok"] is False
+
+
+def test_report_blocks_without_complete_official_join(capsys):
+    diagnostic = {
+        "role": "seller", "horizon": "10", "own_multiplier": 0.8,
+        "scale": 100.0, "messages": False, "mechanism_ok": True,
+        "action_decision": "AcceptOffer",
+    }
+    rows = [
+        ("conceder", 0.45, _gid(False), True, diagnostic, "terminal"),
+        ("conceder", 0.60, _gid(True), False, diagnostic, "terminal"),
+    ]
+    assert live_percentile.report_table_vcont_precedence(
+        rows, 1.0, since=1000.0, until=2000.0) == 1
+    output = capsys.readouterr().out
+    assert "local pooled-CDF percentile is diagnostic only" in output
+    assert "terminal outcomes missing official delta=2" in output
+    assert "every agreement/no-deal/walk/pending" in output

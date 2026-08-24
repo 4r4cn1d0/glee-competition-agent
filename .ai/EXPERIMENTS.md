@@ -529,6 +529,88 @@ Test 3 before causal promotion evidence.
 - **Read with**: `scripts/live_percentile.py --ab pers-truth --since T0
   --slots hardliner --official-json FILE`.
 
+### Exact buyer/text explicit-decline veto (built default OFF)
+- **Falsifiable hypothesis**: in persuasion buyer/text games with `p=.8`,
+  `v=1.25*price`, `u=0`, and 20 rounds, treating every
+  expanded-parser explicit decline as a final pass raises mean authenticated
+  official per-game rating delta versus the complete live buyer-v2 control.
+  A non-positive all-assigned official result falsifies the hypothesis;
+  decline-conditioned payoff or local percentile cannot promote it.
+- **Why this is isolated**: `GLEE_PERS_PARSE_V2` only expands phrases, while
+  `GLEE_PERS_PARSE_TRI` changes abstentions and posterior updates broadly; TRI
+  alone still reads `Not recommended.` as abstention when V2 is absent.  This
+  arm uses the expanded decline table only for its final candidate veto and
+  changes neither current nor historical parsing anywhere else.  It leaves all
+  positive-message and pre-decline purchases intact, so it does not retry the
+  rejected buyer-selectivity/strike/LCB arms.
+- **Mechanism evidence, not effect evidence**: among 395 deduplicated completed
+  exact games across both official seller-knowledge configurations, 196
+  contained an expanded-parser decline and 199 did not.  The live buyer
+  purchased such declines in 22 games / 44 turns; all 44 revealed low.
+  Frozen-stream savings averaged `.1114P` and the within-configuration local
+  diagnostic percentile changed `+.0172` over all 395.  In the known-CV cell
+  alone the corresponding figures were `.1456P` and `+.0228` (bootstrap 95%
+  interval `[+.0109,+.0374]`).  Passed-item quality is unobserved and seller adaptation
+  invalidates that counterfactual.  Authenticated game `f2bed4f4-b9f2-47d3-
+  b397-7dc41c919673` bought three `Not recommended.` lows, finished at zero,
+  and scored `-4.0`; its fixed sequence would save `3P`, but is not causal.
+- **Flag / assignment**:
+  `GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB=1`, default OFF;
+  `int(sha256("pers_p08_r125_text_decline_veto_v1|" + game_id).hexdigest(),
+  16) & 1` assigns the game.  Missing ids fail closed.  Eligibility is fixed at
+  the globally first buyer decision from structural buyer seat, text mode,
+  exact numeric cell, and horizon only—never message, decline, purchase,
+  payoff, or completion.
+- **Two official configuration cells**: the production-observable gate is the
+  union of `is_seller_know_cv=true` and `is_seller_know_cv=false`.  The
+  documented active state withholds that configuration flag (and the simulator
+  enforces the omission), so conditioning assignment on it would be an
+  unreachable hidden-state policy.  Official rating deltas are already scored
+  within their own configuration.  The reader reports both final/config labels
+  separately and never infers a missing label from messages, purchases, or
+  outcomes; unavailable labels block promotion.
+- **Control / candidate**: hash control returns the entire flag-off buyer plan
+  and action byte-identically, without arm metadata.  Candidate first computes
+  that same complete plan, including optional rank-buy, then final-overlays
+  `yes -> no` only when the current message is an expanded-parser explicit
+  decline.  Positive messages, abstentions, already-refused actions, history,
+  posterior, sellers, binary mode, other cells, bargaining, and negotiation are
+  unreachable.  Only a real changed action appends
+  `p08_r125_text_decline_veto` to `gates_fired`.
+- **Pre-treatment / ITT cohort**: Test 2 first exact buyer turns in
+  `[1787570799, prospective T0)`, beginning at rank-gate disarm.  The
+  experimental cohort begins at a clean future T0 and includes every assigned
+  game: no-decline paths, purchases, refusals, zero and negative outcomes,
+  timeouts, invalid/abandoned, unresolved, and immediate terminal outcomes.
+  First-turn time, never result-fetch time, defines membership.
+- **Preflight and live mechanism contract**: on Test 2's exact stack require
+  `eligible>0`, `fired>0`, and `action_changed>0`.  Audit all rounds of the
+  first 20 assignments for a stable bit, byte-identical controls, no change on
+  positive/abstaining messages, and candidate pass on every target decline.
+  Any control difference, non-target fire, candidate decline purchase, hash
+  drift, invalid wire, or trace/action mismatch is immediate mechanism
+  rejection.  Activation is not behavior-verified until a real changed-action
+  trace appears; no trace by 50 exact assignments is a reach failure.
+- **Primary / sample / rules**: authenticated dashboard per-game rating delta,
+  full-game ITT.  One harm look at 50 resolved official games per arm rejects
+  if the official 95% CI is wholly negative.  Fixed final read at 120/arm and
+  at least 20/arm per price scale.  Promote only if the official CI is wholly
+  positive, normalized-payoff point delta is positive, zero- and negative-
+  outcome point deltas are nonpositive, all scale and both seller-knowledge-
+  cell points are nonnegative, and
+  mechanism, scope, wire, duplicate/self-play, unresolved, invalid, and
+  official-join failures are zero.  A final CI crossing zero stays research-
+  only.
+- **Subgroups / boundary**: seller-knowledge configuration (when present in
+  final/config evidence), price scale, named versus hidden opponent, legacy-
+  recognized versus V2-only decline phrase, and first-decline round are
+  diagnostic only.  Build/push inert code now; arm Test 2 only after the binary
+  truth decision/disarm at a clean timestamp, with prose/parser/selectivity
+  absent and rank/backload explicit zero.  Test 3 remains untouched.  Exclude
+  observed cross-fleet duplicates; hidden self-play risk blocks promotion.
+- **Read with**: `scripts/live_percentile.py --ab pers-decline-veto --since T0
+  --slots hardliner --official-json FILE`.
+
 ## MECHANISM REJECTED — DISARMED
 
 ### Continuation-aware persuasion rank gate (Test 2)
@@ -559,11 +641,14 @@ Test 3 before causal promotion evidence.
   frozen table/stall/continuation stack would otherwise accept. Control accepts
   byte-for-byte. Candidate rejects and uses the existing profitable-side
   counter. The terminal any-positive-cent rule is outside scope.
-- **Deployment state**: pushed inert mechanism commit `6f7e79b`; Test 3 process
-  naturally rotated onto it at 2026-08-24 19:22:14 IST (PID 73157). The overlay
-  is visible in refreshed state. Causal `T0` remains the first qualifying
-  assignment trace, not the process start or overlay mtime; no qualifying trace
-  had appeared at 19:22:46.
+- **Deployment state / causal boundary**: pushed inert mechanism commit
+  `6f7e79b`; Test 3 process naturally rotated onto it at 2026-08-24 19:22:14 IST
+  (PID 73157). The first qualifying pre-action assignment is therefore the clean
+  `T0=1787581117.643784` (2026-08-24 19:48:37 IST), not process start or overlay
+  mtime. Game `99c476fc-5bce-44b0-af07-57382aec6160` was hash control, hidden
+  cap-10 seller-.8, round 6: buyer offered `.85666667B`, paying `.05666667B`
+  against the `.08B` support floor; direct TABLE accepted. The production/reader
+  parity audit reports `mechanism_ok=true`.
 - **Primary cohort / outcome**: every game from its first qualifying pre-action
   decision, with all agreements, zeros, walks, timeouts, invalid and unresolved
   outcomes retained. Primary outcome is authenticated-dashboard per-game rating
@@ -598,7 +683,13 @@ Test 3 before causal promotion evidence.
   eligible games (about 25.5 per 1,000 negotiation games). Test 3's future
   control stack with the running veto explicitly absent produced 47 eligible,
   19 fired, and 19 changed actions over 1,500 paired games (seed 2411). Focused
-  and all negotiation tests passed (79 and 363 respectively).
+  and all negotiation tests passed (79 and 363 respectively). The prospective
+  official reader is now implemented as `--ab table-vcont-precedence`; it
+  independently recomputes the trigger from state/plan, verifies direct-TABLE
+  control and exact candidate counter wires, retains unresolved and every
+  terminal outcome, rejects cross-fleet duplicates, and enforces the frozen
+  official/close/stratum decision rule. Combined precedence/veto focused suite:
+  83 passed.
 - **Precommitted future rule**: do not co-arm with the support-minimum trial.
   After a clean window, final read at 100 resolved official games per arm and
   20 per role; one harm look at 30/arm. Promotion requires official-delta CI

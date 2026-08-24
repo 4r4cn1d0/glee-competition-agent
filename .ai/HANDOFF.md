@@ -1449,5 +1449,45 @@ refuses every overlapping negotiation arm and requires the exact future stack
 including FINAL_OPTION=0.60. Latest 100,000 Test 3 turns produced 76 first-
 eligible games; future-stack reachability over 1,500 paired games (seed 2411)
 reported 47 eligible / 19 fired / 19 changed. Do not arm it during the current
-support-minimum experiment. Its official reader and clean deployment window are
-still pending; historical completed outcomes cannot promote it.
+support-minimum experiment. Its clean deployment window is still pending;
+historical completed outcomes cannot promote it.
+
+Update: the official reader is now built as `--ab table-vcont-precedence`. It
+recomputes the trigger from the logged state/plan, verifies hash parity and the
+direct-TABLE control versus exact candidate counter wire, retains unresolved and
+all terminal outcomes, excludes cross-fleet duplicates from causal estimates,
+and enforces the precommitted official-score/close/stratum gates. Combined
+precedence/veto focused verification is 83/83. The arm remains OFF; no behavior
+changed.
+
+## 2026-08-24 — hidden-veto causal T0 and direct-leader curve audit
+
+The first qualifying support-minimum assignment arrived at
+`T0=1787581117.643784` (19:48:37 IST), game
+`99c476fc-5bce-44b0-af07-57382aec6160`. It was hash control, hidden cap-10
+seller-.8, round 6, text enabled. The buyer's `.85666667B` offer paid us
+`.05666667B`, below the `.08B` support-aware floor, and direct TABLE accepted.
+The independent reader reconstructed the signal and returned
+`mechanism_ok=true`. This exact first exposure, not the 19:22 process rotation,
+is the lower bound for every causal read. At the time of freezing, its local
+collector final had not yet appeared, so outcome status remains unresolved.
+
+Independent review reconstructed Clod's private type in both observed cap-10
+buyer trajectories: agreement at `1.008B` plus Clod payoff `.192B` implies
+buyer value `1.2B`. The two full paths were approximately
+`[.8108,.8112,.8196,.8648,1.008]B` and
+`[.8179,.8180,.8217,.8553,1.008]B`. This identifies actions and type, not the
+causal value of copying them; their fitted timing exponents also differ. Do not
+build a literal five-price clone now: its fifth point directly overlaps the
+running cap-10 buyer-1.2 terminal experiment. First finish that experiment. If
+the terminal rule promotes, freeze it in both arms and test only the first four
+Clod midpoint prices prospectively; otherwise redesign the terminal component
+before any curve trial. Hardliner is the only currently clean host and would
+need roughly 57 hours for 100/arm at its observed cell arrival rate, another
+reason not to launch a bundled arm.
+
+Authenticated/API state around 19:44-19:48 IST: Test 2 was sixth overall at
+2315.51 versus third-place Mythos01 at 2383.21 (gap 67.70). Negotiation leaders
+were Clod 2894.70, 7aidara_Gamma 2675.62, and opus 5(4) 2652.36; our best visible
+negotiation rating was Test 4 at 2070.5. These are transient monitoring values,
+not policy-effect estimates.

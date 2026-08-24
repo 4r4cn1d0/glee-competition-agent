@@ -40,6 +40,9 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab hidden-min-share-veto --since T0 \
         --official-json FILE
                          # support-aware low-share acceptance veto + wire audit
+    python scripts/live_percentile.py --ab table-vcont-precedence --since T0 \
+        --official-json FILE
+                         # direct-TABLE accept vs observed continuation + audit
     python scripts/live_percentile.py --ab fp-complete --since T0 --until T1
                          # exact official-CDF first-principles promotion cells
     python scripts/live_percentile.py --ab pers-selectivity --since T0 --until T1
@@ -48,6 +51,9 @@ field responds -- these are the payoffs the field actually paid us.
                        # exact seller wording ITT + official dashboard deltas
     python scripts/live_percentile.py --ab pers-truth --since T0 --official-json FILE
                        # exact binary seller credibility ITT + official deltas
+    python scripts/live_percentile.py --ab pers-decline-veto --since T0 \
+        --official-json FILE
+                       # exact buyer/text explicit-decline veto ITT + wire audit
     python scripts/live_percentile.py --ab barg-msg        # B0 silence vs B1-B3
 
 CAVEAT, stated because it decides how far the numbers can be pushed: the cell
@@ -82,6 +88,11 @@ from glee_agent.strategies.persuasion import (  # noqa: E402
     buyer_selectivity_assignment,
     p08_r125_binary_truth_assignment,
     p08_r125_prose_assignment,
+    p08_r125_text_decline_veto_assignment,
+)
+from glee_agent.text import (  # noqa: E402
+    reads_as_recommendation_expanded,
+    reads_as_recommendation_legacy,
 )
 from scripts.orphan_watch import COLD_SECONDS as ORPHAN_COLD_SECONDS  # noqa: E402
 
@@ -224,6 +235,16 @@ def hidden_min_share_veto_arm(gid) -> str | None:
     return "candidate" if treatment else "control"
 
 
+def table_vcont_precedence_arm(gid) -> str | None:
+    """Recover the production TABLE-versus-continuation assignment."""
+    from glee_agent.strategies.negotiation import table_vcont_precedence_assignment
+
+    treatment = table_vcont_precedence_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
 def pers_selectivity_arm(gid) -> str | None:
     """Recover the buyer-selectivity arm from the action path's pure helper."""
     treatment = buyer_selectivity_assignment(gid)
@@ -243,6 +264,14 @@ def pers_prose_arm(gid) -> str | None:
 def pers_truth_arm(gid) -> str | None:
     """Recover the exact-cell binary truth assignment from production code."""
     treatment = p08_r125_binary_truth_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def pers_decline_veto_arm(gid) -> str | None:
+    """Recover the exact buyer/text decline-veto production assignment."""
+    treatment = p08_r125_text_decline_veto_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -497,6 +526,38 @@ def _pers_truth_signal(seat: str, state: dict) -> dict | None:
         "u": low_value,
         "ratio": high_value / price,
         "seller_message_type": "binary",
+        "total_rounds": int(rounds),
+    }
+
+
+def _pers_decline_veto_signal(seat: str, state: dict) -> dict | None:
+    """Pre-action exact buyer cell for the text explicit-decline veto."""
+    if seat != "player_2" or state.get("seller_message_type") != "text":
+        return None
+    price = _number(state.get("product_price"))
+    prior = _number(state.get("p"))
+    high_value = _number(state.get("v"))
+    low_value = _number(state.get("u"))
+    rounds = _number(state.get("total_rounds"))
+    if None in (price, prior, high_value, low_value, rounds) or price <= 0.0:
+        return None
+    if (abs(prior - 0.8) > 1e-9
+            or abs(high_value / price - 1.25) > 1e-9
+            or abs(low_value) > 1e-9
+            or int(rounds) != 20):
+        return None
+    return {
+        "price": price,
+        "p": prior,
+        "v": high_value,
+        "u": low_value,
+        "ratio": high_value / price,
+        "seller_message_type": "text",
+        # Absent on active documented state; present in collector finals.  The
+        # official delta is already same-configuration normalized, and the
+        # reader reports this as a predeclared subgroup rather than letting an
+        # unobservable config bit enter assignment.
+        "is_seller_know_cv": state.get("is_seller_know_cv"),
         "total_rounds": int(rounds),
     }
 
@@ -931,6 +992,110 @@ def _pers_selectivity_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _table_vcont_precedence_exposure_turn(slot: str, rec: dict):
+    """Cohort the first direct TABLE accept contradicted by observed momentum."""
+    if (rec.get("game_family") != "negotiation"
+            or rec.get("action_type") != "decision"):
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    plan = rec.get("plan") or {}
+    logged = (plan.get("table_vcont_precedence")
+              if isinstance(plan, dict) else None)
+    if not gid or not isinstance(logged, dict) or logged.get("eligible") is not True:
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+
+    from glee_agent import table_policy
+    from glee_agent.strategies import negotiation
+
+    role = state.get(f"{seat}_role")
+    own_value = _number(state.get(f"{seat}_value"))
+    offer_price = _number((state.get("last_offer") or {}).get("price"))
+    continuation = _number(plan.get("continuation_value"))
+    evidence = plan.get("continuation_evidence")
+    elapsed = _number(plan.get("elapsed"))
+    threshold = None
+    surplus_now = None
+    if (role in ("seller", "buyer") and own_value is not None
+            and offer_price is not None and elapsed is not None):
+        surplus_now = (offer_price - own_value if role == "seller"
+                       else own_value - offer_price)
+        threshold = table_policy.accept_threshold(
+            own_value, role == "seller", elapsed)
+    expected = None
+    if (offer_price is not None and surplus_now is not None
+            and continuation is not None and threshold is not None):
+        expected = negotiation.table_vcont_precedence_signal(
+            state, plan, offer_price, surplus_now, continuation, evidence,
+            threshold)
+
+    arm = table_vcont_precedence_arm(gid)
+    action = rec.get("action") or {}
+    gates = plan.get("gates_fired") if isinstance(plan, dict) else []
+    gates = gates if isinstance(gates, list) else []
+    mechanism_ok = expected is not None and arm is not None
+    mechanism_ok = mechanism_ok and logged.get("arm") == arm
+    for key in ("offer_price", "surplus_now", "table_threshold",
+                "continuation_value", "continuation_rate"):
+        actual = _number(logged.get(key))
+        wanted = _number((expected or {}).get(key))
+        mechanism_ok = mechanism_ok and actual is not None and wanted is not None
+        if actual is not None and wanted is not None:
+            mechanism_ok = mechanism_ok and abs(actual - wanted) <= max(
+                1e-8, abs(wanted) * 1e-9)
+    mechanism_ok = mechanism_ok and logged.get("role") == (expected or {}).get("role")
+    mechanism_ok = mechanism_ok and logged.get("distinct_opponent_prices") == \
+        (expected or {}).get("distinct_opponent_prices")
+
+    wire_price = (_number(action.get("product_price"))
+                  if isinstance(action, dict) else None)
+    counter_price = _number(logged.get("counter_price"))
+    if arm == "candidate":
+        mechanism_ok = mechanism_ok and (
+            action.get("decision") == "RejectOffer"
+            and wire_price is not None and counter_price is not None
+            and abs(wire_price - counter_price) <= max(
+                1e-8, abs(counter_price) * 1e-12)
+            and plan.get("table_accept_vetoed") is True
+            and "table_vcont_precedence" in gates
+            and "table_accept" not in gates)
+    else:
+        mechanism_ok = mechanism_ok and (
+            action.get("decision") == "AcceptOffer"
+            and wire_price is None and counter_price is None
+            and "table_accept" in gates
+            and "table_vcont_precedence" not in gates)
+
+    base = infer_base(own_value) if own_value is not None else None
+    max_rounds = _number(state.get("max_rounds"))
+    horizon = ("inf" if state.get("horizon_known") is False
+               or max_rounds is None else str(int(max_rounds)))
+    diagnostic = dict(logged)
+    diagnostic.update({
+        "role": role,
+        "complete": state.get("complete_information") is True,
+        "horizon": horizon,
+        "own_value": own_value,
+        "scale": base,
+        "own_multiplier": (own_value / base
+                           if own_value is not None and base else None),
+        "messages": state.get("messages_allowed") is True,
+        "round": int(_number(state.get("round")) or 0),
+        "plan_arm": logged.get("arm"),
+        "action_decision": (action.get("decision")
+                            if isinstance(action, dict) else None),
+        "wire_price": wire_price,
+        "counter_price": counter_price,
+        "gate_fired": "table_vcont_precedence" in gates,
+        "mechanism_ok": mechanism_ok,
+    })
+    return (slot, gid), ts, diagnostic
+
+
 def _pers_prose_exposure_turn(slot: str, rec: dict):
     """Cohort an exact-cell seller game before its first outgoing message."""
     if rec.get("game_family") != "persuasion":
@@ -990,6 +1155,41 @@ def _pers_truth_exposure_turn(slot: str, rec: dict):
         "first_recommend": (plan.get("recommend")
                             if isinstance(plan, dict) else None),
         "first_quality": state.get("current_quality"),
+    })
+    return (slot, gid), ts, signal
+
+
+def _pers_decline_veto_exposure_turn(slot: str, rec: dict):
+    """Cohort every exact buyer game at its globally first decision."""
+    if rec.get("game_family") != "persuasion":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _pers_decline_veto_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if rec.get("action_type") != "buyer_decision":
+        return None
+    if rec.get("phase") not in (None, "buyer_decision"):
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    action = rec.get("action") or {}
+    decision = (str(action.get("decision") or "").strip().lower()
+                if isinstance(action, dict) else "")
+    if decision not in ("yes", "no"):
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+    opponent = rec.get("opponent") or {}
+    if isinstance(opponent, dict):
+        signal["opponent_type"] = opponent.get("type")
+        signal["opponent_name"] = opponent.get("name")
+    signal.update({
+        "first_message": state.get("seller_message"),
+        "first_decision": decision,
     })
     return (slot, gid), ts, signal
 
@@ -1285,6 +1485,11 @@ def _hidden_min_share_veto_row(slot: str, rec: dict, fin: dict):
     return _stall_current_break_row(slot, rec, fin)
 
 
+def _table_vcont_precedence_row(slot: str, rec: dict, fin: dict):
+    """Build one terminal outcome for the triggered precedence ITT cohort."""
+    return _stall_current_break_row(slot, rec, fin)
+
+
 def _pers_selectivity_history_metrics(history) -> dict:
     """Summarize realized buyer behavior without selecting on a decline."""
     entries = [entry for entry in history or [] if isinstance(entry, dict)]
@@ -1430,6 +1635,62 @@ def _pers_truth_row(slot: str, rec: dict, fin: dict):
             bool(entry.get("bought"))
             and str(entry.get("quality") or "").lower() == "low"
             for entry in history),
+    }
+    return slot, pct, str(gid), completed, diagnostic
+
+
+def _pers_decline_veto_history_metrics(history) -> dict:
+    """All-round buyer diagnostics without selecting games on a decline."""
+    entries = [entry for entry in history or [] if isinstance(entry, dict)]
+    decline_mask = [
+        reads_as_recommendation_expanded(entry.get("seller_message")) is False
+        for entry in entries
+    ]
+    purchases = sum(bool(entry.get("bought")) for entry in entries)
+    first_decline = next(
+        (index + 1 for index, decline in enumerate(decline_mask) if decline),
+        None,
+    )
+    return {
+        "rounds": len(entries),
+        "seller_messages": [entry.get("seller_message") for entry in entries],
+        "buyer_decisions": [entry.get("buyer_decision") for entry in entries],
+        "qualities": [entry.get("quality") for entry in entries],
+        "purchases": purchases,
+        "purchase_rate": purchases / len(entries) if entries else None,
+        "explicit_declines": sum(decline_mask),
+        "bought_explicit_declines": sum(
+            decline and bool(entry.get("bought"))
+            for decline, entry in zip(decline_mask, entries)),
+        "first_decline_round": first_decline,
+    }
+
+
+def _pers_decline_veto_row(slot: str, rec: dict, fin: dict):
+    """Build one exact buyer outcome while retaining no-decline games."""
+    if fin.get("game_family") != "persuasion":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _pers_decline_veto_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    completed = _terminal_close(fin)
+    if completed is None:
+        return None
+    payoff = _result_payoff(fin.get("result") or {}, seat, seat)
+    pct = (percentile("persuasion", dict(state), seat, payoff)
+           if payoff is not None else None)
+    diagnostic = {
+        **signal,
+        **_pers_decline_veto_history_metrics(state.get("history")),
+        "payoff": payoff,
+        "payoff_per_price": (
+            payoff / signal["price"]
+            if payoff is not None and signal["price"] else None),
+        "zero_outcome": payoff == 0.0 if payoff is not None else None,
+        "negative_outcome": payoff < 0.0 if payoff is not None else None,
     }
     return slot, pct, str(gid), completed, diagnostic
 
@@ -1682,6 +1943,13 @@ def hidden_min_share_veto_games(hours, since=None, until=None):
         _hidden_min_share_veto_row, since=since, until=until)
 
 
+def table_vcont_precedence_games(hours, since=None, until=None):
+    """Yield games from the first contradicted direct-TABLE acceptance."""
+    yield from _price_arm_games(
+        hours, _table_vcont_precedence_exposure_turn,
+        _table_vcont_precedence_row, since=since, until=until)
+
+
 def pers_selectivity_games(hours, since=None, until=None):
     """Yield the first-eligible-decision buyer-selectivity ITT cohort."""
     yield from _price_arm_games(
@@ -1701,6 +1969,86 @@ def pers_truth_games(hours, since=None, until=None):
     yield from _price_arm_games(
         hours, _pers_truth_exposure_turn, _pers_truth_row,
         since=since, until=until)
+
+
+def _pers_decline_veto_trace_audit(rows):
+    """Attach emitted-gate evidence for every exact buyer turn in the cohort."""
+    wanted = {(row[0], row[2]) for row in rows}
+    audits = defaultdict(lambda: {
+        "eligible_turns": 0,
+        "veto_traces": 0,
+        "trace_failures": 0,
+    })
+    by_slot = defaultdict(set)
+    for slot, gid in wanted:
+        by_slot[slot].add(gid)
+    for slot, gids in by_slot.items():
+        path = os.path.join(REPO, "logs", slot, "turns.jsonl")
+        try:
+            handle = open(path, encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with handle:
+            for line in handle:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                gid = str(rec.get("game_id") or "")
+                if gid not in gids:
+                    continue
+                state = rec.get("state") or {}
+                if (_pers_decline_veto_signal(
+                        rec.get("your_player"), state) is None
+                        or rec.get("action_type") != "buyer_decision"):
+                    continue
+                audit = audits[(slot, gid)]
+                audit["eligible_turns"] += 1
+                arm = pers_decline_veto_arm(gid)
+                decline = (reads_as_recommendation_expanded(
+                    state.get("seller_message")) is False)
+                action = rec.get("action") or {}
+                decision = str(action.get("decision") or "").strip().lower()
+                plan = rec.get("plan") or {}
+                gates = plan.get("gates_fired") if isinstance(plan, dict) else []
+                traced = (isinstance(gates, list)
+                          and "p08_r125_text_decline_veto" in gates)
+                marked = (isinstance(plan, dict)
+                          and plan.get("p08_r125_text_decline_veto") is True)
+                audit["veto_traces"] += int(traced)
+                mechanism_ok = (
+                    (not traced or
+                     (arm == "candidate" and decline and decision == "no"
+                      and marked))
+                    and (not marked or traced)
+                    and not (arm == "candidate" and decline and decision == "yes")
+                    and not (arm == "control" and (traced or marked))
+                )
+                audit["trace_failures"] += int(not mechanism_ok)
+
+    enriched = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        attached = False
+        output_metadata = []
+        for item in metadata:
+            if isinstance(item, dict) and not attached:
+                output_metadata.append({**item, **audits[(slot, gid)]})
+                attached = True
+            else:
+                output_metadata.append(item)
+        if not attached:
+            output_metadata.insert(0, dict(audits[(slot, gid)]))
+        enriched.append((slot, pct, gid, completed, *output_metadata))
+    return enriched
+
+
+def pers_decline_veto_games(hours, since=None, until=None):
+    """Yield all assigned exact buyer games with emitted-veto trace audits."""
+    rows = list(_price_arm_games(
+        hours, _pers_decline_veto_exposure_turn, _pers_decline_veto_row,
+        since=since, until=until))
+    yield from _pers_decline_veto_trace_audit(rows)
 
 
 def _quantile(values, probability):
@@ -2581,6 +2929,86 @@ def _pers_official_terminal(record, diagnostic, *, mode):
     return merged
 
 
+def _pers_buyer_official_terminal(record, diagnostic):
+    """Validate and reconstruct one authenticated exact-cell buyer final."""
+    if not isinstance(record, dict) or record.get("terminal") is not True:
+        return None
+    transcript = record.get("persuasion")
+    if (record.get("source") != "authenticated-dashboard-transcript"
+            or str(record.get("family") or "").lower() != "persuasion"
+            or str(record.get("role") or "").lower() != "buyer"
+            or not isinstance(transcript, dict)):
+        return False
+    expected = {
+        "price": diagnostic.get("price"),
+        "p": diagnostic.get("p"),
+        "v": diagnostic.get("v"),
+        "u": diagnostic.get("u"),
+        "rounds": 20.0,
+    }
+    for field, wanted in expected.items():
+        observed = _number(transcript.get(field))
+        wanted_number = _number(wanted)
+        if (observed is None or wanted_number is None
+                or not math.isclose(observed, wanted_number,
+                                    rel_tol=1e-9, abs_tol=1e-9)):
+            return False
+    if str(transcript.get("mode") or "").strip().lower() != "text":
+        return False
+    seller_knows = transcript.get("is_seller_know_cv")
+    if not isinstance(seller_knows, bool):
+        return False
+    messages = transcript.get("seller_messages")
+    qualities = transcript.get("qualities")
+    decisions = transcript.get("buyer_decisions")
+    if not all(isinstance(values, list) and len(values) == 20
+               for values in (messages, qualities, decisions)):
+        return False
+    normalized_qualities = [str(value or "").strip().lower()
+                            for value in qualities]
+    normalized_decisions = [str(value or "").strip().lower()
+                            for value in decisions]
+    if (any(value not in {"high", "low"} for value in normalized_qualities)
+            or any(value not in {"buy", "pass"}
+                   for value in normalized_decisions)):
+        return False
+    price = _number(diagnostic.get("price"))
+    high_value = _number(diagnostic.get("v"))
+    low_value = _number(diagnostic.get("u"))
+    payoff = _number(transcript.get("buyer_payoff"))
+    if None in (price, high_value, low_value, payoff) or price <= 0.0:
+        return False
+    expected_payoff = sum(
+        (high_value - price if quality == "high" else low_value - price)
+        for decision, quality in zip(normalized_decisions,
+                                     normalized_qualities)
+        if decision == "buy"
+    )
+    if not math.isclose(payoff, expected_payoff,
+                        rel_tol=1e-9, abs_tol=1e-9):
+        return False
+    history = [
+        {
+            "seller_message": message,
+            "buyer_decision": decision,
+            "bought": decision == "buy",
+            "quality": quality,
+        }
+        for message, decision, quality in zip(
+            messages, normalized_decisions, normalized_qualities)
+    ]
+    return {
+        **diagnostic,
+        **_pers_decline_veto_history_metrics(history),
+        "is_seller_know_cv": seller_knows,
+        "payoff": payoff,
+        "payoff_per_price": payoff / price,
+        "zero_outcome": payoff == 0.0,
+        "negative_outcome": payoff < 0.0,
+        "official_terminal_recovery": True,
+    }
+
+
 def _pers_prose_observations(rows, official):
     observations = []
     for row in rows:
@@ -2681,6 +3109,54 @@ def _pers_truth_observations(rows, official):
     return observations
 
 
+def _pers_decline_veto_observations(rows, official):
+    """Join exact buyer assignments and audit the decline-only action path."""
+    observations = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        arm = pers_decline_veto_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if completed is None else "terminal")
+        official_record = official.get((slot, gid))
+        if completed is None:
+            recovered = _pers_buyer_official_terminal(
+                official_record, diagnostic)
+            if recovered is False:
+                resolution = "invalid-final"
+            elif isinstance(recovered, dict):
+                diagnostic = recovered
+                completed = True
+                resolution = "official-terminal"
+        bought_declines = int(_number(
+            diagnostic.get("bought_explicit_declines")) or 0)
+        trace_failures = int(_number(
+            diagnostic.get("trace_failures")) or 0)
+        # The final overlay makes a candidate purchase on any expanded-parser
+        # decline impossible. Controls are unrestricted because byte identity,
+        # rather than a newly asserted wire, is their mechanism contract.
+        wire_failures = trace_failures
+        if arm == "candidate":
+            wire_failures += bought_declines
+        observations.append({
+            "slot": slot,
+            "gid": gid,
+            "arm": arm,
+            "pct": pct,
+            "completed": completed,
+            "resolution": resolution,
+            "diagnostic": diagnostic,
+            "official": (None if official_record is None else
+                         official_record.get("rating_delta")),
+            "wire_failures": wire_failures,
+        })
+    return observations
+
+
 def _summarize_pers_prose(observations):
     stats = {
         "pct": [], "official": [], "purchase_rate": [],
@@ -2713,6 +3189,51 @@ def _summarize_pers_prose(observations):
         zero = diagnostic.get("zero_outcome")
         if isinstance(zero, bool):
             stats["zero"].append(float(zero))
+    return stats
+
+
+def _summarize_pers_decline_veto(observations):
+    stats = {
+        "pct": [], "official": [], "purchase_rate": [], "purchases": [],
+        "payoff_per_price": [], "zero": [], "negative": [],
+        "explicit_declines": [], "bought_declines": [],
+        "veto_traces": 0, "eligible_turns": 0, "terminal": 0,
+        "pending": 0, "invalid": 0, "wire_failures": 0,
+        "official_missing": 0,
+    }
+    for observation in observations:
+        stats["wire_failures"] += observation["wire_failures"]
+        diagnostic = observation["diagnostic"]
+        stats["veto_traces"] += int(_number(
+            diagnostic.get("veto_traces")) or 0)
+        stats["eligible_turns"] += int(_number(
+            diagnostic.get("eligible_turns")) or 0)
+        if observation["completed"] is None:
+            field = ("invalid" if observation["resolution"] == "invalid-final"
+                     else "pending")
+            stats[field] += 1
+            continue
+        stats["terminal"] += 1
+        if observation["pct"] is not None:
+            stats["pct"].append(observation["pct"])
+        if observation["official"] is None:
+            stats["official_missing"] += 1
+        else:
+            stats["official"].append(observation["official"])
+        for source, target in (
+                ("purchase_rate", "purchase_rate"),
+                ("purchases", "purchases"),
+                ("payoff_per_price", "payoff_per_price"),
+                ("explicit_declines", "explicit_declines"),
+                ("bought_explicit_declines", "bought_declines")):
+            value = _number(diagnostic.get(source))
+            if value is not None:
+                stats[target].append(value)
+        for source, target in (("zero_outcome", "zero"),
+                               ("negative_outcome", "negative")):
+            value = diagnostic.get(source)
+            if isinstance(value, bool):
+                stats[target].append(float(value))
     return stats
 
 
@@ -2934,6 +3455,211 @@ def report_pers_truth(rows, hours, since=None, until=None, official_path=None):
     if unresolved or missing_official or contaminated or not scale_ready:
         print("PROMOTION BLOCKED: incomplete or contaminated intent-to-treat cohort")
     return 0
+
+
+def _print_pers_decline_veto_line(label, arm, stats):
+    official, n_official = _mean_ci_text(stats["official"])
+    pct, n_pct = _mean_ci_text(stats["pct"])
+    payoff, n_payoff = _mean_ci_text(stats["payoff_per_price"])
+    zero, n_zero = _mean_ci_text(stats["zero"], percent=True)
+    negative, n_negative = _mean_ci_text(stats["negative"], percent=True)
+    bought_declines, n_declines = _mean_ci_text(stats["bought_declines"])
+    print(f"{label:9} {arm:9} official-dR={official} n={n_official}; "
+          f"local-pct={pct} n={n_pct}; payoff/P={payoff} n={n_payoff}; "
+          f"zero={zero} n={n_zero}; negative={negative} n={n_negative}; "
+          f"bought-declines={bought_declines} n={n_declines}; "
+          f"terminal={stats['terminal']} pending={stats['pending']} "
+          f"badfin={stats['invalid']} official-missing={stats['official_missing']} "
+          f"eligible-turns={stats['eligible_turns']} "
+          f"veto-traces={stats['veto_traces']} "
+          f"wire-fail={stats['wire_failures']}")
+
+
+def report_pers_decline_veto(rows, hours, since=None, until=None,
+                             official_path=None):
+    """Report the exact buyer/text explicit-decline veto experiment."""
+    try:
+        official = _load_pers_official_records(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+    observations = _pers_decline_veto_observations(rows, official)
+    print("GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB, buyer/text/p=.8/"
+          "v=1.25P/u=0/20 rounds, union of seller-known and seller-blind "
+          "official configurations")
+    print("primary: official dashboard per-game rating delta, all-assigned "
+          "intent-to-treat; local percentile and fixed message diagnostics "
+          "cannot promote")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"globally first buyer-decision cohort window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned exact-cell buyer games in the window")
+        return 1
+
+    gid_slots = defaultdict(set)
+    for observation in observations:
+        slots = observation["diagnostic"].get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[observation["gid"]].update(slots)
+        else:
+            gid_slots[observation["gid"]].add(observation["slot"])
+    contaminated = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    independent = [observation for observation in observations
+                   if observation["gid"] not in contaminated]
+
+    by_slot_arm = defaultdict(list)
+    for observation in observations:
+        by_slot_arm[(observation["slot"], observation["arm"])].append(
+            observation)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        _print_pers_decline_veto_line(
+            NAMES.get(slot, slot), arm,
+            _summarize_pers_decline_veto(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [observation for observation in independent
+                    if observation["arm"] == arm]
+        if assigned:
+            pooled[arm] = _summarize_pers_decline_veto(assigned)
+            _print_pers_decline_veto_line("POOLED", arm, pooled[arm])
+    print(f"self-play guard: excluded {len(contaminated)} game id(s) observed "
+          "in multiple fleet slots; hidden opponents remain a declared risk")
+
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    official_delta = official_low = official_high = None
+    payoff_delta = zero_delta = negative_delta = None
+    if control and candidate:
+        print("pooled candidate-control (all-assigned intent-to-treat):")
+        _print_delta("OFFICIAL per-game rating delta",
+                     candidate["official"], control["official"])
+        _print_delta("local same-cell percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("payoff / price", candidate["payoff_per_price"],
+                     control["payoff_per_price"])
+        _print_delta("zero-outcome rate", candidate["zero"],
+                     control["zero"], percent=True)
+        _print_delta("negative-outcome rate", candidate["negative"],
+                     control["negative"], percent=True)
+        _print_delta("purchase rate", candidate["purchase_rate"],
+                     control["purchase_rate"], percent=True)
+        official_delta, official_low, official_high = _delta_ci(
+            candidate["official"], control["official"])
+        payoff_delta, _lo, _hi = _delta_ci(
+            candidate["payoff_per_price"], control["payoff_per_price"])
+        zero_delta, _lo, _hi = _delta_ci(candidate["zero"], control["zero"])
+        negative_delta, _lo, _hi = _delta_ci(
+            candidate["negative"], control["negative"])
+
+    print("predeclared scale diagnostics (minimum 20 official/arm at final read):")
+    scale_ready = True
+    scale_nonnegative = True
+    for price in (100.0, 10000.0, 1000000.0):
+        grouped = {
+            arm: [observation["official"] for observation in independent
+                  if observation["arm"] == arm
+                  and _number(observation["diagnostic"].get("price")) == price
+                  and observation["official"] is not None]
+            for arm in ("control", "candidate")
+        }
+        scale_ready &= all(len(grouped[arm]) >= 20
+                           for arm in ("control", "candidate"))
+        delta, lo, hi = _delta_ci(grouped["candidate"], grouped["control"])
+        scale_nonnegative &= delta is not None and delta >= 0.0
+        rendered = ("insufficient" if delta is None else
+                    f"{delta:+.4f} [{lo:+.4f}, {hi:+.4f}]"
+                    if lo is not None else f"{delta:+.4f}")
+        print(f"  price={price:g}: official candidate-control {rendered}; "
+              f"n={len(grouped['candidate'])}/{len(grouped['control'])}")
+
+    print("predeclared seller-knowledge official-cell diagnostics:")
+    knowledge_ready = True
+    knowledge_nonnegative = True
+    for knows in (True, False):
+        grouped = {
+            arm: [observation["official"] for observation in independent
+                  if observation["arm"] == arm
+                  and observation["diagnostic"].get(
+                      "is_seller_know_cv") is knows
+                  and observation["official"] is not None]
+            for arm in ("control", "candidate")
+        }
+        knowledge_ready &= bool(grouped["control"] and grouped["candidate"])
+        delta, lo, hi = _delta_ci(grouped["candidate"], grouped["control"])
+        knowledge_nonnegative &= delta is not None and delta >= 0.0
+        rendered = ("unavailable" if delta is None else
+                    f"{delta:+.4f} [{lo:+.4f}, {hi:+.4f}]"
+                    if lo is not None else f"{delta:+.4f}")
+        print(f"  is_seller_know_cv={str(knows).lower()}: {rendered}; "
+              f"n={len(grouped['candidate'])}/{len(grouped['control'])}")
+    unavailable_knowledge = sum(
+        observation["diagnostic"].get("is_seller_know_cv") not in (True, False)
+        for observation in independent)
+    print(f"  unavailable configuration labels={unavailable_knowledge}; never "
+          "infer this subgroup from messages or outcomes")
+
+    phrase_counts = Counter()
+    for observation in independent:
+        for message in observation["diagnostic"].get("seller_messages") or []:
+            if reads_as_recommendation_expanded(message) is not False:
+                continue
+            family = ("legacy-recognized"
+                      if reads_as_recommendation_legacy(message) is False
+                      else "v2-only")
+            phrase_counts[(observation["arm"], family)] += 1
+    print("predeclared decline-phrase diagnostics: "
+          + ", ".join(
+              f"{arm}/{family}={phrase_counts[(arm, family)]}"
+              for arm in ("control", "candidate")
+              for family in ("legacy-recognized", "v2-only")))
+
+    wire_failures = sum(stats["wire_failures"] for stats in pooled.values())
+    veto_traces = sum(stats["veto_traces"] for stats in pooled.values())
+    unresolved = sum(stats["pending"] + stats["invalid"]
+                     for stats in pooled.values())
+    missing_official = sum(stats["official_missing"] for stats in pooled.values())
+    print(f"mechanism failures={wire_failures}; veto traces={veto_traces}; "
+          f"unresolved={unresolved}; terminal outcomes missing official "
+          f"delta={missing_official}")
+    print("DECISION RULE: one harm look at 50 resolved official games/arm; "
+          "reject if the official 95% CI is wholly negative. Fixed final read "
+          "at 120/arm and >=20/arm/price; promote only if official CI >0, "
+          "payoff/P point >0, zero and negative-outcome points are nonpositive, "
+          "all scale and both seller-knowledge-cell points are nonnegative, "
+          "veto-traces>0, and mechanism, "
+          "self-play, unresolved, invalid, and official joins are clean.")
+    if wire_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if control and candidate:
+        harm_ready = all(len(pooled[arm]["official"]) >= 50
+                         for arm in ("control", "candidate"))
+        if harm_ready and official_high is not None and official_high < 0.0:
+            print("OFFICIAL REJECTION: >=50/arm and official-dR CI is below zero")
+            return 2
+    if (not control or not candidate or unresolved or missing_official
+            or contaminated or veto_traces <= 0):
+        print("PROMOTION BLOCKED: incomplete, contaminated, or inert "
+              "intent-to-treat cohort")
+        return 1
+    sample_ready = all(len(pooled[arm]["official"]) >= 120
+                       for arm in ("control", "candidate"))
+    promotable = (
+        sample_ready and scale_ready and scale_nonnegative
+        and knowledge_ready and knowledge_nonnegative
+        and official_delta is not None and official_low is not None
+        and official_low > 0.0
+        and payoff_delta is not None and payoff_delta > 0.0
+        and zero_delta is not None and zero_delta <= 0.0
+        and negative_delta is not None and negative_delta <= 0.0
+    )
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official-CI/payoff/bottom-tail/scale "
+          "gates are not all satisfied")
+    return 1
 
 
 def _report_price_arm(rows, hours, arm_for_gid, title, eligibility,
@@ -3784,6 +4510,207 @@ def report_hidden_min_share_veto(rows, hours, since=None, until=None,
     return 1
 
 
+def report_table_vcont_precedence(rows, hours, since=None, until=None,
+                                  official_path=None):
+    """Report direct TABLE acceptance versus observed continuation value."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = table_vcont_precedence_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        slots = diagnostic.get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[gid].update(slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic, "resolution": resolution,
+            "official": official.get((slot, gid)),
+        })
+
+    print("GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB")
+    print("triggered ITT: first nonfinal hidden offer that directly clears TABLE "
+          "while three distinct improving opponent prices imply continuation "
+          "value above accept-now surplus; low-share and next-stall accepts "
+          "remain outside the cohort")
+    print("primary: official dashboard per-game rating delta; local pooled-CDF "
+          "percentile is diagnostic only; every agreement/no-deal/walk/pending "
+          "outcome remains in its assigned arm")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"first-trigger exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned TABLE-versus-continuation opportunities in the window")
+        return 1
+
+    duplicates = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    independent = [item for item in observations if item["gid"] not in duplicates]
+    print(f"pooled dependence guard: excluded {len(duplicates)} cross-fleet "
+          "game id(s)")
+
+    def summarize(population):
+        stats = {
+            "official": [], "pct": [], "closed": [], "terminal": 0,
+            "pending": 0, "invalid": 0, "official_missing": 0,
+            "mechanism_fail": 0, "countered": 0,
+        }
+        for item in population:
+            diagnostic = item["diagnostic"]
+            stats["mechanism_fail"] += int(
+                diagnostic.get("mechanism_ok") is not True)
+            stats["countered"] += int(
+                diagnostic.get("action_decision") == "RejectOffer")
+            if item["closed"] is None:
+                field = ("invalid" if item["resolution"] == "invalid-final"
+                         else "pending")
+                stats[field] += 1
+                continue
+            stats["terminal"] += 1
+            stats["closed"].append(float(bool(item["closed"])))
+            if item["pct"] is not None:
+                stats["pct"].append(item["pct"])
+            if item["official"] is None:
+                stats["official_missing"] += 1
+            else:
+                stats["official"].append(item["official"])
+        return stats
+
+    def print_line(label, arm, stats):
+        official_text, _ = _mean_ci_text(stats["official"])
+        pct_text, _ = _mean_ci_text(stats["pct"])
+        close_text, _ = _mean_ci_text(stats["closed"], percent=True)
+        print(f"{label:18} {arm:9} official-dR={official_text} "
+              f"n={len(stats['official'])}; local-pct={pct_text} "
+              f"n={len(stats['pct'])}; close={close_text} "
+              f"n={len(stats['closed'])}; terminal={stats['terminal']} "
+              f"pending={stats['pending']} badfin={stats['invalid']} "
+              f"official-missing={stats['official_missing']} "
+              f"countered={stats['countered']} "
+              f"mechanism-fail={stats['mechanism_fail']}")
+
+    by_slot_arm = defaultdict(list)
+    for item in observations:
+        by_slot_arm[(item["slot"], item["arm"])].append(item)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        print_line(NAMES.get(slot, slot), arm, summarize(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in independent if item["arm"] == arm]
+        if assigned:
+            pooled[arm] = summarize(assigned)
+            print_line("POOLED", arm, pooled[arm])
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+
+    def stratum_value(item, field):
+        value = item["diagnostic"].get(field)
+        if field == "messages":
+            return "text" if value is True else "silent"
+        return str(value)
+
+    print("pre-treatment stratum point estimates (official candidate-control):")
+    stratum_deltas = {}
+    for field in ("role", "horizon", "own_multiplier", "scale", "messages"):
+        values = sorted({stratum_value(item, field) for item in independent})
+        for value in values:
+            population = [item for item in independent
+                          if stratum_value(item, field) == value]
+            grouped = {
+                arm: [item["official"] for item in population
+                      if item["arm"] == arm and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            stratum_deltas[(field, value)] = (delta, grouped)
+            if delta is None:
+                rendered = "official unavailable"
+            elif low is None:
+                rendered = f"{delta:+.4f} (CI unavailable)"
+            else:
+                rendered = f"{delta:+.4f} [{low:+.4f},{high:+.4f}]"
+            print(f"  {field}={value}: {rendered}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    mechanism_failures = sum(
+        item["diagnostic"].get("mechanism_ok") is not True
+        for item in observations)
+    unresolved = sum(
+        stats["pending"] + stats["invalid"] for stats in pooled.values())
+    official_missing = sum(
+        stats["official_missing"] for stats in pooled.values())
+    print("DECISION RULE: efficacy only at >=100 resolved official games/arm "
+          "and >=20/arm in each role. Promote if official-dR 95% CI >0, "
+          "close-rate lower 95% bound >-2pp, every role/horizon/own-type point "
+          "estimate is nonnegative, and mechanism failures=0. At >=30/arm "
+          "reject for official-dR 95% CI <0; reject immediately for any "
+          "mechanism failure.")
+    if mechanism_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or official_missing:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, terminal outcomes "
+              f"missing official delta={official_missing}")
+        return 1
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+
+    official_delta, official_low, official_high = _delta_ci(
+        candidate["official"], control["official"])
+    _close_delta, close_low, _close_high = _delta_ci(
+        candidate["closed"], control["closed"])
+    reached_harm_look = all(len(pooled[arm]["official"]) >= 30
+                            for arm in ("control", "candidate"))
+    if reached_harm_look and official_high is not None and official_high < 0:
+        print("OFFICIAL REJECTION: >=30/arm and official-dR 95% CI is below zero")
+        return 2
+
+    arm_minimum_met = all(len(pooled[arm]["official"]) >= 100
+                          for arm in ("control", "candidate"))
+    role_minimum_met = True
+    for value in ("buyer", "seller"):
+        _delta, grouped = stratum_deltas.get(("role", value), (None, {}))
+        role_minimum_met &= bool(grouped) and all(
+            len(grouped[arm]) >= 20 for arm in ("control", "candidate"))
+    protected_strata = ("role", "horizon", "own_multiplier")
+    stratum_nonnegative = all(
+        delta is not None and delta >= 0
+        for (field, _value), (delta, _grouped) in stratum_deltas.items()
+        if field in protected_strata)
+    promotable = (
+        arm_minimum_met and role_minimum_met and stratum_nonnegative
+        and official_delta is not None and official_low is not None
+        and official_low > 0 and close_low is not None and close_low > -0.02)
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official-CI/close/stratum gates are not "
+          "all satisfied")
+    return 1
+
+
 def report_barg_msg(rows, hours):
     """Report the primary silence/text contrast and each assigned text register."""
     arms = defaultdict(lambda: defaultdict(list))
@@ -3857,9 +4784,9 @@ def main() -> int:
                              "open-claim-official", "hidden-floor",
                              "hidden-policy", "hi-first-offer", "hi-extreme-open",
                              "hi-terminal", "stall-current-break",
-                             "hidden-min-share-veto",
+                             "hidden-min-share-veto", "table-vcont-precedence",
                              "fp-complete", "pers-selectivity", "pers-prose",
-                             "pers-truth",
+                             "pers-truth", "pers-decline-veto",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
                          "keeps the legacy GLEE_NEGO_ZOPA_AB report")
@@ -3869,8 +4796,10 @@ def main() -> int:
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
                    "hi-terminal", "stall-current-break", "hidden-min-share-veto",
+                   "table-vcont-precedence",
                    "fp-complete",
-                   "pers-selectivity", "pers-prose", "pers-truth"):
+                   "pers-selectivity", "pers-prose", "pers-truth",
+                   "pers-decline-veto"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
             ap.error("--until must be greater than --since")
@@ -3884,10 +4813,12 @@ def main() -> int:
             "hi-terminal": hi_terminal_games,
             "stall-current-break": stall_current_break_games,
             "hidden-min-share-veto": hidden_min_share_veto_games,
+            "table-vcont-precedence": table_vcont_precedence_games,
             "fp-complete": fp_complete_games,
             "pers-selectivity": pers_selectivity_games,
             "pers-prose": pers_prose_games,
             "pers-truth": pers_truth_games,
+            "pers-decline-veto": pers_decline_veto_games,
         }[args.ab]
         reporter = {
             "open-claim": report_open_claim,
@@ -3899,17 +4830,21 @@ def main() -> int:
             "hi-terminal": report_hi_terminal,
             "stall-current-break": report_stall_current_break,
             "hidden-min-share-veto": report_hidden_min_share_veto,
+            "table-vcont-precedence": report_table_vcont_precedence,
             "fp-complete": report_fp_complete,
             "pers-selectivity": report_pers_selectivity,
             "pers-prose": report_pers_prose,
             "pers-truth": report_pers_truth,
+            "pers-decline-veto": report_pers_decline_veto,
         }[args.ab]
         price_rows = [r for r in cohort(
             args.hours, since=args.since, until=args.until)
             if not keep or r[0] in keep]
         extra = ({"official_path": args.official_json}
-                 if args.ab in ("pers-prose", "pers-truth", "stall-current-break",
-                                "hidden-min-share-veto") else {})
+                 if args.ab in ("pers-prose", "pers-truth",
+                                "pers-decline-veto", "stall-current-break",
+                                "hidden-min-share-veto",
+                                "table-vcont-precedence") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)
 

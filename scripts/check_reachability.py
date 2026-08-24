@@ -287,6 +287,27 @@ def _p_p08_r125_binary_truth(game, p):
             and rounds == 20)
 
 
+def _p_p08_r125_text_decline_veto(game, p):
+    """Pre-action scope of the exact buyer/text decline-veto experiment."""
+    state = game.get("game_state") or {}
+    seat = game.get("your_player")
+    try:
+        price = float(state.get("product_price"))
+        ratio = float(state.get("v")) / price
+        prior = float(state.get("p"))
+        low_value = float(state.get("u"))
+        rounds = int(state.get("total_rounds"))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return False
+    return ((game.get("valid_actions") or {}).get("type") == "buyer_decision"
+            and seat == "player_2"
+            and state.get("seller_message_type") == "text"
+            and abs(prior - 0.8) <= 1e-9
+            and abs(ratio - 1.25) <= 1e-9
+            and abs(low_value) <= 1e-9
+            and rounds == 20)
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -385,6 +406,9 @@ KNOWN = {
     "GLEE_PERS_P08_R125_BINARY_TRUTH_AB": (
         "persuasion", ("p08_r125_binary_truth",),
         _p_p08_r125_binary_truth),
+    "GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB": (
+        "persuasion", ("p08_r125_text_decline_veto",),
+        _p_p08_r125_text_decline_veto),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those
@@ -444,7 +468,31 @@ def _collect_states(field, draws, flags, families):
         grng = random.Random(game_seed)
         if family == "persuasion":
             from sim.opponents import get
-            opponent = get("trust_tracking_buyer")
+            if seat == "player_1":
+                opponent = get("trust_tracking_buyer")
+            else:
+                # Buyer gates need a seller that reaches both positive and
+                # measured V2-only negative text.  The registered honest seller
+                # says "would not recommend", which the legacy control already
+                # parses correctly and therefore cannot prove a final decline
+                # veto changes wire behavior.  This local reachability opponent
+                # emits the authenticated failure phrase without changing the
+                # arena or production opponent model.
+                honest = get("honest_seller")
+
+                def exact_decline_seller(game):
+                    state = game.get("game_state") or {}
+                    quality = str(state.get("current_quality") or "").lower()
+                    action_type = (game.get("valid_actions") or {}).get("type")
+                    if action_type == "seller_message":
+                        return {"message": ("Recommended." if quality == "high"
+                                            else "Not recommended.")}
+                    if action_type == "seller_recommendation":
+                        return {"decision": "yes" if quality == "high" else "no"}
+                    return honest(game)
+
+                exact_decline_seller.name = "exact_decline_seller"
+                opponent = exact_decline_seller
         else:
             opponent = field.sample_opponent(random.Random(game_seed + 1))
         params = dict(params)
@@ -576,7 +624,8 @@ def main() -> int:
         draws = []
         for _ in range(args.n):
             config = sample_config("persuasion", rng)
-            draws.append(("persuasion", config.params, "player_1",
+            seat = "player_1" if rng.getrandbits(1) else "player_2"
+            draws.append(("persuasion", config.params, seat,
                           rng.randrange(2 ** 31)))
         field = None
     else:

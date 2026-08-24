@@ -85,9 +85,12 @@ def _negated(text: str, at: int) -> bool:
     return any(word in window for word in _NEGATORS)
 
 
-def _score(text: str) -> float:
+def _score(text: str, *, expanded_declines: bool | None = None) -> float:
+    if expanded_declines is None:
+        expanded_declines = _parse_v2()
     total = 0.0
-    for weight, phrases in (_NEGATIVE + (_NEGATIVE_V2 if _parse_v2() else ())):
+    for weight, phrases in (
+            _NEGATIVE + (_NEGATIVE_V2 if expanded_declines else ())):
         for phrase in phrases:
             if phrase in text:
                 total -= weight
@@ -124,7 +127,7 @@ def _parse_v2() -> bool:
     return runtime_flags.enabled("GLEE_PERS_PARSE_V2")
 
 
-def reads_as_recommendation(message: str) -> bool | None:
+def _reads_as_recommendation(message: str, *, expanded_declines: bool) -> bool | None:
     """Does this seller message advocate buying?
 
     Returns True (buy), False (do not), or None when the text carries no usable
@@ -145,12 +148,36 @@ def reads_as_recommendation(message: str) -> bool | None:
     if len(parts) > 1:
         # Everything up to the final pivot is a concession; the last clause is
         # the position being argued for.
-        score = _score(parts[-1]) + _PRE_CONTRAST_WEIGHT * sum(_score(p) for p in parts[:-1])
+        score = _score(parts[-1], expanded_declines=expanded_declines)
+        score += _PRE_CONTRAST_WEIGHT * sum(
+            _score(part, expanded_declines=expanded_declines)
+            for part in parts[:-1])
     else:
-        score = _score(text)
+        score = _score(text, expanded_declines=expanded_declines)
 
     if score > 0.5:
         return True
     if score < -0.5:
         return False
     return None
+
+
+def reads_as_recommendation(message: str) -> bool | None:
+    """Read a seller message through the currently configured parser."""
+    return _reads_as_recommendation(
+        message, expanded_declines=_parse_v2())
+
+
+def reads_as_recommendation_expanded(message: str) -> bool | None:
+    """Read with the measured expanded decline table, independent of flags.
+
+    This pure helper exists for narrowly randomized buyer arms.  It must not
+    turn on ``GLEE_PERS_PARSE_V2`` globally: doing that would change parsing in
+    every text cell and make the control cease to be the live stack.
+    """
+    return _reads_as_recommendation(message, expanded_declines=True)
+
+
+def reads_as_recommendation_legacy(message: str) -> bool | None:
+    """Read with the byte-identical legacy phrase table, ignoring live flags."""
+    return _reads_as_recommendation(message, expanded_declines=False)

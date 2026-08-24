@@ -29,7 +29,10 @@ import math
 from .. import runtime_flags
 
 from ..actions import _num
-from ..text import reads_as_recommendation
+from ..text import (
+    reads_as_recommendation,
+    reads_as_recommendation_expanded,
+)
 
 # Weight of the prior in the buyer's honesty estimate, in pseudo-observations.
 # Keeps a single unlucky round from swinging the posterior to an extreme.
@@ -403,6 +406,10 @@ PERS_P08_R125_PROSE_SALT = "pers_p08_r125_prose_v1|"
 #: Independent assignment for the disjoint p=.8 seller binary truth arm.
 PERS_P08_R125_BINARY_TRUTH_SALT = "pers_p08_r125_binary_truth_v1|"
 
+#: Independent assignment for the exact buyer/text explicit-decline veto.
+PERS_P08_R125_TEXT_DECLINE_VETO_SALT = (
+    "pers_p08_r125_text_decline_veto_v1|")
+
 #: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
 #: small (231 states at T=20) and the bucketing is what keeps this off the hot
 #: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
@@ -437,6 +444,47 @@ def p08_r125_binary_truth_assignment(game_id) -> bool | None:
     digest = _hashlib.sha256(
         (PERS_P08_R125_BINARY_TRUTH_SALT + gid).encode()).hexdigest()
     return bool(int(digest, 16) & 1)
+
+
+def p08_r125_text_decline_veto_assignment(game_id) -> bool | None:
+    """Stable exact-cell buyer veto assignment, independent of live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(
+        (PERS_P08_R125_TEXT_DECLINE_VETO_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def _p08_r125_text_decline_veto_candidate(game: dict) -> bool:
+    """Whether this turn is assigned to the exact buyer decline-veto arm."""
+    if not runtime_flags.enabled("GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB"):
+        return False
+    state = game.get("game_state") or {}
+    seat = game.get("your_player")
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            # Persuasion roles are structurally player_1=seller/player_2=buyer;
+            # the documented active state carries neither role keys nor the
+            # seller-knowledge configuration flag.
+            or seat != "player_2"
+            or state.get("seller_message_type") != "text"):
+        return False
+    price = _num(state.get("product_price"), 0.0)
+    prior = _num(state.get("p"), -1.0)
+    high_value = _num(state.get("v"), 0.0)
+    low_value = _num(state.get("u"), math.nan)
+    rounds_value = _num(state.get("total_rounds"), 0.0)
+    if (not all(math.isfinite(value) for value in
+                (price, prior, high_value, low_value, rounds_value))
+            or price <= 0.0
+            or abs(prior - 0.8) > 1e-9
+            or abs(high_value / price - 1.25) > 1e-9
+            or abs(low_value) > 1e-9
+            or int(rounds_value) != 20):
+        return False
+    return p08_r125_text_decline_veto_assignment(
+        game.get("game_id")) is True
 
 
 def _p08_r125_binary_truth_candidate(game: dict, state: dict, price: float,
@@ -1244,6 +1292,30 @@ def decide(game: dict, cfg) -> dict:
         p["buy"] = True
         p["rank_buy_arm"] = True
         p.setdefault("gates_fired", []).append("rank_buy")
+
+    # EXACT TEXT DECLINE VETO (default OFF, stable per-game treatment).
+    #
+    # This sits after every buyer rule, including rank-buy, so no optional
+    # posterior or rank path can revive an explicit instruction not to buy.
+    # It deliberately uses the expanded decline lexicon without enabling the
+    # broad PARSE_V2/PARSE_TRI flags: the hash control must remain the complete
+    # live buyer-v2 stack byte-for-byte, including its legacy handling of
+    # abstentions and historical messages.  Across both seller-knowledge
+    # configurations, 395 completed exact games contained live purchases of
+    # expanded-parser declines in 22 games / 44 turns; all 44 revealed low.
+    # The within-configuration fixed-stream diagnostic was +0.1114P and +0.0172
+    # local percentile over all games, while authenticated game
+    # f2bed4f4 bought three "Not recommended." lows, finished at zero, and lost
+    # 4.0 official rating.  Those measurements motivate this randomized arm;
+    # seller adaptation means they do not prove its official ITT effect.
+    if (p.get("buy")
+            and _p08_r125_text_decline_veto_candidate(game)
+            and reads_as_recommendation_expanded(
+                (game.get("game_state") or {}).get("seller_message")) is False):
+        p["buy"] = False
+        p["p08_r125_text_decline_veto"] = True
+        p.setdefault("gates_fired", []).append(
+            "p08_r125_text_decline_veto")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
