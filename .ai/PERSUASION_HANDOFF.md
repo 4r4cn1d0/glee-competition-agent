@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 21:08 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 21:11 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -68,6 +68,26 @@ and retry in place every 60 seconds. Consequently there are no post-restart
 game starts on any slot and no experiment exposure can accrue during
 `[1787584628, approximately 1787586428)`. Do not restart again: waiting for this
 specific deadline is server-enforced recovery, not passive experiment waiting.
+
+## Binary-truth live-reach audit
+
+The absence of a live truth assignment is not currently a gate failure. Across
+the armed pre-restart windows there were 300 all-family game starts: 269 on
+Test 2, 19 on Agent 5, and 12 on Test 4. They yielded 101 persuasion games and
+23 binary-seller first exposures, but no exact target. Outcome-independent live
+arrival evidence over the prior 6h was 18 exact targets / 5,976 starts
+(`0.301%`), closely matching the configuration-grid rate `0.278%`; zero targets
+in 300 starts therefore has probability about `43.4%`.
+
+Production, reader, and reachability predicates were independently replayed and
+match on seller/player 1, binary mode, known CV, p=.8, v/P=1.25, u=0, 20 rounds,
+and the stable salt. The checker and reader counts must not be compared raw:
+checker `eligible` counts target low-quality turns, while the reader cohorts
+target games at the first recommendation. Escalate a reach failure only if
+there are still zero targets after 1,077 activated all-family starts (below 5%
+under live support), or below 1% after 1,656. Once exact games arrive, zero
+candidate-low traces after five exact assignments is separately suspicious and
+requires a wire audit. Until either threshold, change no code or reader.
 
 ## Rejected rank-gate mechanism
 
