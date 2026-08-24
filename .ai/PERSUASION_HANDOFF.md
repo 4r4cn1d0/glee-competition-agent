@@ -1,9 +1,37 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 04:00 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 04:20 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 04:19 monitoring checkpoint — authenticated persuasion rank 3
+
+- The authenticated persuasion board reports Test 4 at official rank `3` with
+  rating `2474.35`. HAWK is rank 2 at `2500.97` (gap `26.62`) and gill bates is
+  rank 1 at `2561.01` (gap `86.66`). Agent 5 is immediately behind our account
+  leader at `2460.23`. Test 4's row position is lower than three because the
+  board also displays higher-rated agents that are unranked/non-account-best;
+  the API rank field itself is `3`.
+- Like-for-like Test 4 movement from the rollout baseline is `+53.15` over 157
+  added persuasion games. Agent 5 is `+57.83` over 154 games. This achieves the
+  current persuasion top-three snapshot, but remains observational and inside
+  the measured roughly `+/-125` cross-agent noise range; it is not an isolated
+  causal estimate of the veto and does not justify another policy change.
+- Natural all-family replacements were clean: Test 3 launched PID `48229` at
+  04:05:23 after a completed drain, Test 4 launched PID `48235` at 04:05:34
+  after a completed drain, and Agent 5 launched PID `48295` at 04:06:38 with
+  zero games abandoned. Their deterministic profiles, all-three-family queues,
+  LLM-off mode, persuasion veto `1`, and all ten persuasion A/B flags `0` were
+  preserved. Test 1 PID `37884` and Test 2 PID `38947` remained healthy and
+  were each naturally draining one active game.
+- The mechanism extension is clean through `35/35/35`
+  eligible/fired/action-changed events in 20 affected games across 17,176
+  post-boundary persuasion turns / 866 assigned games. Exact OFF/ON replay,
+  scope, parser, action, source, and sole-gate checks all passed. Every affected
+  game is authenticated completed; no persuasion error, affected-game timeout,
+  legacy gate, or unexplained plan delta was observed. Local collector evidence
+  covers 580 games; locally missing records remain backlog, not imputed losses.
 
 ## 03:10 deterministic whole-policy rollout — live on all five complete agents
 
