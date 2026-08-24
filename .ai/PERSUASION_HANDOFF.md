@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 21:11 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 21:30 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,12 +12,11 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official board after the 20:47 fleet restart incident: account-best Test 2 is
-  persuasion rank 5 at `2333.6`, `102.4` behind rank 3 expert, `144.6` behind
-  rank 2 Tiberius, and `222.2` behind leader gill bates. Overall Test 2 is rank
-  5 at `2305.4`, `50.0` behind rank 3 Athena. This movement is not truth-arm
-  evidence: the all-assigned readers still find no eligible games on any
-  activated host.
+- Authenticated board at 21:29: account-best Test 2 is persuasion rank 5 at
+  `2358.3`, `60.6` behind rank 3 expert, `136.7` behind rank 2 Tiberius, and
+  `197.5` behind leader gill bates. Overall Test 2 is rank 5 at `2298.9`,
+  `58.2` behind rank 3 Athena. This movement is not truth-arm evidence: the
+  all-assigned readers still find no exact eligible game on any activated host.
 - The prose arm remains live only on Test 1, Test 4, and Agent 5 from
   `T0=1787575521`. It is absent on Test 2 and Test 3.
 - The binary truth arm is live on Test 2 from clean arms mtime `T0=1787582397`
@@ -35,7 +34,7 @@ their code, configuration, experiments, or fleet flags.
 - Before any binary-truth assignment or outcome existed, the research boundary
   was prospectively expanded to Agent 5 and Test 4. Exact-stack preflight on
   both reported `eligible=32/fired=18/action_changed=18` over 800 games. At the
-  20:50 read, host-specific all-assigned readers reported zero exact eligible
+  21:30 read, host-specific all-assigned readers reported zero exact eligible
   games since each clean T0, so the live mechanism is not yet behavior-verified
   and no rating movement may be attributed to it. Test 3 remains protected.
 
@@ -62,22 +61,26 @@ and can erase roughly eight rating points per affected game.
 
 The restart also triggered the competition's crash-loop protection on every
 slot. Each new agent process received HTTP 403 because its last three games had
-timed out on its turn; queue joins are suspended until the server-provided
-per-slot deadlines between 21:17:02 and 21:17:08 IST. The processes remain up
-and retry in place every 60 seconds. Consequently there are no post-restart
-game starts on any slot and no experiment exposure can accrue during
-`[1787584628, approximately 1787586428)`. Do not restart again: waiting for this
-specific deadline is server-enforced recovery, not passive experiment waiting.
+timed out on its turn; queue joins were suspended until the server-provided
+per-slot deadlines between 21:17:02 and 21:17:08 IST. No experiment exposure
+could accrue during `[1787584628, 1787586428)`. The processes retried in place
+without another restart. Fresh error-free turns appeared on champion and
+randomized at `1787586470.929` and `1787586471.399`, and on hardliner,
+conceder, and composite by `1787586508.658`; subsequent traffic reached at
+least 24--42 new games per slot. This verifies natural queue recovery on all
+five slots. Do not restart again: the delay was server-enforced recovery, not
+passive experiment waiting.
 
 ## Binary-truth live-reach audit
 
-The absence of a live truth assignment is not currently a gate failure. Across
-the armed pre-restart windows there were 300 all-family game starts: 269 on
-Test 2, 19 on Agent 5, and 12 on Test 4. They yielded 101 persuasion games and
-23 binary-seller first exposures, but no exact target. Outcome-independent live
-arrival evidence over the prior 6h was 18 exact targets / 5,976 starts
-(`0.301%`), closely matching the configuration-grid rate `0.278%`; zero targets
-in 300 starts therefore has probability about `43.4%`.
+The absence of a live truth assignment is not currently a gate failure. Through
+21:30 there were 381 all-family first-turn starts since the host-specific T0s:
+291 on Test 2, 43 on Agent 5, and 47 on Test 4. They yielded 127 persuasion
+games and 25 binary-seller first exposures, but no exact target.
+Outcome-independent live arrival evidence over the prior 6h was 18 exact
+targets / 5,976 starts (`0.301%`), closely matching the configuration-grid rate
+`0.278%`; zero targets in 381 starts therefore still has probability about
+`31.7%`.
 
 Production, reader, and reachability predicates were independently replayed and
 match on seller/player 1, binary mode, known CV, p=.8, v/P=1.25, u=0, 20 rounds,
