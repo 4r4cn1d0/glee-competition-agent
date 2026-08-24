@@ -1354,3 +1354,21 @@ activation, assignment, or outcome.
   4 values above were written to its live overlay; activation waits for the
   named zero-game cycle to load that commit. Test 1, Test 2, Test 3, and Agent 5
   remain unarmed for this bargaining experiment.
+
+## STOPPED — fleet-wide deterministic specialist cutover (25 Aug)
+
+- **Operator decision / stop boundary**: every randomized and cell-specific
+  experiment was explicitly set to zero fleet-wide at
+  `T1=1787600396` (2026-08-25 01:09:56 IST). All prospective readers must cap
+  their cohorts at this T1; games spanning it remain in their original ITT but
+  no later game may enter. No stopped experiment may be interpreted as promoted.
+- **Deterministic topology**: Test 2 and Test 3 are bargaining specialists under
+  `hardliner`; Agent 5 is a negotiation specialist under `hardliner`; Test 1 is
+  a negotiation specialist under `champion`; Test 4 is a persuasion specialist
+  under `conceder`. LLM mode is off. Every arm overlay is byte-identical, with
+  every `*_AB`, probe router, and observed-gain trial explicitly zero.
+- **Deployment safety**: all five named cycles were requested. Existing
+  processes continue their pre-cutover launch shape until a zero-game/natural
+  shift boundary; each replacement must be verified from its actual process
+  command and launch record before the topology is called live. No process may
+  be signalled while holding a game.

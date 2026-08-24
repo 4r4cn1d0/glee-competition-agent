@@ -459,3 +459,10 @@ instrument is worth more than any single flag. Bargaining results are unaffected
   hidden unknown-horizon extreme-opening arm. It was explicitly set to zero on
   25 Aug, leaving the account's best agent on the deterministic champion stack
   while four non-leading slots retain scoped research arms.
+
+### Operator supersession
+- At `1787600396`, the operator ended the research-host allocation: all enabled
+  A/B arms were explicitly zeroed. The subsequent deployment target is a
+  deterministic specialist fleet, not five identical champion processes:
+  bargaining receives two hardliner slots, negotiation receives champion and
+  hardliner slots, and persuasion receives one conceder slot.
