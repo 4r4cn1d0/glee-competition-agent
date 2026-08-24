@@ -112,6 +112,100 @@
         "seller_payoff": 13000000,
         "buyer_payoff": -4250000
       }
+    },
+    {
+      "source": "authenticated-dashboard-transcript",
+      "family": "persuasion",
+      "role": "seller",
+      "terminal": true,
+      "slot": "champion",
+      "game_id": "6dc339a2-502a-437e-88ff-7747939cabcc",
+      "rating_delta": -2.8,
+      "dashboard_completed_at": "2026-08-24 20:07 IST",
+      "join_audit": {
+        "local_first_ts": 1787582090.048146,
+        "local_last_ts": 1787582215.0723772,
+        "opponent": "hidden",
+        "basis": "unique minute, exact setup, exact 20-message transcript, exact terminal payoffs"
+      },
+      "persuasion": {
+        "price": 1000000,
+        "p": 0.8,
+        "v": 1250000,
+        "u": 0,
+        "mode": "text",
+        "rounds": 20,
+        "seller_messages": [
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. You can check that against the calls I have made so far.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "This is one of the better ones. You can check that against the calls I have made so far."
+        ],
+        "qualities": [
+          "high", "high", "high", "high", "high", "high", "low", "high", "high", "high",
+          "low", "high", "high", "high", "high", "high", "low", "high", "high", "high"
+        ],
+        "buyer_decisions": [
+          "buy", "buy", "buy", "pass", "pass", "buy", "pass", "pass", "pass", "pass",
+          "pass", "pass", "buy", "pass", "pass", "buy", "pass", "buy", "buy", "pass"
+        ],
+        "seller_payoff": 8000000,
+        "buyer_payoff": 2000000
+      }
+    },
+    {
+      "source": "authenticated-dashboard-transcript",
+      "family": "persuasion",
+      "role": "seller",
+      "terminal": true,
+      "slot": "champion",
+      "game_id": "3b47502f-2f42-478d-8215-d7ac21258bce",
+      "rating_delta": 4.6,
+      "dashboard_completed_at": "2026-08-24 20:13 IST",
+      "join_audit": {
+        "local_first_ts": 1787582521.8280692,
+        "local_last_ts": 1787582578.4220438,
+        "opponent": "king",
+        "basis": "unique minute, exact setup, exact 20-message transcript, exact terminal payoffs"
+      },
+      "persuasion": {
+        "price": 1000000,
+        "p": 0.8,
+        "v": 1250000,
+        "u": 0,
+        "mode": "text",
+        "rounds": 20,
+        "seller_messages": [
+          "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes",
+          "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes", "yes"
+        ],
+        "qualities": [
+          "high", "high", "high", "high", "high", "high", "high", "high", "high", "high",
+          "high", "high", "low", "high", "high", "high", "high", "high", "high", "high"
+        ],
+        "buyer_decisions": [
+          "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy",
+          "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "pass"
+        ],
+        "seller_payoff": 19000000,
+        "buyer_payoff": 3500000
+      }
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 20:10 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 20:19 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -106,6 +106,19 @@ purchased 13/20 (7 high, 6 low), producing seller payoff `13P` and buyer payoff
 therefore have mean official delta `-2.85` and mean purchase rate `42.5%`, with
 no zeros or wire failures. There are still no official controls and n=2 is far
 below every decision boundary, so this is monitoring evidence only.
+
+Candidate game `6dc339a2-502a-437e-88ff-7747939cabcc` on Test 1 is the third
+authenticated treatment outcome. It emitted approved prose on all 20 rounds,
+sold 8/20 (all eight bought units were high), earned seller payoff `8P`, and
+received official delta `-2.8`. The first completed control,
+`3b47502f-2f42-478d-8215-d7ac21258bce` against named opponent `king`, emitted
+literal `yes` on all 20 rounds, sold 19/20, earned `19P`, and received `+4.6`
+official. Pooled candidate-only official mean is now `-2.8333` (n=3) versus
+control `+4.6` (n=1), an unpowered raw difference of `-7.4333`; the 95% CI is
+undefined because control n<2. The precommitted harm look is at 50 official
+games per arm, so opponent/quality-draw variance in this first control cannot
+support disarm. Mechanism failures, unresolved outcomes, and missing official
+deltas are all zero in the four authenticated records.
 
 Both server-completed games were initially absent from at least one local final
 stream. Their complete authenticated 20-round transcripts, exact setup,
