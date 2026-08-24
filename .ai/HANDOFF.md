@@ -3,6 +3,109 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 02:31 IST — deterministic persuasion component, default OFF
+
+Persuasion source commit `e6ca9c6`, with evidence-comment correction `c085878`
+(local only; not pushed or deployed), adds
+`GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1`.  It follows the current complete
+policy and can make exactly one final change: buyer-v2's existing BUY becomes
+PASS when the current text is an expanded-parser explicit decline or the
+documented binary wire is strict `no`.  It is deterministic across games,
+reads no game id, assigns no arm, targets no numeric cell, does not reinterpret
+history, and never changes PASS to BUY.  The check is last, so an older optional
+buyer overlay cannot revive the purchase.  Unset/`0` does not even consult the
+expanded parser and is byte-identical to the pre-commit strategy.
+
+Recommended complete persuasion component for the deployment owner:
+
+- Retain the measured broad baseline: `GLEE_PERS_BUYER_V2=1`,
+  `GLEE_PERS_BUYER_TIGHT_PRIOR=.65`, `GLEE_PERS_HONEST_ROUNDS=99`,
+  `GLEE_PERS_LIE_SHADING=0`, `GLEE_PERS_KEEP_MSG=1`,
+  `GLEE_PERS_MSG_STYLE=token`, `GLEE_PERS_TOKEN_MAX_P=0`, LLM off, and every
+  historical persuasion `*_AB`, rank, backload, broad parser, selectivity, LCB,
+  and DP flag at `0`.
+- Add `GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1=1`.  This is a buyer safety
+  upgrade, not a seller-profile override.  Explicit `LIE_SHADING=0` and
+  `HONEST_ROUNDS=99` keep all named profiles on the same recommended seller
+  behavior: honesty when lying is punished and all-push when the prior makes a
+  sale free.
+
+Evidence and all-outcome accounting:
+
+- The broad seller baseline remains the strongest measured deterministic
+  policy.  Across 8,369 seller games against 70 opponents, punished-cell
+  honesty scored diagnostic local percentile `.6485`; never-lie beat shading
+  by `+.0457`, 95% CI `[+.0030,+.0883]`.  Buyer-v2's corrected fixed-stream
+  replay retained 3,722 games and improved payoff by `+.481P/game`, 95% CI
+  `[+.403,+.560]`, while negative games fell from 17.5% to 13.2%.  That replay
+  had 3,982/4,000 control fidelity and found no adaptation among 68 checked
+  sellers; it remains offline evidence, not an official causal estimate.
+- Frozen all-five first-buyer-turn cohort
+  `[1787570799,1787596351.4207911)` began with 1,958 assignments, excluded 15
+  named self-play games and nine actually armed text-veto candidates, and
+  retained 1,934 clean assignments: 1,925 completed, six active and three
+  no-deal.  No cross-slot game/result duplicate was found.  In 981 completed
+  text games (987 assigned: four active and two no-deal), the
+  final text veto would remove 156 actual purchases in 65 games; revealed
+  quality was 155 LOW and one HIGH.  The 129 changes requiring the expanded
+  phrases were 129/129 LOW.  The all-text fixed-stream diagnostic was
+  `+.156983P/game`, 95% CI `[+.103054,+.210912]`, and `+.009012` local
+  percentile, CI `[+.005948,+.012076]`; nonpositive games moved 420 to 401,
+  negatives 110 to 99, and severe outcomes at or below `-2P` 63 to 61.
+- A separately decontaminated binary audit at the same frozen boundary began
+  with 953 assigned buyer/binary games, removed six named self-play games, and
+  retained all 947 clean assignments: 944 completed, two active and one
+  no-deal.  Strict binary `no` would change 20 games / 20 turns, all 20 revealed
+  LOW and zero HIGH, with every slot represented (champion/composite/conceder/
+  hardliner/randomized `4/5/5/3/3`).  The
+  completed-game fixed-stream diagnostic was `+.02119P/game`, CI
+  `[+.01200,+.03038]`, and `+.000983` local percentile, CI
+  `[+.000161,+.001806]`.  Most support was p=.33/r3 (13) and p=.5/r2 (6); the
+  p=.8/r4 subgroup has only one observation.
+- These changed-turn quality ratios are purchase-selected: passed quality and
+  the seller's response to future refusals are not observed.  The local replay
+  intervals are therefore diagnostic only.  The scoped official JSON has just
+  five persuasion joins total, only one buyer join (text) and zero binary-buyer
+  joins; there is no authenticated candidate-control official rating delta for
+  this new deterministic policy.  Authenticated game `f2bed4f4-...` does prove
+  the underlying defect occurred: three purchased `Not recommended` lows,
+  zero payoff and `-4.0` official rating.  Persuasion's roughly `+/-125` rating
+  noise across identical agents rules out cross-slot rating comparison as
+  substitute causal evidence.
+- A broader tri-state rewrite was rejected before commit or deployment.  On
+  1,002 text games it changed 97 games / 550 turns, including 372 unsafe
+  PASS-to-BUY moves whose qualities were unobserved.  The shipped guard is the
+  one-directional subset only.
+
+Mechanism verification: exact current champion-stack reachability over 800
+seeded persuasion games was `eligible=763`, `fired=763`,
+`action_changed=763`.  An independent 4,000-state property grid found 273
+changes, all and only explicit-decline BUY-to-PASS, with zero violations.
+Comparison across 26,236 synthesized messages found zero legacy/default parser
+verdict changes; only the intended expanded decline overlaps changed.
+Focused tests passed 142/142 and persuasion-wide review passed 380/380.  The
+full suite finished 1,797 passed / three unrelated failures: the two declared
+bargaining failures (stale 450-vs-468 horizon expectation and live bargaining
+grid drift), plus a live-log negotiation grid-drift alarm.  No persuasion test
+failed.
+
+Portfolio backup: existing deterministic seller `GLEE_PERS_DP_V3=1` with
+`GLEE_PERS_DP_V3_MARGIN=.25` is the only meaningfully distinct broad candidate
+with positive evidence: offline diagnostic percentile `+.0176`, CI
+`[+.0162,+.0190]`, positive in 13/30 cells and negative in none.  Its policy
+model and evaluation CDF are in-sample, seller adaptation is absent, and there
+is no authenticated official causal result.  It is research-only lower-slot
+diversity, not a promotion-grade replacement.  No independently supported
+alternative buyer policy exists: backload, seller DP-v1, LCB, rank-buy, broad
+selectivity and LLM wording all measured negative or failed identification.
+
+Deployment boundary: this task changed only persuasion source, parser support,
+reachability support, tests, and this handoff.  It did not edit `arms.json`,
+`control.json`, `.env`, logs, supervisor/process state, bargaining behavior, or
+negotiation behavior.  It did not cycle, deploy, arm, randomize, or push an
+agent.  The main deployment chat owns any activation and must keep all five
+agents eligible for all three families.
+
 ## 2026-08-24 — direct-leader opening copy activated on research slots
 
 Codex activated `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1` on `champion`,
