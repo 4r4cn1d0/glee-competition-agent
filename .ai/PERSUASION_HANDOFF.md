@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 19:04 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 19:12 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,11 +12,11 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official persuasion board at the latest authenticated refresh: Test 2
-  `2435.2`, rank 3 of 47 ranked agents (top 6.4%, about the 95.7th percentile),
-  8.6 behind rank 2 HAWK and 120.6 behind leader gill bates. Overall Test 2 is
-  rank 5 at `2317.7`, 45.6 behind rank 3 Clod. The prose arm remains absent on
-  both Test 2 and Test 3.
+- Official board at the 19:10 authenticated refresh: account-best Test 1 is
+  persuasion rank 2 of 76 at `2449.4` (top 2.7%), `106.4` behind leader gill
+  bates and `12.6` ahead of rank 3 expert. Test 2's persuasion component is
+  `2436.3`; it is the account's overall rank-5 agent at `2328.9`, `29.9` behind
+  rank 3 Clod. The prose arm remains absent on both Test 2 and Test 3.
 
 ## Rejected rank-gate mechanism
 
@@ -113,8 +113,10 @@ first caught lie. The current stack sometimes does neither: it can recommend
 every low at the p*v==price knife edge, and the legacy parser has bought literal
 `Not recommended.` messages (373 historical purchases, all 373 low).
 
-`GLEE_PERS_P08_R125_BINARY_TRUTH_AB` is now implemented default OFF and remains
-inert pending the full suite, commit/push, and Test 2's natural load. It targets
+`GLEE_PERS_P08_R125_BINARY_TRUTH_AB` is implemented default OFF in pushed commit
+`8372236` and remains inert pending Test 2's natural load. Test 2 rotated at
+19:02:25 IST, before that commit was pushed, so it must not be armed until its
+next supervisor-managed rotation. It targets
 only the binary counterpart of the prose cell: seller, p=.8, visible v/u,
 v=1.25P, u=0, 20 rounds. Hash controls are full-object identical; candidates
 say `yes` on high and `no` on low. Test 2 exact-stack reachability over 800
