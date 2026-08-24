@@ -96,7 +96,7 @@ class GameLog:
                 ("ts", "round", "phase", "action_type", "action", "plan",
                  "source", "error", "stage")}
 
-    def _turns_for_games(self, game_ids) -> dict[str, list[dict]]:
+    def turns_for_games(self, game_ids) -> dict[str, list[dict]]:
         """Read the append-only turn log once for a batch of final states."""
         wanted = {str(game_id) for game_id in game_ids}
         indexed = {game_id: [] for game_id in wanted}
@@ -119,7 +119,7 @@ class GameLog:
     def write_game_records(self, finals) -> int:
         """Write a batch after one turn-log scan instead of one scan per game."""
         materialized = [(str(game_id), final) for game_id, final in finals]
-        turns = self._turns_for_games(game_id for game_id, _final in materialized)
+        turns = self.turns_for_games(game_id for game_id, _final in materialized)
         written = 0
         for game_id, final in materialized:
             try:
@@ -139,7 +139,7 @@ class GameLog:
         game studyable: what we thought, what we did, what they did back.
         """
         if our_turns is None:
-            our_turns = self._turns_for_games([game_id]).get(str(game_id), [])
+            our_turns = self.turns_for_games([game_id]).get(str(game_id), [])
 
         state = final.get("game_state") or {}
         history = state.get("history") or []

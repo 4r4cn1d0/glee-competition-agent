@@ -96,14 +96,14 @@ def pending_ids(probe: str) -> list[str]:
 
 
 def selected_ids(pending: list[str], budget: int) -> list[str]:
-    """Keep live outcomes fresh while steadily draining historical backlog."""
+    """Fetch the newest half first, then steadily drain historical backlog."""
     if budget <= 0:
         return []
     if len(pending) <= budget:
         return pending
     oldest = budget // 2
     newest = budget - oldest
-    return pending[:oldest] + pending[-newest:]
+    return pending[-newest:] + pending[:oldest]
 
 
 def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
@@ -114,8 +114,11 @@ def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
     log = GameLog(os.path.join(REPO, "logs", probe))
     client = GleeClient(api_key=key)
     written = active = 0
-    finals = []
-    for gid in selected_ids(pending_ids(probe), budget):
+    selected = selected_ids(pending_ids(probe), budget)
+    # One upfront scan preserves per-turn reasoning without delaying every
+    # completed newest game until the full 20-minute API pass has finished.
+    turns = log.turns_for_games(selected)
+    for gid in selected:
         try:
             state = client.game_state(gid)
         except GleeAPIError as exc:
@@ -127,9 +130,12 @@ def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
         if state.get("status") == "active":
             active += 1                       # not finished; try again next pass
             continue
-        finals.append((gid, state))
+        try:
+            log.write_game_record(gid, state, our_turns=turns.get(gid, []))
+            written += 1
+        except Exception:
+            pass
         time.sleep(rate)
-    written = log.write_game_records(finals)
     return written, active
 
 

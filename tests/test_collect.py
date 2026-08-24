@@ -34,6 +34,6 @@ def test_pending_ids_recognizes_both_outcome_stores(monkeypatch, tmp_path):
 def test_selected_ids_splits_budget_between_oldest_and_newest():
     pending = [f"game-{index}" for index in range(10)]
     assert collect.selected_ids(pending, 5) == [
-        "game-0", "game-1", "game-7", "game-8", "game-9"]
+        "game-7", "game-8", "game-9", "game-0", "game-1"]
     assert collect.selected_ids(pending[:3], 5) == pending[:3]
     assert collect.selected_ids(pending, 0) == []
