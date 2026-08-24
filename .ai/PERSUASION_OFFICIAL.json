@@ -1,0 +1,117 @@
+{
+  "_schema": "glee.persuasion-official-transcript/v1",
+  "games": [
+    {
+      "source": "authenticated-dashboard-transcript",
+      "family": "persuasion",
+      "role": "seller",
+      "terminal": true,
+      "slot": "champion",
+      "game_id": "202cb810-c1a7-4d36-b98b-7d394842d258",
+      "rating_delta": -4.3,
+      "dashboard_completed_at": "2026-08-24 18:34 IST",
+      "join_audit": {
+        "local_first_ts": 1787576632.1297011,
+        "local_last_ts": 1787576692.792929,
+        "opponent": "hidden",
+        "basis": "unique minute, exact setup, exact 20-message transcript, exact terminal payoffs"
+      },
+      "persuasion": {
+        "price": 10000,
+        "p": 0.8,
+        "v": 12500,
+        "u": 0,
+        "mode": "text",
+        "rounds": 20,
+        "seller_messages": [
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. You can check that against the calls I have made so far.",
+          "This one is worth taking. You can check that against the calls I have made so far.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously."
+        ],
+        "qualities": [
+          "high", "high", "high", "low", "high", "low", "high", "high", "high", "high",
+          "high", "high", "high", "high", "high", "high", "high", "high", "high", "high"
+        ],
+        "buyer_decisions": [
+          "buy", "buy", "buy", "buy", "pass", "pass", "pass", "pass", "pass", "pass",
+          "pass", "pass", "pass", "pass", "pass", "pass", "pass", "pass", "pass", "pass"
+        ],
+        "seller_payoff": 40000,
+        "buyer_payoff": -2500
+      }
+    },
+    {
+      "source": "authenticated-dashboard-transcript",
+      "family": "persuasion",
+      "role": "seller",
+      "terminal": true,
+      "slot": "composite",
+      "game_id": "36053a1f-16a3-4fb3-94cb-2d580cc1764d",
+      "rating_delta": -1.4,
+      "dashboard_completed_at": "2026-08-24 18:48 IST",
+      "join_audit": {
+        "local_first_ts": 1787577447.5834932,
+        "local_last_ts": 1787577517.075954,
+        "opponent": "expert",
+        "basis": "unique minute, exact setup, exact 20-message transcript, exact terminal payoffs"
+      },
+      "persuasion": {
+        "price": 1000000,
+        "p": 0.8,
+        "v": 1250000,
+        "u": 0,
+        "mode": "text",
+        "rounds": 20,
+        "seller_messages": [
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. You can check that against the calls I have made so far.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. My record on these is the reason to take this one seriously.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "This is one of the better ones. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. My record on these is the reason to take this one seriously.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "Strong unit this round — I would buy it. You can check that against the calls I have made so far.",
+          "This one is worth taking. My record on these is the reason to take this one seriously.",
+          "This one is worth taking. You can check that against the calls I have made so far."
+        ],
+        "qualities": [
+          "high", "low", "high", "high", "low", "high", "low", "high", "low", "low",
+          "low", "high", "high", "high", "high", "high", "high", "high", "low", "high"
+        ],
+        "buyer_decisions": [
+          "buy", "buy", "pass", "pass", "buy", "buy", "buy", "buy", "pass", "buy",
+          "buy", "pass", "pass", "pass", "buy", "buy", "buy", "buy", "buy", "pass"
+        ],
+        "seller_payoff": 13000000,
+        "buyer_payoff": -4250000
+      }
+    }
+  ]
+}

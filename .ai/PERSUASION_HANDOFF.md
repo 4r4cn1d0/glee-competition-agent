@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 19:12 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 19:25 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -79,7 +79,7 @@ self-play contamination blocks promotion. Full rules and subgroups are
 precommitted in `.ai/EXPERIMENTS.md`. The local percentile reader is diagnostic
 only; official per-game dashboard deltas control promotion/rejection.
 
-## First live mechanism observation
+## First live mechanism observations
 
 Candidate game `202cb810-c1a7-4d36-b98b-7d394842d258` on Test 1 is the first
 post-T0 target draw. Its hash was candidate on all 20 rounds; all 20 plan records
@@ -89,6 +89,24 @@ with 4/20 purchases (3 high, 1 low), seller payoff `4P`, no invalid/timeout, and
 official dashboard rating delta `-4.3`. The buyer passed all 16 rounds after the
 first bought low. This is a clean but adverse first treatment observation, not a
 decision; the precommitted sample and stop rules remain unchanged.
+
+Candidate game `36053a1f-16a3-4fb3-94cb-2d580cc1764d` on Agent 5 is the
+second post-T0 target draw and was played against named opponent `expert`. The
+stable candidate hash and approved prose held for all 20 rounds. The buyer
+purchased 13/20 (7 high, 6 low), producing seller payoff `13P` and buyer payoff
+`-4.25P`; the authenticated official delta was `-1.4`. The two candidate games
+therefore have mean official delta `-2.85` and mean purchase rate `42.5%`, with
+no zeros or wire failures. There are still no official controls and n=2 is far
+below every decision boundary, so this is monitoring evidence only.
+
+Both server-completed games were initially absent from at least one local final
+stream. Their complete authenticated 20-round transcripts, exact setup,
+terminal payoffs, and manual join audit are frozen in
+`.ai/PERSUASION_OFFICIAL.json`. The persuasion-only reader now accepts such a
+recovery only when all 20 messages, qualities, buyer decisions, exact setup,
+and the seller-payoff identity validate. A rating row alone remains unresolved.
+The new recovery tests pass, and the full allowed suite after this reader change
+has 1,204 passes with only the same two pre-existing bargaining failures.
 
 ## Expanded official failure diagnosis and next isolated arm
 
@@ -114,9 +132,9 @@ every low at the p*v==price knife edge, and the legacy parser has bought literal
 `Not recommended.` messages (373 historical purchases, all 373 low).
 
 `GLEE_PERS_P08_R125_BINARY_TRUTH_AB` is implemented default OFF in pushed commit
-`8372236` and remains inert pending Test 2's natural load. Test 2 rotated at
-19:02:25 IST, before that commit was pushed, so it must not be armed until its
-next supervisor-managed rotation. It targets
+`8372236` and remains inert pending Test 2's natural load. At the 19:14 check,
+Test 2 was still PID 71871 from 19:02:25 IST, before that commit was pushed. It
+must not be armed until its next supervisor-managed rotation. It targets
 only the binary counterpart of the prose cell: seller, p=.8, visible v/u,
 v=1.25P, u=0, 20 rounds. Hash controls are full-object identical; candidates
 say `yes` on high and `no` on low. Test 2 exact-stack reachability over 800

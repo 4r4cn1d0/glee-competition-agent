@@ -87,6 +87,30 @@ def _diagnostic(message: str):
     }
 
 
+def _official_terminal(gid: str, message: str):
+    return {
+        "source": "authenticated-dashboard-transcript",
+        "family": "persuasion",
+        "role": "seller",
+        "terminal": True,
+        "slot": "composite",
+        "game_id": gid,
+        "rating_delta": -1.5,
+        "persuasion": {
+            "price": 100.0,
+            "p": 0.8,
+            "v": 125.0,
+            "u": 0.0,
+            "mode": "text",
+            "rounds": 20,
+            "seller_messages": [message] * 20,
+            "qualities": ["high", "low"] * 10,
+            "buyer_decisions": ["buy", "pass"] * 10,
+            "seller_payoff": 1000.0,
+        },
+    }
+
+
 def test_report_joins_official_deltas_and_keeps_local_score_diagnostic(
         tmp_path, capsys):
     control_gid = _gid(False)
@@ -134,4 +158,44 @@ def test_unresolved_assignments_remain_visible_and_block_promotion(capsys):
         [row], 24.0, since=100.0) == 0
     output = capsys.readouterr().out
     assert "unresolved=1" in output
+    assert "PROMOTION BLOCKED" in output
+
+
+def test_authenticated_full_transcript_recovers_missing_local_final(
+        tmp_path, capsys):
+    gid = _gid(True)
+    prose = ("This one is worth taking. My record on these is the reason to "
+             "take this one seriously.")
+    diagnostic = {**_diagnostic(prose), "seller_messages": []}
+    row = ("composite", None, gid, None, diagnostic, "cold-missing")
+    official = tmp_path / "official.json"
+    official.write_text(json.dumps([
+        _official_terminal(gid, prose),
+    ]), encoding="utf-8")
+
+    assert live_percentile.report_pers_prose(
+        [row], 24.0, since=100.0, official_path=str(official)) == 0
+    output = capsys.readouterr().out
+    assert "official-dR=-1.5000" in output
+    assert "buy=50.0%" in output
+    assert "terminal=1 pending=0 badfin=0" in output
+    assert "unresolved=0" in output
+
+
+def test_incomplete_official_transcript_cannot_resolve_missing_final(
+        tmp_path, capsys):
+    gid = _gid(True)
+    prose = ("This one is worth taking. My record on these is the reason to "
+             "take this one seriously.")
+    record = _official_terminal(gid, prose)
+    record["persuasion"].pop("buyer_decisions")
+    official = tmp_path / "official.json"
+    official.write_text(json.dumps([record]), encoding="utf-8")
+    row = ("composite", None, gid, None,
+           {**_diagnostic(prose), "seller_messages": []}, "cold-missing")
+
+    assert live_percentile.report_pers_prose(
+        [row], 24.0, since=100.0, official_path=str(official)) == 0
+    output = capsys.readouterr().out
+    assert "terminal=0 pending=0 badfin=1" in output
     assert "PROMOTION BLOCKED" in output

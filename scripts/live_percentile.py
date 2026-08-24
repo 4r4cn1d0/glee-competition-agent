@@ -2465,6 +2465,122 @@ def _load_official_deltas(path):
     return output
 
 
+def _load_pers_official_records(path):
+    """Load audited persuasion transcript records without changing other ABs.
+
+    The generic official join intentionally consumes only rating deltas.  A
+    persuasion game can nevertheless be complete on the authenticated
+    dashboard while the local collector has only its turn stream.  Preserve
+    the complete record here so the persuasion readers can recover such a
+    terminal outcome only when all 20 transcript rounds are supplied and pass
+    the exact-cell/wire checks below.
+    """
+    deltas = _load_official_deltas(path)
+    if not path:
+        return {}
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read().strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+        records = parsed if isinstance(parsed, list) else parsed.get("games", [])
+    except json.JSONDecodeError:
+        records = [json.loads(line) for line in text.splitlines() if line.strip()]
+    output = {}
+    for record in records:
+        slot = str(record.get("slot") or "")
+        gid = str(record.get("game_id") or "")
+        key = (slot, gid)
+        if key not in deltas:
+            raise ValueError("persuasion official record failed delta validation")
+        output[key] = {**record, "rating_delta": deltas[key]}
+    return output
+
+
+def _pers_official_terminal(record, diagnostic, *, mode):
+    """Validate and reconstruct one missing local persuasion final.
+
+    A rating row alone is never enough: the authenticated export must contain
+    the complete 20-round transcript, exact setup, and terminal seller payoff.
+    This keeps unresolved games in the ITT denominator unless the server-side
+    evidence can also audit the emitted action on every round.
+    """
+    if not isinstance(record, dict) or record.get("terminal") is not True:
+        return None
+    transcript = record.get("persuasion")
+    if (record.get("source") != "authenticated-dashboard-transcript"
+            or str(record.get("family") or "").lower() != "persuasion"
+            or str(record.get("role") or "").lower() != "seller"
+            or not isinstance(transcript, dict)):
+        return False
+
+    expected = {
+        "price": diagnostic.get("price"),
+        "p": diagnostic.get("p"),
+        "v": diagnostic.get("v"),
+        "u": diagnostic.get("u"),
+        "rounds": 20.0,
+    }
+    for field, wanted in expected.items():
+        observed = _number(transcript.get(field))
+        wanted_number = _number(wanted)
+        if (observed is None or wanted_number is None
+                or not math.isclose(observed, wanted_number,
+                                    rel_tol=1e-9, abs_tol=1e-9)):
+            return False
+    if str(transcript.get("mode") or "").strip().lower() != mode:
+        return False
+
+    messages = transcript.get("seller_messages")
+    qualities = transcript.get("qualities")
+    decisions = transcript.get("buyer_decisions")
+    if not all(isinstance(values, list) and len(values) == 20
+               for values in (messages, qualities, decisions)):
+        return False
+    normalized_qualities = [str(value or "").strip().lower()
+                            for value in qualities]
+    normalized_decisions = [str(value or "").strip().lower()
+                            for value in decisions]
+    if (any(value not in {"high", "low"} for value in normalized_qualities)
+            or any(value not in {"buy", "pass"}
+                   for value in normalized_decisions)):
+        return False
+    payoff = _number(transcript.get("seller_payoff"))
+    price = _number(diagnostic.get("price"))
+    if payoff is None or price is None or price <= 0:
+        return False
+    purchases = sum(value == "buy" for value in normalized_decisions)
+    # Persuasion sellers receive exactly price for each purchase.  Requiring
+    # this identity catches a wrong-role or wrong-modal dashboard join.
+    if not math.isclose(payoff, purchases * price,
+                        rel_tol=1e-9, abs_tol=1e-9):
+        return False
+
+    merged = {
+        **diagnostic,
+        "rounds": 20,
+        "seller_messages": list(messages),
+        "qualities": normalized_qualities,
+        "buyer_decisions": normalized_decisions,
+        "purchases": purchases,
+        "purchase_rate": purchases / 20.0,
+        "payoff": payoff,
+        "payoff_per_price": payoff / price,
+        "zero_outcome": payoff == 0.0,
+        "bought_highs": sum(
+            decision == "buy" and quality == "high"
+            for decision, quality in zip(normalized_decisions,
+                                         normalized_qualities)),
+        "bought_lows": sum(
+            decision == "buy" and quality == "low"
+            for decision, quality in zip(normalized_decisions,
+                                         normalized_qualities)),
+        "official_terminal_recovery": True,
+    }
+    return merged
+
+
 def _pers_prose_observations(rows, official):
     observations = []
     for row in rows:
@@ -2477,6 +2593,16 @@ def _pers_prose_observations(rows, official):
         resolution = next(
             (item for item in metadata if isinstance(item, str)),
             "unresolved" if completed is None else "terminal")
+        official_record = official.get((slot, gid))
+        if completed is None:
+            recovered = _pers_official_terminal(
+                official_record, diagnostic, mode="text")
+            if recovered is False:
+                resolution = "invalid-final"
+            elif isinstance(recovered, dict):
+                diagnostic = recovered
+                completed = True
+                resolution = "official-terminal"
         messages = diagnostic.get("seller_messages")
         if not isinstance(messages, list) or not messages:
             messages = [diagnostic.get("first_message")]
@@ -2488,7 +2614,8 @@ def _pers_prose_observations(rows, official):
             "slot": slot, "gid": gid, "arm": arm, "pct": pct,
             "completed": completed, "resolution": resolution,
             "diagnostic": diagnostic,
-            "official": official.get((slot, gid)),
+            "official": (None if official_record is None else
+                         official_record.get("rating_delta")),
             "wire_failures": wire_failures,
             "recommend_failure": recommend_failure,
         })
@@ -2508,6 +2635,16 @@ def _pers_truth_observations(rows, official):
         resolution = next(
             (item for item in metadata if isinstance(item, str)),
             "unresolved" if completed is None else "terminal")
+        official_record = official.get((slot, gid))
+        if completed is None:
+            recovered = _pers_official_terminal(
+                official_record, diagnostic, mode="binary")
+            if recovered is False:
+                resolution = "invalid-final"
+            elif isinstance(recovered, dict):
+                diagnostic = recovered
+                completed = True
+                resolution = "official-terminal"
         messages = diagnostic.get("seller_messages")
         qualities = diagnostic.get("qualities")
         if not isinstance(messages, list) or not messages:
@@ -2536,7 +2673,8 @@ def _pers_truth_observations(rows, official):
             "slot": slot, "gid": gid, "arm": arm, "pct": pct,
             "completed": completed, "resolution": resolution,
             "diagnostic": diagnostic,
-            "official": official.get((slot, gid)),
+            "official": (None if official_record is None else
+                         official_record.get("rating_delta")),
             "wire_failures": wire_failures,
             "recommend_failure": recommend_failure,
         })
@@ -2595,7 +2733,7 @@ def _print_pers_prose_line(label, arm, stats):
 def report_pers_prose(rows, hours, since=None, until=None, official_path=None):
     """Report the exact-cell seller wording arm with official delta joins."""
     try:
-        official = _load_official_deltas(official_path)
+        official = _load_pers_official_records(official_path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"cannot load official delta export: {exc}")
         return 2
@@ -2703,7 +2841,7 @@ def _print_pers_truth_line(label, arm, stats):
 def report_pers_truth(rows, hours, since=None, until=None, official_path=None):
     """Report the exact binary credibility arm using official per-game deltas."""
     try:
-        official = _load_official_deltas(official_path)
+        official = _load_pers_official_records(official_path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"cannot load official delta export: {exc}")
         return 2

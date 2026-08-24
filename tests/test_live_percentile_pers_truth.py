@@ -91,6 +91,32 @@ def _diagnostic(messages, qualities):
     }
 
 
+def _official_terminal(gid: str, messages, qualities):
+    decisions = ["buy" if index % 2 == 0 else "pass"
+                 for index in range(20)]
+    return {
+        "source": "authenticated-dashboard-transcript",
+        "family": "persuasion",
+        "role": "seller",
+        "terminal": True,
+        "slot": "hardliner",
+        "game_id": gid,
+        "rating_delta": 2.5,
+        "persuasion": {
+            "price": 100.0,
+            "p": 0.8,
+            "v": 125.0,
+            "u": 0.0,
+            "mode": "binary",
+            "rounds": 20,
+            "seller_messages": messages,
+            "qualities": qualities,
+            "buyer_decisions": decisions,
+            "seller_payoff": 1000.0,
+        },
+    }
+
+
 def test_report_joins_official_deltas_and_audits_quality_conditioned_wire(
         tmp_path, capsys):
     control_gid = _gid(False)
@@ -144,3 +170,26 @@ def test_unresolved_assignment_is_visible_and_blocks_promotion(capsys):
     output = capsys.readouterr().out
     assert "unresolved=1" in output
     assert "PROMOTION BLOCKED" in output
+
+
+def test_truth_reader_recovers_and_audits_authenticated_full_transcript(
+        tmp_path, capsys):
+    gid = _gid(True)
+    qualities = ["high", "low"] * 10
+    messages = ["yes", "no"] * 10
+    diagnostic = _diagnostic([messages[0]], [qualities[0]])
+    diagnostic["seller_messages"] = []
+    diagnostic["qualities"] = []
+    row = ("hardliner", None, gid, None, diagnostic, "cold-missing")
+    official = tmp_path / "official.json"
+    official.write_text(json.dumps([
+        _official_terminal(gid, messages, qualities),
+    ]), encoding="utf-8")
+
+    assert live_percentile.report_pers_truth(
+        [row], 24.0, since=100.0, official_path=str(official)) == 0
+    output = capsys.readouterr().out
+    assert "official-dR=2.5000" in output
+    assert "purchases=10.0000" in output
+    assert "terminal=1 pending=0 badfin=0" in output
+    assert "wire-fail=0 recommend-fail=0" in output
