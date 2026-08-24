@@ -1573,3 +1573,32 @@ the full suite passes 1,291 with only the two predeclared bargaining failures.
 The flag overlay was written at `1787586287`, but Test 3 PID 79383 predates the
 clone code and remained busy. A safe named cycle is pending; no pre-launch game
 is treatment exposure, and the future verified relaunch is the only valid T0.
+
+### 2026-08-24: clone is live; prospective multi-host acceleration
+
+Test 3 eventually drained every held game and the clone became genuinely live
+from process launch `T0=1787590698` (22:28:18 IST). Its first buyer candidate
+trace was game `66e4b705-9a53-415c-861b-ba9c1c4e858e` at
+`1787590787.720265`, with exact `plan.source=top_buyer_clone`; the first local
+reader found one control and one candidate assignment, both unresolved, with
+zero wire or control-contamination failures.
+
+Four buyer assignments in the first five minutes were too slow for an urgent
+10/arm harm read. Before inspecting any treatment outcome, the same arm was
+prospectively expanded to champion, randomized, and composite at common
+`T0=1787591092.200761`; hardliner remains untouched. Their overlapping hidden
+buyer probes and first-principles arm were explicitly set to zero, and all
+three produced exact clone-source traces after post-T0 hash controls. Analyse
+each host separately before pooling and require every host point estimate to be
+nonnegative for promotion. Seller policy and all bargaining flags/behavior are
+unchanged.
+
+The first relaunch exposed a fleet infrastructure defect: the long-lived
+supervisor inherited fd 0 from a terminal that later became `(revoked)`, so new
+children died in Python's `init_sys_streams` before importing strategy code.
+Commit `816cd31` gives children explicit `DEVNULL` stdin. After the affected
+three slots had independently drained, only the broken supervisor process was
+replaced; no child agent was signalled. The replacement adopted the still-
+running conceder/randomized processes and outcome collector, then launched the
+three already-down slots. All five turn streams were live by 22:32:09. This is
+not policy evidence and no held game was interrupted.

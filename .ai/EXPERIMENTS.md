@@ -182,13 +182,19 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   on all four at the operator's direction before a meaningful sample arrived.
   Do not interpret this as a positive or negative result.
 
-## ARMED — PENDING SAFE PROCESS LOAD
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Top-four/five observable negotiation behavior, buyer only
 - **Flag / assignment**: `GLEE_NEGO_TOP_BUYER_CLONE_AB=1`; SHA-256 of
   `nego_top_buyer_clone_v1|<game_id>`, low bit 1 = candidate. Default OFF.
-- **Target**: Test 3 (`conceder`) only. Seller behavior and every bargaining
-  action/configuration remain byte-for-byte control.
+- **Target / prospective host amendment**: Test 3 (`conceder`) began alone.
+  Before inspecting any treatment outcome, the slow arrival rate (four buyer
+  assignments in five minutes) prospectively expanded the same arm to Test 1
+  (`champion`), Test 4 (`randomized`), and Agent 5 (`composite`). Test 2 remains
+  untouched. The added hosts explicitly disabled the four older hidden-buyer
+  imitation probes and `NEGO_FIRST_PRINCIPLES` before their clean common T0;
+  analyse host-specific randomisation first, then pool. Seller behavior and
+  every bargaining action/configuration remain byte-for-byte control.
 - **Why buyer only**: the operator's 63-game official window had sellers
   `+47.9` but buyers `-24.4`; buyer no-deals were `-22.5`. Replacing the winning
   seller half would add risk with no diagnosis supporting it.
@@ -207,9 +213,11 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   In message-enabled games every rejected buyer counter copies 7aidara's exact
   observed sentence, `Above what I can justify. Here is where I can go.`; it is
   quality-neutral and does not reveal the private type or final hold.
-- **Control**: the entire current Test 3 stack, selected by the opposite hash
-  bit. The treatment owns both offer and acceptance policy so downstream gates
-  cannot silently rewrite half the mechanism.
+- **Control**: each host's entire frozen current stack at its T0, selected by
+  the opposite hash bit. The treatment owns both offer and acceptance policy so
+  downstream gates cannot silently rewrite half the mechanism. Host is a
+  predeclared stratum and each host point estimate must be nonnegative before
+  promotion.
 - **Primary outcome**: official per-game negotiation percentile/rating change,
   candidate minus contemporaneous hash control, buyer games only. Report hidden
   type, complete-information status, horizon status, terminal outcome, and
@@ -225,8 +233,11 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   resolved; and zero wire, source, control-contamination, or duplicate failures.
   The local percentile is only a concurrent arm comparison, never an estimate
   of leaderboard rank. A 30-game harm read is not proof of the 0.55 target.
-- **Reader**: `scripts/live_percentile.py --ab top-buyer-clone --since T0
-  --slots conceder --official-json FILE`. It cohorts before the first buyer
+- **Reader**: run `scripts/live_percentile.py --ab top-buyer-clone --since T0
+  --slots SLOT --official-json FILE` separately for each host at its boundary;
+  the prospective pooled added-host read may use
+  `--since 1787591092.200761 --slots champion,randomized,composite`. It cohorts
+  before the first buyer
   action, audits every candidate wire and exact message against the production
   table, requires `plan.source=top_buyer_clone`, detects clone source in hash
   controls, keeps all unresolved/no-deal/walk outcomes, excludes duplicate game
@@ -236,13 +247,18 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   intended Test 3 stack reachability over 1,000 simulated games yielded 3,827
   eligible / 1,575 fired / 1,575 changed wire actions. Full suite 1,291 passed
   with only the two predeclared bargaining failures.
-- **Deployment state**: pushed code through `11e1af8`; Test 3 overlay set the
-  clone flag at `1787586287` (21:14:47 IST), and the supervisor accepted a named
-  zero-game cycle request at 21:14:49. PID 79383 was launched at 20:47:08,
-  before the clone existed, and stayed continuously busy after its queue ban
-  lifted. Therefore the flag is ARMED but no clone behavior is live yet. The
-  causal `T0` is the future verified Test 3 launch carrying the final clone
-  commit, never the overlay mtime. Do not interrupt its held games.
+- **Deployment state / causal boundaries**: Test 3 drained cleanly and launched
+  the final clone build at `T0=1787590698` (22:28:18 IST); its first exact
+  `plan.source=top_buyer_clone` buyer trace was game
+  `66e4b705-9a53-415c-861b-ba9c1c4e858e` at `1787590787.720265`. Before any
+  treatment outcome was inspected, Test 1, Test 4, and Agent 5 were armed at the
+  clean common `T0=1787591092.200761` (22:34:52 IST). Exact source traces then
+  appeared on all three hosts at `1787591160.391535`, `1787591149.522183`, and
+  `1787591136.825958`, respectively; their preceding post-T0 buyer games were
+  verified hash controls. An inherited revoked stdin descriptor initially made
+  supervised relaunches fail before Python imported strategy code; commit
+  `816cd31` fixes future launches with explicit `DEVNULL`, and the replacement
+  supervisor adopted every still-running game process without disturbing it.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 
