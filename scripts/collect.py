@@ -114,6 +114,7 @@ def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
     log = GameLog(os.path.join(REPO, "logs", probe))
     client = GleeClient(api_key=key)
     written = active = 0
+    finals = []
     for gid in selected_ids(pending_ids(probe), budget):
         try:
             state = client.game_state(gid)
@@ -126,12 +127,9 @@ def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
         if state.get("status") == "active":
             active += 1                       # not finished; try again next pass
             continue
-        try:
-            log.write_game_record(gid, state)
-            written += 1
-        except Exception:
-            pass
+        finals.append((gid, state))
         time.sleep(rate)
+    written = log.write_game_records(finals)
     return written, active
 
 

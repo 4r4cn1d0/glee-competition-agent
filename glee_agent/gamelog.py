@@ -75,6 +75,7 @@ class GameLog:
         """Fetch and record the final state of every game seen. Returns the count."""
         ids = game_ids if game_ids is not None else self.game_ids
         written = 0
+        finals = []
         for game_id in ids:
             try:
                 state = client.game_state(game_id)
@@ -84,14 +85,52 @@ class GameLog:
             with self._lock:
                 self._append(self.results_path, {"ts": time.time(), "game_id": game_id,
                                                  "final": state})
-            try:
-                self.write_game_record(game_id, state)
-            except Exception as exc:
-                logger.warning("Could not write game record for %s: %s", game_id, exc)
+            finals.append((game_id, state))
             written += 1
+        self.write_game_records(finals)
         return written
 
-    def write_game_record(self, game_id: str, final: dict) -> str:
+    @staticmethod
+    def _turn_summary(record: dict) -> dict:
+        return {k: record.get(k) for k in
+                ("ts", "round", "phase", "action_type", "action", "plan",
+                 "source", "error", "stage")}
+
+    def _turns_for_games(self, game_ids) -> dict[str, list[dict]]:
+        """Read the append-only turn log once for a batch of final states."""
+        wanted = {str(game_id) for game_id in game_ids}
+        indexed = {game_id: [] for game_id in wanted}
+        if not wanted:
+            return indexed
+        try:
+            with open(self.turns_path, encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    try:
+                        record = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    game_id = str(record.get("game_id") or "")
+                    if game_id in indexed:
+                        indexed[game_id].append(self._turn_summary(record))
+        except OSError:
+            pass
+        return indexed
+
+    def write_game_records(self, finals) -> int:
+        """Write a batch after one turn-log scan instead of one scan per game."""
+        materialized = [(str(game_id), final) for game_id, final in finals]
+        turns = self._turns_for_games(game_id for game_id, _final in materialized)
+        written = 0
+        for game_id, final in materialized:
+            try:
+                self.write_game_record(game_id, final, our_turns=turns.get(game_id, []))
+                written += 1
+            except Exception as exc:
+                logger.warning("Could not write game record for %s: %s", game_id, exc)
+        return written
+
+    def write_game_record(self, game_id: str, final: dict, *,
+                          our_turns: list[dict] | None = None) -> str:
         """Merge our per-turn reasoning with the server's full history.
 
         The server's final game_state carries the WHOLE match — both sides'
@@ -99,24 +138,8 @@ class GameLog:
         moves plus the reasoning behind them. Joining the two is what makes a
         game studyable: what we thought, what we did, what they did back.
         """
-        our_turns = []
-        try:
-            with open(self.turns_path, encoding="utf-8") as handle:
-                for line in handle:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        record = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    if record.get("game_id") != game_id:
-                        continue
-                    our_turns.append({k: record.get(k) for k in
-                                      ("ts", "round", "phase", "action_type",
-                                       "action", "plan", "source", "error", "stage")})
-        except OSError:
-            pass
+        if our_turns is None:
+            our_turns = self._turns_for_games([game_id]).get(str(game_id), [])
 
         state = final.get("game_state") or {}
         history = state.get("history") or []
@@ -145,8 +168,10 @@ class GameLog:
             "our_turns": our_turns,
         }
         path = os.path.join(self.games_dir, f"{game_id}.json")
-        with open(path, "w", encoding="utf-8") as handle:
+        temporary = f"{path}.{os.getpid()}.{threading.get_ident()}.tmp"
+        with open(temporary, "w", encoding="utf-8") as handle:
             json.dump(record, handle, indent=2, default=str)
+        os.replace(temporary, path)
         return path
 
     def _append(self, path: str, record: dict) -> None:
