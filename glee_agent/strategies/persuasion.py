@@ -1689,11 +1689,12 @@ def decide(game: dict, cfg) -> dict:
     # cell, reinterpret history, or ever turn PASS into BUY.
     #
     # In the frozen post-rank-disarm all-five cohort (first buyer turn
-    # 1787570799 <= ts < 1787596351.4207911), all 1,933 assigned buyer games were
-    # retained (1,924 completed, 6 active, 3 no-deal).  Among 981 completed text
-    # games the text rule would remove 156 purchases in 65 games: 155 revealed
-    # LOW and one HIGH.  Literal binary ``no`` adds 20 purchases in 20 games,
-    # all 20 LOW, across every slot, both seller-knowledge states and all scales.
+    # 1787570799 <= ts < 1787596351.4207911), all 1,934 clean assigned buyer
+    # games were retained (1,925 completed, 6 active, 3 no-deal).  Among 981
+    # completed text games the rule would remove 156 purchases in 65 games: 155
+    # revealed LOW and one HIGH.  Literal binary ``no`` adds 20 purchases in 20
+    # games, all 20 LOW, across every slot, both seller-knowledge states and all
+    # scales.
     # The all-text fixed-stream local-percentile diagnostic was +.009012 (normal
     # 95% CI +.005948..+.012076).  That is mechanism evidence, not an identified
     # official effect: changed actions are purchase-selected and seller
