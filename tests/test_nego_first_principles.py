@@ -133,7 +133,10 @@ def test_degenerate_zone_is_split_not_inverted(monkeypatch):
 
 
 # --- hidden information --------------------------------------------------
-@pytest.mark.parametrize("cost,ask", [(80.0, 99.99), (100.0, 119.99), (120.0, 149.99)])
+# Per-config scoring: cost 80 asks 119.99, not 99.99. See _ASK_STEPS -- the
+# percentile is computed within a value pair, so the bottom of the grid can
+# afford one more step.
+@pytest.mark.parametrize("cost,ask", [(80.0, 119.99), (100.0, 119.99), (120.0, 149.99)])
 def test_hidden_seller_asks_the_lowest_profitable_grid_point(monkeypatch, cost, ask):
     for k, v in ON.items():
         monkeypatch.setenv(k, v)
