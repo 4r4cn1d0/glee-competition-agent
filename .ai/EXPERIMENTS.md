@@ -182,7 +182,7 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   on all four at the operator's direction before a meaningful sample arrived.
   Do not interpret this as a positive or negative result.
 
-## RUNNING — LIVE CAUSAL MEASUREMENT
+## STOPPED — FIXED CHECKPOINT FAILED PROMOTION
 
 ### Top-four/five observable negotiation behavior, buyer only
 - **Flag / assignment**: `GLEE_NEGO_TOP_BUYER_CLONE_AB=1`; SHA-256 of
@@ -259,6 +259,92 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   supervised relaunches fail before Python imported strategy code; commit
   `816cd31` fixes future launches with explicit `DEVNULL`, and the replacement
   supervisor adopted every still-running game process without disturbing it.
+- **First official ITT checkpoint (22:40--22:49 capture plus the immediately
+  preceding joined slice)**: 20 candidate buyer games scored `+24.8` in total
+  (`+1.240/game`, median `+0.55`) versus 25 hash controls scoring `-14.3`
+  (`-0.572/game`, median `-0.70`), an official-rating point lift of
+  `+1.812/game`. The approximate Welch 95% interval is `[-0.39,+4.02]`, so
+  this is encouraging evidence, not a promotion verdict. Host point lifts are
+  champion `+4.55` (4 candidate / 1 control), randomized `+6.87` (6/6),
+  conceder `+0.85` (4/11), and composite `-1.13` (6/7). The precommitted
+  emergency harm rule does not fire, but the every-host promotion condition
+  currently fails on composite and neither arm has 30 scored games. Keep the
+  randomized arm running; do not deploy the candidate fleet-wide yet.
+- **Join-selection audit**: the strict live-turn join initially matched 22 of
+  36 new buyer dashboard rows. The other 14 were not discarded: each was
+  mapped to a unique local game by exact host, dashboard minute, public setup,
+  incoming price, submitted decision/counter, and clone/control source. Adding
+  them reduced the apparent lift from `+2.51` to `+1.81/game`, demonstrating why
+  resolved/matched-only reporting is forbidden. The evaluator omitted
+  `state.last_offer` when `history` was empty on first incoming decisions; that
+  fail-closed join bug is being repaired with a regression test. Rating and
+  payoff were never used as join keys.
+- **Fixed 91-game official checkpoint / verdict (through 23:06 IST)**: all 91
+  scored buyer rows have unique game ids and are retained. Candidate is 44
+  games / `+49.1` total / `+1.116/game`; control is 47 / `+11.6` /
+  `+0.247/game`, for a point lift of `+0.869/game`. The approximate Welch 95%
+  interval is `[-0.78,+2.52]`. Candidate no-deals are 29.55% versus 23.40%
+  (`+6.14pp`), and Agent 5/composite is negative (`-0.648/game`) while the
+  other three host points are positive. The broad arm therefore fails its
+  precommitted interval, no-deal, and every-host promotion gates. It is not a
+  proven percentile winner and must not be promoted fleet-wide.
+- **Stop boundary**: fleet tooling set only
+  `GLEE_NEGO_TOP_BUYER_CLONE_AB=0` on champion, composite, conceder, and
+  randomized at `T1=1787593429` (23:13:49 IST). The running processes re-read
+  this overlay within three seconds; no process, active game, seller policy,
+  bargaining action, or bargaining flag was changed. Any later-resolving game
+  remains part of archival ITT completeness but cannot reverse this frozen
+  decision or justify reviving the broad arm.
+
+## BUILT DEFAULT OFF — PROSPECTIVE RETEST PENDING DEPLOYMENT
+
+### Hidden-information cap-10 buyer leader clone
+- **Why this is a new experiment**: the broad checkpoint's hidden cap-10 slice
+  was candidate `+1.573/game` (n=15) versus control `-0.236/game` (n=11), a
+  `+1.809/game` point lift, with no-deals 46.7% versus 54.5%. All four observed
+  own-type points were nonnegative. This cell was selected after inspecting
+  the broad result, so it is only a hypothesis generator and cannot be called a
+  win. A new salt and fresh T0 are mandatory.
+- **Flag / assignment**:
+  `GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB`, default OFF;
+  `sha256("nego_top_buyer_clone_hi_cap10_v1|" + game_id)` low bit assigns the
+  candidate. Missing ids fail closed. If the broad, Opus, or Athena clone is
+  armed, both overlapping mechanisms fail closed.
+- **Eligibility / action**: negotiation buyer seat only,
+  `complete_information=false`, `horizon_known=true`, and exactly ten rounds,
+  from the first buyer action before outcome or opponent identity is known.
+  Candidate executes the already-frozen literal 7aidara hidden buyer path,
+  acceptance boundary, terminal any-positive rule, and exact generic counter
+  message. Hash control executes the complete current stack byte-for-byte.
+  Seller, complete-information, one-round, unknown-horizon, and bargaining
+  actions are ineligible.
+- **Cohort / primary outcome**: retain every assigned game, including immediate
+  accepts, agreements, no-deals, walks, timeouts, invalids, abandoned games,
+  unresolved outcomes, and games whose candidate never emits a counter.
+  Primary is authenticated official per-game rating delta, candidate minus
+  contemporaneous hash control, stratified by host before pooling. Concurrent
+  exact-cell percentile is a required diagnostic, not a substitute for the
+  official score.
+- **Frozen decision rule before activation**: one harm look at 20 scored games
+  per arm stops if candidate is at least `-1.0 rating/game` below control, its
+  official 95% interval is wholly negative, or no-deals are at least 10pp worse.
+  Final read at 40 scored official games per arm, at least 5/arm on every
+  deployed host and every own type, and at least 8/arm in each message mode.
+  Promote only if the official-score 95% interval is wholly positive; exact-cell
+  percentile point lift is at least `+0.03` with lower 95% bound above `-0.01`;
+  candidate no-deal rate is no more than 5pp worse; every host, own-type,
+  message, and scale point estimate is nonnegative; and source, wire, assignment,
+  duplicate, outcome, and official-join failures are all zero. Otherwise leave
+  it research-only. No optional or post-trigger subset can promote it.
+- **Deployment boundary / verification so far**: intended hosts are champion,
+  composite, conceder, and randomized; hardliner remains protected. Arm only
+  after the pushed commit is loaded by each host through natural shift rotation,
+  the broad flag is explicitly zero, and no eligible game is in flight. Record
+  host-specific clean T0s before viewing any new-salt outcome. Exact champion-
+  stack reachability over 800 paired games produced 335 eligible states, 164
+  firings, and 164 changed wires. Focused strategy tests pass 37/37. The
+  prospective reader, full suite, commit, and push are still required before
+  activation. Never restart or alter bargaining to accelerate deployment.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 

@@ -1,0 +1,1721 @@
+[
+  {
+    "slot": "randomized",
+    "game_id": "1c2e3782-5d45-4000-b252-6c72e824e9fb",
+    "first_ts": 1787591036.340922,
+    "candidate": false,
+    "rating": 7.8,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 150.0,
+    "opponent_value": 80.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 80.01
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "23e87b01-d5bc-4555-87c7-8a9c4333903e",
+    "first_ts": 1787591050.508332,
+    "candidate": false,
+    "rating": -6.5,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1899.96
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "78f39053-c0f9-4b5a-acb0-f683019a0cca",
+    "first_ts": 1787591149.688843,
+    "candidate": false,
+    "rating": 3.7,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1899.96
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "3ef96461-b1f9-4491-8c8b-b13cff7f45a0",
+    "first_ts": 1787591169.3382149,
+    "candidate": false,
+    "rating": 4.7,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Tester1",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 237495.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "2ae52b2f-74c9-4adc-ad55-ed857625476b",
+    "first_ts": 1787591197.281146,
+    "candidate": false,
+    "rating": -0.4,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1583.3
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "232b5cd9-fc76-42d7-9f89-c10e43371ede",
+    "first_ts": 1787591200.734197,
+    "candidate": true,
+    "rating": 1,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 8600.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "6eacab19-7710-41ef-b316-ba6b8af8958a",
+    "first_ts": 1787591228.674144,
+    "candidate": true,
+    "rating": 0.2,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 9050.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "cd695c0b-1ee0-42d3-a7df-51e5e472ee98",
+    "first_ts": 1787591232.8128052,
+    "candidate": false,
+    "rating": -3.8,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": 100.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 107.8
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "509ac985-cee8-435b-8b81-b3e00d7d8c66",
+    "first_ts": 1787591303.416946,
+    "candidate": false,
+    "rating": 1.9,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 800000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Chaucer",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 126664.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "4046b34b-c82a-4ea8-8f29-adc5ae0ebcf5",
+    "first_ts": 1787591316.95411,
+    "candidate": false,
+    "rating": -5.5,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 19.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "19ceb673-a0a5-4ffb-a975-13bda0f4b6eb",
+    "first_ts": 1787591317.443316,
+    "candidate": true,
+    "rating": 0.4,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 80.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "expert",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 36.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "a9874617-e373-4453-a46e-848df5110c4f",
+    "first_ts": 1787591452.787072,
+    "candidate": false,
+    "rating": 1.5,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Test 1",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 2374.95
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "e51ab951-f744-492a-bd83-aab041b399a3",
+    "first_ts": 1787591478.534636,
+    "candidate": true,
+    "rating": 7.1,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 150.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 90.5,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "2e73e097-3fbf-4046-ba5e-cffac22297ba",
+    "first_ts": 1787591488.707926,
+    "candidate": true,
+    "rating": 1.2,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "xx",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 8600.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "fe5407d6-a2d2-48e5-bb37-222a1fae1253",
+    "first_ts": 1787591497.47004,
+    "candidate": false,
+    "rating": -4,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 15000.0,
+    "opponent_value": 8000.0,
+    "opponent_type": "agent",
+    "opponent_name": "expert",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 10730.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "4cf1e058-4d4f-4f2b-978c-529ca3b46270",
+    "first_ts": 1787591497.968669,
+    "candidate": true,
+    "rating": -1.4,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 9050.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "15cb3694-7e2c-4a89-8be1-e0d014d85df8",
+    "first_ts": 1787591511.339461,
+    "candidate": true,
+    "rating": 0.4,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "expert",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 8300.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "0a50ffd7-0bce-4853-bef5-2085c6e49159",
+    "first_ts": 1787591515.859631,
+    "candidate": false,
+    "rating": -5.5,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 100.0,
+    "opponent_value": 80.0,
+    "opponent_type": "agent",
+    "opponent_name": "Tiberius",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 87.8
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "22129f28-4156-4f1b-b174-03f301790af9",
+    "first_ts": 1787591523.692632,
+    "candidate": false,
+    "rating": -7.7,
+    "outcome": "no_deal",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 1200000.0,
+    "opponent_value": 800000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 820000.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "eb375385-80f6-4c4a-98df-9fbe1d663cf1",
+    "first_ts": 1787591528.833334,
+    "candidate": false,
+    "rating": 6.2,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": 1000000.0,
+    "opponent_type": "agent",
+    "opponent_name": "AgentE",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "5418dbb2-373e-4e04-931d-60506037bc97",
+    "first_ts": 1787591546.219127,
+    "candidate": true,
+    "rating": 5.9,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "theta",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 86.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "bec26f80-9336-4d05-b936-733e41db05e3",
+    "first_ts": 1787591554.185546,
+    "candidate": true,
+    "rating": 0.4,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "AgentC",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 8300.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "1df3a0f7-e5a5-4743-a750-4d12d13c81e6",
+    "first_ts": 1787591594.9521348,
+    "candidate": false,
+    "rating": 4.4,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 150.0,
+    "opponent_value": 80.0,
+    "opponent_type": "agent",
+    "opponent_name": "Agent05",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "5381a98c-a0c4-4fc6-9946-3824531c3774",
+    "first_ts": 1787591597.9069,
+    "candidate": false,
+    "rating": 4.8,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": 1000000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1025000.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "ba08fae2-a56b-4984-ae11-bb86c666f8ad",
+    "first_ts": 1787591613.3698409,
+    "candidate": false,
+    "rating": 1.3,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 1200000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "anchor",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 189996.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "d5aaa6b4-22db-4096-a070-09f389a2d1f1",
+    "first_ts": 1787591621.448962,
+    "candidate": true,
+    "rating": 0.7,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 800000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Zeuthen",
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "f9ef11bf-96cd-41bd-a7b2-a05a8740b752",
+    "first_ts": 1787591626.273185,
+    "candidate": false,
+    "rating": 3.2,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "💎ini",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "c661c8d3-4c9f-4b28-bfc9-0846d6ec14c1",
+    "first_ts": 1787591636.926888,
+    "candidate": true,
+    "rating": 6.1,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 1500000.0,
+    "opponent_value": 1000000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1020000.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "d421e4af-0585-4eff-aed1-b9a127236b8a",
+    "first_ts": 1787591660.228106,
+    "candidate": true,
+    "rating": 5.6,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 150.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 90.5,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "309cdbba-79c5-46f2-a201-ee245c43f892",
+    "first_ts": 1787591663.294252,
+    "candidate": true,
+    "rating": -3.7,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 12000.0,
+    "opponent_value": 8000.0,
+    "opponent_type": "agent",
+    "opponent_name": "theta",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "a17c91df-ee99-4625-9fd4-2a565dc08734",
+    "first_ts": 1787591669.785792,
+    "candidate": false,
+    "rating": -5.5,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 19.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "1b64ae68-adb9-4231-b94a-bc8a77fa105b",
+    "first_ts": 1787591696.534396,
+    "candidate": true,
+    "rating": -0.6,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 9050.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "cfccdc79-16ee-4ae8-a728-dab17b227c68",
+    "first_ts": 1787591701.519458,
+    "candidate": false,
+    "rating": -3.1,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "AgentB",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "2dcdb3db-2452-47ea-b264-9e774b5cc51b",
+    "first_ts": 1787591713.081493,
+    "candidate": false,
+    "rating": 4.7,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 15000.0,
+    "opponent_value": 10000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 10250.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "f5f15e1a-f22f-4f23-8ab3-e0177a1dbe74",
+    "first_ts": 1787591718.610542,
+    "candidate": false,
+    "rating": -4.8,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 100.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "AgentB",
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "4a7940b5-201a-4ba3-8801-87cb44656e70",
+    "first_ts": 1787591725.537594,
+    "candidate": true,
+    "rating": -0.4,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 800000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 360000.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "8e748b22-ef6e-44ab-8f2f-9380b5472d45",
+    "first_ts": 1787591751.117206,
+    "candidate": true,
+    "rating": 0.8,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 8000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 3600.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "f58c4bbe-7805-42be-9a3c-0689cf56abf9",
+    "first_ts": 1787591758.360637,
+    "candidate": false,
+    "rating": -5.5,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "b998e769-40bb-49d8-b7f3-b6a52f113461",
+    "first_ts": 1787591766.9275389,
+    "candidate": true,
+    "rating": -3.4,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1200000.0,
+    "opponent_value": 800000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "2f6595b6-bc09-46bd-a2a2-00992686b99f",
+    "first_ts": 1787591799.7430348,
+    "candidate": true,
+    "rating": 3.8,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Lab2a.ai",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 905000.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "bcbd807e-e5f6-4ecb-b885-d3c727224816",
+    "first_ts": 1787591807.3351018,
+    "candidate": false,
+    "rating": 4.7,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 1000000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "36f38df2-4d05-4146-a721-d21b851bd7ed",
+    "first_ts": 1787591819.300561,
+    "candidate": true,
+    "rating": 0.7,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 86.0
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "0ef96ae4-2740-4e28-a7ad-5dec8693deb2",
+    "first_ts": 1787591830.926633,
+    "candidate": false,
+    "rating": -4.2,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Ra",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "03bc85fa-e12f-4df9-b87e-193289d7b966",
+    "first_ts": 1787591832.2683861,
+    "candidate": true,
+    "rating": 0,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Test 2",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 8300.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "0c4a11b3-26bb-432d-8700-2caffa4cdd18",
+    "first_ts": 1787591882.035725,
+    "candidate": false,
+    "rating": -3.5,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": 80.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "b23b15fb-ec2b-4136-ba79-a94427c75653",
+    "first_ts": 1787591883.963454,
+    "candidate": false,
+    "rating": -0.7,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Edgeworth",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 19.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "e63ae8f9-39d5-4bd2-9191-b36d0b9e3fb3",
+    "first_ts": 1787591915.233972,
+    "candidate": false,
+    "rating": -1.2,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 1000000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 158330.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "c6f9b1e2-a15a-4339-a905-f63bd597bfb0",
+    "first_ts": 1787592287.80766,
+    "candidate": true,
+    "rating": -6.8,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "first-one",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 905000.0
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "e0ca5c7d-f835-45af-8bea-29434611f4ad",
+    "first_ts": 1787592340.9684522,
+    "candidate": false,
+    "rating": -6.3,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 150.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 23.75
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "2be9fd7c-310c-45fb-a1ec-2c2d5935cb4d",
+    "first_ts": 1787592352.2746701,
+    "candidate": false,
+    "rating": 4.8,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 12000.0,
+    "opponent_value": 10000.0,
+    "opponent_type": "agent",
+    "opponent_name": "Kreps",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 10100.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "ebced81b-86f4-421f-8bcc-57db4746c56f",
+    "first_ts": 1787592384.8745668,
+    "candidate": true,
+    "rating": -4.1,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": 8000.0,
+    "opponent_type": "agent",
+    "opponent_name": "Kreps",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "15d3b351-e171-4c50-a6f8-54fcf70e9f32",
+    "first_ts": 1787592434.422134,
+    "candidate": true,
+    "rating": 2.6,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1000000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "ee1e57d0-447a-4cd0-b5b1-6dce599dc92d",
+    "first_ts": 1787592455.080182,
+    "candidate": true,
+    "rating": 6.2,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 150.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Zeuthen",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 90.5
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "9326031d-99bd-4496-9ac7-08430fecc9da",
+    "first_ts": 1787592466.466923,
+    "candidate": true,
+    "rating": 3.5,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": 1200000.0,
+    "opponent_type": "agent",
+    "opponent_name": "V-Agent",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1212000.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "ca1fb79a-5dc1-4a4d-90f1-1f232143f6f1",
+    "first_ts": 1787592500.779242,
+    "candidate": true,
+    "rating": 5.4,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": 100.0,
+    "opponent_type": "agent",
+    "opponent_name": "mason",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 100.8
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "f3431f3a-333b-45b6-9a41-e2e51f58c368",
+    "first_ts": 1787592511.0987499,
+    "candidate": false,
+    "rating": 2.1,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 80.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Clod",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 12.67
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "54d1dea6-aa94-4bb7-b415-a7ac85f720e2",
+    "first_ts": 1787592518.960746,
+    "candidate": true,
+    "rating": -4.6,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 100.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "26f94a26-5c0c-4d7b-aa1d-a08f927f1659",
+    "first_ts": 1787592534.704017,
+    "candidate": false,
+    "rating": 5.3,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 1200000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "b66d419a-cb5c-4f50-960d-b8726dd8e506",
+    "first_ts": 1787592535.18487,
+    "candidate": true,
+    "rating": 1.7,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 8000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Agent03",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 3600.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "9d699fd2-9acf-4621-b808-108b9ce20efe",
+    "first_ts": 1787592552.113942,
+    "candidate": true,
+    "rating": 0.9,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 8000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Ira",
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "c3d7b939-4e05-47c3-8bfe-878ab4367865",
+    "first_ts": 1787592567.10054,
+    "candidate": true,
+    "rating": 1.6,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "08f6f006-970b-4563-a975-d4bc2af46792",
+    "first_ts": 1787592568.702355,
+    "candidate": false,
+    "rating": -4.4,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Utk",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 19.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "cc6a24da-dd6f-4481-bdc4-3a8287b402e3",
+    "first_ts": 1787592583.574133,
+    "candidate": true,
+    "rating": -3.5,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Edgeworth",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 86.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "fcd244fb-83ff-412f-a19b-55080a290a3a",
+    "first_ts": 1787592585.839833,
+    "candidate": false,
+    "rating": 4.3,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 1500000.0,
+    "opponent_value": 1200000.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1215000.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "a726de41-132d-400e-8eb8-681a27300f09",
+    "first_ts": 1787592601.715877,
+    "candidate": true,
+    "rating": 6.2,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 100.0,
+    "opponent_value": 80.0,
+    "opponent_type": "agent",
+    "opponent_name": "opus 5(4)",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 80.8,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "683fc7ab-4ad5-414f-a7b1-249942977069",
+    "first_ts": 1787592604.342038,
+    "candidate": true,
+    "rating": -0.1,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 800000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "e0779e07-bbbf-4a4d-bb27-863beeebf54f",
+    "first_ts": 1787592617.310416,
+    "candidate": true,
+    "rating": 4.9,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1200000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Agent Smith",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "d0e2ae7e-2a69-4d28-8738-9087d3b3bee5",
+    "first_ts": 1787592622.8944,
+    "candidate": true,
+    "rating": 3.5,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": 80.0,
+    "opponent_type": "agent",
+    "opponent_name": "Triniti",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "2cdfa0bc-d669-4350-8025-bce461890e94",
+    "first_ts": 1787592644.685966,
+    "candidate": false,
+    "rating": -8,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Test 3",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 237495.0
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "52c51160-b58e-496e-a969-f6d3cce49b9a",
+    "first_ts": 1787592644.849378,
+    "candidate": false,
+    "rating": 3,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 237495.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "43a5c049-71c7-497a-b708-016752250574",
+    "first_ts": 1787592650.2561018,
+    "candidate": false,
+    "rating": 0.2,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 80.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 12.67
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "e771eba5-da90-43de-b606-0e7295850040",
+    "first_ts": 1787592657.847252,
+    "candidate": true,
+    "rating": -2,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 80.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 36.0
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "0d8a1126-5a04-42cd-b73d-b45ab740eaae",
+    "first_ts": 1787592705.721492,
+    "candidate": false,
+    "rating": 4,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1583.3
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "8996f05f-639f-412d-b835-fd177c4e94b6",
+    "first_ts": 1787592709.2913768,
+    "candidate": false,
+    "rating": -1.8,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1583.3
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "160b9d56-9cc8-4592-a60e-915caa26f126",
+    "first_ts": 1787592718.7997062,
+    "candidate": true,
+    "rating": 3.5,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 150.0,
+    "opponent_value": 120.0,
+    "opponent_type": "agent",
+    "opponent_name": "Agent Smith",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 121.2,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "56e2786f-80b2-41d7-9b7a-3a6b29cb086b",
+    "first_ts": 1787592718.858367,
+    "candidate": true,
+    "rating": 0.5,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "semih",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "1e324f16-4fd6-4b44-8d50-842d85b4b036",
+    "first_ts": 1787592731.7027562,
+    "candidate": false,
+    "rating": 5.7,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 12000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Agent-T1",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 1899.96
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "2d8fce5f-7886-4edd-9678-2ed245aec5ac",
+    "first_ts": 1787592748.7175019,
+    "candidate": false,
+    "rating": 4.2,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 100.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Edgeworth",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 15.83
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "44892211-8e2e-4334-bc48-18bca920a038",
+    "first_ts": 1787592767.25408,
+    "candidate": true,
+    "rating": -0.3,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 100.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "harry-agent",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 83.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "cf3bc761-ed93-46d9-b5e5-faa5eab6a0c1",
+    "first_ts": 1787592777.751948,
+    "candidate": true,
+    "rating": 1,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 1000000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "hobbylab",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 830000.0
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "d3a116bd-712b-466e-a18f-86e82d33e482",
+    "first_ts": 1787592778.594481,
+    "candidate": false,
+    "rating": -0.5,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 80.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 12.67
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "53fe479e-6344-4a34-bda3-f1096618cb8f",
+    "first_ts": 1787592808.453808,
+    "candidate": false,
+    "rating": 4.7,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 1500000.0,
+    "opponent_value": 800000.0,
+    "opponent_type": "agent",
+    "opponent_name": "cybot",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "843f5e8c-6c3c-454f-a689-8408656413e8",
+    "first_ts": 1787592830.130817,
+    "candidate": false,
+    "rating": 0.5,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 150.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "GoldenSon",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 23.75
+    }
+  },
+  {
+    "slot": "champion",
+    "game_id": "0e876ac2-b618-4393-a96e-e5d50ab70582",
+    "first_ts": 1787592835.39453,
+    "candidate": false,
+    "rating": -3.7,
+    "outcome": "agreement",
+    "information": "complete",
+    "horizon": "unknown",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": 100.0,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 102.0
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "f79d4042-1069-4438-a732-52a280de3517",
+    "first_ts": 1787592841.4917278,
+    "candidate": true,
+    "rating": 2.5,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 800000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 360000.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "b912cf67-2ccb-490f-a5fb-e8ef8f514023",
+    "first_ts": 1787592845.831857,
+    "candidate": false,
+    "rating": 5.7,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Agent02",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 2374.95
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "7f678962-68e4-4bb3-887a-b9641a4fc419",
+    "first_ts": 1787592880.863307,
+    "candidate": true,
+    "rating": -0.3,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "cap10",
+    "messages": false,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "agent",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 86.0
+    }
+  },
+  {
+    "slot": "conceder",
+    "game_id": "b135ffdc-e21e-4e6e-9db3-80748ff88b00",
+    "first_ts": 1787592925.3579361,
+    "candidate": true,
+    "rating": 4.5,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 1500000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "Edgeworth",
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "22f121f0-28a7-492f-9671-0f386cdd3572",
+    "first_ts": 1787592928.870163,
+    "candidate": false,
+    "rating": 3.8,
+    "outcome": "agreement",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": true,
+    "own_value": 120.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "AcceptOffer"
+    }
+  },
+  {
+    "slot": "composite",
+    "game_id": "7ee12a46-da13-4309-bbbd-91dc281ead9c",
+    "first_ts": 1787592937.8389199,
+    "candidate": true,
+    "rating": -2.5,
+    "outcome": "walk",
+    "information": "hidden",
+    "horizon": "unknown",
+    "messages": true,
+    "own_value": 15000.0,
+    "opponent_value": null,
+    "opponent_type": "agent",
+    "opponent_name": "V-Agent",
+    "first_action": {
+      "decision": "RejectOffer",
+      "product_price": 9050.0,
+      "message": "Above what I can justify. Here is where I can go."
+    }
+  },
+  {
+    "slot": "randomized",
+    "game_id": "14d403fa-a8ef-44ce-ab92-979ac4a0634b",
+    "first_ts": 1787592938.952157,
+    "candidate": false,
+    "rating": 1,
+    "outcome": "no_deal",
+    "information": "hidden",
+    "horizon": "one",
+    "messages": false,
+    "own_value": 10000.0,
+    "opponent_value": null,
+    "opponent_type": "hidden",
+    "opponent_name": null,
+    "first_action": {
+      "decision": "RejectOffer"
+    }
+  }
+]

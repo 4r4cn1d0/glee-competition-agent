@@ -21,7 +21,8 @@ from __future__ import annotations
 import math
 
 from .. import (first_principles, nego_arms, pricing, runtime_flags,
-                top_buyer_clone, top_opus_buyer_clone)
+                top_buyer_clone, top_buyer_clone_hi_cap10,
+                top_opus_buyer_clone)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1605,6 +1606,16 @@ def decide(game: dict, cfg) -> dict:
 
 
 def _decide(game: dict, cfg) -> dict:
+    # The broad clone's only coherent positive cell at its fixed official
+    # checkpoint was hidden-information cap-10 buyers (+1.81 rating/game and a
+    # lower no-deal rate, candidate n=15/control n=11).  Because that slice was
+    # selected post hoc, this independent salt re-tests it prospectively and
+    # owns the complete move only in that exact cell.
+    if top_buyer_clone_hi_cap10.owns(game):
+        scoped_clone_action = top_buyer_clone_hi_cap10.action(game)
+        if scoped_clone_action is not None:
+            return scoped_clone_action
+
     # The observed-leader buyer clone is a full-policy treatment: both its
     # prices and accept/reject boundary must move together or the experiment
     # would repeat the single-flag/two-mechanism failure.  Candidate games are

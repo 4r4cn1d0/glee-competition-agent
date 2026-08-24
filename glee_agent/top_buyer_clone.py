@@ -36,6 +36,7 @@ from . import pricing, runtime_flags
 
 
 SALT = "nego_top_buyer_clone_v1|"
+SCOPED_CAP10_FLAG = "GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB"
 # These are literal price/B paths shared by 7aidara, Alpha, Beta, and Gamma.
 # Repeated values are meaningful holds, not interpolation artifacts.  The .8
 # path is structurally dead against an individually rational seller but is kept
@@ -75,7 +76,10 @@ def treatment_assignment(game_id) -> bool | None:
 
 
 def enabled() -> bool:
-    return runtime_flags.enabled("GLEE_NEGO_TOP_BUYER_CLONE_AB")
+    # If both generations are accidentally armed, neither may own a game.  The
+    # scoped module performs the reciprocal check against this broad flag.
+    return (runtime_flags.enabled("GLEE_NEGO_TOP_BUYER_CLONE_AB")
+            and not runtime_flags.enabled(SCOPED_CAP10_FLAG))
 
 
 def _seat(game: dict):

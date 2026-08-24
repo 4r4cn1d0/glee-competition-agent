@@ -1602,3 +1602,48 @@ replaced; no child agent was signalled. The replacement adopted the still-
 running conceder/randomized processes and outcome collector, then launched the
 three already-down slots. All five turn streams were live by 22:32:09. This is
 not policy evidence and no held game was interrupted.
+
+### 2026-08-24 22:50 IST: first buyer-clone official checkpoint
+
+The first change in this workstream to show a positive clean official A/B point
+estimate is `GLEE_NEGO_TOP_BUYER_CLONE_AB`. After auditing every unmatched
+dashboard row rather than conditioning on successful joins, treatment is
+20 games / `+24.8` rating (`+1.240/game`) and control is 25 games / `-14.3`
+(`-0.572/game`): lift `+1.812/game`, approximate Welch 95% interval
+`[-0.39,+4.02]`. This clears the emergency harm gate but not promotion:
+30/arm is unmet, the interval crosses zero, and Agent 5/composite is currently
+negative (`-1.13/game`) while champion, Test 4, and Test 3 are positive. Keep
+the arm randomized and collect the fixed checkpoint; do not claim a sustained
+0.55 percentile or deploy it fleet-wide yet.
+
+The strict join matched 22/36 new buyer rows. All 14 failures were recovered
+by exact host/minute/setup/incoming-offer/submitted-action/source evidence; no
+rating or payoff entered the key. Their inclusion lowered the naive matched-
+only lift from `+2.51` to `+1.81`, so this is a material evaluator bug, not
+bookkeeping. First incoming accept/reject records have empty `state.history`;
+the live join currently omits `state.last_offer` in that case. A fail-closed
+regression fix is in progress.
+
+### 2026-08-24 23:14 IST: broad clone stopped; scoped prospective retest built
+
+The broad buyer clone has not earned promotion. Its frozen 91-game official
+checkpoint is candidate 44 / `+49.1` (`+1.116/game`) versus control 47 /
+`+11.6` (`+.247/game`), a `+.869/game` point lift with approximate Welch 95%
+interval `[-.78,+2.52]`. Candidate no-deals rose 6.14pp and composite's host
+point is `-.648/game`, failing the precommitted interval, no-deal, and
+every-host gates. Fleet tooling set only `GLEE_NEGO_TOP_BUYER_CLONE_AB=0` on
+the four research hosts at `T1=1787593429`; live overlay polling makes this a
+non-restart stop. Bargaining was untouched.
+
+The sole coherent post-hoc cell was hidden-information known-cap-10 buyers:
+candidate `+1.573/game` n=15 versus control `-.236/game` n=11, `+1.809/game`,
+with fewer rather than more no-deals. Because it was selected after looking,
+`GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB` uses a fresh hash salt and remains
+default OFF until a clean prospective T0. It copies the already-frozen literal
+leader path only in that exact buyer cell; every other negotiation action and
+all bargaining behavior fall through. Champion-stack reachability is
+335 eligible / 164 fired / 164 changed over 800 paired games, and focused
+strategy tests are 37/37. EXPERIMENTS.md freezes the 20/arm harm and 40/arm
+final rules before activation. Next: finish the all-outcome reader, full suite,
+commit/push, wait for natural shifts, verify no eligible games in flight, then
+arm champion/composite/conceder/randomized at host-specific clean T0s.

@@ -15,7 +15,7 @@ import logging
 import math
 
 from . import (first_principles, pricing, runtime_flags, top_buyer_clone,
-               top_opus_buyer_clone)
+               top_buyer_clone_hi_cap10, top_opus_buyer_clone)
 
 MAX_MESSAGE_LEN = 2000
 
@@ -711,7 +711,8 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     # The top-buyer treatment owns decision and price as one mechanism.  Any
     # later hidden floor, opening claim, or TABLE postcondition would turn it
     # into a different unlabelled policy, so candidate wires end here.
-    if top_buyer_clone.owns(game):
+    if (top_buyer_clone_hi_cap10.owns(game)
+            or top_buyer_clone.owns(game)):
         return
     # Unlike the full 7aidara clone, the Opus reconstruction intentionally
     # falls through on unidentified branches.  Exempt only a wire that exactly

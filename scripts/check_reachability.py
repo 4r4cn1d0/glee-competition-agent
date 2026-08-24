@@ -198,6 +198,12 @@ def _p_top_buyer_clone(game, p):
     return eligible(game)
 
 
+def _p_top_buyer_clone_hi_cap10(game, p):
+    """Static scope of the prospective hidden cap-10 leader clone."""
+    from glee_agent.top_buyer_clone_hi_cap10 import eligible
+    return eligible(game)
+
+
 def _p_top_opus_buyer_clone(game, p):
     """Static scope of the partial direct-Opus buyer treatment."""
     from glee_agent.top_opus_buyer_clone import eligible
@@ -422,6 +428,8 @@ KNOWN = {
         "negotiation", (), _p_hi_cap10_buyer_curve),
     "GLEE_NEGO_TOP_BUYER_CLONE_AB": (
         "negotiation", (), _p_top_buyer_clone),
+    "GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB": (
+        "negotiation", (), _p_top_buyer_clone_hi_cap10),
     "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB": (
         "negotiation", (), _p_top_opus_buyer_clone),
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB": (
@@ -498,6 +506,7 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
     "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB",
     "GLEE_NEGO_TOP_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB",
     "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB",
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",

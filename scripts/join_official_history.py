@@ -1007,6 +1007,25 @@ def _live_turn_record(record: Mapping[str, Any], *, slot: str,
     history = state.get("history") or []
     transcript = (_canonical_transcript(history, state, role)
                   if history else [])
+    action_type = str(record.get("action_type") or record.get("phase")
+                      or "").strip().lower()
+    if not history and action_type == "decision":
+        # On the first incoming offer the SDK exposes the offer only through
+        # state.last_offer; history remains empty until our decision closes the
+        # round.  Omitting it produces a decision-only prefix that cannot equal
+        # the dashboard's exact [offer, decision] transcript.  Reconstruct only
+        # this first-decision shape, and require an exact opponent actor/price.
+        # Missing or contradictory state stays unjoinable rather than falling
+        # back to timestamp, rating, or a nearest transcript guess.
+        last_offer = state.get("last_offer")
+        if not isinstance(last_offer, Mapping):
+            raise JoinInputError(
+                "empty-history live decision is missing last_offer")
+        incoming = _price_event("offer", last_offer, None, roles)
+        if incoming[1] == role:
+            raise JoinInputError(
+                "empty-history live decision last_offer is not from opponent")
+        transcript.append(incoming)
     transcript.extend(_turn_action_events(record, role))
     if not transcript:
         raise JoinInputError("live turn has no semantic transcript prefix")
@@ -1082,7 +1101,7 @@ def _load_live_turn_records(logs_root: Path, slots: set[str], *,
 
 def _turn_prefix_matches(dashboard: DashboardRecord,
                          local: LocalRecord) -> bool:
-    """Require exact setup and all observed events, with <=1 terminal suffix."""
+    """Require exact setup and a bounded, semantic terminal suffix."""
     if local.match_rule != "exact-modal-turn-prefix":
         return False
     if dashboard.setup_key != local.setup_key:
@@ -1090,8 +1109,28 @@ def _turn_prefix_matches(dashboard: DashboardRecord,
     prefix = local.transcript_key
     full = dashboard.transcript_key
     missing = len(full) - len(prefix)
-    return (bool(prefix) and missing in (0, 1)
-            and full[:len(prefix)] == prefix)
+    if not prefix or full[:len(prefix)] != prefix:
+        return False
+    if missing in (0, 1):
+        return True
+    if missing != 2:
+        return False
+    # A single opponent RejectOffer carrying a counter is represented by two
+    # canonical events.  The 22:40--22:49 live audit joined 35/36 exact rows;
+    # its sole miss was this terminal compound action after our final logged
+    # counter.  Accept only that exact opponent-authored pair, never an
+    # arbitrary two-event suffix or a timestamp/nearest-record guess.
+    decision, counter = full[len(prefix):]
+    opponent = decision[1] if len(decision) >= 2 else None
+    return (
+        len(decision) == 3
+        and decision == ("decision", opponent, "reject")
+        and opponent in {"seller", "buyer"}
+        and opponent != dashboard.role
+        and len(counter) == 3
+        and counter[0] == "counter"
+        and counter[1] == opponent
+    )
 
 
 def _duplicate_dashboard_rows(records: Sequence[DashboardRecord]) -> set[int]:

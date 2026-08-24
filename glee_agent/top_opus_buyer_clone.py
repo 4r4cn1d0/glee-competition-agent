@@ -37,7 +37,10 @@ from . import pricing, runtime_flags
 
 
 FLAG = "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB"
-CONFLICTING_FLAG = "GLEE_NEGO_TOP_BUYER_CLONE_AB"
+CONFLICTING_FLAGS = (
+    "GLEE_NEGO_TOP_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB",
+)
 SALT = "nego_top_opus_buyer_clone_v1|"
 PLAN_SOURCE = "top_opus_buyer_clone"
 
@@ -197,7 +200,8 @@ def treatment_assignment(game_id) -> bool | None:
 def enabled() -> bool:
     """The new arm is inert, including while the older full clone is armed."""
     return (runtime_flags.enabled(FLAG)
-            and not runtime_flags.enabled(CONFLICTING_FLAG))
+            and not any(runtime_flags.enabled(flag)
+                        for flag in CONFLICTING_FLAGS))
 
 
 def _history_price_count(state: dict, me: str, round_no: int) -> int | None:

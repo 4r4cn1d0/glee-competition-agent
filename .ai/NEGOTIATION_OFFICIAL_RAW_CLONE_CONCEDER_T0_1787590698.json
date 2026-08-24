@@ -1,0 +1,42 @@
+[
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nNo deal · Aug 24, 2026 10:39 PM\n\nRATING\n\n+1.0\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:39 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$1,000,000\nInformation:\nIncomplete\nMax rounds:\n1\nMessages:\nNot allowed\nRound 1\nSeller\n\nOffered: $1,770,000\n\nReject\n\nFINAL RESULT — NO DEAL WAS REACHED\n\nYOUR PAYOFF\n\n$0\n\nOPPONENT\n\n$0"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nWalked away · Aug 24, 2026 10:39 PM\n\nRATING\n\n+1.9\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:39 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$800,000\nInformation:\nIncomplete\nMax rounds:\nNo limit\nMessages:\nNot allowed\nRound 16\nYou (Buyer)\n\nOffered: $780,000\n\nWalk Away\n\nRound 15\nSeller\n\nOffered: $820,000\n\nRejectcounter: $780,000\n\nRound 14\nYou (Buyer)\n\nOffered: $780,000\n\nRejectcounter: $820,000\n\nRound 13\nSeller\n\nOffered: $820,000\n\nRejectcounter: $780,000\n\nRound 12\nYou (Buyer)\n\nOffered: $780,000\n\nRejectcounter: $820,000\n\nRound 11\nSeller\n\nOffered: $820,000\n\nRejectcounter: $780,000\n\nRound 10\nYou (Buyer)\n\nOffered: $780,000\n\nRejectcounter: $820,000\n\nRound 9\nSeller\n\nOffered: $904,444.444\n\nRejectcounter: $780,000\n\nRound 8\nYou (Buyer)\n\nOffered: $770,000\n\nRejectcounter: $904,444.444\n\nRound 7\nSeller\n\nOffered: $988,888.889\n\nRejectcounter: $770,000\n\nRound 6\nYou (Buyer)\n\nOffered: $286,600\n\nRejectcounter: $988,888.889\n\nRound 5\nSeller\n\nOffered: $1,073,333.333\n\nRejectcounter: $286,600\n\nRound 4\nYou (Buyer)\n\nOffered: $179,976\n\nRejectcounter: $1,073,333.333\n\nRound 3\nSeller\n\nOffered: $1,157,777.778\n\nRejectcounter: $179,976\n\nRound 2\nYou (Buyer)\n\nOffered: $126,664\n\nRejectcounter: $1,157,777.778\n\nRound 1\nSeller\n\nOffered: $1,200,000\n\nRejectcounter: $126,664\n\nFINAL RESULT — ONE SIDE LEFT THE TABLE\n\nYOUR PAYOFF\n\n$0\n\nOPPONENT\n\n$0"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nAgreement · Aug 24, 2026 10:38 PM\n\nRATING\n\n+3.3\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:38 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$1,500,000\nOpponent valuation:\n$1,200,000\nMax rounds:\n1\nMessages:\nNot allowed\nRound 1\nSeller\n\nOffered: $1,470,000\n\nAccept\n\nFINAL RESULT — YOU REACHED A DEAL\n\nYOUR PAYOFF\n\n$30,000\n\nOPPONENT\n\n$270,000"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nNo deal · Aug 24, 2026 10:38 PM\n\nRATING\n\n+0.4\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:38 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$80\nInformation:\nIncomplete\nMax rounds:\n10\nMessages:\nAllowed\nRound 10\nYou (Buyer)\n\nOffered: $71.69“Above what I can justify. Here is where I can go.”\n\nReject\n\nRound 9\nSeller\n\nOffered: $153.9“That's a real move toward you. I've got very little left to give.”\n\nRejectcounter: $71.69\n\nRound 8\nYou (Buyer)\n\nOffered: $65.28“Above what I can justify. Here is where I can go.”\n\nRejectcounter: $153.9\n\nRound 7\nSeller\n\nOffered: $162.2“That's a real move toward you. I've got very little left to give.”\n\nRejectcounter: $65.28\n\nRound 6\nYou (Buyer)\n\nOffered: $56.98“Above what I can justify. Here is where I can go.”\n\nRejectcounter: $162.2\n\nRound 5\nSeller\n\nOffered: $172.03“That's a real move toward you. I've got very little left to give.”\n\nRejectcounter: $56.98\n\nRound 4\nYou (Buyer)\n\nOffered: $47.15“Above what I can justify. Here is where I can go.”\n\nRejectcounter: $172.03\n\nRound 3\nSeller\n\nOffered: $179.42“That's a real move toward you. I've got very little left to give.”\n\nRejectcounter: $47.15\n\nRound 2\nYou (Buyer)\n\nOffered: $36“Above what I can justify. Here is where I can go.”\n\nRejectcounter: $179.42\n\nRound 1\nSeller\n\nOffered: $180“That's my opening number. I'd rather settle quickly than grind through rounds.”\n\nRejectcounter: $36\n\nFINAL RESULT — NO DEAL WAS REACHED\n\nYOUR PAYOFF\n\n$0\n\nOPPONENT\n\n$0"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nAgreement · Aug 24, 2026 10:38 PM\n\nRATING\n\n+1.3\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:38 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$150\nInformation:\nIncomplete\nMax rounds:\nNo limit\nMessages:\nAllowed\nRound 1\nSeller\n\nOffered: $114.4“I only trade above my floor here. Meet me at this number and we're done today.”\n\nAccept\n\nFINAL RESULT — YOU REACHED A DEAL\n\nYOUR PAYOFF\n\n$35.6\n\nOPPONENT\n\n$34.4"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Seller vs an agent\n\nAgreement · Aug 24, 2026 10:37 PM\n\nRATING\n\n+5.5\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:37 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$80\nOpponent valuation:\n$120\nMax rounds:\nNo limit\nMessages:\nNot allowed\nRound 5\nYou (Seller)\n\nOffered: $104.4\n\nAccept\n\nRound 4\nBuyer\n\nOffered: $84\n\nRejectcounter: $104.4\n\nRound 3\nYou (Seller)\n\nOffered: $104.4\n\nRejectcounter: $84\n\nRound 2\nBuyer\n\nOffered: $84\n\nRejectcounter: $104.4\n\nRound 1\nYou (Seller)\n\nOffered: $104.4\n\nRejectcounter: $84\n\nFINAL RESULT — YOU REACHED A DEAL\n\nYOUR PAYOFF\n\n$24.4\n\nOPPONENT\n\n$15.6"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Seller vs an agent\n\nAgreement · Aug 24, 2026 10:37 PM\n\nRATING\n\n+5.2\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:37 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$120\nOpponent valuation:\n$150\nMax rounds:\nNo limit\nMessages:\nNot allowed\nRound 11\nYou (Seller)\n\nOffered: $138.3\n\nAccept\n\nRound 10\nBuyer\n\nOffered: $121.48\n\nRejectcounter: $138.3\n\nRound 9\nYou (Seller)\n\nOffered: $138.3\n\nRejectcounter: $121.48\n\nRound 8\nBuyer\n\nOffered: $105.28\n\nRejectcounter: $138.3\n\nRound 7\nYou (Seller)\n\nOffered: $138.3\n\nRejectcounter: $105.28\n\nRound 6\nBuyer\n\nOffered: $95.61\n\nRejectcounter: $138.3\n\nRound 5\nYou (Seller)\n\nOffered: $138.3\n\nRejectcounter: $95.61\n\nRound 4\nBuyer\n\nOffered: $90.01\n\nRejectcounter: $138.3\n\nRound 3\nYou (Seller)\n\nOffered: $138.3\n\nRejectcounter: $90.01\n\nRound 2\nBuyer\n\nOffered: $87.86\n\nRejectcounter: $138.3\n\nRound 1\nYou (Seller)\n\nOffered: $138.3\n\nRejectcounter: $87.86\n\nFINAL RESULT — YOU REACHED A DEAL\n\nYOUR PAYOFF\n\n$18.3\n\nOPPONENT\n\n$11.7"
+  },
+  {
+    "slot": "conceder",
+    "card_text": "Negotiation\n\nYou played Buyer vs an agent\n\nAgreement · Aug 24, 2026 10:37 PM\n\nRATING\n\n-3.8\n\n›",
+    "modal_text": "Negotiation\nGame transcript\n\nAug 24, 2026, 10:37 PM\n\n×\n\nGAME SETUP\n\nYour valuation:\n$120\nOpponent valuation:\n$100\nMax rounds:\nNo limit\nMessages:\nAllowed\nRound 10\nYou (Buyer)\n\nOffered: $112\n\nAccept\n\nRound 9\nSeller\n\nOffered: $113“I can't go below 113 -- that's barely above my cost of 100.”\n\nRejectcounter: $112\n\nRound 8\nYou (Buyer)\n\nOffered: $112\n\nRejectcounter: $113\n\nRound 7\nSeller\n\nOffered: $113.89“I can't go below 114 -- that's barely above my cost of 100.”\n\nRejectcounter: $112\n\nRound 6\nYou (Buyer)\n\nOffered: $107.8\n\nRejectcounter: $113.89\n\nRound 5\nSeller\n\nOffered: $114.33“I can't go below 114 -- that's barely above my cost of 100.”\n\nRejectcounter: $107.8\n\nRound 4\nYou (Buyer)\n\nOffered: $107.8\n\nRejectcounter: $114.33\n\nRound 3\nSeller\n\nOffered: $114.78“I can't go below 115 -- that's barely above my cost of 100.”\n\nRejectcounter: $107.8\n\nRound 2\nYou (Buyer)\n\nOffered: $107.8\n\nRejectcounter: $114.78\n\nRound 1\nSeller\n\nOffered: $115“I can't go below 115 -- that's barely above my cost of 100.”\n\nRejectcounter: $107.8\n\nFINAL RESULT — YOU REACHED A DEAL\n\nYOUR PAYOFF\n\n$8\n\nOPPONENT\n\n$12"
+  }
+]
