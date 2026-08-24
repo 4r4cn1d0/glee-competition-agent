@@ -122,7 +122,9 @@ def test_snapshot_uses_reloaded_env_for_board_auth_and_randomized_slot(
 
     row = snapshot_script.snapshot(_env("fresh"))
 
-    assert len(requests) == 3
+    assert len(requests) == 4
+    assert any(request.full_url.endswith("/api/leaderboard/overall")
+               for request in requests)
     assert all(request.get_header("Authorization") == "Bearer fresh-1"
                for request in requests)
     assert "randomized" in row and "specialist" not in row

@@ -6,7 +6,7 @@ not reconstructed after the fact. Appends one JSON line per interval to
 logs/ratings_history.jsonl: every agent's per-family rating and games, plus
 each family's top-50 cutoff and, when any of our agents appear in a top-50
 list, their row. Budget: one stats() call per key per interval (the 60/min
-per-key budget is shared with the live agent) plus three authenticated
+per-key budget is shared with the live agent) plus four authenticated
 leaderboard fetches.
 """
 from __future__ import annotations
@@ -99,7 +99,7 @@ def snapshot(env):
         except Exception as exc:
             row[slot] = {"error": str(exc)[:80]}
     boards = {}
-    for fam in ("bargaining", "negotiation", "persuasion"):
+    for fam in ("overall", "bargaining", "negotiation", "persuasion"):
         try:
             # The endpoint 403s without auth; this failed silently from the day
             # the snapshotter was built, so no snapshot carried board data until
@@ -107,8 +107,11 @@ def snapshot(env):
             # Use the mapping reloaded for this poll. Reading process env here
             # would keep a launch-time key alive after a later rotation.
             _key = env.get("GLEE_KEY_TEST1") or env.get("GLEE_API_KEY", "")
+            endpoint = ("https://glee-competition.com/api/leaderboard/overall"
+                        if fam == "overall" else
+                        f"https://glee-competition.com/api/leaderboard?family={fam}")
             req = urllib.request.Request(
-                f"https://glee-competition.com/api/leaderboard?family={fam}",
+                endpoint,
                 headers={"Authorization": f"Bearer {_key}",
                          "User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=20) as fh:
