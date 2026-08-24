@@ -31,11 +31,18 @@ reported `wire_ok=true`. Test 4 entered the negotiation top-50 at rating
 2077.54 / displayed rank 24 before any eligible probe exposure, so that move is
 baseline variance and must not be attributed to treatment.
 
+The first common-boundary read had 7 assigned games, 4 resolved and 3 active.
+All four resolved without agreement; hidden-pooled diagnostic percentile was
+control .4028 (n=1), share80 .4028 (n=1), and share95 .3807 (n=2), with zero
+wire failures. This is explicitly no decision. Structural feasibility is only
+25% in both eligible own-type cells, and the observed opposing bids/asks were
+far outside our reservation values, so an early all-zero draw is unsurprising.
+
 Production-context shadowing over Test 2's latest 20,000 turns found 47 eligible
 first-turn games: 12 control, 18 share80, and 17 share95, split 24 seller / 23
 buyer. All 35 candidate price opportunities fired and changed the wire action;
 examples reproduced .81B, 1.44B, and 1.485B exactly. Focused verification is
-139 passed; the full suite is 1,012 passed with only the two predeclared
+139 passed; the latest full suite is 1,016 passed with only the two predeclared
 bargaining failures. No bargaining code or configuration was changed.
 
 Promotion requires joined official per-game scores: candidate-control 95% CI

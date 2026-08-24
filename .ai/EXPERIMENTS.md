@@ -85,6 +85,12 @@
   boundary, Test 4 emitted exact share95 wires at 1.485B and .81B and Agent 5
   emitted a hash control, all with `wire_ok=true`. The runtime refuses to
   activate if `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` is armed.
+- **Early common-cohort read (2026-08-24 ~16:05 IST)**: 7 assigned, 4 resolved,
+  3 active, zero agreements among the four resolved, zero wire failures. Local
+  diagnostic percentile: control .4028 (n=1), share80 .4028 (n=1), share95
+  .3807 (n=2). No inference: each eligible own type has only 25% structural
+  feasibility, and the first counteroffers sat far outside our reservation
+  values. Continue to the precommitted sample/rule; do not react to this draw.
 
 ## READY — DEFAULT OFF, NOT LIVE
 
