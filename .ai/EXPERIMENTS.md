@@ -1183,7 +1183,7 @@ Test 3 before causal promotion evidence.
   point estimates, and zero mechanism/join failures. Completed historical deals
   do not identify whether rejecting the guaranteed offer is beneficial.
 
-## BUILT DEFAULT OFF — PERSUASION BUYER BINARY POST-DECLINE PULSE
+## RUNNING RESEARCH-ONLY — PERSUASION BUYER BINARY POST-DECLINE PULSE
 
 Frozen prospectively at 2026-08-24 23:41 IST, before inert commit, fleet
 activation, assignment, or outcome.
@@ -1284,6 +1284,23 @@ activation, assignment, or outcome.
   readers through approximately `1787600226` found no post-T0 structural
   assignments yet, so live emitted behavior is still awaiting its first exact
   game and the first-20 assignment audit remains mandatory.
+- **External reset and re-arm era (25 Aug)**: an external fleet write at
+  `T1=1787600396.5521495` set all persuasion experiment flags to zero and ended
+  both original host eras. The original window contains one exact assignment:
+  composite candidate `86d71fde-0bcc-4d7d-80f3-470b3bb3cdcc`, with all 20
+  turns present, no reachable pulse, no trace, and no action change. It remains
+  in ITT. Snapshot `ae7b913` was invalidated before activation when a concurrent
+  negotiation-owned restore changed the complete stacks; the hash interlock
+  refused deployment, so that snapshot defines no treatment era. The restored
+  stacks were refrozen prospectively at `1787601285.818645` in snapshot commit
+  `16161f6`. Fresh exact-stack reachability was `12/7/7` on each host and no
+  target game was in flight. Fleet tooling re-armed only champion from
+  `T0=1787601319.884793282` and composite from
+  `T0=1787601338.633884907`; Test 2, Test 3, and Test 4 remain explicit zero.
+  PIDs did not change and immediate post-T0 scans found zero current-era
+  assignments. Original and current eras must be read separately with their
+  own immutable snapshots and upper/lower boundaries; the frozen harm/final,
+  subgroup, mechanism, and promotion rules are unchanged.
 
 ## READY, DEFAULT OFF — bargaining discounted reject/counter consistency
 

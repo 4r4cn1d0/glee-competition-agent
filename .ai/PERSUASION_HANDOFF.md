@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 21:51 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 01:26 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -317,11 +317,11 @@ The corrected probe-aware replay shows randomized/Test 4's custom policy bypasse
 armed. Corrected exact-stack reachability passes on champion and composite at
 `eligible=7/fired=3/action_changed=3` over 800 games each. The complete suite
 passes 1,615 tests with only the two documented
-pre-existing bargaining failures. The inert strategy commit is pushed; natural
-code load, immutable T0 stack snapshot, and clean host-specific activation remain
-pending. No live
-flag has been changed. Test 2, Test 3, and Test 4 are unarmed; no bargaining or
-negotiation behavior/configuration/flag was touched.
+pre-existing bargaining failures. The inert strategy commit is pushed. Natural
+code load, immutable stack snapshots, and clean host-specific activation are
+recorded in the live sections below. Test 2, Test 3, and Test 4 remain unarmed;
+no bargaining or negotiation behavior, configuration, or flag was changed by
+this workstream.
 
 The final reader audit also fails closed unless `frozen_at <= HOST_T0`, every
 terminal transcript round has one contiguous logged buyer turn with an exact
@@ -363,3 +363,48 @@ clean all-assigned baseline, not behavior verification: live `eligible>0`,
 `fired>0`, and `action_changed>0` still require the first exact assignments and
 traces. Continue the frozen first-20-round audit; any unauthorized host fire or
 mechanism mismatch requires immediate research-host disarm.
+
+## 01:09 external reset and 01:25 clean re-arm
+
+An external fleet write at `T1=1787600396.5521495` explicitly set every
+persuasion experiment flag to `0` on all five hosts. This ended the original
+pulse eras at that exact boundary: champion
+`[1787599611.224363327, 1787600396.5521495)` and composite
+`[1787599624.328448057, 1787600396.5521495)`. It was not a persuasion decision
+and did not restart or signal a process. The stopped prose, binary-truth, and
+text-decline-veto arms were not silently folded into the pulse control.
+
+The only exact assignment found in the original live window was composite
+candidate `86d71fde-0bcc-4d7d-80f3-470b3bb3cdcc`, beginning at
+`1787600113.949715`. All 20 buyer turns are present. The seller's strict binary
+stream produced four bought highs and one bought low, so the frozen pulse
+predicate never became true; there were zero pulse traces and zero changed
+actions. The game remains in the all-assigned ITT cohort. Its absence of a
+trace verifies only that this nontriggering candidate stayed control-identical,
+not that the live pulse wire has fired.
+
+Snapshot `ae7b913` captured the first post-reset stacks, but a concurrent
+negotiation-owned fleet restore changed those stacks before activation. The
+hash interlock refused deployment; that snapshot is an aborted boundary and
+must never be used for a causal replay. After the external restore settled, the
+complete current champion/composite stacks were refrozen before treatment at
+`1787601285.818645` in
+`.ai/PERS_P033_R4_BINARY_POSTDECLINE_PULSE_T2_STACKS.json`, commit `16161f6`.
+The exact current-stack checker again returned
+`eligible=12/fired=7/action_changed=7` over 800 paired games on each host, and
+no exact target game was in flight.
+
+Fleet tooling then re-armed only the pulse flag on champion at
+`T0=1787601319.884793282` and composite at
+`T0=1787601338.633884907`. Runtime overlay inspection shows `1` only on those
+two research hosts and explicit `0` on hardliner/Test 2, conceder/Test 3, and
+randomized/Test 4. The live PIDs stayed champion `11357` and composite `11293`;
+no process was restarted or signalled. Immediate post-T0 scans found zero new
+exact assignments, so emitted treatment behavior is still awaiting its first
+would-change candidate.
+
+Readers must keep the original and re-arm eras separate. Use the original
+snapshot and original host boundary only through external `T1`; use the T2
+snapshot with each new host T0 for current evidence. Never replay a host with a
+snapshot frozen after that host's boundary or combine later-host pre-activation
+games into the earlier host.
