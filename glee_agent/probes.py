@@ -114,6 +114,12 @@ def _composite(cfg):
         barg_uncapped_horizon=h.barg_uncapped_horizon,
         nego_seller_anchor=h.nego_seller_anchor,
         nego_buyer_anchor=h.nego_buyer_anchor,
+        # Whole deterministic negotiation policy: every supported buyer turn
+        # uses the frozen 7aidara policy, while the empirically winning seller
+        # decisions remain the current stack.  Selection is by launch profile,
+        # never by a game hash or cell flag, and bargaining fields above are
+        # unchanged from this profile's established hardliner component.
+        nego_policy="leader_replica",
         pers_lie_shading=c.pers_lie_shading,        # was hardliner's 1.0
         pers_honest_rounds=c.pers_honest_rounds,
     )

@@ -241,3 +241,25 @@ def action(game: dict) -> dict | None:
         return {"decision": "WalkAway", "_plan": plan}
 
     return counter()
+
+
+def matches_wire(game: dict, wire: dict) -> bool:
+    """Whether a public wire exactly matches the complete buyer policy.
+
+    The composite launch profile uses this policy deterministically, without
+    the old hash flag.  ``actions.coerce`` strips ``_plan`` before its numeric
+    postconditions, so semantic recomputation is the only reliable ownership
+    check that prevents a later legacy price writer from creating a hybrid.
+    """
+    if not isinstance(wire, dict):
+        return False
+    try:
+        expected = action(game)
+    except Exception:
+        return False
+    if not isinstance(expected, dict):
+        return False
+    return all(
+        wire.get(key) == expected.get(key)
+        for key in ("decision", "product_price", "message")
+    )

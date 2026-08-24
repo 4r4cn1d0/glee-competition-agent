@@ -23,7 +23,8 @@ import math
 from .. import (first_principles, nego_arms, pricing, runtime_flags,
                 top_buyer_clone, top_buyer_clone_hi_cap10,
                 top_opus_buyer_clone,
-                top_opus_buyer_clone_hi_unknown)
+                top_opus_buyer_clone_hi_unknown,
+                top_seller_message_clone)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1586,24 +1587,51 @@ def _enforce_span_invariant(p: dict, price: float) -> float:
 
 
 def decide(game: dict, cfg) -> dict:
-    """Choose the move, then — only under GLEE_NEGO_MSG_ARMS — say something.
+    """Choose one complete launch-profile policy, then optional legacy text.
 
-    The two halves are strictly ordered and that order is the whole design.
-    ``_decide`` returns the action with its numbers final; ``nego_arms.attach``
-    is handed that action, may add exactly one key (``"message"``), and
-    sha256-fingerprints every other key across the call. With the flag unset
-    ``nego_arms.enabled()`` is one dict lookup returning False and the action is
-    byte-identical to what this function returned before the arms existed —
-    which is also the N0 arm, since the fleet has sent no negotiation text at
-    all since the LLM persuasion fence.
+    ``leader_replica`` is selected deterministically by the named composite
+    launch profile.  It is not a cell arm: all supported buyer turns use the
+    complete frozen 7aidara policy and all seller turns use the current seller
+    decision policy plus the 57/57 exact seller-message table.  Other profiles
+    retain ``_decide``.  The old message bank remains an inert legacy hook when
+    its fleet flag is zero.
     """
-    action = _decide(game, cfg)
+    if getattr(cfg, "nego_policy", "baseline") == "leader_replica":
+        action = _leader_replica_decide(game, cfg)
+    else:
+        action = _decide(game, cfg)
     try:
         if nego_arms.enabled():
             nego_arms.attach(game, action)
     except Exception:
         pass                      # a message is never worth risking the move
     return action
+
+
+def _leader_replica_decide(game: dict, cfg) -> dict:
+    """Complete deterministic negotiation policy for ``composite`` launches.
+
+    The 91-game broad buyer-policy checkpoint was +0.869 official rating/game
+    versus contemporaneous controls; sellers were already the winning half
+    (+47.9 over the motivating 63-game window), so this policy replaces the
+    diagnosed buyer half without discarding seller pricing that was working.
+    Every unsupported or malformed state falls through to the total baseline.
+    """
+    try:
+        if top_buyer_clone.eligible(game):
+            buyer_action = top_buyer_clone.action(game)
+            if buyer_action is not None:
+                buyer_action = dict(buyer_action)
+                plan = dict(buyer_action.get("_plan") or {})
+                plan["source"] = "leader_replica"
+                plan["component"] = "7aidara_complete_buyer"
+                buyer_action["_plan"] = plan
+                return buyer_action
+    except Exception:
+        pass
+
+    seller_action = _decide(game, cfg)
+    return top_seller_message_clone.apply_deterministic(game, seller_action)
 
 
 def _decide(game: dict, cfg) -> dict:

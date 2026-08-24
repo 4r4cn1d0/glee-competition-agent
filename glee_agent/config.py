@@ -76,6 +76,10 @@ class Config:
     # nothing. 0.0 restores the pre-fix behaviour for an A/B.
     barg_offer_floor: float = 0.52
     # Negotiation: opening anchor as a multiple of your own valuation.
+    # Whole-policy selector set by the named launch profile, not by a per-game
+    # flag.  ``baseline`` preserves the existing stack; ``leader_replica`` is
+    # the deterministic, role-complete policy used by the composite profile.
+    nego_policy: str = "baseline"
     nego_seller_anchor: float = 2.20
     nego_buyer_anchor: float = 0.45
     nego_assumed_horizon: int = 10     # planning horizon for uncapped games

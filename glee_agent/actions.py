@@ -713,7 +713,8 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     # later hidden floor, opening claim, or TABLE postcondition would turn it
     # into a different unlabelled policy, so candidate wires end here.
     if (top_buyer_clone_hi_cap10.owns(game)
-            or top_buyer_clone.owns(game)):
+            or top_buyer_clone.owns(game)
+            or top_buyer_clone.matches_wire(game, action)):
         return
     # Unlike the full 7aidara clone, the Opus reconstruction intentionally
     # falls through on unidentified branches.  Exempt only a wire that exactly

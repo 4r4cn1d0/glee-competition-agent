@@ -178,6 +178,23 @@ def test_candidate_bypasses_all_later_price_guards(monkeypatch):
     assert wire["product_price"] == raw["product_price"]
 
 
+def test_leader_profile_uses_complete_buyer_policy_without_hash_arm(monkeypatch):
+    gid = _control_gid("whole-profile")
+    game = _game(gid=gid, own=120.0, offer=149.0)
+    monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "0")
+    monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB", "0")
+    monkeypatch.setenv("GLEE_NEGO_OPEN_CLAIM_ALWAYS", "1")
+    raw = negotiation.decide(
+        copy.deepcopy(game), Config(nego_policy="leader_replica", llm_mode="off")
+    )
+    wire = coerce(copy.deepcopy(raw), copy.deepcopy(game))
+
+    assert raw["_plan"]["source"] == "leader_replica"
+    assert raw["_plan"]["component"] == "7aidara_complete_buyer"
+    assert raw["decision"] == "RejectOffer"
+    assert wire["product_price"] == raw["product_price"] == 86.0
+
+
 def test_message_enabled_counter_copies_exact_7aidara_sentence(monkeypatch):
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
     game = _game(gid=_candidate_gid("message"), own=120.0, offer=149.0)
