@@ -76,11 +76,36 @@ def seller_plan(game: dict, cfg) -> dict:
     bought = [h for h in history if h.get("bought")]
     buy_rate = len(bought) / len(history) if history else None
 
+    binary_truth_arm = _p08_r125_binary_truth_candidate(
+        game, state, price, p, v, u, total)
+
     if is_high:
         # Never pass up a genuine sale.
-        return {"recommend": True, "reason": "high quality", "round": round_no,
-                "total_rounds": total, "buy_rate": buy_rate, "knows_values": knows_values,
-                "quality_is_high": True}
+        plan = {"recommend": True, "reason": "high quality", "round": round_no,
+                "total_rounds": total, "buy_rate": buy_rate,
+                "knows_values": knows_values, "quality_is_high": True}
+        if binary_truth_arm:
+            # Record assignment on unchanged high rounds, but reserve the gate
+            # trace for low rounds where the submitted action actually changes.
+            plan["p08_r125_binary_truth_arm"] = "truth"
+        return plan
+
+    if binary_truth_arm:
+        # Exact zero-margin credibility arm.  The live control recommends every
+        # low item because p*v == price.  In 170 completed comparable all-yes
+        # binary games it averaged 7.29 sales despite 16.04 high items/game;
+        # 20.6% sold nothing, and 42 buyers stopped completely after a bought
+        # low.  The authenticated dashboard's exact game 6516c6b7 sold rounds
+        # 1-2, exposed a low in round 2, lost the next 14 high opportunities and
+        # scored -7.6 official rating.  This candidate therefore says no only on
+        # low items; high-item recommendations and every non-target cell remain
+        # the current stack.  The evidence motivates randomisation, not rollout.
+        return {"recommend": False, "reason": "exact binary truth arm",
+                "round": round_no, "total_rounds": total,
+                "buy_rate": buy_rate, "knows_values": True,
+                "lie_rate": 0.0, "quality_is_high": False,
+                "p08_r125_binary_truth_arm": "truth",
+                "gates_fired": ["p08_r125_binary_truth"]}
 
     if not knows_values:
         # Without v the lie rate is not computable. Read the buyer instead: keep
@@ -375,6 +400,9 @@ PERS_RANK_GATE_SALT = "pers_rank_gate_v1|"
 #: Independent game-level assignment for the p=.8 seller text-wording arm.
 PERS_P08_R125_PROSE_SALT = "pers_p08_r125_prose_v1|"
 
+#: Independent assignment for the disjoint p=.8 seller binary truth arm.
+PERS_P08_R125_BINARY_TRUTH_SALT = "pers_p08_r125_binary_truth_v1|"
+
 #: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
 #: small (231 states at T=20) and the bucketing is what keeps this off the hot
 #: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
@@ -398,6 +426,41 @@ def p08_r125_prose_assignment(game_id) -> bool | None:
     import hashlib as _hashlib
     digest = _hashlib.sha256((PERS_P08_R125_PROSE_SALT + gid).encode()).hexdigest()
     return bool(int(digest, 16) & 1)
+
+
+def p08_r125_binary_truth_assignment(game_id) -> bool | None:
+    """Stable exact-cell binary truth assignment, independent of live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(
+        (PERS_P08_R125_BINARY_TRUTH_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def _p08_r125_binary_truth_candidate(game: dict, state: dict, price: float,
+                                     prior: float, high_value: float,
+                                     low_value: float, total: int) -> bool:
+    """Whether this seller turn belongs to the binary truth candidate arm."""
+    if not runtime_flags.enabled("GLEE_PERS_P08_R125_BINARY_TRUTH_AB"):
+        return False
+    if ((game.get("valid_actions") or {}).get("type")
+            != "seller_recommendation"):
+        return False
+    if state.get("seller_message_type") != "binary":
+        return False
+    if ("is_seller_know_cv" in state
+            and state.get("is_seller_know_cv") is not True):
+        return False
+    if (state.get("v") is None or state.get("u") is None
+            or price <= 0.0 or total != 20):
+        return False
+    if (abs(prior - 0.8) > 1e-9
+            or abs(high_value / price - 1.25) > 1e-9
+            or abs(low_value) > 1e-9):
+        return False
+    return p08_r125_binary_truth_assignment(game.get("game_id")) is True
 
 
 def _p08_r125_prose_message(game: dict, plan: dict) -> str | None:

@@ -46,6 +46,8 @@ field responds -- these are the payoffs the field actually paid us.
                                   # buyer selectivity arm, first eligible decision
     python scripts/live_percentile.py --ab pers-prose --since T0 --official-json FILE
                        # exact seller wording ITT + official dashboard deltas
+    python scripts/live_percentile.py --ab pers-truth --since T0 --official-json FILE
+                       # exact binary seller credibility ITT + official deltas
     python scripts/live_percentile.py --ab barg-msg        # B0 silence vs B1-B3
 
 CAVEAT, stated because it decides how far the numbers can be pushed: the cell
@@ -78,6 +80,7 @@ from glee_agent.pricing import infer_base       # noqa: E402
 from glee_agent.strategies.persuasion import (  # noqa: E402
     _recommendation_signal as _pers_recommendation_signal,
     buyer_selectivity_assignment,
+    p08_r125_binary_truth_assignment,
     p08_r125_prose_assignment,
 )
 from scripts.orphan_watch import COLD_SECONDS as ORPHAN_COLD_SECONDS  # noqa: E402
@@ -232,6 +235,14 @@ def pers_selectivity_arm(gid) -> str | None:
 def pers_prose_arm(gid) -> str | None:
     """Recover the exact-cell seller prose assignment from production code."""
     treatment = p08_r125_prose_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def pers_truth_arm(gid) -> str | None:
+    """Recover the exact-cell binary truth assignment from production code."""
+    treatment = p08_r125_binary_truth_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -456,6 +467,36 @@ def _pers_prose_signal(seat: str, state: dict) -> dict | None:
         "u": low_value,
         "ratio": high_value / price,
         "seller_message_type": "text",
+        "total_rounds": int(rounds),
+    }
+
+
+def _pers_truth_signal(seat: str, state: dict) -> dict | None:
+    """Pre-action exact seller cell for the binary credibility experiment."""
+    if seat != "player_1" or state.get("seller_message_type") != "binary":
+        return None
+    if ("is_seller_know_cv" in state
+            and state.get("is_seller_know_cv") is not True):
+        return None
+    price = _number(state.get("product_price"))
+    prior = _number(state.get("p"))
+    high_value = _number(state.get("v"))
+    low_value = _number(state.get("u"))
+    rounds = _number(state.get("total_rounds"))
+    if None in (price, prior, high_value, low_value, rounds) or price <= 0.0:
+        return None
+    if (abs(prior - 0.8) > 1e-9
+            or abs(high_value / price - 1.25) > 1e-9
+            or abs(low_value) > 1e-9
+            or int(rounds) != 20):
+        return None
+    return {
+        "price": price,
+        "p": prior,
+        "v": high_value,
+        "u": low_value,
+        "ratio": high_value / price,
+        "seller_message_type": "binary",
         "total_rounds": int(rounds),
     }
 
@@ -920,6 +961,39 @@ def _pers_prose_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _pers_truth_exposure_turn(slot: str, rec: dict):
+    """Cohort an exact binary seller game before its first recommendation."""
+    if rec.get("game_family") != "persuasion":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _pers_truth_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if rec.get("action_type") != "seller_recommendation":
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+    opponent = rec.get("opponent") or {}
+    if isinstance(opponent, dict):
+        signal["opponent_type"] = opponent.get("type")
+        signal["opponent_name"] = opponent.get("name")
+    action = rec.get("action") or {}
+    plan = rec.get("plan") or {}
+    signal.update({
+        "first_decision": (action.get("decision")
+                           if isinstance(action, dict) else None),
+        "first_recommend": (plan.get("recommend")
+                            if isinstance(plan, dict) else None),
+        "first_quality": state.get("current_quality"),
+    })
+    return (slot, gid), ts, signal
+
+
 def _terminal_close(fin: dict) -> bool | None:
     """Return agreement/completion status, or None without a terminal outcome."""
     result = fin.get("result") or {}
@@ -1317,6 +1391,49 @@ def _pers_prose_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), completed, diagnostic
 
 
+def _pers_truth_row(slot: str, rec: dict, fin: dict):
+    """Build one exact binary seller outcome without purchase selection."""
+    if fin.get("game_family") != "persuasion":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _pers_truth_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    completed = _terminal_close(fin)
+    if completed is None:
+        return None
+    payoff = _result_payoff(fin.get("result") or {}, seat, seat)
+    pct = (percentile("persuasion", dict(state), seat, payoff)
+           if payoff is not None else None)
+    history = [entry for entry in state.get("history") or []
+               if isinstance(entry, dict)]
+    purchases = sum(bool(entry.get("bought")) for entry in history)
+    diagnostic = {
+        **signal,
+        "payoff": payoff,
+        "payoff_per_price": (
+            payoff / signal["price"]
+            if payoff is not None and signal["price"] else None),
+        "rounds": len(history),
+        "seller_messages": [entry.get("seller_message") for entry in history],
+        "qualities": [entry.get("quality") for entry in history],
+        "purchases": purchases,
+        "purchase_rate": purchases / len(history) if history else None,
+        "zero_outcome": payoff == 0.0 if payoff is not None else None,
+        "bought_highs": sum(
+            bool(entry.get("bought"))
+            and str(entry.get("quality") or "").lower() == "high"
+            for entry in history),
+        "bought_lows": sum(
+            bool(entry.get("bought"))
+            and str(entry.get("quality") or "").lower() == "low"
+            for entry in history),
+    }
+    return slot, pct, str(gid), completed, diagnostic
+
+
 def _game_record_final(record: dict) -> dict:
     """Rebuild the final envelope stored by the continuous outcome collector."""
     state = dict(record.get("config") or {})
@@ -1576,6 +1693,13 @@ def pers_prose_games(hours, since=None, until=None):
     """Yield every assigned exact-cell seller wording outcome."""
     yield from _price_arm_games(
         hours, _pers_prose_exposure_turn, _pers_prose_row,
+        since=since, until=until)
+
+
+def pers_truth_games(hours, since=None, until=None):
+    """Yield every assigned exact-cell binary seller truth outcome."""
+    yield from _price_arm_games(
+        hours, _pers_truth_exposure_turn, _pers_truth_row,
         since=since, until=until)
 
 
@@ -2371,10 +2495,58 @@ def _pers_prose_observations(rows, official):
     return observations
 
 
+def _pers_truth_observations(rows, official):
+    """Join exact binary assignments and validate every emitted recommendation."""
+    observations = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        arm = pers_truth_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if completed is None else "terminal")
+        messages = diagnostic.get("seller_messages")
+        qualities = diagnostic.get("qualities")
+        if not isinstance(messages, list) or not messages:
+            messages = [diagnostic.get("first_decision")]
+            qualities = [diagnostic.get("first_quality")]
+        if not isinstance(qualities, list) or len(qualities) != len(messages):
+            qualities = [None] * len(messages)
+        wire_failures = 0
+        for message, quality in zip(messages, qualities):
+            observed = str(message or "").strip().lower()
+            if arm == "control":
+                expected = "yes"
+            else:
+                normalized_quality = str(quality or "").strip().lower()
+                expected = ("yes" if normalized_quality == "high" else
+                            "no" if normalized_quality == "low" else None)
+            wire_failures += int(expected is None or observed != expected)
+        first_quality = str(diagnostic.get("first_quality") or "").lower()
+        expected_first = (True if arm == "control" else
+                          True if first_quality == "high" else
+                          False if first_quality == "low" else None)
+        recommend_failure = (
+            expected_first is None
+            or diagnostic.get("first_recommend") is not expected_first)
+        observations.append({
+            "slot": slot, "gid": gid, "arm": arm, "pct": pct,
+            "completed": completed, "resolution": resolution,
+            "diagnostic": diagnostic,
+            "official": official.get((slot, gid)),
+            "wire_failures": wire_failures,
+            "recommend_failure": recommend_failure,
+        })
+    return observations
+
+
 def _summarize_pers_prose(observations):
     stats = {
         "pct": [], "official": [], "purchase_rate": [],
-        "payoff_per_price": [], "zero": [], "terminal": 0,
+        "purchases": [], "payoff_per_price": [], "zero": [], "terminal": 0,
         "pending": 0, "invalid": 0, "wire_failures": 0,
         "recommend_failures": 0, "official_missing": 0,
     }
@@ -2395,6 +2567,7 @@ def _summarize_pers_prose(observations):
             stats["official_missing"] += 1
         diagnostic = observation["diagnostic"]
         for source, target in (("purchase_rate", "purchase_rate"),
+                               ("purchases", "purchases"),
                                ("payoff_per_price", "payoff_per_price")):
             value = _number(diagnostic.get(source))
             if value is not None:
@@ -2509,6 +2682,118 @@ def report_pers_prose(rows, hours, since=None, until=None, official_path=None):
         print("MECHANISM REJECTION: disarm immediately")
         return 2
     if unresolved or missing_official or contaminated:
+        print("PROMOTION BLOCKED: incomplete or contaminated intent-to-treat cohort")
+    return 0
+
+
+def _print_pers_truth_line(label, arm, stats):
+    official, n_official = _mean_ci_text(stats["official"])
+    pct, n_pct = _mean_ci_text(stats["pct"])
+    purchases, n_purchases = _mean_ci_text(stats["purchases"])
+    zero, n_zero = _mean_ci_text(stats["zero"], percent=True)
+    print(f"{label:9} {arm:9} official-dR={official} n={n_official}; "
+          f"local-pct={pct} n={n_pct}; purchases={purchases} "
+          f"n={n_purchases}; zero={zero} n={n_zero}; "
+          f"terminal={stats['terminal']} pending={stats['pending']} "
+          f"badfin={stats['invalid']} official-missing={stats['official_missing']} "
+          f"wire-fail={stats['wire_failures']} "
+          f"recommend-fail={stats['recommend_failures']}")
+
+
+def report_pers_truth(rows, hours, since=None, until=None, official_path=None):
+    """Report the exact binary credibility arm using official per-game deltas."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+    observations = _pers_truth_observations(rows, official)
+    print("GLEE_PERS_P08_R125_BINARY_TRUTH_AB, seller/binary/p=.8/"
+          "known-CV/v=1.25P/u=0/20 rounds")
+    print("primary: official dashboard per-game rating delta, intent-to-treat; "
+          "local percentile is diagnostic only")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"first seller-recommendation cohort window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned exact-cell binary seller games in the window")
+        return 1
+
+    gid_slots = defaultdict(set)
+    for observation in observations:
+        slots = observation["diagnostic"].get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[observation["gid"]].update(slots)
+        else:
+            gid_slots[observation["gid"]].add(observation["slot"])
+    contaminated = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+
+    by_slot_arm = defaultdict(list)
+    for observation in observations:
+        by_slot_arm[(observation["slot"], observation["arm"])].append(observation)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        _print_pers_truth_line(
+            NAMES.get(slot, slot), arm, _summarize_pers_prose(assigned))
+
+    pooled_obs = [observation for observation in observations
+                  if observation["gid"] not in contaminated]
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [observation for observation in pooled_obs
+                    if observation["arm"] == arm]
+        if assigned:
+            pooled[arm] = _summarize_pers_prose(assigned)
+            _print_pers_truth_line("POOLED", arm, pooled[arm])
+    print(f"self-play guard: excluded {len(contaminated)} game id(s) observed "
+          "in multiple fleet slots; hidden opponents remain a declared risk")
+
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("OFFICIAL per-game rating delta",
+                     candidate["official"], control["official"])
+        _print_delta("local same-cell percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("purchase count", candidate["purchases"],
+                     control["purchases"])
+        _print_delta("zero-outcome rate", candidate["zero"],
+                     control["zero"], percent=True)
+
+    print("predeclared scale diagnostics (minimum 8 official/arm at final read):")
+    scale_ready = True
+    for price in (100.0, 10000.0, 1000000.0):
+        grouped = {}
+        for arm in ("control", "candidate"):
+            grouped[arm] = [observation["official"] for observation in pooled_obs
+                            if observation["arm"] == arm
+                            and _number(observation["diagnostic"].get("price")) == price
+                            and observation["official"] is not None]
+        scale_ready &= all(len(grouped[arm]) >= 8
+                           for arm in ("control", "candidate"))
+        delta, lo, hi = _delta_ci(grouped["candidate"], grouped["control"])
+        rendered = ("insufficient" if delta is None else
+                    f"{delta:+.4f} [{lo:+.4f}, {hi:+.4f}]"
+                    if lo is not None else f"{delta:+.4f}")
+        print(f"  price={price:g}: official candidate-control {rendered}; "
+              f"n={len(grouped['candidate'])}/{len(grouped['control'])}")
+
+    wire_failures = sum(stats["wire_failures"] + stats["recommend_failures"]
+                        for stats in pooled.values())
+    unresolved = sum(stats["pending"] + stats["invalid"]
+                     for stats in pooled.values())
+    missing_official = sum(stats["official_missing"] for stats in pooled.values())
+    print(f"mechanism failures={wire_failures}; unresolved={unresolved}; "
+          f"terminal outcomes missing official delta={missing_official}")
+    print("DECISION RULE: one harm look at 20 resolved official games/arm; "
+          "reject if the official 95% CI is wholly negative. Fixed final read "
+          "at 40/arm and >=8/arm/price; promote only if the official CI is "
+          "wholly positive, purchase-count point delta is positive, zero-rate "
+          "point delta is nonpositive, all scale points are nonnegative, and "
+          "mechanism, self-play, unresolved, invalid, and official joins are clean.")
+    if wire_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or missing_official or contaminated or not scale_ready:
         print("PROMOTION BLOCKED: incomplete or contaminated intent-to-treat cohort")
     return 0
 
@@ -3436,6 +3721,7 @@ def main() -> int:
                              "hi-terminal", "stall-current-break",
                              "hidden-min-share-veto",
                              "fp-complete", "pers-selectivity", "pers-prose",
+                             "pers-truth",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
                          "keeps the legacy GLEE_NEGO_ZOPA_AB report")
@@ -3446,7 +3732,7 @@ def main() -> int:
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
                    "hi-terminal", "stall-current-break", "hidden-min-share-veto",
                    "fp-complete",
-                   "pers-selectivity", "pers-prose"):
+                   "pers-selectivity", "pers-prose", "pers-truth"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
             ap.error("--until must be greater than --since")
@@ -3463,6 +3749,7 @@ def main() -> int:
             "fp-complete": fp_complete_games,
             "pers-selectivity": pers_selectivity_games,
             "pers-prose": pers_prose_games,
+            "pers-truth": pers_truth_games,
         }[args.ab]
         reporter = {
             "open-claim": report_open_claim,
@@ -3477,12 +3764,13 @@ def main() -> int:
             "fp-complete": report_fp_complete,
             "pers-selectivity": report_pers_selectivity,
             "pers-prose": report_pers_prose,
+            "pers-truth": report_pers_truth,
         }[args.ab]
         price_rows = [r for r in cohort(
             args.hours, since=args.since, until=args.until)
             if not keep or r[0] in keep]
         extra = ({"official_path": args.official_json}
-                 if args.ab in ("pers-prose", "stall-current-break",
+                 if args.ab in ("pers-prose", "pers-truth", "stall-current-break",
                                 "hidden-min-share-veto") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)

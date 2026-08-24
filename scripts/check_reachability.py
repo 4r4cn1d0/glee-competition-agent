@@ -263,6 +263,30 @@ def _p_p08_r125_prose(game, p):
             and p.get("recommend") is True)
 
 
+def _p_p08_r125_binary_truth(game, p):
+    """Changed-action scope of the exact p=.8/r=1.25 binary truth gate."""
+    state = game.get("game_state") or {}
+    try:
+        price = float(state.get("product_price"))
+        ratio = float(state.get("v")) / price
+        prior = float(state.get("p"))
+        low_value = float(state.get("u"))
+        rounds = int(state.get("total_rounds"))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return False
+    return ((game.get("valid_actions") or {}).get("type")
+            == "seller_recommendation"
+            and state.get("seller_message_type") == "binary"
+            and state.get("v") is not None
+            and ("is_seller_know_cv" not in state
+                 or state.get("is_seller_know_cv") is True)
+            and str(state.get("current_quality") or "").lower() == "low"
+            and abs(prior - 0.8) <= 1e-9
+            and abs(ratio - 1.25) <= 1e-9
+            and abs(low_value) <= 1e-9
+            and rounds == 20)
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -342,6 +366,9 @@ KNOWN = {
     "GLEE_OPP_EXPLOIT": ("bargaining", ("opp_exploit",), lambda g, p: True),
     "GLEE_PERS_P08_R125_PROSE_AB": (
         "persuasion", ("p08_r125_prose",), _p_p08_r125_prose),
+    "GLEE_PERS_P08_R125_BINARY_TRUTH_AB": (
+        "persuasion", ("p08_r125_binary_truth",),
+        _p_p08_r125_binary_truth),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those

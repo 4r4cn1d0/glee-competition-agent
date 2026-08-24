@@ -447,6 +447,79 @@ Test 3 before causal promotion evidence.
   the buyer passed all 16 rounds after the low purchase. This clean adverse
   observation does not alter the precommitted sample or stop boundary.
 
+### Exact zero-margin binary seller truthfulness (pending inert load)
+- **Falsifiable hypothesis**: in persuasion seller/binary games with `p=.8`,
+  seller-visible `v/u`, `v=1.25*price`, `u=0`, and 20 rounds, recommending only
+  high-quality items raises mean official per-game rating delta versus the live
+  all-`yes` control. A non-positive official intent-to-treat result falsifies
+  the hypothesis. Purchase conversion or selected post-lie games cannot promote
+  it.
+- **Exact official cells**: seller role, binary protocol,
+  seller-knows-consumer-values, p=.8, v=1.25P, u=0, 20 rounds, at each price
+  scale `{100, 10_000, 1_000_000}`. Text mode is excluded, making this arm
+  behaviorally disjoint from the running prose experiment.
+- **Why this is not the rejected broad backload idea**: the published
+  all-push advantage `+.391` was measured only in strict `p*r>1` cells. This
+  experiment targets only the equality `p*r=1` branch, which never reached the
+  live never-lie/shading path. A tiny recovered subset of the old backload arm
+  favored its mostly truthful candidate (14.17 versus 5.29 purchases, n=6/7)
+  in this exact cell, but result-time selection, missing official deltas, and
+  the terminal push make that diagnostic non-causal.
+- **Mechanism evidence, not an effect estimate**: 170 deduplicated completed
+  all-yes exact-cell games averaged 7.29 purchases despite 16.04 high items;
+  35/170 sold nothing. Of 123 games with a bought low, 42 buyers stopped
+  completely and left a mean 12.38 later high opportunities. Official game
+  `6516c6b7-2a47-4919-b192-cd0484e21daa` sold a round-1 high and round-2 low,
+  then lost 14 later high opportunities and scored `-7.6`. The first text-prose
+  candidate showed the same stop-after-low mechanism and scored `-4.3`, so
+  stronger positive wording alone did not repair credibility in that draw.
+- **Flag / assignment**: `GLEE_PERS_P08_R125_BINARY_TRUTH_AB=1`, default OFF.
+  `int(sha256("pers_p08_r125_binary_truth_v1|" + game_id).hexdigest(), 16) & 1`
+  assigns treatment. Missing game ids fail closed. Eligibility is fixed at the
+  globally first seller recommendation and never conditions cohort membership
+  on private quality, buyer response, purchase, payoff, or completion.
+- **Control / candidate**: hash control returns the complete current plan and
+  submitted `yes` action byte-identically. Candidate returns `yes` on high and
+  `no` on low in every round. Candidate-high actions remain unchanged and only
+  candidate-low turns append `p08_r125_binary_truth` to `gates_fired`. There is
+  no adaptive trigger, terminal exception, prose, LLM, buyer change, or reach
+  into any other seller cell.
+- **Pre-treatment cohort**: Test 2 exact-cell games whose first seller turn is
+  in `[1787570799, prospective T0)`, beginning at the rank-gate disarm. The
+  experimental cohort begins at the clean activation T0 and includes every
+  assignment: purchases, refusals, zero outcomes, timeouts, invalid/abandoned,
+  unresolved, and immediate terminal outcomes. Result-fetch time never defines
+  the cohort.
+- **Preflight**: Test 2's exact hardliner stack, 800 seeded persuasion games,
+  seed 2417, reported `eligible=31`, `fired=21`, and `action_changed=21`.
+  Focused mechanism/reader suite: 31 passed. The full allowed suite passed 1,167
+  tests with only the same two pre-existing bargaining failures
+  (`test_bargaining_horizon_floor` and `test_sim_grid[bargaining]`).
+- **First-20 mechanism contract**: verify all 20 rounds of each of the first 20
+  assigned games. The game bit must be stable; controls must emit `yes` every
+  round; candidate action must equal private quality (`high -> yes`, `low ->
+  no`); no third action, non-target fire, invalid action, timeout, or prose/rank/
+  backload interaction is permitted. Any failure causes immediate disarm and
+  mechanism rejection.
+- **Primary / sample / rules**: authenticated dashboard per-game rating delta,
+  full-game ITT, fixed final read at 40 resolved official games per arm and at
+  least 8 per arm per price scale. One harm look at 20 official games per arm;
+  reject if the official 95% CI is wholly negative. Promote only if the final
+  official CI is wholly positive, purchase-count point delta is positive,
+  zero-outcome point delta is nonpositive, all three scale point estimates are
+  nonnegative, and mechanism, scope, wire, self-play/duplicate, unresolved,
+  invalid, and official-join failures are zero. A final CI crossing zero remains
+  research-only.
+- **Subgroups**: price scale, named versus hidden opponent, and activation era.
+  No subgroup can override the pooled official rule. Local percentile and
+  post-lie continuation counts remain diagnostic only.
+- **Deployment boundary**: Test 2 (`hardliner`) only after natural load of the
+  inert commit. Test 3 stays untouched; the prose arm stays absent on Test 2;
+  rank gate and backload remain explicit zero. Activate only through fleet
+  tooling at a clean timestamp.
+- **Read with**: `scripts/live_percentile.py --ab pers-truth --since T0
+  --slots hardliner --official-json FILE`.
+
 ## MECHANISM REJECTED — DISARMED
 
 ### Continuation-aware persuasion rank gate (Test 2)

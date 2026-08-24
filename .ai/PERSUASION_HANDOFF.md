@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 18:39 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 19:04 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,10 +12,11 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official persuasion board at the 17:40 IST refresh: Test 2 `2401.75`, rank 3,
-  30.74 behind rank 2 HAWK and 154.01 behind leader gill bates. Test 1 was
-  `2399.55`, only 2.20 below the account's ranked agent. The persuasion arm
-  below remains absent on both Test 2 and Test 3.
+- Official persuasion board at the latest authenticated refresh: Test 2
+  `2435.2`, rank 3 of 47 ranked agents (top 6.4%, about the 95.7th percentile),
+  8.6 behind rank 2 HAWK and 120.6 behind leader gill bates. Overall Test 2 is
+  rank 5 at `2317.7`, 45.6 behind rank 3 Clod. The prose arm remains absent on
+  both Test 2 and Test 3.
 
 ## Rejected rank-gate mechanism
 
@@ -88,3 +89,39 @@ with 4/20 purchases (3 high, 1 low), seller payoff `4P`, no invalid/timeout, and
 official dashboard rating delta `-4.3`. The buyer passed all 16 rounds after the
 first bought low. This is a clean but adverse first treatment observation, not a
 decision; the precommitted sample and stop rules remain unchanged.
+
+## Expanded official failure diagnosis and next isolated arm
+
+The authenticated dashboard was joined to the current Test 2 wire log for 37
+deduplicated completed persuasion games from roughly 18:30-18:45 IST. This is
+an all-outcome descriptive window, not an A/B result. The largest observed
+cells were seller/binary/p=.8/known-CV/v=1.25P (`-7.6`, n=1),
+buyer/p=.8/v=1.25P (`-6.9`, n=1), seller/p=.8/unknown-CV (mean `-3.70`, n=2),
+buyer/p=.8/v=1.20P (mean `-2.50`, n=3), and seller/p=.33/unknown-CV (mean
+`-1.12`, n=6; 4/6 negative). Small cell counts prohibit promotion, but they
+localize the repeated mechanisms.
+
+In exact seller game `6516c6b7-2a47-4919-b192-cd0484e21daa`, the current
+all-yes policy sold round 1 high and round 2 low; the buyer then passed every
+remaining round, including 14 highs, and the official delta was `-7.6`. Across
+170 deduplicated completed comparable all-yes games, mean purchases were only
+7.29 despite 16.04 high items, 35/170 sold nothing, and 42 buyers stopped
+completely after a bought low. By contrast, opponents that beat us as sellers
+often emit explicit negatives on bad items and make positive messages strongly
+predictive; opponents that beat us as buyers stop or sharply tighten after the
+first caught lie. The current stack sometimes does neither: it can recommend
+every low at the p*v==price knife edge, and the legacy parser has bought literal
+`Not recommended.` messages (373 historical purchases, all 373 low).
+
+`GLEE_PERS_P08_R125_BINARY_TRUTH_AB` is now implemented default OFF and remains
+inert pending the full suite, commit/push, and Test 2's natural load. It targets
+only the binary counterpart of the prose cell: seller, p=.8, visible v/u,
+v=1.25P, u=0, 20 rounds. Hash controls are full-object identical; candidates
+say `yes` on high and `no` on low. Test 2 exact-stack reachability over 800
+seeded games reported `eligible=31/fired=21/action_changed=21`; the focused
+mechanism/official-reader suite passed 31 tests. The full allowed suite passed
+1,167 tests with only the same two pre-existing bargaining failures. If
+activated, it is Test 2 only
+with prose absent and rank-gate/backload explicit zero; Test 3 remains untouched.
+The fixed read is 40 official outcomes per arm with a 20/arm harm look and at
+least 8/arm at each price scale. Full precommit is in `.ai/EXPERIMENTS.md`.
