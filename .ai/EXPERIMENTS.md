@@ -837,6 +837,72 @@ Test 3 before causal promotion evidence.
   live `.8/1.25` decline veto.  It remains unimplemented and default OFF until
   independent code, reader, tests, reachability, and a full prospective sample
   rule are committed.
+- **Flag / assignment precommit**:
+  `GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB`, default OFF, with candidate bit
+  `int(sha256("pers_p05_r12_selectivity_unlock_v1|" + game_id).hexdigest(),
+  16) & 1`.  Missing game ids fail closed.  Eligibility is fixed at the
+  globally first buyer decision from structural public state, before inspecting
+  any message, purchase, quality, payoff, completion, or result.
+- **Exact official cells**: buyer/player 2, `p=.5`, `v=1.2P`, `u=0`, 20 rounds,
+  price scale `{100, 10_000, 1_000_000}`, both text and binary modes, and both
+  seller-knowledge configurations.  Seller knowledge is hidden from the buyer
+  and cannot enter the production gate; it is recovered only from authenticated
+  terminal configuration evidence and missing labels block promotion.
+- **Control / candidate**: first compute the complete current buyer-v2 plan.
+  Hash control and every non-triggering candidate return that action and plan
+  byte-identically and without arm metadata.  Candidate may change only
+  `pass -> buy` when buyer-v2 reports `tight=true` and `blocked=true`, the
+  current strict tri-state recommendation is `true`, at least one earlier
+  strict decline exists, and posterior expected value exceeds price by a
+  scale-relative tolerance.  Legacy ambiguous-text coercion cannot trigger.
+  Only an actual changed action appends `p05_r12_selectivity_unlock` to
+  `gates_fired`.  Fail closed if guard, strike, LCB, rank-buy/rank-gate,
+  selectivity, or parser experiments can alter the frozen buyer path.
+- **Pre-treatment / ITT cohort**: for each future host, all structurally exact
+  games whose first buyer turn lies in `[1787570799, host T0)` are
+  pre-treatment; the experimental cohort begins at that host's clean T0.
+  Retain every assignment, including games with no qualifying message path,
+  all passes, purchases, zero and negative payoffs, timeouts, invalid/abandoned,
+  unresolved, and immediate terminal outcomes.  First-turn time, never
+  result-fetch time or first changed action, defines membership.
+- **Prospective sample / rules**: primary is authenticated official per-game
+  rating delta over all assigned games.  One harm look at 30 resolved official
+  games per arm rejects if the official candidate-control 95% CI is wholly
+  negative, or if candidate negative-outcome rate is at least 10 percentage
+  points worse with a wholly positive CI.  Fixed final read is 100 official
+  games per arm, with at least 20/arm per message mode, 15/arm per
+  seller-knowledge configuration, 15/arm per price scale, and 10/arm in every
+  mode x seller-knowledge intersection.  Promote only if the official CI is
+  wholly positive, normalized-payoff point delta is positive, zero- and
+  negative-outcome point deltas are nonpositive, every mode, knowledge, scale,
+  and deployed-host point estimate is nonnegative, and mechanism, scope, wire,
+  duplicate/self-play, invalid, unresolved, and official-join failures are
+  zero.  A final CI crossing zero or an underpowered deadline read remains
+  research-only.
+- **Mechanism contract / diagnostics**: replay every state in the first 20
+  assigned games with the flag OFF and ON.  Any control difference, hash drift,
+  non-target fire, candidate purchase without a strict prior decline and
+  current strict positive, changed direction other than `no -> yes`, or changed
+  action without its adjacent trace is immediate mechanism rejection.  Report
+  purchase count, normalized payoff, zero/negative outcomes, first-decline
+  round, mode, knowledge, scale, host, and named/hidden opponent without
+  conditioning the primary analysis on triggers or purchases.  Local
+  percentile and fixed-stream payoff are diagnostic only.
+- **Frozen stack / deployment boundary**: initial research hosts may be Test 1,
+  Agent 5, and Test 4 only after each naturally loads the pushed implementation
+  and its exact current-stack checker reports
+  `eligible>0/fired>0/action_changed>0`.  Test 2 and Test 3 remain unarmed.
+  Freeze buyer-v2 on, tight prior `.65`, guard/strike/LCB/rank/selectivity/parser
+  experiments off, and model/parser/CDF hashes
+  `173e00273db5b2d5121080be0e6192c4ab12e1ea553b61ab22896bfb4a31787a`,
+  `74971723391a35c5d30f44b98749c6d85e7aa60e6d83c7e8b61e641096bd7356`,
+  and `bd3b313792951465624543612b09fb0ca5cc1708aee08a7a3dfb85f269e58ff9`.
+  The observed pre-treatment structural cohort had 88 games / 1,760 turns;
+  65 games / 406 turns reached the proposed predicate, and the frozen salt
+  assigned 55 candidates of which 40 games changed 246 actions.  These are
+  reach measurements only, not outcome evidence.  Record host-specific clean
+  T0s before examining any official treatment outcome and never add Test 2
+  after peeking without a separate prospective expansion rule.
 
 ## MECHANISM REJECTED — DISARMED
 
