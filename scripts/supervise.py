@@ -573,8 +573,8 @@ def main() -> int:
     def launch_collector() -> bool:
         nonlocal collector_pid, collector_proc
         command = [os.path.join(REPO, ".venv", "bin", "python"),
-                   "scripts/collect.py", "--rate", "6", "--budget", "200",
-                   "--interval", "60"]
+                   "scripts/collect.py", "--rate", "6", "--budget", "50",
+                   "--interval", "30"]
         try:
             with open(os.path.join(REPO, "logs", "collector.out"), "a",
                       encoding="utf-8") as output:

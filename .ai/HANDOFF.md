@@ -46,11 +46,13 @@ store deduplication is a correctness fix but barely changed the current count
 because those stores overlap heavily; newest-first capacity is what prevents a
 fresh experiment from waiting behind the historical queue.
 
-The official outcome collector was launched in detached screen
-`glee-collector` as PID 20385 at 10 requests/minute/agent. This supersedes the
-stale statement below that it is not running. The older supervisor process
-predates collector supervision, so collector health must be monitored directly
-until a safe supervisor refresh is available.
+The official outcome collector was relaunched in detached screen
+`glee-collector` as PID 37837 at 10 requests/minute/agent, with 50-call passes
+and a 30-second inter-pass interval. Newest IDs run before the historical half,
+so fresh outcomes land after roughly a five-minute API phase rather than waiting
+behind a 20-minute pass; hourly request capacity is unchanged. The older
+supervisor process predates collector supervision, so collector health must be
+monitored directly until a safe supervisor refresh is available.
 
 ## 2026-08-24 — hidden no-limit support ladder implemented, default OFF
 

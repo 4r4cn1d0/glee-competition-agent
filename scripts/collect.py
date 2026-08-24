@@ -181,9 +181,14 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--rate", type=float, default=6.0,
                         help="seconds between API calls per agent (default 6 = 10/min)")
-    parser.add_argument("--budget", type=int, default=200,
-                        help="max fetches per agent per pass")
-    parser.add_argument("--interval", type=float, default=60.0,
+    # Fifty calls at six seconds/call gives a roughly five-minute API phase.
+    # Half the pass covers newest IDs and has more capacity than the measured
+    # live arrival rate; half drains history. The former 200-call pass delayed
+    # a fresh randomized outcome by at least 20 minutes despite identical
+    # hourly request capacity.
+    parser.add_argument("--budget", type=int, default=50,
+                        help="max fetches per agent per pass (default 50)")
+    parser.add_argument("--interval", type=float, default=30.0,
                         help="seconds between passes")
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
