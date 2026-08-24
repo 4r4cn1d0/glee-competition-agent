@@ -425,3 +425,24 @@ Until nego_resp uses `_share_bin` on the share of span and stops auto-accepting
 unobserved profitable prices, NO negotiation arena result that moves our asks
 into a new price region can be trusted -- in either direction. Fixing the
 instrument is worth more than any single flag. Bargaining results are unaffected.
+
+## Bargaining discount-aware reject regression (25 Aug)
+- Test 2 and Test 3 are the live bargaining leaders, but their first-exposure
+  cohorts are statistically indistinguishable over the latest 12h: fitted
+  percentile `0.5259` (n=980) versus `0.5258` (n=1,038). Their agreement rates
+  are both 99.7%, so the remaining target is rank within agreements and the few
+  costly zeros, not a broad close-rate increase.
+- Across every first reachable state in those 2,018 games where the baseline
+  rejected despite its next wire-coerced counter being worth no more after one
+  round of our own discount, the `delta_me<1` subset had **49/49** games where
+  accepting the live offer would have beaten the realised final payoff. The
+  identified alternative gained `+0.03326` pot share per affected game (95% CI
+  `[+0.02722,+0.03930]`) and `+0.02005` fitted percentile (95% CI
+  `[+0.00752,+0.03259]`). This includes every agreement and no-deal after the
+  trigger; it does not condition on successful closes.
+- The boundary matters: the same first-trigger rule at `delta_me=1` averaged
+  `-0.0505` pot share over 16 games because waiting is free and later field
+  concessions can dominate. Any discount-aware arm must exclude that cell.
+- The bargaining CDF v3 pools discount factors, so its percentile magnitude is
+  diagnostic. The payoff direction is exact for these played games; promotion
+  still requires a prospective hash arm and authenticated official deltas.

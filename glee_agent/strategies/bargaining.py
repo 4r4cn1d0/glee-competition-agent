@@ -367,6 +367,25 @@ def _gate(p: dict, name: str) -> None:
         g.append(name)
 
 
+_DISCOUNT_NO_REGRESS_SALT = "barg_discount_no_regress_v1|"
+
+
+def discount_no_regress_assignment(game_id) -> str | None:
+    """Recover the per-game arm for the discount-aware reject guard.
+
+    This helper is deliberately pure so the live reader can recover the exact
+    assignment without trusting a logged label.  The runtime flag only decides
+    whether the experiment executes; it never changes the hash.
+    """
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    bit = int(_hashlib.sha256(
+        (_DISCOUNT_NO_REGRESS_SALT + gid).encode()).hexdigest(), 16) & 1
+    return "candidate" if bit else "control"
+
+
 def _post_reject_offer(game: dict, cfg) -> dict:
     """Run the actual offer policy on the deterministic state after rejection.
 
@@ -876,6 +895,62 @@ def _decide(game: dict, cfg) -> dict:
             decision = "accept"
             _gate(p, "inflation_accept")
 
+    # DISCOUNT-AWARE NO-REGRESSION ARM. The nominal guard below asks whether our
+    # next counter keeps no more nominal pot than the offer in hand. That misses
+    # the economically relevant comparison when our pot is shrinking: a 61%
+    # counter one round later at delta_me=.95 is worth 57.95% today, so rejecting
+    # a live 60% offer to send it cannot improve even if the counter is accepted.
+    #
+    # This is not extrapolated from completed deals. In the leaders' complete
+    # first-trigger cohort over the 12h ending 2026-08-25 00:20 IST, 49/49 games
+    # with delta_me<1 realised less than immediate acceptance at this condition.
+    # The identified counterfactual gain was +0.03326 of pot per affected game
+    # (95% CI +0.02722,+0.03930) and +0.02005 fitted percentile
+    # (+0.00752,+0.03259). The same rule was harmful at delta_me=1, so that cell
+    # is excluded rather than pooled into the treatment.
+    #
+    # Eligibility is computed and logged in BOTH hash arms before either arm
+    # changes the decision. That makes the first eligible turn a pre-treatment
+    # cohort: controls reject, candidates accept, and neither arm can select
+    # itself into the sample through a later outcome. The older nominal guard is
+    # required OFF so it cannot change a hash control. Default OFF leaves both
+    # action and plan byte-for-byte on the previous path.
+    discount_arm_on = runtime_flags.enabled(
+        "GLEE_BARG_DISCOUNT_NO_REGRESS_AB")
+    nominal_guard_on = runtime_flags.enabled("GLEE_BARG_NO_REGRESS")
+    if (decision == "reject" and money > 0.0 and my_gain > 0.0
+            and p["rounds_left"] > 1 and p["delta_me"] < 1.0
+            and discount_arm_on and not nominal_guard_on):
+        arm = discount_no_regress_assignment(game.get("game_id"))
+        try:
+            counter = _post_reject_offer(game, cfg)
+            own_key = "alice_gain" if mine else "bob_gain"
+            counter_gain = _num(counter.get(own_key), -1.0)
+            if arm is not None and 0.0 <= counter_gain <= money:
+                offered_share = my_gain / money
+                counter_share = counter_gain / money
+                discounted_counter_share = counter_share * p["delta_me"]
+                eligible = discounted_counter_share <= offered_share + 1e-12
+                p["discount_no_regress"] = {
+                    "arm": arm,
+                    "eligible": eligible,
+                    "offered_share": round(offered_share, 6),
+                    "planned_counter_share": round(counter_share, 6),
+                    "discounted_counter_share": round(
+                        discounted_counter_share, 6),
+                    "delta_me": p["delta_me"],
+                    "projected_round": int(_num(state.get("round"), 1)) + 1,
+                }
+                if eligible and arm == "candidate":
+                    decision = "accept"
+                    _gate(p, "discount_no_regress")
+        except Exception:
+            p["discount_no_regress"] = {
+                "arm": arm,
+                "eligible": False,
+                "status": "projection_failed",
+            }
+
     # NO-REGRESSION GUARD. In nine measured games the old decision path rejected
     # a live offer and the next outgoing policy kept no more of the pot; the
     # avoidable delay forfeited 17.36 pot-points and -44.9 rating in aggregate.
@@ -885,7 +960,7 @@ def _decide(game: dict, cfg) -> dict:
     # configured share epsilon. Projection failure leaves the Reject unchanged.
     if (decision == "reject" and money > 0.0
             and p["rounds_left"] > 1
-            and runtime_flags.enabled("GLEE_BARG_NO_REGRESS")):
+            and nominal_guard_on):
         epsilon = runtime_flags.as_float("GLEE_BARG_NO_REGRESS_EPS", 0.0)
         if not math.isfinite(epsilon):
             epsilon = 0.0

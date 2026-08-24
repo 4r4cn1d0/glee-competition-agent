@@ -34,6 +34,18 @@ from dataclasses import replace
 from .actions import _num, is_final_round
 
 
+# Test 4 is the ``randomized`` probe.  Its custom policy normally intercepts
+# every family before dispatch, so bargaining flags are otherwise clean-looking
+# placebos there (including the already-live OBSERVED_GAIN display).  Arming
+# this router sends only Test 4 bargaining turns through the ordinary heuristic;
+# negotiation and persuasion remain randomized.  This is the required host
+# route for the discount/no-regress A/B whose retrospective first-trigger cell
+# improved realised payoff in 49/49 discounted leader games (+0.03326 pot share
+# on average).  Default OFF preserves the identification probe until the
+# operator deliberately starts the Test 4 experiment at a clean boundary.
+RANDOMIZED_BARG_BASE_FLAG = "GLEE_PROBE_RANDOMIZED_BARG_BASE"
+
+
 def _champion(cfg):
     return cfg
 
@@ -196,6 +208,13 @@ def make_probe(name: str, cfg, log=None, seed: int | None = None):
 
     def strategy(game: dict) -> dict:
         from .actions import coerce, safe_action
+        # Route only bargaining: Test 4's negotiation and persuasion streams
+        # retain the custom randomized policy and its field-identification role.
+        if (name == "randomized"
+                and game.get("game_family") == "bargaining"):
+            from . import runtime_flags
+            if runtime_flags.enabled(RANDOMIZED_BARG_BASE_FLAG):
+                return base(game)
         try:
             action = coerce(inner(game), game)
         except Exception:

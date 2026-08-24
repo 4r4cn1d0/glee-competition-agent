@@ -290,6 +290,11 @@ def _p_barg_no_regress(game, p):
             and p.get("money", 0) > 0)
 
 
+def _p_barg_discount_no_regress(game, p):
+    signal = p.get("discount_no_regress") or {}
+    return bool(signal.get("eligible"))
+
+
 def _p_p08_r125_prose(game, p):
     """Action-level scope of the exact p=.8/r=1.25 seller wording gate."""
     state = game.get("game_state") or {}
@@ -547,6 +552,13 @@ KNOWN = {
     "GLEE_BARG_BOB_OFFER": ("bargaining", ("bob_offer",), _p_bob_offer),
     "GLEE_BARG_NO_REGRESS": ("bargaining", ("no_regress",),
                              _p_barg_no_regress),
+    "GLEE_BARG_DISCOUNT_NO_REGRESS_AB": (
+        "bargaining", ("discount_no_regress",),
+        _p_barg_discount_no_regress),
+    # Test 4's custom randomized probe bypasses STRATEGIES.  This default-off
+    # router is the prerequisite that makes bargaining gates reachable there.
+    "GLEE_PROBE_RANDOMIZED_BARG_BASE": (
+        "bargaining", (), lambda g, p: True),
     "GLEE_BARG_MSG": ("bargaining", ("barg_msg",), _p_barg_message),
     "GLEE_BARG_OPPONENT_FLOOR": ("bargaining", ("opp_floor",), _p_offer),
     "GLEE_OPP_EXPLOIT": ("bargaining", ("opp_exploit",), lambda g, p: True),
@@ -591,6 +603,7 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
+    "GLEE_PROBE_RANDOMIZED_BARG_BASE",
 }
 
 #: names consulted by runtime_flags.get during the current decide() call
@@ -608,13 +621,23 @@ def _install_flag_spy() -> None:
     runtime_flags.get = spy
 
 
-def _collect_states(field, draws, flags, families, target_flag=None):
+def _collect_states(field, draws, flags, families, target_flag=None,
+                    probe_name="composite"):
     """Play the control arm once, banking a deep copy of every state our seat
-    was handed (both offer and decision phases), in the wanted families."""
+    was handed (both offer and decision phases), in the wanted families.
+
+    The named probe must match replay.  In particular, Test 4's randomized
+    policy produces a different bargaining state distribution from composite;
+    generating with one and replaying with the other is not exact-stack
+    reachability even when the final paired action comparison is valid.
+    """
     from sim import Config as SimConfig
     from sim.arena import play
 
-    strategy = replay_eval._build_strategy(flags)
+    replay_eval._set_flags(flags)
+    from glee_agent.config import Config
+    from glee_agent.probes import make_probe
+    strategy, _ = make_probe(probe_name, Config.from_env(), seed=20260824)
     banked: list[dict] = []
     wanted = set(families)
 
@@ -712,7 +735,17 @@ def _replay(states, flags, probe_name="composite"):
     from glee_agent.dispatch import STRATEGIES
     from glee_agent.probes import make_probe
 
-    strategy, cfg = make_probe(probe_name, Config.from_env(), seed=20260824)
+    class _ReplayLog:
+        """Capture the plan dispatch logs before custom wrappers discard it."""
+
+        plan = None
+
+        def turn(self, game, action, plan, source):
+            self.plan = copy.deepcopy(plan)
+
+    replay_log = _ReplayLog()
+    strategy, cfg = make_probe(
+        probe_name, Config.from_env(), log=replay_log, seed=20260824)
     from glee_agent.probes import PROBES
     custom_probe = PROBES[probe_name][1] is not None
     out = []
@@ -722,8 +755,13 @@ def _replay(states, flags, probe_name="composite"):
             # Custom probes bypass STRATEGIES entirely in production. Running
             # their wrapped callable here is what exposes an otherwise false
             # positive where a flag fires only under the composite heuristic.
+            # A flagged router may deliberately re-enter dispatch, whose plan
+            # is removed from the returned wire action but retained in the live
+            # turn log; capture it through the same logger interface so nested
+            # gate reachability remains auditable.
+            replay_log.plan = None
             action = strategy(copy.deepcopy(game))
-            plan = None
+            plan = replay_log.plan
         else:
             action = STRATEGIES[game["game_family"]](copy.deepcopy(game), cfg)
             plan = action.pop("_plan", None) if isinstance(action, dict) else None
@@ -769,6 +807,12 @@ def main() -> int:
     ap.add_argument("--control-slot", default=None,
                     help="read the exact named slot stack from arms.json; this "
                          "overrides --control")
+    ap.add_argument("--probe-name", default=None,
+                    choices=("champion", "composite", "hardliner", "conceder",
+                             "randomized"),
+                    help="probe wrapper to replay (default: --control-slot, or "
+                         "composite for a JSON control); use this when adding a "
+                         "prospective routing flag to a live-slot JSON stack")
     args = ap.parse_args()
 
     if "=" not in args.flag:
@@ -830,15 +874,16 @@ def main() -> int:
         from sim.field_data import Field
         field = Field()
         draws = replay_eval._draw_games(field, families, args.n, args.seed)
+    probe_name = args.probe_name or args.control_slot or "composite"
     print(f"flag      : {name}={value}")
     print(f"families  : {', '.join(families)}")
     print(f"collecting states from {len(draws)} control-arm games...")
     states = _collect_states(
-        field, draws, control, families, target_flag=name)
+        field, draws, control, families, target_flag=name,
+        probe_name=probe_name)
     print(f"banked {len(states)} decision points; replaying twice "
           "(control vs control+candidate)...")
 
-    probe_name = args.control_slot or "composite"
     ctl = _replay(states, control, probe_name=probe_name)
     cnd = _replay(states, candidate, probe_name=probe_name)
 
@@ -858,7 +903,8 @@ def main() -> int:
                 predicate_plan = (p_cnd if name in (
                                   "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
                                   "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
-                                  "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB")
+                                  "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
+                                  "GLEE_BARG_DISCOUNT_NO_REGRESS_AB")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:

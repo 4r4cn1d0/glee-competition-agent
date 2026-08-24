@@ -71,6 +71,9 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab pers-p05-unlock --since T0 \
         --official-json FILE
                        # p=.5/r=1.2 buyer selectivity-unlock ITT + wire audit
+    python scripts/live_percentile.py --ab barg-discount-no-regress --since T0 \
+        --official-json FILE
+                       # first-trigger discounted reject/counter consistency arm
     python scripts/live_percentile.py --ab barg-msg        # B0 silence vs B1-B3
 
 CAVEAT, stated because it decides how far the numbers can be pushed: the cell
@@ -105,6 +108,9 @@ from glee_agent.actions import hi_cap10_buyer_curve_arm as _hi_buyer_curve_bit  
 from glee_agent.actions import hi_cap10_buyer12_terminal_arm as _hi_terminal_bit  # noqa: E402
 from glee_agent.messages import BARG_ARMS, bargaining_arm  # noqa: E402
 from glee_agent.pricing import infer_base       # noqa: E402
+from glee_agent.strategies.bargaining import (  # noqa: E402
+    discount_no_regress_assignment,
+)
 from glee_agent.strategies.persuasion import (  # noqa: E402
     _recommendation_signal as _pers_recommendation_signal,
     buyer_selectivity_assignment,
@@ -2625,6 +2631,62 @@ def _pers_p05_unlock_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), completed, diagnostic
 
 
+def _barg_discount_no_regress_exposure_turn(slot: str, rec: dict):
+    """Return the first assignment-independent discounted-regression trigger."""
+    if rec.get("game_family") != "bargaining":
+        return None
+    gid = str(rec.get("game_id") or "")
+    ts = _number(rec.get("ts"))
+    plan = rec.get("plan") or {}
+    signal = plan.get("discount_no_regress") or {}
+    if not gid or ts is None or signal.get("eligible") is not True:
+        return None
+    arm = discount_no_regress_assignment(gid)
+    if arm is None:
+        return None
+    action = rec.get("action") or {}
+    decision = str(action.get("decision") or "").lower()
+    gates = plan.get("gates_fired")
+    trace_present = isinstance(gates, list)
+    gate_fired = trace_present and "discount_no_regress" in gates
+    expected_decision = "accept" if arm == "candidate" else "reject"
+    diagnostic = {
+        **signal,
+        "assignment_ok": signal.get("arm") == arm,
+        "wire_decision": decision,
+        "wire_ok": decision == expected_decision,
+        "trace_present": trace_present,
+        "trace_ok": (gate_fired if arm == "candidate" else not gate_fired),
+        "first_trigger_round": rec.get("round"),
+    }
+    return (slot, gid), ts, diagnostic
+
+
+def _barg_discount_no_regress_row(slot: str, rec: dict, fin: dict):
+    """Build one terminal outcome for the discounted no-regression cohort."""
+    if fin.get("game_family") != "bargaining":
+        return None
+    gid = str(rec.get("game_id") or fin.get("game_id") or "")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    closed = _terminal_close(fin)
+    if not gid or seat not in ("player_1", "player_2") or closed is None:
+        return None
+    result = fin.get("result") or {}
+    payoff = _result_payoff(result, seat, seat)
+    pct = (percentile("bargaining", dict(state), seat, payoff)
+           if payoff is not None else None)
+    money = _number(state.get("money_to_divide"))
+    diagnostic = {
+        "terminal_outcome": result.get("outcome"),
+        "zero_payoff": payoff is not None and payoff <= 0.0,
+        "payoff_share": (payoff / money
+                         if payoff is not None and money not in (None, 0.0)
+                         else None),
+    }
+    return slot, pct, gid, closed, diagnostic
+
+
 def _game_record_final(record: dict) -> dict:
     """Rebuild the final envelope stored by the continuous outcome collector."""
     state = dict(record.get("config") or {})
@@ -3537,6 +3599,13 @@ def pers_p05_unlock_games(hours, since=None, until=None):
         since=since, until=until))
     yield from _pers_p05_unlock_trace_audit(
         rows, hours, since=since, until=until)
+
+
+def barg_discount_no_regress_games(hours, since=None, until=None):
+    """Yield the first eligible bargaining trigger in each assigned game."""
+    yield from _price_arm_games(
+        hours, _barg_discount_no_regress_exposure_turn,
+        _barg_discount_no_regress_row, since=since, until=until)
 
 
 def _quantile(values, probability):
@@ -8096,6 +8165,147 @@ def report_table_vcont_precedence(rows, hours, since=None, until=None,
     return 1
 
 
+def report_barg_discount_no_regress(rows, hours, since=None, until=None,
+                                    official_path=None):
+    """Report the first-trigger discount-aware reject/counter experiment."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = discount_no_regress_assignment(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        slots = diagnostic.get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[gid].update(slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic,
+            "resolution": resolution, "official": official.get((slot, gid)),
+        })
+
+    print("GLEE_BARG_DISCOUNT_NO_REGRESS_AB")
+    print("triggered ITT: first baseline Reject where delta_me<1 and the next "
+          "wire-coerced counter, discounted one round, is worth no more than "
+          "the live offer; controls reject and candidates accept")
+    print("primary: official dashboard per-game rating delta; local bargaining "
+          "CDF percentile is diagnostic because that fitted CDF pools deltas")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"first-trigger exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no eligible discounted no-regression triggers in the window")
+        return 1
+
+    duplicates = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    independent = [item for item in observations if item["gid"] not in duplicates]
+    print(f"pooled dependence guard: excluded {len(duplicates)} cross-fleet "
+          "game id(s)")
+
+    def summarize(population):
+        stats = {
+            "official": [], "pct": [], "closed": [], "zero": [],
+            "payoff_share": [], "offered_share": [], "terminal": 0,
+            "pending": 0, "invalid": 0, "official_missing": 0,
+            "mechanism_fail": 0,
+        }
+        for item in population:
+            diagnostic = item["diagnostic"]
+            mechanism_ok = (
+                diagnostic.get("assignment_ok") is True
+                and diagnostic.get("wire_ok") is True
+                and diagnostic.get("trace_present") is True
+                and diagnostic.get("trace_ok") is True
+            )
+            stats["mechanism_fail"] += int(not mechanism_ok)
+            offered = _number(diagnostic.get("offered_share"))
+            if offered is not None:
+                stats["offered_share"].append(offered)
+            if item["closed"] is None:
+                field = ("invalid" if item["resolution"] == "invalid-final"
+                         else "pending")
+                stats[field] += 1
+                continue
+            stats["terminal"] += 1
+            stats["closed"].append(float(bool(item["closed"])))
+            stats["zero"].append(float(bool(diagnostic.get("zero_payoff"))))
+            share = _number(diagnostic.get("payoff_share"))
+            if share is not None:
+                stats["payoff_share"].append(share)
+            if item["pct"] is not None:
+                stats["pct"].append(item["pct"])
+            if item["official"] is not None:
+                stats["official"].append(item["official"])
+            elif official_path:
+                stats["official_missing"] += 1
+        return stats
+
+    def print_line(label, arm, stats):
+        official_text, _ = _mean_ci_text(stats["official"])
+        pct_text, _ = _mean_ci_text(stats["pct"])
+        close_text, _ = _mean_ci_text(stats["closed"], percent=True)
+        zero_text, _ = _mean_ci_text(stats["zero"], percent=True)
+        payoff_text, _ = _mean_ci_text(stats["payoff_share"])
+        offered_text, _ = _mean_ci_text(stats["offered_share"])
+        print(f"{label:9} {arm:9} official-dR={official_text} "
+              f"n={len(stats['official'])}; local-pct={pct_text} "
+              f"n={len(stats['pct'])}; close={close_text}; zero={zero_text}; "
+              f"payoff/pot={payoff_text}; trigger-offer={offered_text}; "
+              f"terminal={stats['terminal']} pending={stats['pending']} "
+              f"badfin={stats['invalid']} official-missing="
+              f"{stats['official_missing']} mechanism-fail="
+              f"{stats['mechanism_fail']}")
+
+    by_slot_arm = defaultdict(list)
+    for item in observations:
+        by_slot_arm[(item["slot"], item["arm"])].append(item)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        print_line(NAMES.get(slot, slot), arm, summarize(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in independent if item["arm"] == arm]
+        if assigned:
+            pooled[arm] = summarize(assigned)
+            print_line("POOLED", arm, pooled[arm])
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (first-trigger intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+        _print_delta("zero rate", candidate["zero"], control["zero"],
+                     percent=True)
+        _print_delta("payoff share", candidate["payoff_share"],
+                     control["payoff_share"])
+
+    unresolved = sum(s["pending"] + s["invalid"] for s in pooled.values())
+    missing_official = sum(s["official_missing"] for s in pooled.values())
+    mechanism_fail = sum(s["mechanism_fail"] for s in pooled.values())
+    if unresolved or missing_official or mechanism_fail:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, official-missing="
+              f"{missing_official}, mechanism-fail={mechanism_fail}")
+        return 1
+    print("mechanism and terminal joins are clean; apply the precommitted "
+          "sample and outcome gates before promotion")
+    return 0
+
+
 def report_barg_msg(rows, hours):
     """Report the primary silence/text contrast and each assigned text register."""
     arms = defaultdict(lambda: defaultdict(list))
@@ -8177,6 +8387,7 @@ def main() -> int:
                              "fp-complete", "pers-selectivity", "pers-prose",
                              "pers-truth", "pers-decline-veto",
                              "pers-p05-unlock",
+                             "barg-discount-no-regress",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
                          "keeps the legacy GLEE_NEGO_ZOPA_AB report")
@@ -8194,13 +8405,15 @@ def main() -> int:
                    "table-vcont-precedence",
                    "fp-complete",
                    "pers-selectivity", "pers-prose", "pers-truth",
-                   "pers-decline-veto", "pers-p05-unlock"):
+                   "pers-decline-veto", "pers-p05-unlock",
+                   "barg-discount-no-regress"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
             ap.error("--until must be greater than --since")
         if (args.ab in ("top-opus-buyer-clone",
                         "top-buyer-clone-hi-cap10",
-                        "top-opus-buyer-clone-hi-unknown")
+                        "top-opus-buyer-clone-hi-unknown",
+                        "barg-discount-no-regress")
                 and args.since is None):
             ap.error(f"--ab {args.ab} requires a clean --since T0")
         cohort = {
@@ -8226,6 +8439,7 @@ def main() -> int:
             "pers-truth": pers_truth_games,
             "pers-decline-veto": pers_decline_veto_games,
             "pers-p05-unlock": pers_p05_unlock_games,
+            "barg-discount-no-regress": barg_discount_no_regress_games,
         }[args.ab]
         reporter = {
             "open-claim": report_open_claim,
@@ -8250,6 +8464,7 @@ def main() -> int:
             "pers-truth": report_pers_truth,
             "pers-decline-veto": report_pers_decline_veto,
             "pers-p05-unlock": report_pers_p05_unlock,
+            "barg-discount-no-regress": report_barg_discount_no_regress,
         }[args.ab]
         price_rows = [r for r in cohort(
             args.hours, since=args.since, until=args.until)
@@ -8263,7 +8478,8 @@ def main() -> int:
                                 "top-opus-buyer-clone",
                                 "top-buyer-clone-hi-cap10",
                                 "top-opus-buyer-clone-hi-unknown",
-                                "table-vcont-precedence") else {})
+                                "table-vcont-precedence",
+                                "barg-discount-no-regress") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)
 

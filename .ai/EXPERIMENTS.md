@@ -1273,3 +1273,74 @@ activation, assignment, or outcome.
   immutable pre-activation stack snapshot, then read each host separately with
   `scripts/read_pers_p033_r4_binary_postdecline_pulse.py --slots HOST --since
   HOST_T0 --control-slot HOST --stack-snapshot SNAPSHOT --official-json FILE`.
+
+## READY, DEFAULT OFF — bargaining discounted reject/counter consistency
+
+- **Prospective Test 4 host amendment (25 Aug, before activation/outcomes)**:
+  per operator direction, host this arm on Test 4 (`randomized`) only, not Test
+  2 or Test 3. At the same clean boundary set
+  `GLEE_PROBE_RANDOMIZED_BARG_BASE=1`,
+  `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`, and
+  `GLEE_BARG_OBSERVED_GAIN=0`. The first flag routes only Test 4 bargaining
+  through the ordinary best-agent stack; negotiation and persuasion remain
+  randomized. The explicit OBSERVED_GAIN zero prevents that currently inert
+  Test 4 flag from silently becoming a second bargaining treatment when the
+  route opens. This sacrifices Test 4's bargaining exploration stream in favor
+  of performance while retaining its other two identification streams.
+- **Flag / assignment**: `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`; SHA-256 of
+  `barg_discount_no_regress_v1|<game_id>`, low bit 1 = candidate. Assignment is
+  per game and recoverable through the production pure helper. The older
+  `GLEE_BARG_NO_REGRESS` must remain `0`; the new arm fails closed if it is on,
+  so a nominal guard cannot contaminate hash controls.
+- **Pre-treatment trigger**: the current full policy has decided `Reject`, our
+  standing offer is strictly positive, our discount is strictly below 1, a
+  nonfinal round remains, and the exact
+  wire-coerced offer that the same policy would send after rejection satisfies
+  `next_counter_share * delta_me <= offered_share`. Both hash arms compute and
+  log this signal before the candidate changes the decision. The first such turn
+  is therefore assignment-independent: controls retain the baseline reject;
+  candidates accept the standing offer. `delta_me=1` is deliberately excluded.
+- **Measured motivation**: complete latest-12h Test 2 + Test 3 logs contain 49
+  first triggers with `delta_me<1`; immediate acceptance beats the realised
+  final in 49/49, by mean `+0.03326` pot share (95% CI
+  `[+0.02722,+0.03930]`) and diagnostic `+0.02005` fitted percentile
+  (`[+0.00752,+0.03259]`). The excluded `delta_me=1` row averaged `-0.0505`
+  pot share (n=16), so broad nominal no-regression is not justified.
+- **Primary cohort / outcome**: every game's globally first eligible turn,
+  including later agreements, no-deals, zeros, unresolved outcomes, and both
+  roles/horizons. Primary is authenticated dashboard per-game rating delta;
+  payoff share and the checked-in pooled bargaining-CDF percentile are
+  diagnostics because CDF v3 omits discount factors. Never condition on an
+  agreement, an action change, or a candidate accept.
+- **Reader**: `scripts/live_percentile.py --ab barg-discount-no-regress --since
+  T0 --slots randomized --official-json FILE`. It cohorts on the logged pre-action
+  trigger rather than result-fetch time, keeps cold missing finals unresolved,
+  removes cross-fleet duplicate game ids from the pooled estimate, recovers the
+  hash independently, and audits candidate `accept` / control `reject` wires
+  plus adjacent trace gates.
+- **Harm look**: once at 30 resolved official games per arm. Reject immediately
+  on any assignment, wire, trace, duplicate/self-play, or official-join failure.
+  Otherwise reject for harm only if the official-delta 95% CI is wholly negative
+  or the candidate zero-rate difference is at least +5pp with its 95% CI wholly
+  above zero. No early efficacy promotion.
+- **Fixed final**: 100 resolved official Test 4 games per arm and at least 15
+  per arm for both `delta_me=.90` and `.95` (the `.80` trigger is too rare for a
+  feasible quota). Promote only if
+  official candidate-control 95% CI is above zero; payoff-share and local-
+  percentile points are positive; close-rate lower 95% bound is above -2pp;
+  Alice, Bob, known-horizon, unknown-horizon, `.90`, and `.95` point estimates
+  are all nonnegative; every assigned outcome and official join
+  is resolved; and mechanism/duplicate/self-play failures are zero.
+- **Reachability**: before the router, Test 4's custom randomized policy bypasses
+  `bargaining.decide`. On its exact live stack the default-off router produced
+  `4,465 eligible / 3,263 fired / 3,263 changed` over 2,400 paired games. With
+  that route in both arms and the prospectively required OBSERVED_GAIN zero,
+  the nested discount A/B produced `50 / 16 / 16` over 2,400 paired Test 4
+  games. The gap between eligible and changed is the expected
+  per-game hash control assignment.
+- **Verification / deployment state**: focused mechanism, assignment, reader,
+  overlap, zero-offer, patient-cell, Test 4 route, and cross-family isolation
+  tests pass 26/26. Live nowhere; no flag, fleet process, `arms.json`, or
+  `control.json` was changed. After code naturally reaches Test 4, Claude may
+  apply the three-value Test 4 amendment above at one clean T0. Test 1, Test 2,
+  Test 3, and Agent 5 remain unarmed.
