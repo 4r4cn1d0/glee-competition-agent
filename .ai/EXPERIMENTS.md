@@ -27,25 +27,29 @@
   terminal crumb is a separate experiment.
 - **Verdict**: promotion withdrawn; complete-info and hidden both pending.
 
+## DISABLED / INVALID — NOT LIVE
+
 ### Surplus-share response probe (negotiation, complete-info)
 - **Hypothesis**: our complete-info closes sit at the 49.4% attractor; the
   causal frontier P(accept | surplus share x) may peak above it.
 - **Design**: randomise x over {0.50,0.55,0.60,0.65,0.70,0.75} in complete-info
   offer turns, seeded on game id, stratified by seat/round-block/cap.
-- **Live on**: Agent 5, Test 3 (`GLEE_NEGO_SURPLUS_PROBE=1`).
+- **Live on**: nowhere; `GLEE_NEGO_SURPLUS_PROBE=0` on all five slots.
 - **Read with**: `scripts/analyze_surplus_probe.py`
 - **Decision rule**: pick the x maximising P(accept)*x plus continuation, NOT
   the highest observed rating-by-band (that conditions on deals happening).
-- **Verdict**: pending (~50-100 obs/arm needed).
+- **Verdict**: invalid as run. Assignment leaked into the accept/reject target,
+  and its analyzer joined the wrong response turn. Do not restore this design.
 
 ### Seller-message parser v2 (persuasion)
 - **Hypothesis**: the decline table missed "not recommended" and friends, so we
   bought messages that explicitly declined. 373 such purchases in 20h of logs,
   373 low quality, 0 high.
-- **Live on**: Test 2 only (`GLEE_PERS_PARSE_V2=1`); other three are controls.
-- **Verdict**: pending trail.
+- **Live on**: nowhere; the flag is absent from all five live arm stacks.
+- **Verdict**: historical candidate only, not a running experiment. The newer
+  tri-state parser is a separate default-off mechanism.
 
-## IMPLEMENTED — DEFAULT OFF, REACHABILITY/DEPLOYMENT PENDING
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Hidden unknown-horizon first-offer greed probe (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB=1`;
@@ -70,11 +74,17 @@
   and share95 with share80. Promotion requires official per-game score 95% CI
   above zero, close-rate lower bound above -2pp, zero wire failures, and no
   material role/scale sign reversal. Conditional deal share is diagnostic only.
-- **Read with**: `scripts/live_percentile.py --ab hi-first-offer --since T0
-  --until T1`. It labels its hidden-value-pooled metric diagnostic and never
-  emits a promotion verdict.
-- **Before arming**: run prescribed reachability against the exact stack. The
-  runtime refuses to activate if `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` is armed.
+- **Live on / boundary**: Test 1 (`champion`), Agent 5 (`composite`), and Test 4
+  (`randomized`), all cleanly on pushed code by `T0=1787567218` (2026-08-24
+  15:56:58 IST). Test 2 is protected pending evidence; Test 3 is untouched.
+- **Read with**: `scripts/live_percentile.py --ab hi-first-offer --since
+  1787567218 --slots champion,composite,randomized`. It labels its
+  hidden-value-pooled metric diagnostic and never emits a promotion verdict.
+- **Reachability / first wire evidence**: Test 2's latest 20,000-turn shadow had
+  47 eligible, 35 candidate-fired, and 35 changed actions. Before the common
+  boundary, Test 4 emitted exact share95 wires at 1.485B and .81B and Agent 5
+  emitted a hash control, all with `wire_ok=true`. The runtime refuses to
+  activate if `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` is armed.
 
 ## READY — DEFAULT OFF, NOT LIVE
 

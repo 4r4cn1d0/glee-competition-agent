@@ -22,6 +22,15 @@ current policy after a rejection. Buyers who accept before emitting a price
 remain in the intent-to-treat cohort. Broad hidden-policy/floor flags make the
 probe inert so its control cannot be silently contaminated.
 
+Deployment is now live on `champion`, `composite`, and `randomized`, with the
+clean common cohort boundary `T0=1787567218` (15:56:58 IST). `hardliner` remains
+unarmed pending evidence and `conceder` remains untouched. Pre-boundary wire
+confirmation observed exact share95 prices at 1.485B (seller) and .81B (buyer)
+on Test 4 plus an unchanged hash-control buyer action on Agent 5; all three
+reported `wire_ok=true`. Test 4 entered the negotiation top-50 at rating
+2077.54 / displayed rank 24 before any eligible probe exposure, so that move is
+baseline variance and must not be attributed to treatment.
+
 Production-context shadowing over Test 2's latest 20,000 turns found 47 eligible
 first-turn games: 12 control, 18 share80, and 17 share95, split 24 seller / 23
 buyer. All 35 candidate price opportunities fired and changed the wire action;
