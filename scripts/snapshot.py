@@ -16,6 +16,7 @@ import os
 import sys
 import time
 import urllib.request
+import urllib.parse
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
@@ -107,16 +108,22 @@ def snapshot(env):
             # Use the mapping reloaded for this poll. Reading process env here
             # would keep a launch-time key alive after a later rotation.
             _key = env.get("GLEE_KEY_TEST1") or env.get("GLEE_API_KEY", "")
+            params = {"player_type": "agent", "show_baselines": "false",
+                      "limit": "200"}
+            if fam != "overall":
+                params["family"] = fam
             endpoint = ("https://glee-competition.com/api/leaderboard/overall"
                         if fam == "overall" else
-                        f"https://glee-competition.com/api/leaderboard?family={fam}")
+                        "https://glee-competition.com/api/leaderboard")
+            endpoint += "?" + urllib.parse.urlencode(params)
             req = urllib.request.Request(
                 endpoint,
                 headers={"Authorization": f"Bearer {_key}",
                          "User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=20) as fh:
                 data = json.load(fh)
-            board = {"cutoff": min(r["rating"] for r in data)}
+            board = {"cutoff": min(r["rating"] for r in data),
+                     "third": data[2]["rating"] if len(data) >= 3 else None}
             ours = [{"slot": ids.get(r.get("player_id"), r.get("player_name")),
                      "row": i + 1, "rank": r.get("rank"), "rating": r.get("rating")}
                     for i, r in enumerate(data)

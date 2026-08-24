@@ -111,7 +111,8 @@ def test_snapshot_uses_reloaded_env_for_board_auth_and_randomized_slot(
         requests.append(request)
         data = [{"player_name": "missing id", "rank": 1, "rating": 2300.0},
                 {"player_id": "id-fresh-4", "player_name": "Test 4",
-                 "rank": 7, "rating": 2200.0}]
+                 "rank": 7, "rating": 2200.0},
+                {"player_name": "third", "rank": 3, "rating": 2100.0}]
         return io.BytesIO(json.dumps(data).encode("utf-8"))
 
     monkeypatch.setitem(sys.modules, "glee_sdk",
@@ -123,8 +124,11 @@ def test_snapshot_uses_reloaded_env_for_board_auth_and_randomized_slot(
     row = snapshot_script.snapshot(_env("fresh"))
 
     assert len(requests) == 4
-    assert any(request.full_url.endswith("/api/leaderboard/overall")
+    assert any(request.full_url.split("?", 1)[0].endswith(
+                   "/api/leaderboard/overall")
                for request in requests)
+    assert all("player_type=agent" in request.full_url for request in requests)
+    assert all(board["third"] == 2100.0 for board in row["boards"].values())
     assert all(request.get_header("Authorization") == "Bearer fresh-1"
                for request in requests)
     assert "randomized" in row and "specialist" not in row
