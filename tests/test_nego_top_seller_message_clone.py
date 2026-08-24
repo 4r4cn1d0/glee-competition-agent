@@ -7,8 +7,6 @@ import math
 import pytest
 
 from glee_agent import top_seller_message_clone as clone
-from glee_agent.config import Config
-from glee_agent.strategies import negotiation
 
 
 @pytest.fixture(autouse=True)
@@ -336,17 +334,10 @@ def test_fingerprint_audit_detects_any_non_message_drift():
     assert audit["non_message_unchanged"] is False
 
 
-def test_composite_profile_selects_whole_deterministic_leader_policy(monkeypatch):
+def test_pure_deterministic_helper_changes_only_the_seller_message(monkeypatch):
     game = _game(own_count=2)
     control = _action()
-    monkeypatch.setattr(
-        negotiation,
-        "_decide",
-        lambda observed_game, cfg: copy.deepcopy(control),
-    )
-    cfg = Config(nego_policy="leader_replica", llm_mode="off")
-
-    result = negotiation.decide(game, cfg)
+    result = clone.apply_deterministic(game, copy.deepcopy(control))
 
     assert result["message"] == clone.EARLY_COUNTER_MESSAGE
     assert result["product_price"] == control["product_price"]

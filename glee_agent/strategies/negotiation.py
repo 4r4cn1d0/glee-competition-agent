@@ -20,11 +20,10 @@ from __future__ import annotations
 
 import math
 
-from .. import (first_principles, nego_arms, pricing, runtime_flags,
-                top_buyer_clone, top_buyer_clone_hi_cap10,
+from .. import (deterministic_negotiation, first_principles, nego_arms, pricing,
+                runtime_flags, top_buyer_clone, top_buyer_clone_hi_cap10,
                 top_opus_buyer_clone,
-                top_opus_buyer_clone_hi_unknown,
-                top_seller_message_clone)
+                top_opus_buyer_clone_hi_unknown)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1587,19 +1586,18 @@ def _enforce_span_invariant(p: dict, price: float) -> float:
 
 
 def decide(game: dict, cfg) -> dict:
-    """Choose one complete launch-profile policy, then optional legacy text.
+    """Choose a default-off deterministic component or the existing stack.
 
-    ``leader_replica`` is selected deterministically by the named composite
-    launch profile.  It is not a cell arm: all supported buyer turns use the
-    complete frozen 7aidara policy and all seller turns use the current seller
-    decision policy plus the 57/57 exact seller-message table.  Other profiles
-    retain ``_decide``.  The old message bank remains an inert legacy hook when
-    its fleet flag is zero.
+    The deterministic policies are mutually exclusive runtime flags, never
+    game-hash arms.  While one is selected, the legacy randomized message bank
+    is deliberately bypassed so a complete policy cannot silently become a
+    mixed treatment.  Flag-off behavior retains the original attachment path.
     """
-    if getattr(cfg, "nego_policy", "baseline") == "leader_replica":
-        action = _leader_replica_decide(game, cfg)
-    else:
-        action = _decide(game, cfg)
+    selected = deterministic_negotiation.mode()
+    if selected is not None:
+        return _deterministic_policy_decide(game, cfg, selected)
+
+    action = _decide(game, cfg)
     try:
         if nego_arms.enabled():
             nego_arms.attach(game, action)
@@ -1608,30 +1606,23 @@ def decide(game: dict, cfg) -> dict:
     return action
 
 
-def _leader_replica_decide(game: dict, cfg) -> dict:
-    """Complete deterministic negotiation policy for ``composite`` launches.
+def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
+    """Execute one complete role/information/horizon policy matrix."""
+    buyer_action = deterministic_negotiation.buyer_action(game, selected)
+    if buyer_action is not None:
+        return deterministic_negotiation.trace_action(buyer_action, selected)
 
-    The 91-game broad buyer-policy checkpoint was +0.869 official rating/game
-    versus contemporaneous controls; sellers were already the winning half
-    (+47.9 over the motivating 63-game window), so this policy replaces the
-    diagnosed buyer half without discarding seller pricing that was working.
-    Every unsupported or malformed state falls through to the total baseline.
-    """
-    try:
-        if top_buyer_clone.eligible(game):
-            buyer_action = top_buyer_clone.action(game)
-            if buyer_action is not None:
-                buyer_action = dict(buyer_action)
-                plan = dict(buyer_action.get("_plan") or {})
-                plan["source"] = "leader_replica"
-                plan["component"] = "7aidara_complete_buyer"
-                buyer_action["_plan"] = plan
-                return buyer_action
-    except Exception:
-        pass
-
-    seller_action = _decide(game, cfg)
-    return top_seller_message_clone.apply_deterministic(game, seller_action)
+    # Sellers retain the measured winning current stack.  The recommended
+    # policy also keeps current hidden-cap1 (already exact at the terminal node)
+    # and hidden-unknown buyer behavior rather than the replica's eight-price
+    # walk.  Only private trace metadata is added; the public wire is unchanged.
+    action = _decide(game, cfg)
+    plan = dict(action.get("_plan") or {})
+    plan["deterministic_policy"] = selected
+    plan["component"] = deterministic_negotiation.fallback_component(game)
+    action = dict(action)
+    action["_plan"] = plan
+    return action
 
 
 def _decide(game: dict, cfg) -> dict:

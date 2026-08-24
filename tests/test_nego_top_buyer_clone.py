@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import copy
 
-from glee_agent import runtime_flags, top_buyer_clone
+from glee_agent import (deterministic_negotiation, runtime_flags,
+                        top_buyer_clone)
 from glee_agent.actions import coerce
 from glee_agent.config import Config
 from glee_agent.strategies import negotiation
@@ -178,19 +179,20 @@ def test_candidate_bypasses_all_later_price_guards(monkeypatch):
     assert wire["product_price"] == raw["product_price"]
 
 
-def test_leader_profile_uses_complete_buyer_policy_without_hash_arm(monkeypatch):
+def test_deterministic_backup_uses_complete_buyer_policy_without_hash_arm(monkeypatch):
     gid = _control_gid("whole-profile")
     game = _game(gid=gid, own=120.0, offer=149.0)
+    monkeypatch.delenv("GLEE_PROBE", raising=False)
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_OPEN_CLAIM_ALWAYS", "1")
-    raw = negotiation.decide(
-        copy.deepcopy(game), Config(nego_policy="leader_replica", llm_mode="off")
-    )
+    monkeypatch.setenv(deterministic_negotiation.LEADER_REPLICA_FLAG, "1")
+    monkeypatch.setenv(deterministic_negotiation.RANK_HYBRID_FLAG, "0")
+    raw = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
     wire = coerce(copy.deepcopy(raw), copy.deepcopy(game))
 
-    assert raw["_plan"]["source"] == "leader_replica"
-    assert raw["_plan"]["component"] == "7aidara_complete_buyer"
+    assert raw["_plan"]["source"] == deterministic_negotiation.LEADER_REPLICA
+    assert raw["_plan"]["component"] == "observed_leader_buyer"
     assert raw["decision"] == "RejectOffer"
     assert wire["product_price"] == raw["product_price"] == 86.0
 
