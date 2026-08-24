@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 03:12 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 04:00 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -42,18 +42,19 @@ their code, configuration, experiments, or fleet flags.
   boundaries; the supervisor recorded zero games abandoned for each. The Test 4
   slot name does not imply random behavior: its loaded profile is deterministic
   `composite`.
-- The first eight emitted vetoes were audited in full: Test 1 (five), Test 4
-  (two), and Agent 5 (one). All eight were buyer/player 2,
-  explicit current declines, heuristic PASS actions, and had only the new gate.
-  Exact recorded-state replay was PASS/`no` with the flag ON versus BUY/`yes`
-  with it OFF; the only differences were `decision`, `plan.buy`, the marker, and
-  its appended gate. The first post-cutover health read covered 2,907 persuasion
-  turns across the five host-specific eras with zero persuasion errors, zero
-  out-of-scope vetoes, and zero legacy persuasion gates. Thus live
-  `eligible>0`, `fired>0`, and
-  `action_changed>0` are verified. Continue the same audit through the first 20
-  firings; any scope, parser, legality, legacy-gate, timeout, or replay failure is
-  a mechanism failure.
+- The frozen first-20 audit is complete, and the later monitoring extension is
+  clean through 32 emitted vetoes in 17 games: Test 1/champion `7`, Test
+  2/hardliner `5`, Test 3/conceder `7`, Test 4/randomized `12`, and Agent
+  5/composite `1`. Exact recorded-state replay passed `32/32`; every event was
+  buyer/player 2 on a strict binary or expanded-parser explicit current decline,
+  with heuristic PASS/`no` live versus BUY/`yes` flag-off. Only `decision`,
+  `plan.buy`, the marker, and its sole appended gate changed. Across 13,823
+  post-boundary persuasion turns / 700 assigned games there were zero scope,
+  parser, legality, legacy-gate, action, persuasion-error, or affected-game
+  timeout failures. All 17 affected games were authenticated completed. Local
+  outcomes existed for 270/700 assigned games; the other 430 are collector
+  backlog or active and must not be imputed as server abandonment. Thus live
+  `eligible=fired=action_changed=32` is verified without selecting on outcomes.
 - Frozen fixed-stream evidence is diagnostic rather than causal: 1,934 assigned
   buyer games (1,925 completed, six active, three no-deal) contained 85 games
   and 176 turns that this veto would change; 175 of 176 changed turns were low
