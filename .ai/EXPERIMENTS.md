@@ -795,11 +795,48 @@ Test 3 before causal promotion evidence.
   restart.  The pre-treatment reader found 27 exact games across the proposed
   hosts in roughly 4.7 hours (24 terminal, 3 unresolved), implying about 38--42
   hours to the unchanged 120/arm boundary.
+- **Research-host activation**: after verifying no exact target game was in
+  flight, fleet tooling set only
+  `GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB=1` on Test 1 at
+  `T0=1787588203` (21:46:43 IST), Agent 5 at `T0=1787588220` (21:47:00), and
+  Test 4 at `T0=1787588236` (21:47:16).  All three processes had loaded
+  `d79ca92` or later before activation; no restart, signal, bargaining flag, or
+  negotiation flag changed.  Test 2 and Test 3 remain unarmed.  Immediate
+  host-specific readers found zero assigned target games and `rg` found zero
+  decline-veto traces, so live changed-action verification remains pending the
+  first eligible candidate decline.
 - **Read with**: `scripts/live_percentile.py --ab pers-decline-veto --since T0
   --slots hardliner --official-json FILE`.
   For the amended research window run this separately for `champion`,
   `composite`, and `randomized` using each host's own T0, then pool only the
   declared host-specific cohorts.
+
+### Exact p=.5/r=1.2 buyer selectivity unlock (design audit; not built)
+- **Observed weak cell, diagnostic only**: since the rank-gate disarm, 68
+  structurally exact seller-known buyer games across binary/text produced 68
+  zeros; in 45 of those games our buyer passed all 900 rounds.  In the directly
+  observed seller-known mirror, opponent buyers bought 114 high and zero low
+  units from our selective sellers across 37 games, with local diagnostic
+  percentiles `.7914` binary and `.7774` text.  A post-recovery all-outcome
+  cohort contained 9/86 games in this cell family, all zero.  These comparisons
+  motivate randomization; they do not identify a causal action value and local
+  percentile cannot promote.
+- **Falsifiable candidate**: in buyer games with `p=.5`, `v=1.2P`, `u=0`, and
+  20 rounds, after computing the full current buyer-v2 plan, a stable per-game
+  candidate may change only `pass -> buy` when the plan is tight-prior blocked,
+  the strict current signal is positive, at least one prior strict decline was
+  observed, and posterior expected value strictly exceeds price.  Enroll both
+  message modes and both seller-knowledge configurations; the latter is hidden
+  during play and can only be a terminal subgroup.  A nonpositive all-assigned
+  official candidate-control result falsifies the hypothesis.
+- **Scope relative to rejected ideas**: this is not the rejected broad rank
+  gate (which reached `.8` cells, flipped both directions, and used a pooled
+  local CDF) or the negative selectivity/strike/LCB arms (which removed
+  purchases).  The proposed arm is exact-cell, money-posterior gated, and
+  one-directional `no -> yes`; it is also disjoint from prose, truth, and the
+  live `.8/1.25` decline veto.  It remains unimplemented and default OFF until
+  independent code, reader, tests, reachability, and a full prospective sample
+  rule are committed.
 
 ## MECHANISM REJECTED — DISARMED
 

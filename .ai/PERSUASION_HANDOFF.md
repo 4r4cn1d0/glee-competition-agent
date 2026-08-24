@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 21:45 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 21:51 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -32,13 +32,19 @@ their code, configuration, experiments, or fleet flags.
   absent on Test 2 and text-only on Agent 5/Test 4, so it cannot overlap this
   binary arm. Buyer-parser flags remain absent, rank gate/backload are zero, and
   Test 3 is untouched.
-- The exact text explicit-decline buyer veto is implemented default OFF and is
-  not live on any slot. Before any veto activation or outcome, its sequential
+- The exact text explicit-decline buyer veto was implemented default OFF and is
+  now live on research slots Test 1 from `T0=1787588203`, Agent 5 from
+  `T0=1787588220`, and Test 4 from `T0=1787588236`. Before any veto activation
+  or outcome, its sequential
   Test-2-after-truth boundary was prospectively amended to a parallel,
   behaviorally disjoint research window on Test 1, Agent 5, and Test 4 only.
   Test 2 and Test 3 remain unarmed. The hypothesis and every sample, harm,
   success, stop, all-outcome, and subgroup rule remain unchanged; full details
-  are frozen in `.ai/EXPERIMENTS.md` before activation.
+  were frozen in `.ai/EXPERIMENTS.md` before activation. Fleet tooling changed
+  only this persuasion flag, no target game was in flight at each boundary,
+  and no process was restarted or signalled. Immediate host-specific readers
+  found zero assignments and no live veto trace, so changed-action verification
+  remains pending the first candidate explicit decline.
 - Before any binary-truth assignment or outcome existed, the research boundary
   was prospectively expanded to Agent 5 and Test 4. Exact-stack preflight on
   both reported `eligible=32/fired=18/action_changed=18` over 800 games. At the
@@ -243,12 +249,27 @@ before the live mechanism is considered behavior-verified.
 The fixed read is 40 official outcomes per arm with a 20/arm harm look and at
 least 8/arm at each price scale. Full precommit is in `.ai/EXPERIMENTS.md`.
 
-The follow-on `GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB` is pushed default OFF.
+The follow-on `GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB` was pushed default OFF.
 Its original seller-knowledge gate was rejected at preflight because that
 official configuration is hidden from the buyer during play and yielded an
 unreachable production policy. The corrected observable union gate covers both
 seller-knowledge configurations and stratifies only when authenticated terminal
 evidence exposes the label; it never infers the label from purchases or outcomes.
 Focused persuasion tests passed, and exact Test 2 reachability over 800 seeded
-games reported `eligible=180/fired=15/action_changed=15`. It remains inert until
-the binary-truth arm concludes and is explicitly disarmed.
+games reported `eligible=180/fired=15/action_changed=15`. That original
+sequential deployment sentence was superseded prospectively before any veto
+activation or outcome. The arm is now live only on Test 1, Agent 5, and Test 4
+at their recorded T0s; Test 2 and Test 3 remain unarmed. Exact live-stack
+reachability independently passed twice on every host (`340/25/25` and
+`380/30/30` eligible/fired/action_changed). Focused tests passed 20; the full
+allowed suite passed 1,291 with only the two known bargaining failures. The
+fixed 50/arm harm and 120/arm final rules are unchanged.
+
+The next broader persuasion design target is buyer `p=.5`, `v=1.2P`, `u=0`,
+20 rounds. Since rank-gate disarm, 68 structurally exact seller-known games
+ended at zero and our buyer passed all 900 rounds in the 45 directly audited
+binary/text games; opponent buyers facing our selective sellers bought 114
+high and zero low units across the corresponding 37-game mirror. This is
+all-assigned descriptive mechanism evidence, not a causal estimate. A proposed
+one-directional tight-prior unlock is recorded in `.ai/EXPERIMENTS.md` but is
+not implemented or live.
