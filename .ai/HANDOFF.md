@@ -37,12 +37,20 @@ ownership to Codex on 2026-08-24. Deployment must use natural process rotation;
 do not signal or drain live agents and do not arm Test 3, preserving its
 rank-one bargaining configuration.
 
+Direct `pending_ids` remeasurement found 93,336 locally missing outcome
+artifacts across the five slots; the older collector line saying 11,737
+"outstanding before pass" is therefore not a reliable fleet-total estimate.
+The collector now recognizes both `results.jsonl` and `games/<id>.json`, and
+splits each API budget evenly between the oldest and newest missing IDs. The
+store deduplication is a correctness fix but barely changed the current count
+because those stores overlap heavily; newest-first capacity is what prevents a
+fresh experiment from waiting behind the historical queue.
+
 The official outcome collector was launched in detached screen
-`glee-collector` as PID 20385 at 10 requests/minute/agent to backfill the
-missing final-result queue. This
-supersedes the stale statement below that it is not running. The older
-supervisor process predates collector supervision, so collector health must be
-monitored directly until a safe supervisor refresh is available.
+`glee-collector` as PID 20385 at 10 requests/minute/agent. This supersedes the
+stale statement below that it is not running. The older supervisor process
+predates collector supervision, so collector health must be monitored directly
+until a safe supervisor refresh is available.
 
 ## 2026-08-24 — hidden no-limit support ladder implemented, default OFF
 

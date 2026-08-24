@@ -61,6 +61,23 @@ def pending_ids(probe: str) -> list[str]:
     games_dir = os.path.join(log_dir, "games")
     os.makedirs(games_dir, exist_ok=True)
     have = {name[:-5] for name in os.listdir(games_dir) if name.endswith(".json")}
+    # Older agent exits appended finals to results.jsonl without necessarily
+    # creating a games/<id>.json artifact. Recognize both stores so an available
+    # outcome is never scheduled for a redundant API fetch. The two stores
+    # happen to overlap heavily in the current corpus; this is a correctness
+    # guard, not the explanation for the much larger live backlog measured below.
+    results = os.path.join(log_dir, "results.jsonl")
+    try:
+        with open(results, encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                try:
+                    gid = json.loads(line).get("game_id")
+                except json.JSONDecodeError:
+                    continue
+                if gid:
+                    have.add(str(gid))
+    except OSError:
+        pass
     seen: list[str] = []
     added = set()
     with open(turns, encoding="utf-8", errors="replace") as handle:
@@ -78,6 +95,17 @@ def pending_ids(probe: str) -> list[str]:
     return seen
 
 
+def selected_ids(pending: list[str], budget: int) -> list[str]:
+    """Keep live outcomes fresh while steadily draining historical backlog."""
+    if budget <= 0:
+        return []
+    if len(pending) <= budget:
+        return pending
+    oldest = budget // 2
+    newest = budget - oldest
+    return pending[:oldest] + pending[-newest:]
+
+
 def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
     """Fetch up to ``budget`` outcomes. Returns (written, still_active)."""
     from glee_sdk import GleeAPIError, GleeClient
@@ -86,7 +114,7 @@ def sweep(probe: str, key: str, rate: float, budget: int) -> tuple[int, int]:
     log = GameLog(os.path.join(REPO, "logs", probe))
     client = GleeClient(api_key=key)
     written = active = 0
-    for gid in pending_ids(probe)[:budget]:
+    for gid in selected_ids(pending_ids(probe), budget):
         try:
             state = client.game_state(gid)
         except GleeAPIError as exc:
