@@ -1549,11 +1549,16 @@ error, not evidence about any negotiation policy. Do not use `safe-restart` for
 behavior deployment; use a named zero-game cycle or a natural shift boundary.
 
 At the operator's direction, the replacement experiment copies observable
-behavior from Athena, 7aidara_Gamma, and opus 5(4) on Test 3 only. The treatment
-is buyer-only because the contemporaneous official window had seller `+47.9`
-and buyer `-24.4`, with buyer no-deals accounting for `-22.5`. It is a single
-full-policy hash arm (`GLEE_NEGO_TOP_BUYER_CLONE_AB`) so offers, acceptance, and
-stopping behavior travel together. Focused tests pass 11/11, all negotiation
-tests pass 563/563, Test 3 reachability is 3,827 eligible / 1,576 fired / 1,576
-changed, and the full suite is 1,280 pass plus only the two known bargaining
-failures. Bargaining code and flags were not changed.
+top-agent behavior on Test 3 only. A 70-game reconstruction across 7aidara,
+Alpha, Beta, and Gamma identified exact shared buyer paths rather than a fitted
+median: complete cap-10 own-zone claims are
+`[.960,.898,.836,.774,.774]`, and hidden paths are literal price/base tables by
+own type (buyer 1.5 is `[.905,.905,1.075,1.075,1.245×4]`). Mapping the
+payoff-hidden classes to monotone private types remains the randomized part.
+The treatment is buyer-only because the contemporaneous official window had
+seller `+47.9` and buyer `-24.4`, with buyer no-deals accounting for `-22.5`.
+It is a single full-policy hash arm (`GLEE_NEGO_TOP_BUYER_CLONE_AB`) so offers,
+acceptance, and stopping behavior travel together. Focused tests pass 11/11,
+all negotiation tests pass 563/563, Test 3 reachability is 3,827 eligible /
+1,575 fired / 1,575 changed, and the full suite is 1,280 pass plus only the two
+known bargaining failures. Bargaining code and flags were not changed.

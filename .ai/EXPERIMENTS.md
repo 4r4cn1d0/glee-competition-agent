@@ -192,16 +192,18 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 - **Why buyer only**: the operator's 63-game official window had sellers
   `+47.9` but buyers `-24.4`; buyer no-deals were `-22.5`. Replacing the winning
   seller half would add risk with no diagnosis supporting it.
-- **Candidate**: copy the wire behavior identifiable in direct Athena,
-  7aidara_Gamma, and opus 5(4) transcripts: high complete-information zone
-  claims (96–98.5% opening; frozen cap-10 leader-median trajectory ending at
-  75.8%), the midpoint of two repeated Clod hidden buyer-1.2 paths, a terminal
-  hidden bid `.008B` above the next lower value support, any-positive terminal
-  acceptance, and the observed eight-price walk-away in hidden uncapped games.
-  Gill bates and Mythos01 do not yet have enough complete local transcripts to
-  identify a separate path. This is an exact behavioral clone where the wire
-  moves are observed and an explicit support-scaled extrapolation elsewhere;
-  it is not a claim to possess competitors' private source code.
+- **Candidate**: copy the wire behavior identified across 70 games from
+  7aidara, Alpha, Beta, and Gamma. All four labels share the same exact complete
+  buyer zone path: claim `[.960,.898,.836,.774,.774]` in cap-10 and end at
+  `.712` in unknown horizons. Hidden buyer paths are literal price/base tables
+  by own type, including buyer 1.5
+  `[.905,.905,1.075,1.075,1.245×4]`. Mapping the three hidden path classes
+  whose private payoff was not revealed to monotone own types is the explicit
+  randomized hypothesis. Any-positive terminal acceptance and Athena's
+  observed ninth-decision hidden-uncapped walk remain state-specific. Gill
+  bates and Mythos01 do not yet have enough complete local buyer transcripts to
+  identify a competing path. This is an exact behavioral clone where wire
+  moves are observed; it is not a claim to possess competitors' private source.
 - **Control**: the entire current Test 3 stack, selected by the opposite hash
   bit. The treatment owns both offer and acceptance policy so downstream gates
   cannot silently rewrite half the mechanism.
@@ -219,7 +221,7 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   harm read is an early stop, not permission to declare success.
 - **Verification**: focused clone tests 11/11; all negotiation tests 563/563;
   intended Test 3 stack reachability over 1,000 simulated games yielded 3,827
-  eligible / 1,576 fired / 1,576 changed wire actions. Full suite 1,280 passed
+  eligible / 1,575 fired / 1,575 changed wire actions. Full suite 1,280 passed
   with only the two predeclared bargaining failures.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT

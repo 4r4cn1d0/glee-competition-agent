@@ -77,12 +77,12 @@ def test_default_off_and_hash_control_preserve_current_policy(monkeypatch):
     assert not top_buyer_clone.owns(_game(gid=_control_gid()))
 
 
-def test_hidden_buyer_12_replays_exact_clod_path(monkeypatch):
+def test_hidden_buyer_12_replays_exact_7aidara_path(monkeypatch):
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
     gid = _candidate_gid("clod")
     prices = []
     history = []
-    for idx, expected in enumerate((81.43685, 81.4598, 82.0617, 86.00955, 100.8)):
+    for idx, expected in enumerate((86.0, 86.0, 86.0, 103.0, 103.0)):
         game = _game(gid=gid, own=120.0, phase="decision",
                      round_no=min(2 * idx + 1, 9), history=history, offer=149.0)
         action = top_buyer_clone.action(game)
@@ -90,25 +90,25 @@ def test_hidden_buyer_12_replays_exact_clod_path(monkeypatch):
         assert action["decision"] == "RejectOffer"
         assert action["product_price"] == round(expected, 2)
         history.append(_prior_price(2 * idx + 2, action["product_price"]))
-    assert prices == [81.44, 81.46, 82.06, 86.01, 100.8]
+    assert prices == [86.0, 86.0, 86.0, 103.0, 103.0]
 
 
-def test_hidden_terminal_scales_by_support_not_one_overloaded_constant(monkeypatch):
+def test_hidden_paths_are_type_conditioned_literal_price_families(monkeypatch):
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
     gid = _candidate_gid("support")
     history = [_prior_price(2 * i + 2, 10 + i) for i in range(4)]
-    expected = {100.0: 80.8, 120.0: 100.8, 150.0: 120.8}
+    expected = {80.0: 71.69, 100.0: 83.0, 120.0: 103.0, 150.0: 124.5}
     for own, price in expected.items():
         action = top_buyer_clone.action(
             _game(gid=gid, own=own, history=history, round_no=9))
         assert action["product_price"] == price
 
 
-def test_hidden_accepts_boundary_and_rejects_worse_price(monkeypatch):
+def test_hidden_accepts_path_endpoint_and_rejects_worse_price(monkeypatch):
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
     gid = _candidate_gid("accept")
-    good = top_buyer_clone.action(_game(gid=gid, own=120.0, offer=100.8))
-    bad = top_buyer_clone.action(_game(gid=gid, own=120.0, offer=100.81))
+    good = top_buyer_clone.action(_game(gid=gid, own=120.0, offer=103.0))
+    bad = top_buyer_clone.action(_game(gid=gid, own=120.0, offer=103.01))
     assert good["decision"] == "AcceptOffer"
     assert bad["decision"] == "RejectOffer"
 

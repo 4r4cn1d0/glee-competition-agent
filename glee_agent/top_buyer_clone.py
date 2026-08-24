@@ -11,21 +11,20 @@ Replacing the seller policy would overwrite the half that is already winning.
 
 The two measured pieces are:
 
-* Complete information: Athena, 7aidara_Gamma, and opus 5(4) opened at roughly
-  96--98.5% of the visible zone.  Their observed cap-10 terminal claims were
-  75.8%, 77.4%, and 65.0%; the frozen pointwise median path below copies that
-  common level rather than our 50% median.
-* Hidden information: two completed Clod buyer-1.2B games used first-four
-  normalized paths whose midpoint was
-  ``[.6786404167,.6788316667,.6838475,.71674625]`` and then bid ``1.008B``.
-  The seller cost was ``1.0B``, so that final wire left the seller ``.008B``
-  and captured 96% of the .2B zone.  Literal .677B and 1.015B openings from
-  other top agents match the same own-value scaling for buyer 1.0B/1.5B.
+* Complete information: 15 games across the four 7aidara labels reproduce the
+  same buyer path exactly: start by claiming 96% of the visible zone, then
+  concede to 89.8%, 83.6%, 77.4%, and hold 77.4% in cap-10 games.  Unknown
+  horizons use the same prefix and reach 71.2% on the fifth bid.
+* Hidden information: 7aidara's 30 buyer games reveal four deterministic path
+  families.  Their private-type labels are directly identified only at 1.5B,
+  so mapping the other monotone paths to .8B/1.0B/1.2B is an explicit
+  randomized hypothesis.  The literal price paths, however, are copied rather
+  than fitted or smoothed.
 
-The cross-type hidden terminal rule is therefore an explicit extrapolation:
-bid .008B above the next lower support point.  It is randomized per game and
-reported separately by own type; no selected agreement is treated as causal
-proof.
+The same incoming price can be rejected repeatedly and accepted later in the
+leader corpus, so a static reservation-price model is false.  This treatment
+keeps decision state explicit and is reported separately by own type; no
+selected agreement is treated as causal proof.
 """
 
 from __future__ import annotations
@@ -37,24 +36,22 @@ from . import pricing, runtime_flags
 
 
 SALT = "nego_top_buyer_clone_v1|"
-EPS_SHARE = 0.008
-HIDDEN_EARLY = (
-    0.6786404167,
-    0.6788316667,
-    0.6838475000,
-    0.7167462500,
-)
+# These are literal price/B paths shared by 7aidara, Alpha, Beta, and Gamma.
+# Repeated values are meaningful holds, not interpolation artifacts.  The .8
+# path is structurally dead against an individually rational seller but is kept
+# because copying the complete policy means retaining its dead-cell behavior.
+HIDDEN_PATHS = {
+    0.8: (0.360000, 0.471508, 0.569815, 0.652831, 0.716938, 0.752000),
+    1.0: (0.830000, 0.830000, 0.830000, 0.830000),
+    1.2: (0.860000, 0.860000, 0.860000, 1.030000, 1.030000),
+    1.5: (0.905000, 0.905000, 1.075000, 1.075000,
+          1.245000, 1.245000, 1.245000, 1.245000),
+}
 
-# Pointwise median of the three directly observed cap-10 leader paths.  The
-# fifth point is the median terminal claim (Athena .758, 7aidara .774, opus
-# .650), not a fitted smooth curve.
-COMPLETE_CAP10 = (0.970000, 0.969875, 0.968600, 0.951000, 0.758000)
-
-# Unknown-horizon direct paths disagree on speed but share their high level.
-# This table follows the observed median while all three paths overlap and then
-# holds 7aidara's observed .681 endpoint, inside the measured .64--.77 leader
-# settlement band.  It is frozen before live use.
-COMPLETE_UNKNOWN = (0.9600, 0.9504, 0.9486, 0.9368, 0.8922, 0.7708, 0.6810)
+# Exact 7aidara buyer claim shares from 15 complete-information games.  Price
+# is seller value plus (1 - claim) times the visible zone.
+COMPLETE_CAP10 = (0.960, 0.898, 0.836, 0.774, 0.774)
+COMPLETE_UNKNOWN = (0.960, 0.898, 0.836, 0.774, 0.712)
 
 _MULTS = (0.8, 1.0, 1.2, 1.5)
 
@@ -145,29 +142,17 @@ def _final_round(state: dict) -> bool:
             and _num(state.get("round"), -1) >= _num(state.get("max_rounds"), math.inf))
 
 
-def _hidden_boundary(base: float, own_mult: float) -> float | None:
-    """Top-buyer terminal: .008B above the next lower support point."""
-    lower = {1.0: 0.8, 1.2: 1.0, 1.5: 1.2}.get(own_mult)
-    return None if lower is None else (lower + EPS_SHARE) * base
-
-
 def _hidden_target(state: dict, me: str, own_value: float,
                    base: float, own_mult: float) -> tuple[float, float | None]:
     index = _own_price_count(state, me)
-    boundary = _hidden_boundary(base, own_mult)
-    if boundary is None:
-        # Buyer .8B has no rational seller below it.  A positive-cent bid keeps
-        # an irrational seller exploitable without offering a loss.
-        safe = max(0.0, own_value - 0.01)
-        return safe, None
-    if index < len(HIDDEN_EARLY):
-        target = own_value * HIDDEN_EARLY[index]
-    else:
-        target = boundary
-    # The observed sequence is monotone toward the support boundary.  Guarding
-    # the literal price also prevents a malformed scale from crossing our value.
-    target = min(max(target, 0.0), boundary, own_value - 0.01)
-    return target, boundary
+    path = HIDDEN_PATHS[own_mult]
+    target = path[min(index, len(path) - 1)] * base
+    ceiling = path[-1] * base
+    # Preserve individual rationality if malformed external values ever reach
+    # this otherwise finite-support table.
+    target = min(max(target, 0.0), own_value - 0.01)
+    ceiling = min(max(ceiling, 0.0), own_value - 0.01)
+    return target, ceiling
 
 
 def _complete_target(state: dict, me: str, other: str,
