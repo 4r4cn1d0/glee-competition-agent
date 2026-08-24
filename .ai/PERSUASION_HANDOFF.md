@@ -336,3 +336,30 @@ two-research-host duration are frozen in `.ai/EXPERIMENTS.md`. Deployment may
 use only champion/Test 1 and composite/Agent 5, each with an immutable pre-arm
 stack snapshot, separate clean T0, and no restart or signal. Read each host
 separately; later-host pre-activation games must never enter an earlier boundary.
+
+## 00:50–01:06 buyer pulse deployment — live research-only
+
+Champion naturally relaunched on the pushed code as PID 11357 at 00:50:52 IST;
+composite naturally relaunched as PID 11293 at 00:50:02. Neither process was
+restarted or signalled. The final exact live-stack preflight, after those loads,
+reported `eligible=12/fired=7/action_changed=7` over 800 paired persuasion games
+on each host. The only exact target buyer games visible immediately before the
+boundary had already emitted their round-20 decisions, so no target game could
+receive a mid-game treatment.
+
+The full pre-arm stacks were frozen at `1787599546.549658` in
+`.ai/PERS_P033_R4_BINARY_POSTDECLINE_PULSE_T0_STACKS.json` and committed as
+`35ff05e`; the captured `arms.json` mtime was unchanged through the snapshot.
+Fleet tooling then armed only `GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB` on
+champion at `T0=1787599611.224363327` and composite at
+`T0=1787599624.328448057`. Runtime-overlay verification shows `1` on those two
+hosts and the flag absent on hardliner/Test 2, conceder/Test 3, and
+randomized/Test 4. No bargaining or negotiation setting was changed by this
+deployment.
+
+The first separate host-specific reader runs through approximately
+`1787600226` found zero post-T0 structural assignments on both hosts. That is a
+clean all-assigned baseline, not behavior verification: live `eligible>0`,
+`fired>0`, and `action_changed>0` still require the first exact assignments and
+traces. Continue the frozen first-20-round audit; any unauthorized host fire or
+mechanism mismatch requires immediate research-host disarm.

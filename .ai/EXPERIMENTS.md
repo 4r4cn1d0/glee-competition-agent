@@ -1273,6 +1273,17 @@ activation, assignment, or outcome.
   immutable pre-activation stack snapshot, then read each host separately with
   `scripts/read_pers_p033_r4_binary_postdecline_pulse.py --slots HOST --since
   HOST_T0 --control-slot HOST --stack-snapshot SNAPSHOT --official-json FILE`.
+- **Live research boundary (25 Aug)**: pushed code loaded naturally on composite
+  PID 11293 at 00:50:02 IST and champion PID 11357 at 00:50:52; no process was
+  restarted or signalled. Post-load exact-stack preflight returned
+  `12 eligible / 7 fired / 7 action_changed` over 800 paired games on each.
+  Snapshot commit `35ff05e` froze both complete stacks at
+  `1787599546.549658`. Fleet tooling armed only champion from
+  `T0=1787599611.224363327` and composite from
+  `T0=1787599624.328448057`; Test 2, Test 3, and Test 4 remain unarmed. Separate
+  readers through approximately `1787600226` found no post-T0 structural
+  assignments yet, so live emitted behavior is still awaiting its first exact
+  game and the first-20 assignment audit remains mandatory.
 
 ## READY, DEFAULT OFF — bargaining discounted reject/counter consistency
 
