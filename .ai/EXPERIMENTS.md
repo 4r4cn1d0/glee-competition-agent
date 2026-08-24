@@ -85,14 +85,14 @@
   boundary, Test 4 emitted exact share95 wires at 1.485B and .81B and Agent 5
   emitted a hash control, all with `wire_ok=true`. The runtime refuses to
   activate if `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` is armed.
-- **Early common-cohort read (2026-08-24 ~16:05 IST)**: 7 assigned, 4 resolved,
-  3 active, zero agreements among the four resolved, zero wire failures. Local
-  diagnostic percentile: control .4028 (n=1), share80 .4028 (n=1), share95
-  .3807 (n=2). No inference: each eligible own type has only 25% structural
+- **Early common-cohort read (2026-08-24 ~16:17 IST)**: 12 assigned, 7 resolved,
+  5 unresolved, zero agreements among the seven resolved, zero wire failures.
+  Local diagnostic percentile: control .4028 (n=1), share80 .4028 (n=1),
+  share95 .3852 (n=5). No inference: each eligible own type has only 25% structural
   feasibility, and the first counteroffers sat far outside our reservation
   values. Continue to the precommitted sample/rule; do not react to this draw.
 
-## READY — DEFAULT OFF, NOT LIVE
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Hidden cap-10 buyer-1.2 terminal counter (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB=1`;
@@ -110,10 +110,18 @@
 - **Read with**: `scripts/live_percentile.py --ab hi-terminal --since T0 --until T1`.
   Its local hidden-value-pooled percentile is diagnostic, not promotion-grade.
 - **Reachability**: 57 eligible / 20 fired / 20 changed on 3,000 paired games.
+- **Live on / boundary**: Test 1 (`champion`), Agent 5 (`composite`), and Test 4
+  (`randomized`) from the clean common boundary `T0=1787568551` (2026-08-24
+  16:19:11 IST). Test 2 and Test 3 are unarmed. The first-offer probe is
+  disjoint because it requires an unknown horizon; Test 4's first-principles
+  module does not own hidden cap-10 buyer cells.
+- **Exact-stack preflight**: champion's live stack produced 19 eligible, 10
+  fired, and 10 changed wires in 1,000 paired games (seed 1701), including
+  literal `B+$0.01` at 100, 10,000, and 1,000,000 scales. The existing 3,000
+  paired check remains the higher-sample reachability result above.
 
 Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
-measurement. Codex records the exact activation timestamp and owns deployment
-under the operator's 2026-08-24 directive.
+measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 
 ## REJECTED — DEFAULT OFF, DO NOT RUN
 

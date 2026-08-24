@@ -3,6 +3,33 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-24 — hidden cap-10 terminal counter deployed on research slots
+
+Codex activated `GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB=1` on `champion`,
+`composite`, and `randomized` at the clean common cohort boundary
+`T0=1787568551` (16:19:11 IST). `hardliner` and the overall contender
+`conceder` remain unarmed. This is a negotiation-only, per-game 50/50 arm. It
+changes exactly the round-9 counter attached to a hidden cap-10 buyer-1.2
+rejection to `B+$0.01`; accept, walk, seller, earlier-round, complete-info, and
+all bargaining actions remain unchanged.
+
+The experiment is disjoint from the running hidden unknown-horizon first-offer
+probe. Test 4's first-principles module owns only complete single seller,
+complete cap-10 buyer, and hidden single seller cells, so it cannot shadow this
+hidden cap-10 buyer arm. Champion's exact live-stack reachability preflight
+(1,000 paired games, seed 1701) reported 19 eligible, 10 fired, and 10 changed
+wire actions; representative changes were `.989676B -> B+$0.01` at three
+scales. The earlier 3,000-game paired check reported 57/20/20.
+
+The primary cohort begins at the first matching buyer decision, not at terminal
+reach, and includes agreements, no-deals, walks, timeouts, and unresolved games.
+Promotion still requires official per-game score candidate-control 95% CI above
+zero, close-rate point estimate positive with lower bound above -2pp, exact wire
+integrity, and no material scale/message reversal. Read with
+`scripts/live_percentile.py --ab hi-terminal --since 1787568551 --slots
+champion,composite,randomized`. Bargaining code and bargaining flags were not
+changed.
+
 ## 2026-08-24 — support ladder rejected; clean first-offer probe replaces it
 
 This entry explicitly supersedes the support-ladder entry immediately below.
