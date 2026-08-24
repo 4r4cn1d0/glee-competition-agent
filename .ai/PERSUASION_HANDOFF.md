@@ -273,3 +273,66 @@ high and zero low units across the corresponding 37-game mirror. This is
 all-assigned descriptive mechanism evidence, not a causal estimate. A proposed
 one-directional tight-prior unlock is recorded in `.ai/EXPERIMENTS.md` but is
 not implemented or live.
+
+## 23:41 buyer p=1/3, v=4P bait-pattern response — built inert
+
+The Test 3 buyer transcript `7896ee73-7dc1-4517-8922-15e2f8d713d2` exposed a
+specific model miss. Three early binary `no`s sharply reduced buyer-v2's
+stationary-spammer posterior; the seller then emitted only `yes`, including 12
+bought lows, but the posterior still placed round-20 `P(high|yes)=.401` above
+the cell's `.25` money break-even. Control bought through a `+6P` peak, reached
+zero after round 19, bought the final low, and finished `-1P`. This was baseline
+buyer-v2 on protected Test 3; no persuasion experiment fired.
+
+The proposed response is now implemented but default OFF as
+`GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB`. It targets only buyer/player 2,
+binary, `p=1/3`, `v=4P`, `u=0`, 20 rounds, across all scales and both hidden
+seller-knowledge configurations. After the first strict `no`, it counts only
+bought strict-`yes` outcomes. At `L>=3` and `3H-L<=0`, a hash-candidate changes
+one current baseline buy to pass, resumes, and cannot pulse again until a newly
+bought `yes` reveals low. It is a circuit breaker, not an absorbing stop; the
+absorbing alternative was rejected because its all-assigned shadow replay could
+double zeros and produced up to `-8P` fixed-stream harm.
+
+The frozen motivating sequence would pulse rounds 9, 11, 13, 16, 18, and 20
+and finish `+1P` rather than `-1P`. That is not causal evidence. Across 58
+all-assigned exact historical games, the pulse was reachable in seven and
+changed 27 frozen turns; diagnostic payoff moved `-0.0556P` while local
+percentile moved `+0.00382`, with both intervals crossing zero. The sign
+conflict is the reason for stable per-game randomization and research-only
+deployment.
+
+Implementation and independent reader files are:
+
+- `glee_agent/strategies/persuasion.py`
+- `scripts/check_reachability.py`
+- `scripts/read_pers_p033_r4_binary_postdecline_pulse.py`
+- `tests/test_pers_p033_r4_binary_postdecline_pulse.py`
+- `tests/test_read_pers_p033_r4_binary_postdecline_pulse.py`
+
+Focused implementation/reader tests pass 125. The first checker read incorrectly
+reported reach on randomized because its replay hard-coded the composite probe.
+The corrected probe-aware replay shows randomized/Test 4's custom policy bypasses
+`persuasion.py` and correctly fails at `fired=0/action_changed=0`; it must not be
+armed. Corrected exact-stack reachability passes on champion and composite at
+`eligible=7/fired=3/action_changed=3` over 800 games each. The complete suite
+passes 1,615 tests with only the two documented
+pre-existing bargaining failures. The inert strategy commit is pushed; natural
+code load, immutable T0 stack snapshot, and clean host-specific activation remain
+pending. No live
+flag has been changed. Test 2, Test 3, and Test 4 are unarmed; no bargaining or
+negotiation behavior/configuration/flag was touched.
+
+The final reader audit also fails closed unless `frozen_at <= HOST_T0`, every
+terminal transcript round has one contiguous logged buyer turn with an exact
+OFF/ON action-and-plan replay, every resolved official row has all payoff/tail
+fields, and every would-pulse count corresponds to a control buy that would
+actually change. Any exact candidate trace on Test 2, Test 3, or Test 4 is now
+an unauthorized-host mechanism rejection.
+
+The complete prospective hypothesis, all-assigned cohort, harm/final sample,
+subgroups, failure rules, official promotion boundary, and expected ~180-hour
+two-research-host duration are frozen in `.ai/EXPERIMENTS.md`. Deployment may
+use only champion/Test 1 and composite/Agent 5, each with an immutable pre-arm
+stack snapshot, separate clean T0, and no restart or signal. Read each host
+separately; later-host pre-activation games must never enter an earlier boundary.

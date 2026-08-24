@@ -1115,3 +1115,94 @@ Test 3 before causal promotion evidence.
   above zero, close-rate lower bound above -2pp, nonnegative role/horizon/type
   point estimates, and zero mechanism/join failures. Completed historical deals
   do not identify whether rejecting the guaranteed offer is beneficial.
+
+## BUILT DEFAULT OFF — PERSUASION BUYER BINARY POST-DECLINE PULSE
+
+Frozen prospectively at 2026-08-24 23:41 IST, before inert commit, fleet
+activation, assignment, or outcome.
+
+- **Flag / assignment**:
+  `GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB`, default OFF;
+  `sha256("pers_p033_r4_binary_postdecline_pulse_v1|" + game_id) & 1`
+  assigns control/candidate once per game. A missing game ID fails closed.
+- **Falsifiable hypothesis**: in buyer/player-2, binary, `p=1/3`, `v=4P`,
+  `u=0`, 20-round games, a one-positive-message pause after post-decline
+  positive-message precision reaches the exact 25% break-even boundary raises
+  authenticated official per-game rating delta relative to the complete current
+  buyer-v2 stack. The null is candidate-control official delta `<= 0`.
+- **Pre-treatment cohort**: every structurally exact game is enrolled at its
+  globally first buyer decision, before any recommendation, decline, purchase,
+  pulse, quality, termination, or outcome can select it. All three price scales
+  and both seller-knowledge configurations are included. Seller knowledge is
+  not observable to the buyer and is never a production gate; authenticated
+  terminal evidence supplies that frozen subgroup label.
+- **Candidate action**: compute the full control plan first. After the first
+  strict binary `no`, count only bought strict-`yes` outcomes. If `L>=3` and
+  `3H-L<=0`, change only a current strict-`yes` control purchase to a pass. That
+  consumes the pulse. Control resumes immediately, and the same evidence cannot
+  pulse again; only a newly bought strict-`yes` low can arm another future pulse.
+  Passed/current qualities never enter. Metadata and the
+  `p033_r4_binary_postdecline_pulse` gate appear only beside a real `yes -> no`
+  action change. Hash controls and every nontriggering candidate are byte-
+  identical to the complete current persuasion stack.
+- **Isolation**: fail closed against every optional buyer guard, strike, LCB,
+  audit, rank, selectivity, parser, and uninformed-veto path or corresponding
+  plan metadata. The live p=.8 seller prose/truth arms, p=.8 text decline veto,
+  and p=.5 unlock are structurally disjoint. Bargaining and negotiation are
+  outside scope and must not change.
+- **Pre-treatment evidence only**: the all-assigned shadow cohort contains 58
+  exact games / 1,151 buyer decisions, with 54 local finals and four unresolved.
+  The pulse was reachable in 7/58 games and changed 27 frozen-stream turns. Its
+  diagnostic mean effect was `-0.0556P` payoff and `+0.00382` local percentile;
+  both intervals crossed zero. The absorbing alternative was rejected before
+  implementation because it could double the zero rate and had observed
+  fixed-stream harm as large as `-8P`. These are noncausal diagnostics and can
+  neither promote nor reject the prospective arm.
+- **Motivating case, not an allowlist**: in game
+  `7896ee73-7dc1-4517-8922-15e2f8d713d2`, the seller first emitted three `no`s,
+  then its bought `yes` stream reached post-decline `H=1,L=3` before round 9.
+  The candidate would pulse on rounds 9, 11, 13, 16, 18, and 20 in the frozen
+  sequence and finish `+1P` versus control `-1P`. Seller adaptation and the
+  unresolved local final make this mechanism motivation only.
+- **Mechanism gate**: before activation, each exact research stack must report
+  `eligible>0`, `fired>0`, and `action_changed>0`. For each of the first 20
+  assignments, replay every buyer turn with the exact host stack flag OFF and
+  ON. Controls must be full-object identical; candidates may only change
+  baseline `yes` to `no` on the independent pulse predicate with a complete
+  adjacent trace. Any scope/hash drift, non-target/control fire, bought
+  reconstructed pulse, missing trace, changed action without trace, invalid
+  wire, overlapping buyer path, timeout caused by the mechanism, duplicate, or
+  self-play contamination means immediate disarm and mechanism rejection.
+- **Primary and retained outcomes**: authenticated official dashboard per-game
+  rating delta, full-game intent-to-treat over every assignment. Purchases,
+  refusals, positive/zero/negative/severe payoffs, timeouts, unresolved games,
+  invalid finals, and immediate terminal actions all remain. Local same-cell
+  percentile and fixed-stream payoff are diagnostic only. Unresolved or invalid
+  official joins block promotion; no analysis may condition on a decline,
+  pulse, action change, purchase, completion, or success.
+- **Harm look**: once, at 50 resolved official games per arm and at least four
+  independently would-pulse games per arm. Reject if the official-delta 95% CI
+  is wholly negative, or candidate negative-payoff rate is at least 10pp worse
+  and its 95% CI is wholly above zero. No early efficacy promotion.
+- **Fixed final**: 325 resolved official games per arm, at least 12 would-pulse
+  games per arm, at least 30/arm/price scale, and at least 50/arm in each
+  seller-knowledge configuration, plus at least 30/arm on each of the two
+  research hosts. The conservative target gives about 80%
+  power for a 1.0 official-rating/game effect at planning SD 4.55. At the recent
+  two-research-host arrival rate it requires roughly 180 hours; deadline-
+  truncated evidence is underpowered and cannot promote.
+- **Promotion**: official candidate-control 95% CI wholly above zero; normalized
+  payoff point nonnegative; zero, negative, and severe (`payoff/P <= -2`) rate
+  points nonpositive; every price, knowledge, and research-host official point
+  nonnegative; assignment/official joins fully resolved; and all mechanism,
+  replay, contamination, duplicate, and self-play checks clean. Otherwise keep
+  research-only or reject under the frozen rules.
+- **Deployment boundary**: after inert code is pushed and naturally loaded,
+  arm only `champion` (Test 1) and `composite` (Agent 5) at separate clean host
+  timestamps using fleet tooling. `randomized` (Test 4) runs a custom policy
+  that bypasses `persuasion.py`; the corrected probe-aware checker reports
+  `fired=0/action_changed=0`, so a present flag there would be inert. Test 2,
+  Test 3, and Test 4 stay unarmed. Never restart or signal a process. Freeze an
+  immutable pre-activation stack snapshot, then read each host separately with
+  `scripts/read_pers_p033_r4_binary_postdecline_pulse.py --slots HOST --since
+  HOST_T0 --control-slot HOST --stack-snapshot SNAPSHOT --official-json FILE`.
