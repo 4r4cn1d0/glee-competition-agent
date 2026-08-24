@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 19:25 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 20:10 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,11 +12,19 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official board at the 19:10 authenticated refresh: account-best Test 1 is
-  persuasion rank 2 of 76 at `2449.4` (top 2.7%), `106.4` behind leader gill
-  bates and `12.6` ahead of rank 3 expert. Test 2's persuasion component is
-  `2436.3`; it is the account's overall rank-5 agent at `2328.9`, `29.9` behind
-  rank 3 Clod. The prose arm remains absent on both Test 2 and Test 3.
+- Official board at the 19:35 authenticated refresh: account-best Test 1 is
+  persuasion rank 3 of 75 at `2429.1` (top 4.0%; about the 97th percentile by
+  rank), `7.0` behind rank 2 expert and `126.7` behind leader gill bates.
+- The prose arm remains live only on Test 1, Test 4, and Agent 5 from
+  `T0=1787575521`. It is absent on Test 2 and Test 3.
+- The binary truth arm is live only on Test 2 from clean arms mtime
+  `T0=1787582397` (2026-08-24 20:09:57 IST). Test 2 naturally drained PID 71871
+  and loaded pushed code `d79ca92` as PID 76676 at 20:08:48 IST before the flag
+  was set through `scripts/fleet.py`. At activation, prose and buyer-parser
+  flags were absent, rank gate/backload were zero, and Test 3 was untouched.
+- The exact text explicit-decline buyer veto is implemented default OFF and is
+  not live on any slot. It must not be armed until the binary-truth experiment
+  is decided and disarmed.
 
 ## Rejected rank-gate mechanism
 
@@ -131,17 +139,29 @@ first caught lie. The current stack sometimes does neither: it can recommend
 every low at the p*v==price knife edge, and the legacy parser has bought literal
 `Not recommended.` messages (373 historical purchases, all 373 low).
 
-`GLEE_PERS_P08_R125_BINARY_TRUTH_AB` is implemented default OFF in pushed commit
-`8372236` and remains inert pending Test 2's natural load. At the 19:14 check,
-Test 2 was still PID 71871 from 19:02:25 IST, before that commit was pushed. It
-must not be armed until its next supervisor-managed rotation. It targets
+`GLEE_PERS_P08_R125_BINARY_TRUTH_AB` was implemented default OFF in pushed
+commit `8372236` and is now live only on Test 2 from `T0=1787582397`. Test 2
+naturally drained the pre-code PID 71871 and relaunched on pushed code
+`d79ca92` as PID 76676 at 20:08:48 IST; fleet tooling activated the single
+persuasion flag at 20:09:57 IST without a restart or signal. It targets
 only the binary counterpart of the prose cell: seller, p=.8, visible v/u,
 v=1.25P, u=0, 20 rounds. Hash controls are full-object identical; candidates
-say `yes` on high and `no` on low. Test 2 exact-stack reachability over 800
-seeded games reported `eligible=31/fired=21/action_changed=21`; the focused
-mechanism/official-reader suite passed 31 tests. The full allowed suite passed
-1,167 tests with only the same two pre-existing bargaining failures. If
-activated, it is Test 2 only
-with prose absent and rank-gate/backload explicit zero; Test 3 remains untouched.
+say `yes` on high and `no` on low. The post-load Test 2 exact-stack reachability
+rerun over 800 seeded games reported `eligible=29/fired=14/action_changed=14`;
+54 focused persuasion experiment tests passed. The latest full allowed suite
+passed 1,230 tests with only the same two pre-existing bargaining failures. It
+is Test 2 only with prose absent and rank-gate/backload explicit zero; Test 3
+remains untouched. A real emitted low-quality candidate `no` is still required
+before the live mechanism is considered behavior-verified.
 The fixed read is 40 official outcomes per arm with a 20/arm harm look and at
 least 8/arm at each price scale. Full precommit is in `.ai/EXPERIMENTS.md`.
+
+The follow-on `GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB` is pushed default OFF.
+Its original seller-knowledge gate was rejected at preflight because that
+official configuration is hidden from the buyer during play and yielded an
+unreachable production policy. The corrected observable union gate covers both
+seller-knowledge configurations and stratifies only when authenticated terminal
+evidence exposes the label; it never infers the label from purchases or outcomes.
+Focused persuasion tests passed, and exact Test 2 reachability over 800 seeded
+games reported `eligible=180/fired=15/action_changed=15`. It remains inert until
+the binary-truth arm concludes and is explicitly disarmed.
