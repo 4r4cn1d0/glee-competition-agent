@@ -766,8 +766,40 @@ Test 3 before causal promotion evidence.
   truth decision/disarm at a clean timestamp, with prose/parser/selectivity
   absent and rank/backload explicit zero.  Test 3 remains untouched.  Exclude
   observed cross-fleet duplicates; hidden self-play risk blocks promotion.
+- **Prospective research-host amendment, frozen before any activation or
+  decline-veto outcome**: replace only the preceding sequential host/timing
+  boundary.  Arm Test 1 (`champion`), Agent 5 (`composite`), and Test 4
+  (`randomized`) at separate clean T0s; Test 2 and Test 3 remain unarmed.  This
+  amendment uses only pre-treatment reachability, arrival rate, behavioral
+  scope, and the competition deadline: the flag was absent everywhere and `rg`
+  found zero live decline-veto traces.  Prose is seller/text, truth is
+  seller/binary, and this arm is buyer/text, so no action can enter two arms.
+  The complete current persuasion stack on each host is frozen at its T0 and
+  the hash control remains the full buyer-v2 control object byte-identically.
+  Preserve the original 50/arm harm look, 120/arm final, 20/arm/scale minimum,
+  success/stop rules, and all-outcome ITT; add deployed host as a predeclared
+  subgroup and require every host point estimate to be nonnegative for
+  promotion.  Use a host-specific reader T0 so no pre-activation game on a
+  later host can enter.  Verify no exact target is already in flight at each
+  activation and replay every state in the first 20 assignments both flag-OFF
+  and flag-ON; a changed candidate `no` without the adjacent trace is an
+  immediate mechanism rejection.  Underpowered deadline results cannot
+  promote.
+- **Amendment preflight**: on each exact live research stack, 800 persuasion
+  games at seed 2441 reported `eligible=340/fired=25/action_changed=25`; an
+  independent seed 2461 reported `380/30/30`.  The focused mechanism/reader
+  suite passed 20 tests.  The full allowed suite passed 1,291 tests with only
+  the same two pre-existing bargaining failures
+  (`test_bargaining_horizon_floor` and `test_sim_grid[bargaining]`).  All three
+  current processes launched after commit `d79ca92`, so activation requires no
+  restart.  The pre-treatment reader found 27 exact games across the proposed
+  hosts in roughly 4.7 hours (24 terminal, 3 unresolved), implying about 38--42
+  hours to the unchanged 120/arm boundary.
 - **Read with**: `scripts/live_percentile.py --ab pers-decline-veto --since T0
   --slots hardliner --official-json FILE`.
+  For the amended research window run this separately for `champion`,
+  `composite`, and `randomized` using each host's own T0, then pool only the
+  declared host-specific cohorts.
 
 ## MECHANISM REJECTED — DISARMED
 

@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 21:30 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 21:45 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -17,6 +17,10 @@ their code, configuration, experiments, or fleet flags.
   `197.5` behind leader gill bates. Overall Test 2 is rank 5 at `2298.9`,
   `58.2` behind rank 3 Athena. This movement is not truth-arm evidence: the
   all-assigned readers still find no exact eligible game on any activated host.
+  Holding Test 2's displayed bargaining `2519.5` and negotiation `2018.8`
+  fixed, matching Athena's `2357.1` overall requires persuasion about `2533.0`,
+  a `+174.7` gain from `2358.3`; reaching persuasion rank 3 alone is not enough
+  for the overall podium.
 - The prose arm remains live only on Test 1, Test 4, and Agent 5 from
   `T0=1787575521`. It is absent on Test 2 and Test 3.
 - The binary truth arm is live on Test 2 from clean arms mtime `T0=1787582397`
@@ -29,8 +33,12 @@ their code, configuration, experiments, or fleet flags.
   binary arm. Buyer-parser flags remain absent, rank gate/backload are zero, and
   Test 3 is untouched.
 - The exact text explicit-decline buyer veto is implemented default OFF and is
-  not live on any slot. It must not be armed until the binary-truth experiment
-  is decided and disarmed.
+  not live on any slot. Before any veto activation or outcome, its sequential
+  Test-2-after-truth boundary was prospectively amended to a parallel,
+  behaviorally disjoint research window on Test 1, Agent 5, and Test 4 only.
+  Test 2 and Test 3 remain unarmed. The hypothesis and every sample, harm,
+  success, stop, all-outcome, and subgroup rule remain unchanged; full details
+  are frozen in `.ai/EXPERIMENTS.md` before activation.
 - Before any binary-truth assignment or outcome existed, the research boundary
   was prospectively expanded to Agent 5 and Test 4. Exact-stack preflight on
   both reported `eligible=32/fired=18/action_changed=18` over 800 games. At the
