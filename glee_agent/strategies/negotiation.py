@@ -27,11 +27,53 @@ from .. import (deterministic_negotiation, first_principles, nego_arms, pricing,
                 top_seller_message_clone)
 from .. import table_policy
 
-from ..actions import _num, is_final_round
+from ..actions import _num, coerce, is_final_round
 
 # Exponent on the concession curve. >1 holds firm early and concedes late, which
 # extracts more from an opponent who concedes linearly.
 _BOULWARE = 2.0
+
+# Default-off deterministic safety hypothesis for the complete-information,
+# explicitly unknown-horizon cell.  The round/cycle constants were selected
+# post hoc and therefore must not be activated as if they were causal results.
+COMPLETE_UNKNOWN_LATE_STASIS_FLAG = (
+    "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1"
+)
+COMPLETE_UNKNOWN_LATE_STASIS_MIN_ROUND = 75
+COMPLETE_UNKNOWN_LATE_STASIS_CYCLES = 10
+
+# The measured cohort used the exact current stack.  Refuse a mixed/randomized
+# policy so a future activation cannot silently become a renamed version of an
+# older arm or an unanalysed factorial treatment.
+_COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS = (
+    "GLEE_NEGO_CLOSE_AB",
+    "GLEE_NEGO_FIRST_PRINCIPLES",
+    "GLEE_NEGO_FP_ALWAYS",
+    "GLEE_NEGO_HIDDEN_FLOOR",
+    "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
+    "GLEE_NEGO_HIDDEN_POLICY_V1",
+    "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+    "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB",
+    "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
+    "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
+    "GLEE_NEGO_PROBE_V1",
+    "GLEE_NEGO_MSG_ARMS",
+    "GLEE_NEGO_RANK_PRICE_AB",
+    "GLEE_NEGO_RECIP_DAMP",
+    "GLEE_NEGO_SPLIT_CANDIDATE",
+    "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
+    "GLEE_NEGO_SURPLUS_PROBE",
+    "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
+    "GLEE_NEGO_TOP_ATHENA_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB",
+    "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_HI_UNKNOWN_AB",
+    "GLEE_NEGO_TOP_SELLER_MESSAGE_CLONE_AB",
+    "GLEE_NEGO_UNCAPPED_AB",
+    "GLEE_NEGO_ZOPA_AB",
+    "GLEE_NEGO_ZOPA_CLAMP",
+)
 
 
 def _split_candidate_enabled() -> bool:
@@ -1586,6 +1628,264 @@ def _enforce_span_invariant(p: dict, price: float) -> float:
     return price
 
 
+def _finite_wire_number(value) -> float | None:
+    """Parse one already-public numeric wire without inventing a default."""
+    if isinstance(value, dict):
+        value = value.get("price")
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _flag_is_nonzero(name: str) -> bool:
+    """Treat numeric arms as active even when their value is not literal 1."""
+    raw = runtime_flags.get(name)
+    if raw is None:
+        return False
+    try:
+        parsed = float(raw)
+        # A non-finite knob is malformed, not safely equivalent to OFF.  Fail
+        # the exact-stack pin closed instead of letting NaN evade ``> 0``.
+        return not math.isfinite(parsed) or abs(parsed) > 0.0
+    except (TypeError, ValueError):
+        # Only explicit false spellings are safely inactive.  A typo or other
+        # malformed text must not let an overlapping treatment evade the pin.
+        return str(raw).strip().lower() not in ("", "false", "no", "off")
+
+
+def _complete_unknown_late_stasis_stack_ok() -> bool:
+    """Pin the guard to the exact deterministic stack measured on 25 Aug."""
+    required = (
+        "GLEE_NEGO_BOUND_AS_FLOOR",
+        "GLEE_NEGO_CONTINUATION_ACCEPT",
+        "GLEE_NEGO_CURVE_PRICING",
+        "GLEE_NEGO_DEADGAME_V1",
+        "GLEE_NEGO_ENDGAME_V3",
+        "GLEE_NEGO_HORIZON_V2",
+        "GLEE_NEGO_OPEN_CLAIM_ALWAYS",
+        "GLEE_NEGO_POSTERIOR",
+        "GLEE_NEGO_STALL_POLICY",
+        "GLEE_NEGO_TABLE",
+    )
+    if not all(runtime_flags.enabled(name) for name in required):
+        return False
+    pinned = (
+        ("GLEE_NEGO_ACCEPT_SPAN", 0.48),
+        ("GLEE_NEGO_CLAIM_FLOOR", 0.80),
+        ("GLEE_NEGO_FINAL_OPTION", 0.60),
+        ("GLEE_NEGO_OPEN_CLAIM", 0.95),
+        ("GLEE_NEGO_SPAN_INVARIANT", 0.40),
+    )
+    for name, expected in pinned:
+        actual = runtime_flags.as_float(name, math.nan)
+        if not math.isfinite(actual) or abs(actual - expected) > 1e-12:
+            return False
+    # ``deterministic_negotiation.mode`` deliberately maps both whole-policy
+    # selectors ON to the legacy stack.  That ambiguity is unacceptable for an
+    # evidence-pinned guard, though either one selector or neither is valid.
+    if (runtime_flags.enabled(deterministic_negotiation.RANK_HYBRID_FLAG)
+            and runtime_flags.enabled(
+                deterministic_negotiation.LEADER_REPLICA_FLAG)):
+        return False
+    return not any(_flag_is_nonzero(name)
+                   for name in _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS)
+
+
+def _counter_wire_number(entry: dict, expected_from: str,
+                         entry_round: int) -> float | None:
+    """Parse a recorded counter, requiring provenance when schema provides it."""
+    raw = entry.get("counteroffer")
+    if isinstance(raw, dict):
+        if raw.get("from_player") != expected_from:
+            return None
+        counter_round = raw.get("round")
+        if counter_round is not None:
+            parsed_round = _finite_wire_number(counter_round)
+            if parsed_round != float(entry_round):
+                return None
+    return _finite_wire_number(raw)
+
+
+def _optional_record_round_matches(record: dict, expected: int) -> bool:
+    """Accept canonical history records without a nested round; verify if present."""
+    if "round" not in record:
+        return True
+    return _finite_wire_number(record.get("round")) == float(expected)
+
+
+def _exact_mutual_stasis_cycles(state: dict, action: dict,
+                                me: str) -> tuple[int, float | None, float | None]:
+    """Count fully completed, consecutive two-way cycles before this turn.
+
+    Each cycle must contain both record rows: opponent offers P, we reject and
+    counter C; our echoed C is then rejected by the opponent, who counters P.
+    The current unplayed counter is never counted as evidence.  This prevents a
+    provisional action or a missing bridge row from manufacturing ten cycles.
+    """
+    other = other_player(me)
+    current_round_number = _finite_wire_number(state.get("round"))
+    current_offer = state.get("last_offer")
+    current_counter = _finite_wire_number(action.get("product_price"))
+    if (current_round_number is None or not current_round_number.is_integer()
+            or current_counter is None or not isinstance(current_offer, dict)
+            or current_offer.get("from_player") != other):
+        return 0, None, current_counter
+    current_round = int(current_round_number)
+    offer_round = _finite_wire_number(current_offer.get("round"))
+    offer_price = _finite_wire_number(current_offer.get("price"))
+    if (offer_round != float(current_round) or offer_price is None):
+        return 0, offer_price, current_counter
+
+    by_round: dict[int, dict] = {}
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        round_number = _finite_wire_number(entry.get("round"))
+        if round_number is None or not round_number.is_integer():
+            continue
+        parsed_round = int(round_number)
+        if parsed_round in by_round:
+            return 0, offer_price, current_counter
+        by_round[parsed_round] = entry
+
+    cycles = 0
+    for offset in range(1, COMPLETE_UNKNOWN_LATE_STASIS_CYCLES + 1):
+        own_round = current_round - 2 * offset
+        bridge_round = own_round + 1
+        entry = by_round.get(own_round)
+        bridge = by_round.get(bridge_round)
+        if not isinstance(entry, dict) or not isinstance(bridge, dict):
+            break
+        historical_offer = entry.get("offer")
+        bridge_offer = bridge.get("offer")
+        if (not isinstance(historical_offer, dict)
+                or historical_offer.get("from_player") != other
+                or not _optional_record_round_matches(
+                    historical_offer, own_round)
+                or entry.get("decided_by") != me
+                or entry.get("decision") != "RejectOffer"
+                or _finite_wire_number(historical_offer.get("price"))
+                != offer_price
+                or _counter_wire_number(entry, me, own_round)
+                != current_counter
+                or not isinstance(bridge_offer, dict)
+                or bridge_offer.get("from_player") != me
+                or not _optional_record_round_matches(
+                    bridge_offer, bridge_round)
+                or _finite_wire_number(bridge_offer.get("price"))
+                != current_counter
+                or bridge.get("decided_by") != other
+                or bridge.get("decision") != "RejectOffer"
+                or _counter_wire_number(bridge, other, bridge_round)
+                != offer_price):
+            break
+        cycles += 1
+    return cycles, offer_price, current_counter
+
+
+def _maybe_complete_unknown_late_stasis(game: dict, action: dict) -> dict:
+    """Accept only a very late, exactly static, mutually feasible live offer.
+
+    This is deliberately NOT the measured-negative hidden unknown-horizon
+    accept-all-profitable rule (-.06628 exposed exact percentile, n=375), nor a
+    generic "accept after repeats" rename: repeat-3 and repeat-10 fences were
+    also negative (-.28173 and -.04804 exact percentile).  In the complete-info
+    unknown-horizon all-outcome audit, the post-hoc round>=75 / ten exact mutual
+    cycles fence reached 17/17 terminal no-deals and 0/44 agreements.  Its 61
+    terminal games implied +.03062 exact percentile, but one of five unresolved
+    Agent 5 games also reached and makes the adverse percentile bound -.01553.
+    Therefore the implementation is default OFF and research-only: activation
+    requires a separately precommitted prospective challenger window.
+
+    When armed, the function runs after every policy component has produced its
+    public baseline action.  It can change only that baseline RejectOffer to
+    AcceptOffer; offers, counters, earlier rounds, hidden games, known horizons,
+    and any changing trajectory remain byte-identical.
+    """
+    if (not runtime_flags.enabled(COMPLETE_UNKNOWN_LATE_STASIS_FLAG)
+            or not isinstance(action, dict)
+            or not _complete_unknown_late_stasis_stack_ok()):
+        return action
+
+    state = game.get("game_state")
+    if (not isinstance(state, dict)
+            or game.get("game_family") != "negotiation"
+            or (game.get("phase") or state.get("phase")) != "decision"
+            or (game.get("valid_actions") or {}).get("type") != "decision"
+            or state.get("complete_information") is not True
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None):
+        return action
+    me = state.get("current_player")
+    if (me not in ("player_1", "player_2")
+            or game.get("your_player") != me):
+        return action
+    other = other_player(me)
+    role = state.get(f"{me}_role")
+    expected_other_role = "buyer" if role == "seller" else "seller"
+    if (role not in ("seller", "buyer")
+            or state.get(f"{other}_role") != expected_other_role):
+        return action
+    own_value = _finite_wire_number(state.get(f"{me}_value"))
+    other_value = _finite_wire_number(state.get(f"{other}_value"))
+    round_number = _finite_wire_number(state.get("round"))
+    if (own_value is None or other_value is None or round_number is None
+            or not round_number.is_integer()
+            or int(round_number) < COMPLETE_UNKNOWN_LATE_STASIS_MIN_ROUND):
+        return action
+
+    seller_value = own_value if role == "seller" else other_value
+    buyer_value = other_value if role == "seller" else own_value
+    if buyer_value <= seller_value:
+        return action
+    # Strategy actions are not the submitted wire.  OPEN_CLAIM and CLAIM_FLOOR
+    # can rewrite a RejectOffer counter in ``actions.coerce``; compare history
+    # with that final counter so the guard proves reachability on the real stack.
+    public_baseline = {
+        key: value for key, value in action.items()
+        if not str(key).startswith("_")
+    }
+    try:
+        projected = coerce(public_baseline, game)
+    except Exception:
+        return action
+    if projected.get("decision") != "RejectOffer":
+        return action
+    cycles, offer_price, counter_price = _exact_mutual_stasis_cycles(
+        state, projected, me)
+    if offer_price is None or counter_price is None:
+        return action
+    if not seller_value <= offer_price <= buyer_value:
+        return action
+    profitable = offer_price > own_value if role == "seller" \
+        else offer_price < own_value
+    if not profitable:
+        return action
+
+    result = dict(action)
+    plan_data = dict(result.get("_plan") or {})
+    eligible = cycles >= COMPLETE_UNKNOWN_LATE_STASIS_CYCLES
+    plan_data["complete_unknown_late_stasis_v1"] = {
+        "eligible": eligible,
+        "round": int(round_number),
+        "cycles": cycles,
+        "offer_price": offer_price,
+        "counter_price": counter_price,
+        "mode": "deterministic",
+    }
+    if eligible:
+        if _trace_enabled():
+            plan_data.setdefault("gates_fired", [])
+        _gate(plan_data, "complete_unknown_late_stasis_v1")
+        result = {"decision": "AcceptOffer"}
+    result["_plan"] = plan_data
+    return result
+
+
 def decide(game: dict, cfg) -> dict:
     """Choose a default-off deterministic component or the existing stack.
 
@@ -1596,15 +1896,15 @@ def decide(game: dict, cfg) -> dict:
     """
     selected = deterministic_negotiation.mode()
     if selected is not None:
-        return _deterministic_policy_decide(game, cfg, selected)
-
-    action = _decide(game, cfg)
-    try:
-        if nego_arms.enabled():
-            nego_arms.attach(game, action)
-    except Exception:
-        pass                      # a message is never worth risking the move
-    return action
+        action = _deterministic_policy_decide(game, cfg, selected)
+    else:
+        action = _decide(game, cfg)
+        try:
+            if nego_arms.enabled():
+                nego_arms.attach(game, action)
+        except Exception:
+            pass                  # a message is never worth risking the move
+    return _maybe_complete_unknown_late_stasis(game, action)
 
 
 def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:

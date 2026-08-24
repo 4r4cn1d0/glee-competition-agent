@@ -527,6 +527,20 @@ def _p_table_vcont_precedence(game, p):
             > metadata.get("surplus_now", 0.0))
 
 
+def _p_complete_unknown_late_stasis(game, p):
+    """Candidate-plan scope of the deterministic late mutual-stasis guard."""
+    if game.get("game_family") != "negotiation":
+        return False
+    state = game.get("game_state") or {}
+    metadata = p.get("complete_unknown_late_stasis_v1") or {}
+    return (state.get("complete_information") is True
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and (game.get("valid_actions") or {}).get("type") == "decision"
+            and metadata.get("eligible") is True
+            and metadata.get("cycles", 0) >= 10)
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -566,6 +580,9 @@ KNOWN = {
     "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB": (
         "negotiation", ("table_vcont_precedence",),
         _p_table_vcont_precedence),
+    "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1": (
+        "negotiation", ("complete_unknown_late_stasis_v1",),
+        _p_complete_unknown_late_stasis),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),
@@ -747,6 +764,44 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     opponent = exact_decline_seller
         else:
             opponent = field.sample_opponent(random.Random(game_seed + 1))
+            if (target_flag ==
+                    "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1"
+                    and family == "negotiation"
+                    and params.get("complete_information") is True
+                    and params.get("horizon_known") is False):
+                # Ordinary field clones often close before round 75, so a zero
+                # here would test opponent sampling rather than gate reach. This
+                # reachability-only opponent holds a strictly feasible low-share
+                # offer in the same local engine (including record echoes and the
+                # real synthetic unknown-horizon clock). It changes neither the
+                # arena opponent pool nor production behavior.
+                field_opponent = opponent
+
+                def exact_mutual_stasis_opponent(game):
+                    state = game.get("game_state") or {}
+                    action_type = (game.get("valid_actions") or {}).get("type")
+                    me = state.get("current_player") or game.get("your_player")
+                    role = state.get(f"{me}_role")
+                    try:
+                        seller = float(state.get("player_1_value"))
+                        buyer = float(state.get("player_2_value"))
+                    except (TypeError, ValueError):
+                        return field_opponent(game)
+                    span = buyer - seller
+                    if not math.isfinite(span) or span <= 0.0:
+                        return field_opponent(game)
+                    # Give the recorder 25% of the visible span, below its live
+                    # .48 accept fence, in either role.
+                    price = seller + (0.75 if role == "seller" else 0.25) * span
+                    if action_type == "offer":
+                        return {"product_price": price}
+                    if action_type == "decision":
+                        return {"decision": "RejectOffer",
+                                "product_price": price}
+                    return field_opponent(game)
+
+                exact_mutual_stasis_opponent.name = "exact_mutual_stasis"
+                opponent = exact_mutual_stasis_opponent
         params = dict(params)
         if opponent.name != "__field__":
             params["opponent_name"] = opponent.name
@@ -944,6 +999,7 @@ def main() -> int:
                                   "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
                                   "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
                                   "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
+                                  "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
                                   "GLEE_BARG_HIGH_SHARE_DELAY_GUARD")
