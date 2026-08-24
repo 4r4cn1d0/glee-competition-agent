@@ -295,6 +295,11 @@ def _p_barg_discount_no_regress(game, p):
     return bool(signal.get("eligible"))
 
 
+def _p_barg_high_share_delay(game, p):
+    signal = p.get("high_share_delay_guard") or {}
+    return bool(signal.get("eligible"))
+
+
 def _p_p08_r125_prose(game, p):
     """Action-level scope of the exact p=.8/r=1.25 seller wording gate."""
     state = game.get("game_state") or {}
@@ -584,6 +589,9 @@ KNOWN = {
     "GLEE_BARG_DISCOUNT_NO_REGRESS": (
         "bargaining", ("discount_no_regress",),
         _p_barg_discount_no_regress),
+    "GLEE_BARG_HIGH_SHARE_DELAY_GUARD": (
+        "bargaining", ("high_share_delay_guard",),
+        _p_barg_high_share_delay),
     # Test 4's custom randomized probe bypasses STRATEGIES.  This default-off
     # router is the prerequisite that makes bargaining gates reachable there.
     "GLEE_PROBE_RANDOMIZED_BARG_BASE": (
@@ -937,7 +945,8 @@ def main() -> int:
                                   "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
                                   "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
-                                  "GLEE_BARG_DISCOUNT_NO_REGRESS")
+                                  "GLEE_BARG_DISCOUNT_NO_REGRESS",
+                                  "GLEE_BARG_HIGH_SHARE_DELAY_GUARD")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:

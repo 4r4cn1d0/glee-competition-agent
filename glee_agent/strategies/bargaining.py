@@ -219,6 +219,73 @@ def _observed_gain(state: dict, me: str, money: float):
     return ((theirs[-1][1] - theirs[0][1]) / money) / span
 
 
+def _genuine_opponent_gain(state: dict, me: str, money: float) -> dict | None:
+    """Finite opponent-only concession trail, including the standing offer.
+
+    This is deliberately stricter than the legacy ``_observed_gain`` helper.
+    A history row must identify the other player either inside ``offer`` or at
+    entry level; missing provenance is not treated as opponent evidence.  The
+    current ``last_offer`` is included and de-duplicated by round, so a guard
+    cannot fire from two real opponent offers plus one of our own offers or an
+    echoed copy of the newest offer.
+    """
+    if (me not in ("player_1", "player_2")
+            or not math.isfinite(money) or money <= 0.0):
+        return None
+    other = "player_2" if me == "player_1" else "player_1"
+    by_round: dict[int, float] = {}
+
+    def add(offer, fallback_proposer=None, fallback_round=None) -> bool:
+        if not isinstance(offer, dict):
+            return True
+        proposer = offer.get("proposer") or fallback_proposer
+        if proposer != other:
+            return True
+        raw_gain = offer.get(f"{me}_gain")
+        raw_round = offer.get("round") or fallback_round
+        try:
+            gain = float(raw_gain)
+            round_float = float(raw_round)
+        except (TypeError, ValueError):
+            return False
+        if (not math.isfinite(gain) or not math.isfinite(round_float)
+                or round_float < 1.0 or not round_float.is_integer()
+                or gain < 0.0 or gain > money):
+            return False
+        round_no = int(round_float)
+        previous = by_round.get(round_no)
+        if previous is not None and abs(previous - gain) > 1e-9:
+            return False                 # contradictory evidence: fail closed
+        by_round[round_no] = gain
+        return True
+
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        if not add(entry.get("offer"), entry.get("proposer"), entry.get("round")):
+            return None
+    last = state.get("last_offer") or {}
+    if not add(last, state.get("proposer"), state.get("round")):
+        return None
+
+    trail = sorted(by_round.items())
+    if len(trail) < 3:
+        return None
+    first_round, first_gain = trail[0]
+    last_round, last_gain = trail[-1]
+    span = last_round - first_round
+    if span < 2:
+        return None
+    return {
+        "rate": ((last_gain - first_gain) / money) / span,
+        "offers": len(trail),
+        "first_round": first_round,
+        "last_round": last_round,
+        "last_gain": last_gain,
+        "prior_best_gain": max(gain for _, gain in trail[:-1]),
+    }
+
+
 def _deltas(state: dict, me_is_alice: bool, unknown_delta: float) -> tuple[float, float]:
     """My and my opponent's per-round discount multipliers.
 
@@ -965,6 +1032,96 @@ def _decide(game: dict, cfg) -> dict:
             else:
                 failure["arm"] = arm
             p["discount_no_regress"] = failure
+
+    # HIGH-SHARE DELAY GUARD. The broad OBSERVED_GAIN experiment is deliberately
+    # left OFF: it lost all three arena seeds (-0.0012/-0.0013/-0.0006) because
+    # releasing the floor on small offers made us easy to farm. This guard does
+    # something materially narrower. It can only accept a standing offer in the
+    # 0.45--0.50 band after three provenance-checked opponent offers show that
+    # their concession rate cannot justify the prior floor, and only when the
+    # ordinary discounted-continuation test also clears the offer.
+    #
+    # The 0.45 fence is not inferred from completed deals alone. In the frozen
+    # Test 2 window [1787560053.110389,1787603253.110389), the exact high-share
+    # first-trigger subset had 35 resolved finals: immediate acceptance beat the
+    # realised path in all 35, by +0.10547 pot share on average and +0.09539
+    # diagnostic percentile. Four cold finals were unresolved; even awarding
+    # every one the full pot at the next round left +0.05857 pot share (95% CI
+    # +0.00746,+0.10968). In contrast, the old rule's 51 resolved sub-0.35
+    # triggers averaged -0.02531 pot share (13/22 wins/losses below 0.30 and
+    # 8/8 at 0.30--0.35), which is why this is a hard lower fence rather than
+    # another broad floor release. This remains a post-hoc hypothesis, not a
+    # causal promotion, so it lands OFF and belongs on one challenger only.
+    #
+    # Deterministic only: there is no game-id hash or cell assignment. It stacks
+    # only on the deterministic discount guard and fails closed if the old hash
+    # arm, nominal guard, or legacy broad OBSERVED_GAIN treatment is armed.
+    high_share_delay_on = runtime_flags.enabled("GLEE_BARG_HIGH_SHARE_DELAY_GUARD")
+    legacy_observed_gain_on = runtime_flags.enabled("GLEE_BARG_OBSERVED_GAIN")
+    conflicting_floor_release_on = (
+        runtime_flags.as_float("GLEE_BARG_ECON_STALL", 0.0) > 0.0
+        or runtime_flags.as_float("GLEE_BARG_STONEWALL", 0.0) > 0.0
+        or runtime_flags.enabled("GLEE_OPP_EXPLOIT")
+    )
+    if (decision == "reject" and high_share_delay_on
+            and deterministic_discount_guard_on and not discount_arm_on
+            and not nominal_guard_on and not legacy_observed_gain_on
+            and not conflicting_floor_release_on
+            and money > 0.0 and my_gain > 0.0 and p["rounds_left"] > 2
+            and p["delta_me"] < 1.0):
+        me = state.get("current_player") or game.get("your_player") or ""
+        evidence = _genuine_opponent_gain(state, me, money)
+        if evidence is not None:
+            offered_share = my_gain / money
+            current_round = int(_num(state.get("round"), 0))
+            current_is_observed = (
+                evidence["last_round"] == current_round
+                and abs(evidence["last_gain"] - my_gain) <= 1e-9
+            )
+            accept_floor = runtime_flags.as_float("GLEE_BARG_ACCEPT_FLOOR", 0.0)
+            prior_gain = runtime_flags.as_float("GLEE_BARG_FLOOR_GAIN", 0.0)
+            # The evidence is for the exact peak stack. A future knob change
+            # must not silently widen this guard beyond the measured band.
+            valid_knobs = (math.isfinite(accept_floor)
+                           and abs(accept_floor - 0.50) <= 1e-12
+                           and math.isfinite(prior_gain)
+                           and abs(prior_gain - 0.05) <= 1e-12)
+            floor_share = min(max(accept_floor, 0.0), 0.6) if valid_knobs else 0.0
+            observed_gain = max(evidence["rate"], 0.0)
+            observed_floor = floor_share
+            if valid_knobs:
+                observed_gain = min(observed_gain, prior_gain)
+                observed_floor = min(
+                    floor_share,
+                    p["delta_me"] * observed_gain / (1.0 - p["delta_me"]),
+                )
+            candidate_threshold = max(
+                p["realistic_continuation"] * 0.98,
+                observed_floor * money,
+            )
+            eligible = (
+                current_is_observed and valid_knobs
+                and 0.45 <= offered_share < min(floor_share, 0.50)
+                # Do not accept a withdrawn offer. All 39 frozen high-share
+                # triggers were at their prior high-water within 1e-11 of pot;
+                # 1e-9 only absorbs wire/float noise, not a real retreat.
+                and my_gain + 1e-9 * money >= evidence["prior_best_gain"]
+                and evidence["rate"] < prior_gain
+                and my_gain >= candidate_threshold
+            )
+            p["high_share_delay_guard"] = {
+                "eligible": eligible,
+                "offered_share": round(offered_share, 6),
+                "minimum_share": 0.45,
+                "observed_gain": round(evidence["rate"], 6),
+                "observations": evidence["offers"],
+                "prior_best_share": round(evidence["prior_best_gain"] / money, 6),
+                "candidate_threshold_share": round(candidate_threshold / money, 6),
+                "mode": "deterministic",
+            }
+            if eligible:
+                decision = "accept"
+                _gate(p, "high_share_delay_guard")
 
     # NO-REGRESSION GUARD. In nine measured games the old decision path rejected
     # a live offer and the next outgoing policy kept no more of the pot; the
