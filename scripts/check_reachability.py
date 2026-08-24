@@ -192,6 +192,12 @@ def _p_hi_cap10_buyer_curve(game, p):
             and game.get("valid_actions", {}).get("type") == "decision")
 
 
+def _p_top_buyer_clone(game, p):
+    """Static scope of the full observed-leader buyer treatment."""
+    from glee_agent.top_buyer_clone import eligible
+    return eligible(game)
+
+
 def _p_hi_uncapped_first_offer(game, p):
     """Static scope of the hidden unknown-horizon first-offer probe."""
     from glee_agent.actions import _hidden_own_price_count, _num
@@ -387,6 +393,8 @@ KNOWN = {
         "negotiation", (), _p_hi_cap10_buyer12_terminal),
     "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB": (
         "negotiation", (), _p_hi_cap10_buyer_curve),
+    "GLEE_NEGO_TOP_BUYER_CLONE_AB": (
+        "negotiation", (), _p_top_buyer_clone),
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB": (
         "negotiation", (), _p_hi_uncapped_first_offer),
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB": (
@@ -457,6 +465,7 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_HIDDEN_FLOOR", "GLEE_NEGO_HIDDEN_POLICY_V1",
     "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
     "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB",
+    "GLEE_NEGO_TOP_BUYER_CLONE_AB",
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",

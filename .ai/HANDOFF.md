@@ -1526,3 +1526,34 @@ Focused tests 125 pass; the impacted negotiation/action/reader set is 530 pass.
 Full suite: 1,269 passed with only the two predeclared bargaining failures. No
 bargaining code, bargaining flag, live arm, process, key, or deployment file
 was changed.
+
+Deployment followed immediately after the verified commit because the operator
+rejected another multi-day rare-cell wait. Commit `e007a90` was pushed to main,
+then the interlocked safe deployment drained every in-flight game normally and
+relaunched all five slots at 2026-08-24 20:47:08 IST (`T0=1787584628`). The
+broad curve A/B was subsequently stopped on champion, conceder, randomized,
+and composite at the operator's direction before a meaningful sample accrued;
+all four flags are explicitly `0`, so there is no causal verdict. Test 2
+hardliner stayed control. The old terminal arm is off on its three former slots
+and Test 3's overlapping hidden-min-share-veto arm is off. No bargaining value
+was changed.
+
+### 2026-08-24: top-agent buyer clone and the 20:47 fleet outage
+
+The 20:47 deployment used `fleet.py safe-restart`. Despite its drain wording,
+the supervisor shutdown path interrupted every `run_agent.py`; each slot then
+timed out its last three held games and the platform suspended queue joins for
+30 minutes. All five agent processes remained healthy but had zero active games
+until their recorded expiries at 21:17:02–21:17:08 IST. This was a deployment
+error, not evidence about any negotiation policy. Do not use `safe-restart` for
+behavior deployment; use a named zero-game cycle or a natural shift boundary.
+
+At the operator's direction, the replacement experiment copies observable
+behavior from Athena, 7aidara_Gamma, and opus 5(4) on Test 3 only. The treatment
+is buyer-only because the contemporaneous official window had seller `+47.9`
+and buyer `-24.4`, with buyer no-deals accounting for `-22.5`. It is a single
+full-policy hash arm (`GLEE_NEGO_TOP_BUYER_CLONE_AB`) so offers, acceptance, and
+stopping behavior travel together. Focused tests pass 11/11, all negotiation
+tests pass 563/563, Test 3 reachability is 3,827 eligible / 1,576 fired / 1,576
+changed, and the full suite is 1,280 pass plus only the two known bargaining
+failures. Bargaining code and flags were not changed.

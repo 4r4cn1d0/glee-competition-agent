@@ -14,7 +14,7 @@ import hashlib
 import logging
 import math
 
-from . import first_principles, pricing, runtime_flags
+from . import first_principles, pricing, runtime_flags, top_buyer_clone
 
 MAX_MESSAGE_LEN = 2000
 
@@ -706,6 +706,11 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     # postcondition below would move it off that point and break the acceptance
     # law it relies on, so ownership ends here.
     if first_principles.owns(game):
+        return
+    # The top-buyer treatment owns decision and price as one mechanism.  Any
+    # later hidden floor, opening claim, or TABLE postcondition would turn it
+    # into a different unlabelled policy, so candidate wires end here.
+    if top_buyer_clone.owns(game):
         return
     state = game.get("game_state") or {}
 

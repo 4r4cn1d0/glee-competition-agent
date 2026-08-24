@@ -133,7 +133,7 @@
 Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
 measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 
-## READY — DEFAULT OFF, FAST NEXT TEST
+## STOPPED BY OPERATOR — NO CAUSAL VERDICT
 
 ### Broad direct-leader hidden cap-10 buyer trajectory
 - **Flag / assignment**: `GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB=1`;
@@ -172,9 +172,55 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 - **Verification**: exact intended-stack reachability over 1,500 paired games,
   seed 2601, produced 549 eligible states / 227 fired / 227 changed wire
   actions. Focused arm/terminal/opening tests are 125/125;
-  negotiation/action/reader tests are 530/530. The flag is absent and behavior
-  remains unchanged. Full suite: 1,269 passed with only the two predeclared
-  bargaining failures; no bargaining behavior or configuration changed.
+  negotiation/action/reader tests are 530/530. Before deployment the default-OFF
+  flag left behavior unchanged. Full suite: 1,269 passed with only the two
+  predeclared bargaining failures; no bargaining behavior or configuration
+  changed.
+- **Live boundary / stop**: briefly enabled on Test 1 (`champion`), Test 3
+  (`conceder`), Test 4 (`randomized`), and Agent 5 (`composite`) at
+  `T0=1787584628` (2026-08-24 20:47:08 IST), then explicitly set back to `0`
+  on all four at the operator's direction before a meaningful sample arrived.
+  Do not interpret this as a positive or negative result.
+
+## READY — ONE-SLOT OBSERVED-LEADER BUYER CLONE
+
+### Top-four/five observable negotiation behavior, buyer only
+- **Flag / assignment**: `GLEE_NEGO_TOP_BUYER_CLONE_AB=1`; SHA-256 of
+  `nego_top_buyer_clone_v1|<game_id>`, low bit 1 = candidate. Default OFF.
+- **Target**: Test 3 (`conceder`) only. Seller behavior and every bargaining
+  action/configuration remain byte-for-byte control.
+- **Why buyer only**: the operator's 63-game official window had sellers
+  `+47.9` but buyers `-24.4`; buyer no-deals were `-22.5`. Replacing the winning
+  seller half would add risk with no diagnosis supporting it.
+- **Candidate**: copy the wire behavior identifiable in direct Athena,
+  7aidara_Gamma, and opus 5(4) transcripts: high complete-information zone
+  claims (96–98.5% opening; frozen cap-10 leader-median trajectory ending at
+  75.8%), the midpoint of two repeated Clod hidden buyer-1.2 paths, a terminal
+  hidden bid `.008B` above the next lower value support, any-positive terminal
+  acceptance, and the observed eight-price walk-away in hidden uncapped games.
+  Gill bates and Mythos01 do not yet have enough complete local transcripts to
+  identify a separate path. This is an exact behavioral clone where the wire
+  moves are observed and an explicit support-scaled extrapolation elsewhere;
+  it is not a claim to possess competitors' private source code.
+- **Control**: the entire current Test 3 stack, selected by the opposite hash
+  bit. The treatment owns both offer and acceptance policy so downstream gates
+  cannot silently rewrite half the mechanism.
+- **Primary outcome**: official per-game negotiation percentile/rating change,
+  candidate minus contemporaneous hash control, buyer games only. Report hidden
+  type, complete-information status, horizon status, terminal outcome, and
+  opponent separately; never condition the estimate on agreement.
+- **Emergency stop**: after at least 10 scored buyer games per arm, stop if the
+  candidate is at least `-1.0 rating/game` below control or candidate live-game
+  no-deal rate is 15 percentage points higher. Three consecutive candidate
+  losses of `-6` or worse also stop immediately.
+- **Promote**: at least 30 scored buyer games per arm, candidate official mean
+  percentile at least `+0.03` above control, 95% bootstrap interval not crossing
+  `-0.01`, and no-deal rate no more than 5 percentage points worse. A 30-game
+  harm read is an early stop, not permission to declare success.
+- **Verification**: focused clone tests 11/11; all negotiation tests 563/563;
+  intended Test 3 stack reachability over 1,000 simulated games yielded 3,827
+  eligible / 1,576 fired / 1,576 changed wire actions. Full suite 1,280 passed
+  with only the two predeclared bargaining failures.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 
-from .. import first_principles, nego_arms, pricing, runtime_flags
+from .. import first_principles, nego_arms, pricing, runtime_flags, top_buyer_clone
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1604,6 +1604,16 @@ def decide(game: dict, cfg) -> dict:
 
 
 def _decide(game: dict, cfg) -> dict:
+    # The observed-leader buyer clone is a full-policy treatment: both its
+    # prices and accept/reject boundary must move together or the experiment
+    # would repeat the single-flag/two-mechanism failure.  Candidate games are
+    # therefore returned before the layered planner; hash controls fall through
+    # to the complete current stack.
+    if top_buyer_clone.owns(game):
+        clone_action = top_buyer_clone.action(game)
+        if clone_action is not None:
+            return clone_action
+
     # The first-principles policy owns its cells outright: it is consulted before
     # plan() so no concession schedule, stall detector or span invariant can see
     # -- let alone rewrite -- the price it returns.  actions.py yields to it too.
