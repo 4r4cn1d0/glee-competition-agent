@@ -29,6 +29,18 @@ _HIDDEN_POLICY_BOULWARE = 2.0
 _HIDDEN_POLICY_UNCAPPED_STEPS = 5
 _HIDDEN_POLICY_UNCAPPED_PROGRESS_CAP = 0.85
 
+# Independent unknown-horizon first-offer probe.  It tests only the two own
+# types with a unique feasible counterpart: seller 1.2B can trade only with
+# buyer 1.5B, and buyer 1.0B only with seller .8B.  The three arms isolate greed
+# (control / 80% / 95% of that known support zone) without bundling a concession
+# schedule or changing any later price.
+_HI_UNCAPPED_FIRST_OFFER_SALT = "nego_hi_uncapped_first_offer_v1|"
+_HI_UNCAPPED_FIRST_OFFER_ARMS = ("control", "share80", "share95")
+
+# Separate salt from every broader hidden-price experiment.  This arm changes
+# exactly one terminal counter and must be recoverable from game_id alone.
+_HI_CAP10_BUYER12_TERMINAL_SALT = "nego_hi_cap10_buyer12_terminal_v1|"
+
 BARGAINING_DECISIONS = {"accept", "reject", "walkaway"}
 NEGOTIATION_DECISIONS = {"AcceptOffer", "RejectOffer", "WalkAway"}
 YES_NO = {"yes", "no"}
@@ -188,6 +200,63 @@ def _hidden_floor_treatment(game: dict) -> tuple[float, float, bool] | None:
     return floor, base, role == "seller"
 
 
+def hi_cap10_buyer12_terminal_arm(game_id) -> bool | None:
+    """Stable assignment for the narrow hidden-buyer terminal-counter arm."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    digest = hashlib.sha256(
+        (_HI_CAP10_BUYER12_TERMINAL_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def hi_uncapped_first_offer_arm(game_id) -> str | None:
+    """Stable three-way assignment for the hidden first-offer probe."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    digest = hashlib.sha256(
+        (_HI_UNCAPPED_FIRST_OFFER_SALT + gid).encode()).hexdigest()
+    return _HI_UNCAPPED_FIRST_OFFER_ARMS[
+        int(digest, 16) % len(_HI_UNCAPPED_FIRST_OFFER_ARMS)]
+
+
+def _hi_cap10_buyer12_terminal_context(action: dict, game: dict) -> dict | None:
+    """Return the terminal boundary price for an assigned treatment game.
+
+    This is intentionally a counteroffer-only mechanism.  A capped negotiation
+    advances the counter attached to the round-9 rejection into the buyer's
+    round-10 standing offer; there is no separate round-10 offer callback.
+    """
+    if not runtime_flags.enabled("GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB"):
+        return None
+    if game.get("game_family") != "negotiation":
+        return None
+    if action.get("decision") != "RejectOffer" or "product_price" not in action:
+        return None
+
+    state = game.get("game_state") or {}
+    if (state.get("complete_information") is not False
+            or state.get("horizon_known") is not True
+            or _num(state.get("max_rounds"), math.nan) != 10.0
+            or _num(state.get("round"), math.nan) != 9.0
+            or (game.get("valid_actions") or {}).get("type") != "decision"):
+        return None
+
+    me = game.get("your_player") or state.get("current_player")
+    if me not in ("player_1", "player_2") or state.get(f"{me}_role") != "buyer":
+        return None
+    own_value = _num(state.get(f"{me}_value"), math.nan)
+    base = pricing.infer_base(own_value) if math.isfinite(own_value) else None
+    if base is None or abs(own_value / base - 1.2) > 1e-6:
+        return None
+
+    treatment = hi_cap10_buyer12_terminal_arm(game.get("game_id"))
+    if treatment is not True:
+        return None
+    return {"base": base, "price": base + 0.01}
+
+
 def _hidden_policy_context(game: dict) -> dict | None:
     """Return the armed hidden-policy assignment, including hash controls.
 
@@ -290,6 +359,69 @@ def _hidden_own_price_count(state: dict, me: str) -> int:
             prices.append(price)
             previous_key = key
     return len(prices)
+
+
+def _hi_uncapped_first_offer_context(game: dict) -> dict | None:
+    """Return the first-offer probe assignment and identified support zone."""
+    if not runtime_flags.enabled("GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB"):
+        return None
+    if game.get("game_family") != "negotiation":
+        return None
+    # Refuse to form a mixed control.  The intended fleet stack has both broad
+    # hidden-price experiments OFF; if an operator co-arms either one, this
+    # narrower probe becomes inert instead of silently changing what "control"
+    # means.
+    if (runtime_flags.enabled("GLEE_NEGO_HIDDEN_POLICY_V1")
+            or runtime_flags.as_float("GLEE_NEGO_HIDDEN_FLOOR", 0.0) > 0.0):
+        return None
+    state = game.get("game_state") or {}
+    if (state.get("complete_information") is not False
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None):
+        return None
+
+    gid = str(game.get("game_id") or "")
+    me = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{me}_role")
+    own_value = _num(state.get(f"{me}_value"), math.nan)
+    base = pricing.infer_base(own_value) if math.isfinite(own_value) else None
+    if not gid or role not in ("seller", "buyer") or base is None:
+        return None
+    own_mult = next(
+        (mult for mult in _HIDDEN_VALUE_MULTS
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    counterpart_mult = (1.5 if role == "seller" and own_mult == 1.2 else
+                        0.8 if role == "buyer" and own_mult == 1.0 else None)
+    if counterpart_mult is None:
+        return None
+    # Only the first price is probed.  A rejection falls straight back to the
+    # current policy, so the 80-vs-95 comparison does not also compare two clocks.
+    if _hidden_own_price_count(state, me) != 0:
+        return None
+
+    return {
+        "arm": hi_uncapped_first_offer_arm(gid),
+        "me": me,
+        "base": base,
+        "own_value": own_value,
+        "own_mult": own_mult,
+        "counterpart_value": counterpart_mult * base,
+        "i_am_seller": role == "seller",
+    }
+
+
+def _hi_uncapped_first_offer_price(context: dict) -> float | None:
+    """Price the identified zone at the assigned 80% or 95% own share."""
+    share = {"share80": 0.80, "share95": 0.95}.get(context["arm"])
+    if share is None:
+        return None
+    counterpart = context["counterpart_value"]
+    own = context["own_value"]
+    if context["i_am_seller"]:
+        return own + share * (counterpart - own)
+    return own - share * (own - counterpart)
 
 
 def _hidden_policy_progress(state: dict, me: str, i_am_seller: bool) -> float:
@@ -400,6 +532,34 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     if first_principles.owns(game):
         return
     state = game.get("game_state") or {}
+
+    # Hidden cap-10 buyer 1.2B terminal-counter A/B, default OFF.  In 234 live
+    # games this cell produced 118 no-deals; 81 of those terminal bids were below
+    # the 1.0B seller-cost grid point and the median was 0.989676B.  Structural
+    # feasibility is 50%, so B+$0.01 covers both feasible seller types while
+    # remaining strictly profitable for the buyer.  Only hash-treatment games
+    # rewrite the round-9 RejectOffer counter; AcceptOffer/WalkAway and every
+    # earlier decision are unchanged.  Return immediately after rewriting so no
+    # broader hidden-price guard can move the literal wire boundary.
+    terminal = _hi_cap10_buyer12_terminal_context(action, game)
+    if terminal is not None:
+        action["product_price"] = terminal["price"]
+        return
+
+    # HIDDEN UNKNOWN-HORIZON FIRST-OFFER PROBE, default OFF.  Test 2's latest
+    # 100 official results localize the loss to this horizon (-1.604/game, n=27),
+    # but neither a 95% claim nor a concession schedule is identified.  Restrict
+    # the experiment to own types with exactly one feasible counterpart: seller
+    # 1.2B vs buyer 1.5B, and buyer 1.0B vs seller .8B.  The game hash assigns
+    # control, 80%, or 95% of that unique support zone on the first outgoing
+    # price only; every later action is the existing policy.  This isolates the
+    # multi-round greed elasticity without a support-order or timing confound.
+    first_offer = _hi_uncapped_first_offer_context(game)
+    if first_offer is not None:
+        candidate = _hi_uncapped_first_offer_price(first_offer)
+        if candidate is not None:
+            action["product_price"] = max(0.0, round(candidate, 2))
+        return
 
     # HIDDEN POLICY V1 A/B.  In 319 selected hidden no-deals our opening demand
     # was 3.97x our own limit versus 1.54x for opponents, yet both paths ended at

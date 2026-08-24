@@ -220,6 +220,27 @@ def test_fp_always_still_respects_cell_coverage(monkeypatch):
     assert not fp.owns(game(gid="w", complete=False, seller=False, mr=1, my=150.0))
 
 
+def test_complete_only_is_inert_by_default(monkeypatch):
+    """The promotion switch must not silently change Test 4's hidden arm."""
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("GLEE_NEGO_FP_COMPLETE_ONLY", raising=False)
+    assert fp.owns(treated(complete=False, seller=True, mr=1, my=80.0))
+
+
+def test_complete_only_excludes_hidden_but_keeps_proven_cells(monkeypatch):
+    for k, v in ON.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("GLEE_NEGO_FP_ALWAYS", "1")
+    monkeypatch.setenv("GLEE_NEGO_FP_COMPLETE_ONLY", "1")
+
+    assert not fp.owns(game(gid="hidden", complete=False, seller=True, mr=1, my=80.0))
+    assert fp.owns(game(gid="single-ci", complete=True, seller=True, mr=1,
+                        my=80.0, their=150.0))
+    assert fp.owns(game(gid="cap10-ci", complete=True, seller=False, mr=10,
+                        my=150.0, their=80.0))
+
+
 def test_fp_always_off_keeps_the_5050_split(monkeypatch):
     for k, v in ON.items():
         monkeypatch.setenv(k, v)

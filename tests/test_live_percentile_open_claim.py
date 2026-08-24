@@ -324,15 +324,16 @@ def test_later_counter_cannot_pull_a_pre_window_game_into_the_cohort(
     assert rows == []
 
 
-def test_cold_missing_outcome_counts_as_abandonment(monkeypatch, tmp_path):
+def test_cold_missing_outcome_stays_unresolved(monkeypatch, tmp_path):
     monkeypatch.setattr(live_percentile, "REPO", str(tmp_path))
     monkeypatch.setattr(live_percentile.time, "time", lambda: 20_000.0)
     gid = "cold-missing"
     _write_jsonl(tmp_path / "logs/champion/turns.jsonl", [
         _price_turn(gid, 7_000.0),
     ])
-    # A later collection watermark plus the calibrated 6000-second cold gap
-    # makes the absent result a scored abandonment, not an innocent pending game.
+    # A later collection watermark plus the calibrated 6000-second cold gap says
+    # the final is missing, but cannot distinguish a server abandonment from a
+    # stopped local outcome collector.  It must block promotion, not become .05.
     _write_jsonl(tmp_path / "logs/champion/results.jsonl", [
         {"ts": 15_000.0, "game_id": "unrelated", "final": {}},
     ])
@@ -340,7 +341,7 @@ def test_cold_missing_outcome_counts_as_abandonment(monkeypatch, tmp_path):
     rows = list(live_percentile.open_claim_games(
         24.0, since=6_500.0, until=7_500.0))
 
-    assert rows == [("champion", 0.05, gid, False, "abandoned")]
+    assert rows == [("champion", None, gid, None, "cold-missing")]
 
 
 def test_open_claim_cli_reports_percentile_and_close_rate_per_arm(

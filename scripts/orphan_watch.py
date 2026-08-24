@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""Count games we moved in but never saw finish -- the invisible rating killer.
+"""Count cold games whose local outcome has not been collected.
 
-An ABANDONED game is scored by the server at the 5th percentile. Our play earns
-~0.52, so each abandonment swaps a 0.52 for a 0.05. The damage is large and, far
-worse, it is STRUCTURALLY INVISIBLE to every other meter we have: an abandoned
-game never writes a line to results.jsonl, so the percentile meter, the arena and
-the rating all keep looking healthy while forfeits pile up. On 2026-08-22 that
-gap hid 920 abandoned games in 12 hours -- 775 of them in the single hour a
-supervisor restart stranded in-flight games -- and it showed up only as an
-unexplained -243 on Test 1's persuasion rating hours later.
+This used to call every cold missing result an ABANDONMENT and assign it the
+server's fifth-percentile forfeit score.  That is not identified from local
+files.  On 2026-08-24 the supervisor was observed SIGKILLing processes only
+after ``active_games=0``, while their slow final-state fetch was still running;
+the separate outcome collector had also stopped with 11,737 games outstanding.
+Those games had finished on the server but were absent from ``results.jsonl``.
 
-The signal is simply: a game id we submitted a move for, with no result, and no
-move from us for longer than the server's turn clock could tolerate.
+The signal remains operationally important: a large cold backlog means either
+the collector is down or games really were stranded.  It is not itself a payoff
+and must not be inserted into an A/B as .05 without a server final state.
 
     python scripts/orphan_watch.py                 # last 3h
     python scripts/orphan_watch.py --hours 12
     python scripts/orphan_watch.py --alert 20      # exit 2 if any agent exceeds
 
-Run it after ANY fleet intervention, and on a schedule. A restart that strands
-games should be visible in seconds, not hours.
+Run it after any fleet intervention and on a schedule.  Alert on missing
+outcomes, restart/backfill the collector through the authorized workflow, then
+classify the recovered server finals.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NAMES = {"champion": "Test 1", "hardliner": "Test 2", "conceder": "Test 3",
          "randomized": "Test 4", "composite": "Agent 5"}
 
-#: A game counts as abandoned only once our last move is older than this.
+#: A locally missing outcome counts as cold only once our last move is older.
 #:
 #: CALIBRATED, because the first guess was wrong and inflated the damage ~2x.
 #: 600s looked safe -- the server closes a game 120s into OUR turn -- but that
@@ -43,7 +43,7 @@ NAMES = {"champion": "Test 1", "hardliner": "Test 2", "conceder": "Test 3",
 #: between our own moves exceed 600s in 18.1% of bargaining, 14.2% of
 #: negotiation and 4.7% of persuasion games, with p90 around 2,200-2,800s and a
 #: maximum near 5,700s. At 600s the monitor was calling healthy in-flight games
-#: dead and reported 1,139 abandoned in 12h against a true 457.
+#: cold and reported 1,139 missing in 12h against 457 genuinely old omissions.
 #:
 #: 6000s sits just past the observed maximum, so a game only counts once it is
 #: outside anything a live game has ever done.
@@ -84,6 +84,19 @@ def scan(hours: float):
                     done[slot].add(rec["game_id"])
                 if rec.get("ts"):
                     flush[slot].append(rec["ts"])
+    # The continuous collector writes self-contained games/<id>.json records
+    # without appending results.jsonl.  Ignoring these files made a healthy
+    # collector look like it had recovered nothing and double-counted completed
+    # games as cold missing outcomes.
+    for slot in NAMES:
+        games_dir = os.path.join(REPO, "logs", slot, "games")
+        try:
+            done[slot].update(
+                name[:-5] for name in os.listdir(games_dir)
+                if name.endswith(".json"))
+            flush[slot].append(os.path.getmtime(games_dir))
+        except OSError:
+            pass
     out = {}
     for slot in NAMES:
         # RESULTS ARE FLUSHED ONLY AT PROCESS EXIT (run_agent.py:154 calls
@@ -99,9 +112,9 @@ def scan(hours: float):
         # it. Games newer than the watermark are simply not yet knowable.
         watermark = max(flush[slot], default=0.0)
         judged = [(g, ts) for g, ts in played[slot].items() if ts < watermark]
-        orph = [g for g, ts in judged
-                if g not in done[slot] and now - ts > COLD_SECONDS]
-        out[slot] = (len(orph), len(judged), len(played[slot]) - len(judged))
+        missing = [g for g, ts in judged
+                   if g not in done[slot] and now - ts > COLD_SECONDS]
+        out[slot] = (len(missing), len(judged), len(played[slot]) - len(judged))
     return out
 
 
@@ -113,22 +126,22 @@ def main() -> int:
     args = ap.parse_args()
     res = scan(args.hours)
     worst = 0
-    print(f"abandoned games, last {args.hours:g}h "
-          f"(each is scored at the 5th percentile against our ~0.52)")
-    print(f"{'agent':9} {'judged':>8} {'ABANDONED':>10} {'rate':>7} "
-          f"{'drag':>9} {'awaiting flush':>15}")
-    for slot, (orph, judged, pending) in sorted(res.items(), key=lambda kv: -kv[1][0]):
+    print(f"cold missing local outcomes, last {args.hours:g}h "
+          "(unresolved; not assumed abandonments)")
+    print(f"{'agent':9} {'judged':>8} {'COLD-MISS':>10} {'rate':>7} "
+          f"{'awaiting flush':>15}")
+    for slot, (missing, judged, pending) in sorted(
+            res.items(), key=lambda kv: -kv[1][0]):
         if not judged and not pending:
             continue
-        worst = max(worst, orph)
-        rate = orph / judged if judged else 0.0
-        drag = rate * (0.52 - 0.05)
-        print(f"{NAMES[slot]:9} {judged:>8} {orph:>10} {100*rate:>6.1f}% "
-              f"{-drag:>9.4f} {pending:>15}")
+        worst = max(worst, missing)
+        rate = missing / judged if judged else 0.0
+        print(f"{NAMES[slot]:9} {judged:>8} {missing:>10} {100*rate:>6.1f}% "
+              f"{pending:>15}")
     if args.alert is not None and worst > args.alert:
-        print(f"\nALERT: {worst} abandoned games exceeds threshold {args.alert}. "
-              f"Something stranded in-flight games -- check for a restart, a "
-              f"stalled process, or a platform outage.")
+        print(f"\nALERT: {worst} cold missing outcomes exceeds threshold "
+              f"{args.alert}. Check the outcome collector before interpreting "
+              "any result-only metric.")
         return 2
     return 0
 

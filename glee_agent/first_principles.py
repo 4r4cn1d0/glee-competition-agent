@@ -17,8 +17,10 @@ Three facts from 17,361 logged games drive everything here.
 2. Turn order never varies: odd rounds are player_1, even rounds are player_2
    (229,848 offers, no exceptions).  So the final offer belongs to the seller in
    a one-round game and to the buyer in a ten-round game.
-3. At a genuine terminal node under complete information the opponent accepts
-   any positive share and rejects every non-positive one — 892/892 and 0/159.
+3. In the fetched historical terminal records, the opponent accepted every
+   positive share and rejected every non-positive one — 892/892 and 0/159.
+   That conditional fact did not identify the full ITT response: a later
+   first-turn audit found many cold games without terminal artifacts.
 
 Together those make the two complete-information dictator cells deterministic:
 whoever offers last takes the zone by leaving the other seat one cent.
@@ -42,9 +44,9 @@ GRID = (80.0, 100.0, 120.0, 150.0)
 SCALES = (1.0, 100.0, 10000.0)
 
 #: Crumb left to the opponent at a terminal node.  Owns exactly one decision:
-#: staying strictly above zero after the server's cent rounding.  Acceptance is
-#: deterministic for any positive share, so there is nothing to buy by leaving
-#: more than this.
+#: staying strictly above zero after the server's cent rounding.  This is the
+#: Test 4 hypothesis inherited from terminal-recorded responses, not a proven
+#: acceptance guarantee; the full first-turn cohort is still inconclusive.
 EPS = 0.01
 
 #: Share at which we take an early offer rather than wait for our own terminal
@@ -79,6 +81,19 @@ def enabled() -> bool:
     return runtime_flags.enabled("GLEE_NEGO_FIRST_PRINCIPLES")
 
 
+def treatment_assignment(game_id: object) -> bool | None:
+    """Pure, recoverable assignment for the measurement arm.
+
+    Returning ``None`` for a missing id keeps the analyzer and action path from
+    silently assigning malformed games to control.  Exploit mode is deliberately
+    absent here: it changes exposure, not the randomized bit used to read Test 4.
+    """
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    return bool(int(hashlib.sha256(("nego_fp|" + gid).encode()).hexdigest(), 16) & 1)
+
+
 def in_treatment(game: dict) -> bool:
     """Within-agent arm assignment by game id.
 
@@ -93,10 +108,7 @@ def in_treatment(game: dict) -> bool:
     # runs it on every eligible game.
     if runtime_flags.enabled("GLEE_NEGO_FP_ALWAYS"):
         return True
-    gid = str(game.get("game_id") or "")
-    if not gid:
-        return False
-    return bool(int(hashlib.sha256(("nego_fp|" + gid).encode()).hexdigest(), 16) & 1)
+    return treatment_assignment(game.get("game_id")) is True
 
 
 def _seat(game: dict):
@@ -153,6 +165,14 @@ def owns(game: dict) -> bool:
         if c is None:
             return False
         horizon, complete, i_am_seller, my_value, _ = c
+        # Narrowing gate, default OFF.  It removes the hidden cell while keeping
+        # the two complete-information mechanisms available for measurement.
+        # It is NOT currently a promotion flag: the 2026-08-24 first-turn ITT
+        # audit found most assigned outcomes missing locally after the outcome
+        # collector stopped.  Neither selecting the recovered finals nor
+        # inventing .05 scores for the backlog identifies the policy effect.
+        if runtime_flags.enabled("GLEE_NEGO_FP_COMPLETE_ONLY") and not complete:
+            return False
         if (horizon, complete, i_am_seller) not in DESIGNED:
             return False
         return scale_of(my_value) is not None
@@ -257,9 +277,10 @@ def action(game: dict) -> dict | None:
     if phase == "offer":
         if not complete:
             return {"product_price": round(_grid_ask(my_value), 2)}
-        # Complete information: we own the terminal node, so take the zone and
-        # leave one cent.  Priced off the opponent's visible value directly --
-        # never off a share, a schedule or an estimate.
+        # Complete information: test taking the terminal zone while leaving one
+        # cent.  Priced off the opponent's visible value directly -- never off a
+        # share, a schedule or an estimate.  Full-cohort acceptance is not yet
+        # identified, which is why this path remains behind randomized flags.
         seller_v = my_value if i_am_seller else their_value
         buyer_v = their_value if i_am_seller else my_value
         if buyer_v - seller_v <= 2 * EPS:      # degenerate zone: split it

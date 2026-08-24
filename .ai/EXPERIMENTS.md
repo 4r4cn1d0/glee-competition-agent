@@ -2,6 +2,31 @@
 
 ## RUNNING
 
+### First-principles terminal cells (negotiation, Test 4)
+- **Hypothesis**: in cells where our seat owns the final offer, bypassing every
+  downstream price rewriter and leaving the counterparty one positive cent
+  improves same-cell percentile.
+- **Design**: 50/50 per-game hash arm, `sha256("nego_fp|" + game_id) & 1`, on
+  Test 4.  Corrected cohort starts at timestamp `1787534215` after commit
+  `f32c334`; do not mix earlier games into this read.
+- **Corrected ITT status (2026-08-24 ~14:15 IST)**: the earlier result-only
+  analysis is not promotion-grade because the separate outcome collector
+  stopped at 06:00 with 11,737 games outstanding.  The supervisor kills a
+  process only after the server reports `active_games=0`, but may do so while
+  `GameLog.finalize()` is still fetching results; a missing local final is
+  therefore not an identified server abandonment.  The complete first-turn
+  cohort has only 18 locally recovered outcomes and 64 unresolved.  Do not
+  impute the 64 as `.05`, and do not select the 18 as if complete.
+- **Read with**: `scripts/live_percentile.py --ab fp-complete --since
+  1787534215 --slots randomized`.  It cohorts before action, leaves cold/fresh
+  missing finals unresolved, and uses the checked-in exact 1,152-cell official
+  seed CDF rather than the hidden-value-pooled local model.
+- **Decision rule**: do not promote while any outcome is unresolved or either
+  cell's official-score CI crosses zero. `GLEE_NEGO_FP_COMPLETE_ONLY` remains a
+  default-off mechanism switch, not a deployment recommendation. Any larger
+  terminal crumb is a separate experiment.
+- **Verdict**: promotion withdrawn; complete-info and hidden both pending.
+
 ### Surplus-share response probe (negotiation, complete-info)
 - **Hypothesis**: our complete-info closes sit at the 49.4% attractor; the
   causal frontier P(accept | surplus share x) may peak above it.
@@ -20,7 +45,83 @@
 - **Live on**: Test 2 only (`GLEE_PERS_PARSE_V2=1`); other three are controls.
 - **Verdict**: pending trail.
 
+## IMPLEMENTED — DEFAULT OFF, REACHABILITY/DEPLOYMENT PENDING
+
+### Hidden unknown-horizon first-offer greed probe (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB=1`;
+  `sha256("nego_hi_uncapped_first_offer_v1|" + game_id) % 3`, yielding
+  `control`, `share80`, or `share95`.
+- **Why this cell**: Test 2's latest 100 official dashboard results put hidden
+  unknown-horizon games at `-1.604` rating/game (n=27), versus `-0.189` in
+  hidden cap-10 and `+0.489` in hidden single-round. This is the only horizon
+  the arm can change.
+- **Candidate**: only the two own types with exactly one feasible counterpart
+  are eligible: seller 1.2B (only buyer 1.5B can trade) and buyer 1.0B (only
+  seller .8B can trade). On the first outgoing price, share80 uses 1.44B/.84B
+  and share95 uses 1.485B/.81B respectively. Every later price and every
+  accept/reject/walk decision is current control.
+- **Why narrower**: the rejected ladder bundled greed, support ordering, and a
+  four-offer hold. This trial isolates multi-round greed elasticity without
+  assuming a rejected crumb reveals type or causes the opponent to wait through
+  a deterministic concession schedule.
+- **Primary cohort / rule**: every matching first turn before action, including
+  buyers that immediately accept and never emit a price; retain all no-deals,
+  walks, timeouts, and unresolved outcomes. Compare each greed arm with control
+  and share95 with share80. Promotion requires official per-game score 95% CI
+  above zero, close-rate lower bound above -2pp, zero wire failures, and no
+  material role/scale sign reversal. Conditional deal share is diagnostic only.
+- **Read with**: `scripts/live_percentile.py --ab hi-first-offer --since T0
+  --until T1`. It labels its hidden-value-pooled metric diagnostic and never
+  emits a promotion verdict.
+- **Before arming**: run prescribed reachability against the exact stack. The
+  runtime refuses to activate if `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` is armed.
+
+## READY — DEFAULT OFF, NOT LIVE
+
+### Hidden cap-10 buyer-1.2 terminal counter (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB=1`;
+  `sha256("nego_hi_cap10_buyer12_terminal_v1|" + game_id) & 1`.
+- **Candidate**: on the round-9 buyer rejection/counter only, replace the
+  terminal counter with `base+$0.01`.  Control and every noneligible action are
+  unchanged.
+- **Primary cohort**: every matching game from its first buyer decision, not
+  only games that reach round 9.  Include all terminal outcomes and block while
+  any assigned outcome is unresolved.
+- **Decision rule**: official per-game score delta 95% CI above zero; close-rate
+  point estimate positive with lower 95% bound above -2pp; every fired wire
+  exactly `base+$0.01`; no material scale/message sign reversal.  Reject on
+  negative official-score CI or any mechanism failure.
+- **Read with**: `scripts/live_percentile.py --ab hi-terminal --since T0 --until T1`.
+  Its local hidden-value-pooled percentile is diagnostic, not promotion-grade.
+- **Reachability**: 57 eligible / 20 fired / 20 changed on 3,000 paired games.
+
+Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
+measurement. Codex records the exact activation timestamp and owns deployment
+under the operator's 2026-08-24 directive.
+
 ## REJECTED — DEFAULT OFF, DO NOT RUN
+
+### Hidden unknown-horizon 95%-share support ladder (negotiation)
+- **Rejected before deployment**: the proposed three-rung/four-hold schedule
+  bundled unproved greed and timing constants. Several transcript landmarks
+  used as imitation evidence came from no-deal/walk trajectories, and a rational
+  opponent can reject the 5% first rung knowing a deterministic concession is
+  coming. The mechanism also initially disabled broader hidden guards in
+  ineligible states; independent review caught that control contamination.
+- **Verdict**: implementation and reader removed. Replaced by the one-price,
+  three-arm identified-cell probe above.
+
+### Hidden unknown-horizon accept-all-profitable (negotiation)
+- **Corrected counterfactual**: exact replay of all 32,403 public trajectories
+  compared accept-now with each game's actual continuation after rejection,
+  rather than treating a rejected bid as a zero. In the matching cohort
+  (4,050 games), 375 decisions were exposed and 156 would change.
+- **Result**: exposed exact-percentile delta `-0.06628`, bootstrap 95% CI
+  `[-0.08183,-0.05096]`; cohort ITT `-0.00614` (sum `-24.85` percentile).
+- **Why the old estimate was wrong**: it ignored later agreements at better
+  prices. The prior `+0.07138` result was not the policy counterfactual.
+- **Verdict**: implementation, reader, and reachability hook removed before
+  deployment. Never arm this mechanism.
 
 ### Buyer selectivity safety arm (persuasion, prior EV <= price)
 - **Hypothesis**: in cells where the prior does not beat price, the existing

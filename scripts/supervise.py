@@ -454,7 +454,8 @@ def main() -> int:
             return 0
         with open(STATE, encoding="utf-8") as handle:
             state = json.load(handle)
-        for pid in [state.get("supervisor_pid")] + list(state.get("agents", {}).values()):
+        for pid in ([state.get("supervisor_pid"), state.get("collector_pid")]
+                    + list(state.get("agents", {}).values())):
             if not pid:
                 continue
             try:
@@ -498,6 +499,27 @@ def main() -> int:
                 found.setdefault(parts[parts.index("--probe") + 1], pid)
         return found
 
+    def _running_collector_pid() -> int | None:
+        """Find an existing outcome sidecar without reading its key material."""
+        out = subprocess.run(["ps", "-axo", "pid=,command="],
+                             capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            line = line.strip()
+            if "scripts/collect.py" not in line:
+                continue
+            parts = line.split()
+            if len(parts) < 3 or not os.path.basename(parts[1]).lower().startswith(
+                    "python"):
+                # Detached launchers such as screen include the child command in
+                # their own argv. Track the Python worker itself so liveness and
+                # shutdown signals describe the process doing API collection.
+                continue
+            try:
+                return int(parts[0])
+            except (ValueError, IndexError):
+                continue
+        return None
+
     only = {p.strip() for p in args.only.split(",")} if args.only else None
     agents = [Agent(k, p, args) for k, p in FLEET if not only or p in only]
 
@@ -517,11 +539,66 @@ def main() -> int:
             print(f"  adopted already-running {agent.probe} pid={pid} "
                   f"(no games disturbed)", flush=True)
 
+    # Outcome collection is part of experiment integrity.  On 2026-08-24 the
+    # manually launched sidecar died after 06:00 with 11,737 games outstanding;
+    # strategy readers then either selected only fetched finals or mislabelled
+    # the backlog as abandonments.  Supervise this read-only API sidecar just as
+    # persistently as the fleet.  It writes only games/<id>.json and never enters
+    # an action path, so restarting it cannot alter or abandon a game.
+    collector_pid = _running_collector_pid()
+    collector_proc: subprocess.Popen | None = None
+    collector_next_try = 0.0
+    if collector_pid:
+        print(f"  adopted already-running outcome collector pid={collector_pid}",
+              flush=True)
+
+    def collector_alive() -> bool:
+        nonlocal collector_pid, collector_proc
+        if collector_proc is not None:
+            if collector_proc.poll() is None:
+                collector_pid = collector_proc.pid
+                return True
+            collector_proc = None
+            collector_pid = None
+            return False
+        if collector_pid is None:
+            return False
+        try:
+            os.kill(collector_pid, 0)
+            return True
+        except OSError:
+            collector_pid = None
+            return False
+
+    def launch_collector() -> bool:
+        nonlocal collector_pid, collector_proc
+        command = [os.path.join(REPO, ".venv", "bin", "python"),
+                   "scripts/collect.py", "--rate", "6", "--budget", "200",
+                   "--interval", "60"]
+        try:
+            with open(os.path.join(REPO, "logs", "collector.out"), "a",
+                      encoding="utf-8") as output:
+                collector_proc = subprocess.Popen(
+                    command, cwd=REPO, env=dict(os.environ), stdout=output,
+                    stderr=subprocess.STDOUT)
+            collector_pid = collector_proc.pid
+            return True
+        except OSError as exc:
+            print(f"  could not start outcome collector: {exc}", flush=True)
+            collector_proc = None
+            collector_pid = None
+            return False
+
     print(f"supervising {len(agents)} agents "
           f"(concurrency={args.concurrency}, llm={args.llm_mode}). Ctrl-C to stop.", flush=True)
     started = time.time()
     while not stopping["flag"]:
         now = time.time()
+        if not collector_alive() and now >= collector_next_try:
+            if launch_collector():
+                print(f"  [{time.strftime('%H:%M:%S')}] outcome collector started "
+                      f"pid={collector_pid}", flush=True)
+            collector_next_try = now + 60.0
         control = load_control()
         disabled = set(control.get("disabled") or [])
         for agent in agents:
@@ -647,11 +724,17 @@ def main() -> int:
         with open(STATE, "w", encoding="utf-8") as handle:
             json.dump({"supervisor_pid": os.getpid(),
                        "started": started,
+                       "collector_pid": collector_pid if collector_alive() else None,
                        "agents": {a.probe: (a.pid if a.alive else None) for a in agents},
                        "restarts": {a.probe: a.restarts for a in agents}}, handle, indent=2)
         time.sleep(args.check_interval)
 
     print("\nstopping — agents drain their in-flight games first", flush=True)
+    if collector_alive() and collector_pid:
+        try:
+            os.kill(collector_pid, signal.SIGINT)
+        except OSError:
+            pass
     for agent in agents:
         agent.stop()
     # DEFENCE: there is no kill path here, deliberately. An agent that is still
@@ -660,10 +743,12 @@ def main() -> int:
     # for 30 minutes. Waiting is always cheaper. This loop ends only when every
     # agent has exited on its own.
     started_wait = time.time()
-    while any(a.alive for a in agents):
+    while any(a.alive for a in agents) or collector_alive():
         waited = time.time() - started_wait
         if waited > DRAIN_SECONDS and int(waited) % 60 < 2:
             still = [a.probe for a in agents if a.alive]
+            if collector_alive():
+                still.append("outcome-collector")
             print(f"  still draining after {waited:.0f}s: {still} — waiting, never "
                   f"killing", flush=True)
         time.sleep(2)

@@ -27,6 +27,12 @@ they go in EXPERIMENTS.md until they have evidence.
 - Negotiation: complete-info games -0.91/game vs hidden-info +0.29/game
   (810 games, spans policy changes — direction credible, magnitudes need
   era-controlled replication).
+- Test 2's latest 100 official dashboard outcomes after the current strategy
+  isolate hidden unknown-horizon as the live weak cell: n=27, `-1.604`
+  rating/game, versus hidden cap-10 n=19 at `-0.189` and hidden single-round
+  n=27 at `+0.489`. Complete cap-10 and single-round were strongly positive
+  (`+2.588`, n=8; `+4.525`, n=8). This is descriptive cell localization, not a
+  causal policy estimate.
 - Complete-info closes capture a MEDIAN 49.4% of available surplus (n=192);
   only 14% land in the 45-55% band. Strong evidence of a 50/50 attractor.
 - **Deal rates by information condition** (Agent 5 + Test 1 + Test 2, 3,100
@@ -65,6 +71,10 @@ they go in EXPERIMENTS.md until they have evidence.
 - Per-opponent bargaining exploitation: -0.0043, stripped.
 - Response-model offer engine: sign-flipping across two V_cont fits — the causal
   continuation value of an unplayed ask is not identifiable from our own logs.
+- Hidden unknown-horizon accept-all-profitable: `-0.06628` exact percentile per
+  exposed decision (375 exposed, 156 changed; bootstrap 95% CI
+  `[-0.08183,-0.05096]`) and `-0.00614` cohort ITT over 4,050 public games. The
+  earlier `+0.07138` estimate ignored actual later agreements after rejection.
 - High-water regret guard, LCB buyer, freeze-probe, boulware glide, margin 0.55.
 
 ## Known traps in this codebase
@@ -120,6 +130,13 @@ split, landing one tick above an atom can buy a lot of rank for almost no extra
 rejection risk — an effect a coarse 0.05 grid on x can step straight over.
 
 ## Instrument defects found and FIXED
+- **Cold missing final != server abandonment.**  On Aug 24 the outcome collector
+  had stopped with 11,737 records outstanding, while the supervisor SIGKILLed
+  zero-active-game processes before their slow `GameLog.finalize()` backfill
+  finished.  The old reader inserted `.05` for every sufficiently old local
+  omission and thereby invented outcomes.  Readers now keep cold omissions
+  unresolved; `orphan_watch` includes collector-only game files and reports a
+  backlog rather than rating drag.  Recover finals before reading any A/B.
 - **`sim/replay_eval.py` REPLACED the control flag set with the candidate
   instead of overlaying it.** `_set_flags` clears every GLEE_ key before
   applying an arm, so `--candidate '{"GLEE_NEGO_BOULWARE":"1.2"}'` played an arm

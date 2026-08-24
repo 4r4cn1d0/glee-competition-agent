@@ -3,6 +3,340 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-24 — support ladder rejected; clean first-offer probe replaces it
+
+This entry explicitly supersedes the support-ladder entry immediately below.
+Independent mechanism review found that the ladder bundled an unproved 95%
+claim, a four-offer hold, and deterministic support ordering; several apparent
+"strong opponent" landmarks also came from failed no-deal/walk trajectories.
+The ladder implementation, reader, flag, and tests were removed before any live
+deployment.
+
+The replacement is `GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB=1`, assigned per game
+as `sha256("nego_hi_uncapped_first_offer_v1|" + game_id) % 3` to `control`,
+`share80`, or `share95`. It is eligible only in hidden, explicitly
+unknown-horizon negotiation for seller 1.2B and buyer 1.0B—the two own types
+with exactly one strictly feasible counterpart. It changes only the first
+outgoing price (seller: 1.44B/1.485B; buyer: .84B/.81B) and falls back to the
+current policy after a rejection. Buyers who accept before emitting a price
+remain in the intent-to-treat cohort. Broad hidden-policy/floor flags make the
+probe inert so its control cannot be silently contaminated.
+
+Production-context shadowing over Test 2's latest 20,000 turns found 47 eligible
+first-turn games: 12 control, 18 share80, and 17 share95, split 24 seller / 23
+buyer. All 35 candidate price opportunities fired and changed the wire action;
+examples reproduced .81B, 1.44B, and 1.485B exactly. Focused verification is
+139 passed; the full suite is 1,012 passed with only the two predeclared
+bargaining failures. No bargaining code or configuration was changed.
+
+Promotion requires joined official per-game scores: candidate-control 95% CI
+above zero, close-rate lower bound above -2pp, zero wire failures, and no
+material role/scale reversal. The local hidden-value-pooled report is explicitly
+diagnostic and cannot promote the arm. The operator transferred deployment
+ownership to Codex on 2026-08-24. Deployment must use natural process rotation;
+do not signal or drain live agents and do not arm Test 3, preserving its
+rank-one bargaining configuration.
+
+The official outcome collector was launched in detached screen
+`glee-collector` as PID 20385 at 10 requests/minute/agent to backfill the
+missing final-result queue. This
+supersedes the stale statement below that it is not running. The older
+supervisor process predates collector supervision, so collector health must be
+monitored directly until a safe supervisor refresh is available.
+
+## 2026-08-24 — hidden no-limit support ladder implemented, default OFF
+
+`GLEE_NEGO_HI_UNCAPPED_LADDER_AB=1` now arms an independent per-game experiment
+with assignment `sha256("nego_hi_uncapped_ladder_v1|" + game_id) & 1`. It is
+eligible only for hidden-information, explicitly unknown-horizon negotiation
+with a supported own grid value and at least one strictly feasible counterpart
+type. Complete-information, cap-10, single-round, seller-1.5, buyer-.8, missing
+id, and off-grid states are unchanged. When armed it owns both hash arms in this
+scope, preventing `HIDDEN_POLICY_V1` or `HIDDEN_FLOOR` from contaminating its
+control.
+
+The localization is from Test 2's latest 100 official dashboard results: hidden
+unknown-horizon n=27 averaged `-1.604` rating/game, while hidden cap-10 n=19 was
+`-0.189`, hidden single n=27 was `+0.489`, complete cap-10 n=8 was `+2.588`, and
+complete single n=8 was `+4.525`. The broad `HIDDEN_POLICY_V1` is therefore not
+recommended: a 6,043-turn shadow shows it makes five of six own-type/role cells
+harder and would unnecessarily touch the non-negative capped horizon.
+
+The candidate is a support-screening ladder, not a smooth concession curve. It
+starts with the feasible hidden type giving us the largest zone, offers that
+type 5% of its zone for four of our outgoing price opportunities, then advances
+one grid type inward. Examples in B units: seller .8 uses 1.465, 1.18, .99;
+seller 1.2 holds 1.485; buyer 1.2 uses .82 then 1.01; buyer 1.5 uses .835, 1.025,
+1.215. These numbers reproduce observable landmarks from disclosed strong
+no-limit opponents (approximately 1.484-1.485, .8205, and 1.212) while leaving
+both sides strictly profitable at every compatible rung. The code never reads a
+hidden opponent value and never changes AcceptOffer/RejectOffer/WalkAway.
+
+On a recent Test 2 turn shadow, the runtime predicate found 316 eligible games,
+159 hash candidates, and 159 candidates with a changed wire price. Representative
+first prices move seller-1.0 `3.9706B -> 1.475B`, buyer-1.0 `.15833B -> .81B`,
+and seller-1.2 `4.76472B -> 1.485B`. This establishes mechanism reachability on
+live states, not outcome value. `scripts/live_percentile.py --ab hi-ladder
+--since T0 --until T1` cohorts at first outgoing price and reports all assigned
+outcomes plus reconstructed-zone diagnostics. Its pooled hidden CDF is diagnostic
+only; promotion requires official per-game score.
+
+Claude must run the prescribed `check_reachability.py` against the exact intended
+stack before arming; Codex did not run it because it imports and executes the
+explicitly prohibited replay/arena machinery. Restore/backfill the collector
+before measuring. Do not co-arm this with `HIDDEN_POLICY_V1` or the cap-10
+terminal arm. The precommitted rule is official-score 95% CI above zero,
+close-rate lower bound above -2pp, positive reconstructed capture ITT, no
+mechanism failure, and no material role/type sign reversal. The 95% claim and
+four-offer hold are judgments under test, not validated constants.
+
+Focused support-ladder/reader/legacy-policy/terminal/bargaining-isolation tests:
+118 passed. Full suite: 1,004 passed; only the two AGENTS.md-predeclared
+bargaining failures remain (`test_bargaining_horizon_floor` and the bargaining
+live-grid drift alarm). No bargaining behavior, live configuration, fleet
+process, API key, deployment file, or log was changed.
+
+## 2026-08-24 — hidden late-accept arm rejected and removed
+
+This entry explicitly supersedes the hidden unknown-horizon late seller
+acceptance section below. The original public-corpus calculation did not compare
+accept-now with the control trajectory's actual continuation; in effect it
+rewarded rescuing a rejected bid without charging the candidate for later deals
+the control secured at a better price.
+
+The corrected replay used the exact official full-configuration CDF over all
+32,403 public trajectories. In the matching hidden unknown-horizon seller cohort
+(4,050 games), 375 decisions were exposed and 156 would change. Accepting every
+strictly profitable bid on an even round at or after round 4 changes exact
+percentile by `-0.06628` per exposed decision, bootstrap 95% CI
+`[-0.08183,-0.05096]`; cohort ITT is `-0.00614`, a total loss of `-24.85`
+percentile points. Example: a 1.0B-cost seller accepting 1.1B gets a 0.218
+percentile, while the observed continuation closes at 1.2B for 0.364.
+
+`GLEE_NEGO_HI_UNKNOWN_ACCEPT_AB`, its assignment helper, live reader,
+reachability hook, and dedicated tests have been removed before deployment.
+The cap-10 buyer-1.2 terminal-counter arm remains intact and prospective. Do not
+restore or arm broad profitable-bid acceptance. No bargaining behavior, live
+configuration, fleet process, API key, deployment file, or log was touched.
+
+## 2026-08-24 — cold finals are collector backlog, not identified abandonments
+
+This corrects the immediately following ITT entry's `.05` imputation while
+preserving its conclusion: first-principles promotion is blocked.
+
+The separate outcome collector is not running.  `logs/collector.out` stops at
+06:00 after three 2,000-record passes and reports 11,737 games still outstanding;
+its stale singleton PID has no live process.  Meanwhile the supervisor log
+shows the repeated sequence: server `active_games=0` for 365 seconds, then
+SIGKILL.  At zero server games this does not strand play, but SIGKILL skips the
+child's `finally: GameLog.finalize()`.  The process may in fact be spending those
+365 seconds fetching hundreds of final states under the per-key rate limit.
+Therefore “old turn + later results watermark + no local final” mixes actual
+forfeits with completed server games whose local backfill was interrupted.
+
+`scripts/live_percentile.py` no longer manufactures a `.05` score or non-close
+for that state.  It emits `cold-missing` with score/outcome unresolved and blocks
+promotion.  `scripts/orphan_watch.py` now includes collector-only
+`games/<id>.json` records in its completed set and reports **cold missing local
+outcomes**, not rating drag or known abandonments.  Explicit terminal timeouts
+and server no-deals remain real outcomes.
+
+`scripts/supervise.py` now owns `scripts/collect.py` as a read-only sidecar.  It
+adopts an existing collector by PID, starts one at 10 requests/minute/key when
+absent, records its PID in supervisor state, restarts it after exit, and stops it
+gracefully with the supervisor.  This code is not live until Claude deploys the
+new supervisor; Codex did not start, stop, or signal the current fleet or stale
+collector.  A one-time authorized collector restart/backfill is still required
+for the existing backlog.
+
+For the first-principles complete cohort this means 18 locally recovered
+outcomes and 64 unresolved, not 70 outcomes with 52 synthetic abandonments.
+The result-only positive estimate and the synthetic-negative estimate are both
+invalid for promotion.  Claude should restart/backfill `scripts/collect.py`
+through the authorized operational workflow, let the 64 outcomes recover, then
+rerun `--ab fp-complete --since 1787534215 --slots randomized`.  No fleet process,
+log, restricted config, or key was touched by Codex.
+
+The new exact open-claim reader is
+`scripts/live_percentile.py --ab open-claim-official --since
+1787425367.073369 --slots randomized`.  Before the backlog correction it exposed
+996 synthetic/terminal observations and a candidate-control `+0.0662`, but that
+number must also be rerun after backfill.  The locally recovered subset and the
+ongoing randomization still point to the already-live policy's strongest cells
+(cap-10 buyer and unknown seller); no new unknown-buyer floor promotion is
+claimed.
+
+## 2026-08-24 — first-principles promotion withdrawn after ITT survivorship audit
+
+This entry supersedes the “corrected Test 4 promotes complete-information
+cells” entry below.  That read still selected games with fetched terminal
+artifacts.  A first-turn cohort reveals the omitted mass and does not support
+promotion.
+
+`scripts/fit_official_negotiation_seed.py` now builds
+`models/negotiation_seed_cdf_full.json` from the official 32,403-game public
+corpus.  The checked-in artifact has all 1,152 literal role cells:
+3 horizons x 2 information conditions x 2 message modes x 3 scales x 16 value
+pairs x 2 roles, with 53-58 observations per cell.  The corresponding
+`sim/official_negotiation_seed.py` scorer requires both values and never pools
+a hidden counterpart value.  This closes the old local-CDF error where “same
+configuration” silently omitted the valuation pair.
+
+`scripts/live_percentile.py --ab fp-complete --since 1787534215 --slots
+randomized` is the reproducible corrected reader.  It cohorts at our first turn
+before the randomized action, uses the action path's pure `nego_fp|` assignment,
+joins both terminal stores, counts calibrated cold omissions as `.05`
+abandonments, leaves fresh omissions unresolved, excludes fleet self-play from
+the pooled estimate, and scores complete cells against the full official seed
+key.
+
+At about 14:00 IST the complete-information cohort contained 82 assigned games.
+Seventy were scoreable under the existing cold-omission rule, including 52
+aged missing finals classified as abandonments, and 12 remained unresolved:
+
+- cap-10 buyer: control `0.2028` (n=20) vs candidate `0.2760` (n=7), delta
+  `+0.0732`, normal 95% CI `[-0.2488,+0.3953]`; close `20.0% -> 28.6%`;
+- single seller: control `0.3023` (n=18) vs candidate `0.2595` (n=25), delta
+  `-0.0428`, CI `[-0.2701,+0.1844]`; close `33.3% -> 24.0%`;
+- pooled complete: `0.2499 -> 0.2631`, delta `+0.0132`, CI
+  `[-0.1574,+0.1838]`; close `26.3% -> 25.0%`.
+
+The prior `+0.3221` / `+0.1018` promotion claim came from the minority of games
+that had terminal records and therefore selected away the dominant failure
+mode.  Whether a cold omission is ultimately an opponent stall, collector gap,
+or competition abandonment remains operationally worth diagnosing, but it
+cannot be dropped from an ITT policy comparison.  `GLEE_NEGO_FP_COMPLETE_ONLY`
+remains default OFF and is no longer recommended for Test 2.  Continue the Test
+4 randomization until unresolved outcomes settle; promotion again requires the
+per-cell exact-score CI above zero with no close regression.
+
+The two disjoint hidden-information arms in the next entry are unaffected and
+remain prospective/default OFF.  Focused exact-CDF/reader/first-principles/
+bargaining-isolation verification: 46 tests passed.  No bargaining behavior,
+live flag/configuration, fleet process, API key, deployment file, or log was
+changed.
+
+## 2026-08-24 — two hidden-information negotiation arms ready, default OFF
+
+Two independent, per-game randomized mechanisms are implemented.  Neither is
+live, neither shares a salt with an existing experiment, and they must not be
+co-armed with `GLEE_NEGO_HIDDEN_POLICY_V1` during their first measurement.
+
+### Hidden cap-10 buyer 1.2B terminal counter
+
+`GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB=1` assigns by
+`sha256("nego_hi_cap10_buyer12_terminal_v1|" + game_id) & 1`.  It is eligible
+only on a hidden-information, known cap-10, round-9 buyer `RejectOffer` carrying
+a counter, with our value exactly `1.2*base`.  Treatment makes the final wire
+counter exactly `base+$0.01` and returns before broader price guards; control is
+byte-identical to the existing stack.  Accept/walk and every earlier action are
+unchanged, and no hidden seller value is read.
+
+Measured Aug 22-24: 234 matching games, 85 agreements, 118 no-deals, 31 walks.
+Structural feasibility is 50% (about 117 games), but about 32 feasible games
+were not closed.  Eighty-one no-deals carried a terminal bid below the `1.0B`
+seller grid point; median terminal bid was `0.989676B`.  `base+$0.01` is
+strictly profitable for both seller types that can trade with a `1.2B` buyer.
+This response is not point-identified—current opponents can still reject—so it
+is a randomized trial, not an immediate promotion.
+
+`scripts/live_percentile.py --ab hi-terminal --since T0 --until T1` cohorts at
+the buyer's first decision, before terminal reach or outcome, and therefore
+keeps early agreements, walks, no-deals, timeouts, and unresolved results in
+the ITT.  It verifies every candidate terminal counter equals `base+$0.01`.
+Its local percentile is explicitly labeled a hidden-value-pooled diagnostic;
+it is not the official full-configuration score.
+
+Reachability on 3,000 paired negotiation games: eligible 57, fired 20, wire
+action changed 20.  Examples moved `0.989676B -> 1.0B+$0.01` at all observed
+scales.
+
+Precommitted promotion: official candidate-control per-game score 95% CI above
+zero; close-rate point estimate positive and lower 95% bound above -2pp; zero
+wire failures; no material sign reversal by scale or message mode.  Negative
+official-score CI or any wire/mechanism failure rejects.  Rough sample need is
+205-280 games/arm (about four to six days at the observed rate).
+
+### Hidden unknown-horizon late seller acceptance
+
+`GLEE_NEGO_HI_UNKNOWN_ACCEPT_AB=1` assigns by
+`sha256("nego_hi_unknown_accept_v1|" + game_id) & 1`.  In treatment only, a
+hidden-information unknown-horizon seller with cost multiplier in
+`{1.0,1.2,1.5}` accepts the first strictly profitable buyer bid on an even
+round at or after round 4.  The override changes only the decision; offers,
+targets, continuation values, and hidden values are untouched.
+
+On all 32,403 official public negotiation games, the deterministic accept
+counterfactual gained `+0.07138` exact percentile across 352 eligible games
+(bootstrap 95% CI `[+0.04940,+0.09616]`), `+0.004654` ITT inside hidden
+unknown-horizon games, and about `+0.000775` over negotiation (roughly +6.2
+long-run rating points).  A chronological 70/30 design chose the rule on the
+early corpus and reproduced `+0.09745` across 99 untouched later eligible games
+(`+0.005955` hidden-cell ITT); signs were positive across message modes and all
+three scales.
+
+Reachability on 3,000 paired negotiation games: eligible 90, gate fired 48,
+wire action changed 9.  The gap is expected because many eligible profitable
+bids are already accepted in control.  Read with
+`scripts/live_percentile.py --ab hi-accept --since T0 --until T1`, cohorting on
+the first eligible incoming bid before our action.  Promote only if the
+prospective official per-game score CI is above zero.  The local pooled-CDF
+number is diagnostic only.
+
+Focused verification for both mechanisms, their readers, production/analyzer
+hash parity, and bargaining isolation: 75 tests passed.  No bargaining code,
+live flag/configuration, API key, fleet process, or deployment file was touched.
+Full suite: 980 passed; only the two AGENTS.md-predeclared bargaining failures
+remain (`test_bargaining_horizon_floor` and the bargaining live-grid drift
+alarm).  Scoped `git diff --check` passes.  Claude remains the only deployer.
+
+## 2026-08-24 — corrected Test 4 promotes complete-information cells only
+
+Test 4's first-principles A/B was re-read only after commit `f32c334`, using
+timestamp `1787534215` as the cohort boundary.  The finished cohort has 157
+eligible games (83 control, 74 treatment).  Complete-information outcomes use
+the exact official seed CDF for the full value-pair configuration; the hidden
+cell is reported as expectation across the four possible counterpart-value
+CDFs because a hidden no-deal does not reveal that value.
+
+- cap-10 complete-info buyer: n=27, percentile `0.5706 -> 0.8927`, delta
+  `+0.3221` (bootstrap 95% CI `[+0.1825,+0.4677]`), close rate 100% in both;
+- single-round complete-info seller: n=45, `0.8086 -> 0.9104`, delta `+0.1018`
+  (`[+0.0254,+0.1618]`), with one treatment no-deal;
+- single-round hidden seller: n=85, `0.5936 -> 0.5843`, delta `-0.0093`
+  (`[-0.1005,+0.0823]`), unresolved;
+- all eligible: `0.6373 -> 0.7280`, delta `+0.0907`
+  (`[+0.0144,+0.1666]`).  Reweighting by observed eligible-cell frequency gives
+  `+0.0795`, about +636 game-rating points inside eligible cells.
+
+`GLEE_NEGO_FP_COMPLETE_ONLY` is now a default-OFF promotion gate in
+`first_principles.owns`.  When explicitly enabled it lets hidden games fall
+through to the existing strategy while retaining the two measured-positive
+complete-information cells.  It does not change Test 4 or any current agent
+while absent.  Intended Test 2 promotion configuration is
+`GLEE_NEGO_FIRST_PRINCIPLES=1`, `GLEE_NEGO_FP_ALWAYS=1`, and
+`GLEE_NEGO_FP_COMPLETE_ONLY=1`; Claude remains the only fleet deployer.
+
+Focused verification: 31/31 first-principles, wire-integrity, and bargaining-
+isolation tests pass.  No bargaining code, live flag/configuration, fleet
+process, API key, or deployment file was touched.
+
+**Objections / next falsifiable tests:**
+
+1. The official docs say percentile is against the same configuration and role,
+   and define the 960-cell grid as including valuations.  Therefore the local
+   pooled hidden-value percentile model is not a promotion oracle.  Keep hidden
+   randomized and score against the exact latent value-pair once recoverable.
+2. Game `e6765abc-2cc5-4998-b5be-77a5695f204d` is a current counterexample to
+   the old absolute crumb rule: Scarlett rejected a seller ask of 1,199,999.99
+   with buyer value 1,200,000.  Do not increase `EPS` from one cent globally;
+   test any larger crumb as a separate game-hashed arm.
+3. Eligible cells were about 21% of recent negotiation games, so complete-only
+   promotion is expected to add roughly 135-145 overall negotiation rating
+   points, not enough by itself to reach the 0.55 target (rating 2400).  The
+   already-implemented, default-off hidden-policy V1 should be the next disjoint
+   randomized arm after its reachability and scoring reader are revalidated.
+
 ## 2026-08-23 — buyer-selectivity red team rejects the historical gain
 
 The user's `q_rank=0.4987` calculation for text `p=.5,r=1.2,S=0` is correct,

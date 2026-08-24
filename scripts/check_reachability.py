@@ -146,6 +146,56 @@ def _p_hidden_policy(game, p):
             and (own_mult < 1.5 if role == "seller" else own_mult > 0.8))
 
 
+def _p_hi_cap10_buyer12_terminal(game, p):
+    """Static scope of the round-9 buyer counter postcondition."""
+    from glee_agent.actions import _num
+    from glee_agent.pricing import infer_base
+
+    state = game.get("game_state") or {}
+    seat = game.get("your_player") or state.get("current_player")
+    own_value = _num(state.get(f"{seat}_value"), float("nan"))
+    base = infer_base(own_value)
+    return (state.get("complete_information") is False
+            and state.get("horizon_known") is True
+            and _num(state.get("max_rounds"), -1.0) == 10.0
+            and _num(state.get("round"), -1.0) == 9.0
+            and state.get(f"{seat}_role") == "buyer"
+            and base is not None
+            and abs(own_value / base - 1.2) <= 1e-6
+            and bool(game.get("game_id"))
+            and game.get("valid_actions", {}).get("type") == "decision")
+
+
+def _p_hi_uncapped_first_offer(game, p):
+    """Static scope of the hidden unknown-horizon first-offer probe."""
+    from glee_agent.actions import _hidden_own_price_count, _num
+    from glee_agent.pricing import infer_base
+
+    state = game.get("game_state") or {}
+    seat = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{seat}_role")
+    own_value = _num(state.get(f"{seat}_value"), float("nan"))
+    base = infer_base(own_value)
+    if base is None:
+        return False
+    own_mult = next(
+        (mult for mult in (0.8, 1.0, 1.2, 1.5)
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    identified = ((role, own_mult) in (("seller", 1.2), ("buyer", 1.0)))
+    return (state.get("complete_information") is False
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and role in ("seller", "buyer")
+            and identified
+            and bool(game.get("game_id"))
+            and seat in ("player_1", "player_2")
+            and _hidden_own_price_count(state, seat) == 0
+            and game.get("valid_actions", {}).get("type")
+            in ("offer", "decision"))
+
+
 def _p_barg_midgame_decision(game, p):
     return _p_decision(game, p) and p.get("rounds_left", 0) > 2
 
@@ -173,6 +223,10 @@ KNOWN = {
     "GLEE_NEGO_CLAIM_FLOOR": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_HIDDEN_FLOOR": ("negotiation", (), _p_hidden_floor),
     "GLEE_NEGO_HIDDEN_POLICY_V1": ("negotiation", (), _p_hidden_policy),
+    "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB": (
+        "negotiation", (), _p_hi_cap10_buyer12_terminal),
+    "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB": (
+        "negotiation", (), _p_hi_uncapped_first_offer),
     "GLEE_NEGO_ULTIMATUM_SHARE": ("negotiation", ("ultimatum",), _p_ultimatum),
     "GLEE_NEGO_RANK_PRICE_AB": ("negotiation", ("rank_price",), _p_rank_price),
     "GLEE_NEGO_POSTERIOR": ("negotiation", ("posterior",), _p_final_hidden),
@@ -222,6 +276,8 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_OPEN_CLAIM", "GLEE_NEGO_CLAIM_FLOOR",
     "GLEE_NEGO_OPEN_CLAIM_ALWAYS",
     "GLEE_NEGO_HIDDEN_FLOOR", "GLEE_NEGO_HIDDEN_POLICY_V1",
+    "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+    "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
 }
 
