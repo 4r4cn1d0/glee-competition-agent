@@ -5,7 +5,7 @@ import json, os, sys, time, urllib.request
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATE = os.path.join(REPO, ".ai", "watch", "nego_watch_state.json")
 TARGETS = [("3rd place", 2137.2), ("2nd place", 2322.9), ("pct 0.55", 2400.0), ("1st place", 2618.1)]
-MOVE = 12.0          # report any move this large since the last report
+MOVE = 30.0          # 5-game samples swing +/-15 on noise alone; only report real moves
 HEARTBEAT = 3600     # and at least once an hour
 
 def key(name):
@@ -57,7 +57,7 @@ def main():
                 json.dump(st, open(STATE, "w"))
         except Exception as e:
             print(f"[{time.strftime('%H:%M:%SZ', time.gmtime())}] watch error: {str(e)[:80]}", flush=True)
-        time.sleep(300)
+        time.sleep(600)
 
 if __name__ == "__main__":
     main()
