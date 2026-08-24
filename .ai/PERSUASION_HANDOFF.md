@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 18:16 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 18:39 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -68,7 +68,7 @@ not show text versus binary mode, so this classification is joined to local game
 the arm's target cohort. Separately, the legacy buyer
 parser bought three seller messages saying `Not recommended.`; all three were
 low, the game ended at zero, and it lost 4.0 official rating. The latter agrees
-with the existing default-off `GLEE_PERS_PARSE_TRI` evidence (historically 373
+with the existing default-off `GLEE_PERS_PARSE_V2` evidence (historically 373
 such purchases, 373 low, 0 high), but it is not co-armed here: any buyer-parser
 trial needs its own stable per-game randomisation and official precommit.
 
@@ -77,3 +77,14 @@ per arm, using every assigned game. Unresolved, invalid, official-join, wire, or
 self-play contamination blocks promotion. Full rules and subgroups are
 precommitted in `.ai/EXPERIMENTS.md`. The local percentile reader is diagnostic
 only; official per-game dashboard deltas control promotion/rejection.
+
+## First live mechanism observation
+
+Candidate game `202cb810-c1a7-4d36-b98b-7d394842d258` on Test 1 is the first
+post-T0 target draw. Its hash was candidate on all 20 rounds; all 20 plan records
+carried `p08_r125_prose`, recommendation stayed `true`, and the wire contained
+only five members of the approved six-message bank. The game completed normally
+with 4/20 purchases (3 high, 1 low), seller payoff `4P`, no invalid/timeout, and
+official dashboard rating delta `-4.3`. The buyer passed all 16 rounds after the
+first bought low. This is a clean but adverse first treatment observation, not a
+decision; the precommitted sample and stop rules remain unchanged.

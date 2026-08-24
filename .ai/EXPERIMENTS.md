@@ -440,6 +440,12 @@ Test 3 before causal promotion evidence.
 - **Read with**: `scripts/live_percentile.py --ab pers-prose --since T0
   --until T1 --slots champion,composite,randomized --official-json FILE` where
   FILE contains dashboard-exported `slot`, `game_id`, `rating_delta` records.
+- **First live observation (no decision)**: Test 1 candidate game
+  `202cb810-c1a7-4d36-b98b-7d394842d258` fired on all 20 rounds with stable hash,
+  unchanged recommendations, approved prose only, and no terminal failure. It
+  closed 4/20 purchases (3 high, 1 low), payoff `4P`, official delta `-4.3`;
+  the buyer passed all 16 rounds after the low purchase. This clean adverse
+  observation does not alter the precommitted sample or stop boundary.
 
 ## MECHANISM REJECTED — DISARMED
 
