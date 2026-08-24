@@ -4,6 +4,10 @@ import json, subprocess, datetime, urllib.request, os, sys
 REPO=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(REPO)
 a=json.load(open("arms.json"))
+try:
+    control=json.load(open("control.json"))
+except (OSError, ValueError):
+    control={}
 names={"champion":"Test 1","hardliner":"Test 2","conceder":"Test 3","randomized":"Test 4","composite":"Agent 5"}
 keys={"champion":"GLEE_KEY_TEST1","hardliner":"GLEE_KEY_TEST2","conceder":"GLEE_KEY_TEST3","randomized":"GLEE_KEY_TEST4","composite":"GLEE_KEY_TEST5"}
 def live(kn):
@@ -22,7 +26,12 @@ head=re.sub(r"_Snapshot .*?_", f"_Snapshot {now} · repo commit `{commit}`_", he
 rows=[]
 for slot in ("champion","composite","hardliner","conceder","randomized"):
     f=a.get(slot) or {}
-    rows.append(f"### {names[slot]}  (slot `{slot}`)\n\n- **live rating**: {live(keys[slot])}\n- **flags ({len(f)})**: "
+    policy=(control.get("policy") or {}).get(slot) or slot
+    families=(control.get("families") or {}).get(slot) or "bargaining,negotiation,persuasion"
+    llm=(control.get("llm") or {}).get(slot) or "supervisor default"
+    rows.append(f"### {names[slot]}  (slot `{slot}`)\n\n"
+                f"- **effective launch**: policy `{policy}` | families `{families}` | llm `{llm}`\n"
+                f"- **live rating**: {live(keys[slot])}\n- **flags ({len(f)})**: "
                 +(" ".join(f"`{k.replace('GLEE_','')}={v}`" for k,v in sorted(f.items())) or "_none_"))
 tail=open(".ai/CURRENT_STATE.md").read().split("## Deploy mechanics")[1] if os.path.exists(".ai/CURRENT_STATE.md") else ""
 open(".ai/CURRENT_STATE.md","w").write(head+"## Fleet\n\n"+"\n".join(rows)+"\n\n## Deploy mechanics"+tail)

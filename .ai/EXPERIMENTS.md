@@ -1278,15 +1278,14 @@ activation, assignment, or outcome.
 
 - **Prospective Test 4 host amendment (25 Aug, before activation/outcomes)**:
   per operator direction, host this arm on Test 4 (`randomized`) only, not Test
-  2 or Test 3. At the same clean boundary set
-  `GLEE_PROBE_RANDOMIZED_BARG_BASE=1`,
-  `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`, and
-  `GLEE_BARG_OBSERVED_GAIN=0`. The first flag routes only Test 4 bargaining
-  through the ordinary best-agent stack; negotiation and persuasion remain
-  randomized. The explicit OBSERVED_GAIN zero prevents that currently inert
-  Test 4 flag from silently becoming a second bargaining treatment when the
-  route opens. This sacrifices Test 4's bargaining exploration stream in favor
-  of performance while retaining its other two identification streams.
+  2 or Test 3. Live launch records and `control.json` show that the slot label
+  is historical: Test 4, like every slot, is already overridden to effective
+  policy `champion` across all three families. At the same clean boundary set
+  `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`,
+  `GLEE_BARG_OBSERVED_GAIN=0`, and
+  `GLEE_PROBE_RANDOMIZED_BARG_BASE=0`. The explicit OBSERVED_GAIN zero removes
+  an unproved second bargaining treatment; the explicit router zero prevents a
+  future policy-override removal from silently changing Test 4's behavior.
 - **Flag / assignment**: `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`; SHA-256 of
   `barg_discount_no_regress_v1|<game_id>`, low bit 1 = candidate. Assignment is
   per game and recoverable through the production pure helper. The older
@@ -1331,16 +1330,16 @@ activation, assignment, or outcome.
   Alice, Bob, known-horizon, unknown-horizon, `.90`, and `.95` point estimates
   are all nonnegative; every assigned outcome and official join
   is resolved; and mechanism/duplicate/self-play failures are zero.
-- **Reachability**: before the router, Test 4's custom randomized policy bypasses
-  `bargaining.decide`. On its exact live stack the default-off router produced
-  `4,465 eligible / 3,263 fired / 3,263 changed` over 2,400 paired games. With
-  that route in both arms and the prospectively required OBSERVED_GAIN zero,
-  the nested discount A/B produced `50 / 16 / 16` over 2,400 paired Test 4
-  games. The gap between eligible and changed is the expected
-  per-game hash control assignment.
+- **Reachability**: under Test 4's actual `champion` launch policy, with the
+  prospectively required OBSERVED_GAIN zero and router zero, the discount A/B
+  produced `50 eligible / 16 fired / 16 changed` over 2,400 paired Test 4
+  games. The gap between eligible and changed is the expected per-game hash
+  control assignment.
 - **Verification / deployment state**: focused mechanism, assignment, reader,
   overlap, zero-offer, patient-cell, Test 4 route, and cross-family isolation
   tests pass 26/26. Live nowhere; no flag, fleet process, `arms.json`, or
-  `control.json` was changed. After code naturally reaches Test 4, Claude may
-  apply the three-value Test 4 amendment above at one clean T0. Test 1, Test 2,
-  Test 3, and Agent 5 remain unarmed.
+  `control.json` was changed by implementation. Deployment authority was later
+  transferred to Codex: commit `8a8c5c9` was pushed and the three explicit Test
+  4 values above were written to its live overlay; activation waits for the
+  named zero-game cycle to load that commit. Test 1, Test 2, Test 3, and Agent 5
+  remain unarmed for this bargaining experiment.

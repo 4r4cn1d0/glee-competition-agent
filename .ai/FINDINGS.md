@@ -446,3 +446,16 @@ instrument is worth more than any single flag. Bargaining results are unaffected
 - The bargaining CDF v3 pools discount factors, so its percentile magnitude is
   diagnostic. The payoff direction is exact for these played games; promotion
   still requires a prospective hash arm and authenticated official deltas.
+
+## Fleet randomization audit (25 Aug)
+- `control.json` overrides all five slot labels to effective policy `champion`,
+  and current launch records confirm Test 4 runs `run_agent.py --probe
+  champion`. Therefore **0/5 live agents use the whole-policy randomizer**;
+  the `randomized` name is only Test 4's historical slot/log label. All five
+  agents queue all three families.
+- Before cleanup, all five agents carried at least one enabled narrow per-game
+  hash A/B flag. These arms affect predeclared cells/actions rather than an
+  entire family, but the overall leader Test 2 still carried the unpromoted
+  hidden unknown-horizon extreme-opening arm. It was explicitly set to zero on
+  25 Aug, leaving the account's best agent on the deterministic champion stack
+  while four non-leading slots retain scoped research arms.
