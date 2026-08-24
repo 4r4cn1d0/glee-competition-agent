@@ -48,6 +48,9 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab top-buyer-clone-hi-cap10 --since T0 \
         --slots SLOT --official-json FILE
                          # prospective hidden/known/cap-10 clone-slice ITT
+    python scripts/live_percentile.py --ab top-opus-buyer-clone-hi-unknown \
+        --since T0 --slots SLOT --official-json FILE
+                         # prospective hidden/unknown Opus-prefix ITT
     python scripts/live_percentile.py --ab hidden-min-share-veto --since T0 \
         --official-json FILE
                          # support-aware low-share acceptance veto + wire audit
@@ -97,6 +100,7 @@ from glee_agent import first_principles         # noqa: E402
 from glee_agent import top_buyer_clone          # noqa: E402
 from glee_agent import top_buyer_clone_hi_cap10  # noqa: E402
 from glee_agent import top_opus_buyer_clone     # noqa: E402
+from glee_agent import top_opus_buyer_clone_hi_unknown  # noqa: E402
 from glee_agent.actions import hi_cap10_buyer_curve_arm as _hi_buyer_curve_bit  # noqa: E402
 from glee_agent.actions import hi_cap10_buyer12_terminal_arm as _hi_terminal_bit  # noqa: E402
 from glee_agent.messages import BARG_ARMS, bargaining_arm  # noqa: E402
@@ -261,6 +265,14 @@ def top_opus_buyer_clone_arm(gid) -> str | None:
 def top_buyer_clone_hi_cap10_arm(gid) -> str | None:
     """Recover only the prospective scoped clone's independent hash arm."""
     treatment = top_buyer_clone_hi_cap10.treatment_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def top_opus_buyer_clone_hi_unknown_arm(gid) -> str | None:
+    """Recover only the fresh scoped module's production assignment."""
+    treatment = top_opus_buyer_clone_hi_unknown.treatment_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -589,6 +601,20 @@ def _top_buyer_clone_hi_cap10_signal(seat: str, state: dict) -> dict | None:
     if (signal["complete_information"] is not False
             or state.get("horizon_known") is not True
             or _number(state.get("max_rounds")) != 10.0):
+        return None
+    return {**signal, "scale": signal["base"]}
+
+
+def _top_opus_buyer_clone_hi_unknown_signal(
+        seat: str, state: dict) -> dict | None:
+    """Exact structural scope retained in terminal and reporting records."""
+    signal = _top_buyer_clone_signal(seat, state)
+    if signal is None:
+        return None
+    if (signal["complete_information"] is not False
+            or state.get("horizon_known") is not False
+            or "max_rounds" in state
+            or signal["own_mult"] not in (1.0, 1.2, 1.5)):
         return None
     return {**signal, "scale": signal["base"]}
 
@@ -1315,6 +1341,94 @@ def _top_opus_buyer_clone_exposure_turn(slot: str, rec: dict):
         "first_wire_ok": first_wire_ok,
         "first_collision": collision,
         "first_mechanism_ok": first_wire_ok and not collision,
+    }
+
+
+_TOP_OPUS_HI_UNKNOWN_COLLISION_SOURCES = frozenset({
+    "top_buyer_clone",
+    "top_buyer_clone_hi_cap10",
+    top_opus_buyer_clone.PLAN_SOURCE,
+    "top_athena_buyer_clone",
+})
+
+
+def _top_opus_buyer_clone_hi_unknown_game(
+        gid: str, seat: str, state: dict, action_type: str) -> dict:
+    """Rebuild the exact production input represented by one buyer turn."""
+    return {
+        "game_id": gid,
+        "game_family": "negotiation",
+        "your_player": seat,
+        "game_state": state,
+        "valid_actions": {"type": action_type},
+    }
+
+
+def _top_opus_buyer_clone_hi_unknown_expected_action(
+        gid: str, seat: str, state: dict,
+        action_type: str) -> dict | None:
+    """Recompute a supported scoped wire; ``None`` is control fallback."""
+    if (top_opus_buyer_clone_hi_unknown.treatment_assignment(gid)
+            is not True):
+        return None
+    game = _top_opus_buyer_clone_hi_unknown_game(
+        gid, seat, state, action_type)
+    try:
+        return top_opus_buyer_clone_hi_unknown.action(game)
+    except Exception:
+        return None
+
+
+def _top_opus_buyer_clone_hi_unknown_exposure_turn(slot: str, rec: dict):
+    """Enroll the first exact eligible buyer decision before support can fire."""
+    if rec.get("game_family") != "negotiation":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    action_type = rec.get("action_type")
+    if not gid or action_type not in ("offer", "decision"):
+        return None
+    game = _top_opus_buyer_clone_hi_unknown_game(
+        gid, seat, state, action_type)
+    # The module's predicate, rather than a looser reader approximation, fixes
+    # the ITT scope before action support or terminal outcome is observed.
+    if not top_opus_buyer_clone_hi_unknown.eligible(game):
+        return None
+    signal = _top_opus_buyer_clone_hi_unknown_signal(seat, state)
+    ts = _number(rec.get("ts"))
+    if signal is None or ts is None:
+        return None
+
+    arm = top_opus_buyer_clone_hi_unknown_arm(gid)
+    action = rec.get("action") or {}
+    plan = rec.get("plan") or {}
+    source = plan.get("source") if isinstance(plan, dict) else None
+    scoped_source = source == top_opus_buyer_clone_hi_unknown.PLAN_SOURCE
+    collision = source in _TOP_OPUS_HI_UNKNOWN_COLLISION_SOURCES
+    expected = (_top_opus_buyer_clone_hi_unknown_expected_action(
+        gid, seat, state, action_type) if arm == "candidate" else None)
+    supported = arm == "candidate" and expected is not None
+    fallback = arm == "candidate" and expected is None
+    if supported:
+        first_wire_ok = (scoped_source and not collision
+                         and _top_clone_wire_matches(action, expected))
+    else:
+        # Unsupported candidate turns and every hash-control turn must remain
+        # wholly owned by the pre-existing stack.
+        first_wire_ok = not scoped_source and not collision
+    return (slot, gid), ts, {
+        **signal,
+        "exposure_ts": ts,
+        "first_action_type": action_type,
+        "first_decision": action.get("decision"),
+        "first_price": _number(action.get("product_price")),
+        "first_source": source,
+        "first_supported_action": supported,
+        "first_candidate_fallback": fallback,
+        "first_wire_ok": first_wire_ok,
+        "first_collision": collision,
+        "first_mechanism_ok": first_wire_ok,
     }
 
 
@@ -2126,6 +2240,38 @@ def _top_opus_buyer_clone_row(slot: str, rec: dict, fin: dict):
     seat = fin.get("your_player")
     state = fin.get("game_state") or {}
     signal = _top_opus_buyer_clone_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    closed = _terminal_close(fin)
+    if closed is None:
+        return None
+    result = fin.get("result") or {}
+    payoff = _result_payoff(result, seat, seat)
+    pct = (percentile("negotiation", dict(state), seat, payoff)
+           if payoff is not None else None)
+    status = str(fin.get("status") or "").strip().lower()
+    outcome = str(result.get("outcome") or "").strip().lower()
+    diagnostic = {
+        **signal,
+        "payoff": payoff,
+        "outcome": outcome,
+        "status": status,
+        "non_close": not closed,
+        "no_deal": status == "no_deal" or outcome == "no_deal",
+        "walked_away": outcome == "walked_away",
+        "timeout": status == "timeout" or outcome == "timeout",
+    }
+    return slot, pct, str(gid), closed, diagnostic
+
+
+def _top_opus_buyer_clone_hi_unknown_row(slot: str, rec: dict, fin: dict):
+    """Retain all scoped terminal outcomes without conditioning on support."""
+    if fin.get("game_family") != "negotiation":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _top_opus_buyer_clone_hi_unknown_signal(seat, state)
     if not gid or signal is None:
         return None
     closed = _terminal_close(fin)
@@ -2973,6 +3119,113 @@ def top_opus_buyer_clone_games(hours, since=None, until=None):
         hours, _top_opus_buyer_clone_exposure_turn,
         _top_opus_buyer_clone_row, since=since, until=until))
     yield from _top_opus_buyer_clone_trace_audit(rows)
+
+
+def _top_opus_buyer_clone_hi_unknown_trace_audit(rows):
+    """Audit every scoped turn, including candidate control fallbacks."""
+    wanted = {(row[0], row[2]) for row in rows}
+    audits = defaultdict(lambda: {
+        "eligible_turns": 0,
+        "supported_action_turns": 0,
+        "supported_fires": 0,
+        "candidate_fallback_turns": 0,
+        "scoped_source_turns": 0,
+        "wire_failures": 0,
+        "control_contamination": 0,
+        "scope_failures": 0,
+        "collision_turns": 0,
+    })
+    by_slot = defaultdict(set)
+    for slot, gid in wanted:
+        by_slot[slot].add(gid)
+
+    for slot, gids in by_slot.items():
+        path = os.path.join(REPO, "logs", slot, "turns.jsonl")
+        try:
+            handle = open(path, encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with handle:
+            for line in handle:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                gid = str(rec.get("game_id") or "")
+                if gid not in gids:
+                    continue
+                audit = audits[(slot, gid)]
+                action = rec.get("action") or {}
+                plan = rec.get("plan") or {}
+                source = plan.get("source") if isinstance(plan, dict) else None
+                scoped_source = (
+                    source == top_opus_buyer_clone_hi_unknown.PLAN_SOURCE)
+                collision = source in _TOP_OPUS_HI_UNKNOWN_COLLISION_SOURCES
+                audit["scoped_source_turns"] += int(scoped_source)
+                audit["collision_turns"] += int(collision)
+
+                action_type = rec.get("action_type")
+                seat = rec.get("your_player")
+                state = rec.get("state") or {}
+                eligible = False
+                if action_type in ("offer", "decision"):
+                    game = _top_opus_buyer_clone_hi_unknown_game(
+                        gid, seat, state, action_type)
+                    eligible = top_opus_buyer_clone_hi_unknown.eligible(game)
+                if (scoped_source and not eligible) or collision:
+                    audit["scope_failures"] += 1
+                if not eligible:
+                    continue
+
+                audit["eligible_turns"] += 1
+                arm = top_opus_buyer_clone_hi_unknown_arm(gid)
+                if arm == "control":
+                    audit["control_contamination"] += int(scoped_source)
+                    continue
+                if arm != "candidate":
+                    audit["scope_failures"] += 1
+                    continue
+
+                expected = _top_opus_buyer_clone_hi_unknown_expected_action(
+                    gid, seat, state, action_type)
+                if expected is None:
+                    audit["candidate_fallback_turns"] += 1
+                    audit["wire_failures"] += int(scoped_source)
+                    continue
+
+                audit["supported_action_turns"] += 1
+                mechanism_ok = (
+                    scoped_source
+                    and not collision
+                    and _top_clone_wire_matches(action, expected))
+                audit["supported_fires"] += int(mechanism_ok)
+                audit["wire_failures"] += int(not mechanism_ok)
+
+    enriched = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        attached = False
+        output_metadata = []
+        for item in metadata:
+            if isinstance(item, dict) and not attached:
+                output_metadata.append({**item, **audits[(slot, gid)]})
+                attached = True
+            else:
+                output_metadata.append(item)
+        if not attached:
+            output_metadata.insert(0, dict(audits[(slot, gid)]))
+        enriched.append((slot, pct, gid, completed, *output_metadata))
+    return enriched
+
+
+def top_opus_buyer_clone_hi_unknown_games(
+        hours, since=None, until=None):
+    """Yield every scoped assignment, including terminal and unresolved rows."""
+    rows = list(_price_arm_games(
+        hours, _top_opus_buyer_clone_hi_unknown_exposure_turn,
+        _top_opus_buyer_clone_hi_unknown_row,
+        since=since, until=until))
+    yield from _top_opus_buyer_clone_hi_unknown_trace_audit(rows)
 
 
 def stall_current_break_games(hours, since=None, until=None):
@@ -6865,6 +7118,365 @@ def report_top_buyer_clone_hi_cap10(rows, hours, since=None, until=None,
     return 2
 
 
+def report_top_opus_buyer_clone_hi_unknown(
+        rows, hours, since=None, until=None, official_path=None):
+    """Report the fixed-look hidden/unknown Opus-prefix game-level ITT."""
+    if since is None:
+        print("CLEAN T0 REQUIRED: --since must be the first verified process "
+              "boundary carrying the scoped Opus code and flag")
+        return 2
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = top_opus_buyer_clone_hi_unknown_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        fleet_slots = diagnostic.get("fleet_slots")
+        if isinstance(fleet_slots, (list, tuple, set)):
+            gid_slots[gid].update(fleet_slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot,
+            "pct": pct,
+            "gid": gid,
+            "closed": closed,
+            "arm": arm,
+            "diagnostic": diagnostic,
+            "resolution": resolution,
+            "official": official.get((slot, gid)),
+            "exposure_ts": diagnostic.get("exposure_ts"),
+        })
+
+    print(top_opus_buyer_clone_hi_unknown.FLAG)
+    print("prospective ITT: hidden-information negotiation buyers with "
+          "horizon_known=false, max_rounds absent, and own type 1.0/1.2/1.5; "
+          "candidate support is evaluated only after enrollment")
+    print("candidate-supported turns require the exact scoped source and wire; "
+          "unsupported candidate turns must fall through to full control")
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"clean first-eligible-decision window: [{float(since):g}, {upper})")
+    if not observations:
+        print("no assigned hidden/unknown Opus-scope buyer games in the window")
+        return 1
+
+    duplicate_gids = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    pooled = [item for item in observations if item["gid"] not in duplicate_gids]
+    print(f"pooled dependence guard: excluded {len(duplicate_gids)} game id(s) "
+          "observed in multiple fleet slots")
+
+    stats = {}
+    scope_failures = 0
+    wire_failures = 0
+    for arm in ("control", "candidate"):
+        assigned = [item for item in pooled if item["arm"] == arm]
+        terminal = [item for item in assigned if item["closed"] is not None]
+        official_scores = [item["official"] for item in terminal
+                           if item["official"] is not None]
+        pcts = [item["pct"] for item in terminal if item["pct"] is not None]
+        closes = [float(bool(item["closed"])) for item in terminal]
+        non_closes = [1.0 - value for value in closes]
+        no_deals = [float(bool(item["diagnostic"].get("no_deal")))
+                    for item in terminal]
+        walks = [float(bool(item["diagnostic"].get("walked_away")))
+                 for item in terminal]
+        timeouts = [float(bool(item["diagnostic"].get("timeout")))
+                    for item in terminal]
+        unresolved = len(assigned) - len(terminal)
+        official_missing = sum(item["official"] is None for item in terminal)
+        percentile_missing = sum(item["pct"] is None for item in terminal)
+        invalid_finals = sum(
+            item["resolution"] == "invalid-final" for item in assigned)
+        arm_scope = sum(
+            int(item["diagnostic"].get("scope_failures") or 0)
+            for item in assigned)
+        arm_wire = sum(
+            int(item["diagnostic"].get("wire_failures") or 0)
+            for item in assigned)
+        contamination = sum(
+            int(item["diagnostic"].get("control_contamination") or 0)
+            for item in assigned)
+        missing_trace = sum(
+            int(not item["diagnostic"].get("eligible_turns"))
+            for item in assigned)
+        arm_scope += missing_trace
+        arm_wire += contamination
+        scope_failures += arm_scope
+        wire_failures += arm_wire
+        turns = sum(int(item["diagnostic"].get("eligible_turns") or 0)
+                    for item in assigned)
+        supported = sum(
+            int(item["diagnostic"].get("supported_action_turns") or 0)
+            for item in assigned)
+        fires = sum(int(item["diagnostic"].get("supported_fires") or 0)
+                    for item in assigned)
+        fallbacks = sum(
+            int(item["diagnostic"].get("candidate_fallback_turns") or 0)
+            for item in assigned)
+        source_turns = sum(
+            int(item["diagnostic"].get("scoped_source_turns") or 0)
+            for item in assigned)
+        collisions = sum(
+            int(item["diagnostic"].get("collision_turns") or 0)
+            for item in assigned)
+        stats[arm] = {
+            "assigned": assigned,
+            "terminal": terminal,
+            "official": official_scores,
+            "pct": pcts,
+            "closed": closes,
+            "non_close": non_closes,
+            "no_deal": no_deals,
+            "walk": walks,
+            "timeout": timeouts,
+            "unresolved": unresolved,
+            "official_missing": official_missing,
+            "percentile_missing": percentile_missing,
+            "invalid_finals": invalid_finals,
+            "scope_failures": arm_scope,
+            "wire_failures": arm_wire,
+        }
+        official_text, _ = _mean_ci_text(official_scores)
+        pct_text, _ = _mean_ci_text(pcts)
+        close_text, _ = _mean_ci_text(closes, percent=True)
+        print(f"POOLED    {arm:9} official-dR={official_text} "
+              f"n={len(official_scores)}; exact-cell-pct={pct_text} "
+              f"n={len(pcts)}; close={close_text} n={len(closes)}; "
+              f"assigned={len(assigned)}; turns={turns}; supported={supported}; "
+              f"fires={fires}; fallback={fallbacks}; source={source_turns}; "
+              f"unresolved={unresolved}; official-missing={official_missing}; "
+              f"pct-missing={percentile_missing}; scope-fail={arm_scope}; "
+              f"wire-fail={arm_wire}; collisions={collisions}")
+
+    control = stats["control"]
+    candidate = stats["candidate"]
+    if control["assigned"] and candidate["assigned"]:
+        print("pooled candidate-control (game-level intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("exact-cell percentile", candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+        _print_delta("no-deal rate", candidate["no_deal"],
+                     control["no_deal"], percent=True)
+        _print_delta("walk-away rate", candidate["walk"], control["walk"],
+                     percent=True)
+        _print_delta("timeout rate", candidate["timeout"], control["timeout"],
+                     percent=True)
+
+    def stratum_value(item, field):
+        if field == "host":
+            return item["slot"]
+        value = item["diagnostic"].get(field)
+        if field == "scale" and value is None:
+            value = item["diagnostic"].get("base")
+        return value
+
+    host_values = sorted({item["slot"] for item in pooled})
+    scale_values = sorted({stratum_value(item, "scale") for item in pooled
+                           if stratum_value(item, "scale") is not None})
+    print("official candidate-control strata by host, own type, messages, scale:")
+    for field, values in (
+            ("host", host_values),
+            ("own_mult", (1.0, 1.2, 1.5)),
+            ("messages_allowed", (False, True)),
+            ("scale", scale_values)):
+        for value in values:
+            grouped = {
+                arm: [item["official"] for item in pooled
+                      if item["arm"] == arm
+                      and item["closed"] is not None
+                      and stratum_value(item, field) == value
+                      and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            interval = ("CI n/a" if low is None else
+                        f"95% CI [{low:+.3f},{high:+.3f}]")
+            value_text = "n/a" if delta is None else f"{delta:+.3f}"
+            print(f"  {field}={value}: dR={value_text} {interval}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    if duplicate_gids:
+        print("JOIN REJECTION: duplicate game ids crossed fleet hosts")
+        return 2
+    if scope_failures or wire_failures:
+        print("MECHANISM REJECTION: promotion requires zero scope and wire "
+              f"failures (scope={scope_failures}, wire={wire_failures})")
+        return 2
+    if not control["assigned"] or not candidate["assigned"]:
+        print("READ BLOCKED: both fresh-salt randomized arms need assignments")
+        return 1
+
+    def ordered_scored(arm):
+        return sorted(
+            (item for item in pooled
+             if item["arm"] == arm
+             and item["closed"] is not None
+             and item["official"] is not None),
+            key=lambda item: (
+                item["exposure_ts"] is None,
+                item["exposure_ts"] or math.inf,
+                item["slot"],
+                item["gid"],
+            ),
+        )
+
+    ordered = {arm: ordered_scored(arm)
+               for arm in ("control", "candidate")}
+    if all(len(ordered[arm]) >= 20 for arm in ("control", "candidate")):
+        harm = {arm: ordered[arm][:20]
+                for arm in ("control", "candidate")}
+        harm_official = {
+            arm: [item["official"] for item in harm[arm]]
+            for arm in ("control", "candidate")
+        }
+        harm_no_deal = {
+            arm: [float(bool(item["diagnostic"].get("no_deal")))
+                  for item in harm[arm]]
+            for arm in ("control", "candidate")
+        }
+        harm_delta, _harm_low, harm_high = _delta_ci(
+            harm_official["candidate"], harm_official["control"])
+        harm_no_deal_delta, _low, _high = _delta_ci(
+            harm_no_deal["candidate"], harm_no_deal["control"])
+        print("frozen harm look: first 20 official outcomes per arm")
+        if harm_delta is not None and harm_delta <= -1.0:
+            print("HARM REJECTION: first 20/arm are <= -1 rating/game")
+            return 2
+        if harm_high is not None and harm_high < 0.0:
+            print("HARM REJECTION: first-20 official 95% CI is wholly negative")
+            return 2
+        if (harm_no_deal_delta is not None
+                and harm_no_deal_delta >= 0.10 - 1e-12):
+            print("HARM REJECTION: first 20/arm no-deal rate is >=10pp worse")
+            return 2
+
+    invalid_finals = (control["invalid_finals"]
+                      + candidate["invalid_finals"])
+    if invalid_finals:
+        print(f"JOIN REJECTION: {invalid_finals} invalid terminal join(s)")
+        return 2
+    unresolved = control["unresolved"] + candidate["unresolved"]
+    official_missing = (control["official_missing"]
+                        + candidate["official_missing"])
+    if unresolved or official_missing:
+        print("READ BLOCKED: retain every assignment until outcomes and "
+              f"official joins resolve (unresolved={unresolved}, "
+              f"official-missing={official_missing})")
+        return 1
+
+    if any(len(ordered[arm]) < 40 for arm in ("control", "candidate")):
+        print("COLLECT MORE: fixed final requires 40 official outcomes per arm")
+        return 1
+
+    final = {arm: ordered[arm][:40]
+             for arm in ("control", "candidate")}
+    final_pct_missing = sum(
+        item["pct"] is None for arm in ("control", "candidate")
+        for item in final[arm])
+    if final_pct_missing:
+        print("JOIN REJECTION: fixed-final official rows require exact-cell "
+              f"percentiles (missing={final_pct_missing})")
+        return 2
+
+    final_official = {
+        arm: [item["official"] for item in final[arm]]
+        for arm in ("control", "candidate")
+    }
+    final_pct = {
+        arm: [item["pct"] for item in final[arm]]
+        for arm in ("control", "candidate")
+    }
+    final_no_deal = {
+        arm: [float(bool(item["diagnostic"].get("no_deal")))
+              for item in final[arm]]
+        for arm in ("control", "candidate")
+    }
+    official_delta, official_low, _official_high = _delta_ci(
+        final_official["candidate"], final_official["control"])
+    pct_delta, pct_low, _pct_high = _delta_ci(
+        final_pct["candidate"], final_pct["control"])
+    no_deal_delta, _no_deal_low, _no_deal_high = _delta_ci(
+        final_no_deal["candidate"], final_no_deal["control"])
+
+    def final_group(field, value, arm):
+        return [item["official"] for item in final[arm]
+                if stratum_value(item, field) == value]
+
+    required_groups = (
+        ("host", sorted({item["slot"] for arm in final
+                         for item in final[arm]}), 5),
+        ("own_mult", (1.0, 1.2, 1.5), 5),
+        ("messages_allowed", (False, True), 8),
+    )
+    insufficient = []
+    negative_points = []
+    for field, values, minimum in required_groups:
+        for value in values:
+            grouped = {arm: final_group(field, value, arm)
+                       for arm in ("control", "candidate")}
+            if any(len(grouped[arm]) < minimum
+                   for arm in ("control", "candidate")):
+                insufficient.append(
+                    f"{field}={value} n={len(grouped['control'])}/"
+                    f"{len(grouped['candidate'])} need={minimum}/arm")
+                continue
+            delta, _low, _high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            if delta is None or delta < 0.0:
+                negative_points.append(f"{field}={value} dR={delta}")
+
+    final_scale_values = sorted({stratum_value(item, "scale")
+                                 for arm in final for item in final[arm]
+                                 if stratum_value(item, "scale") is not None})
+    for value in final_scale_values:
+        grouped = {arm: final_group("scale", value, arm)
+                   for arm in ("control", "candidate")}
+        if not grouped["control"] or not grouped["candidate"]:
+            insufficient.append(
+                f"scale={value} n={len(grouped['control'])}/"
+                f"{len(grouped['candidate'])} need>=1/arm")
+            continue
+        delta, _low, _high = _delta_ci(
+            grouped["candidate"], grouped["control"])
+        if delta is None or delta < 0.0:
+            negative_points.append(f"scale={value} dR={delta}")
+
+    if insufficient:
+        print("COLLECT MORE: precommitted stratum minima are not met: "
+              + "; ".join(insufficient))
+        return 1
+
+    promotion_ok = (
+        official_low is not None and official_low > 0.0
+        and pct_delta is not None and pct_delta >= 0.03
+        and pct_low is not None and pct_low > -0.01
+        and no_deal_delta is not None and no_deal_delta <= 0.05
+        and not negative_points
+    )
+    if promotion_ok:
+        print("PROMOTION GATE PASSED: official CI, exact-cell percentile, "
+              "no-deal, subgroup, scope, wire, and join requirements all pass")
+        return 0
+    print("FINAL REJECTION: fixed 40/arm boundary reached without every "
+          "promotion gate" + (f"; negative strata: {negative_points}"
+                               if negative_points else ""))
+    return 2
+
+
 def report_stall_current_break(rows, hours, since=None, until=None,
                                official_path=None):
     """Report the triggered stale-stall A/B over every first-break outcome."""
@@ -7559,6 +8171,7 @@ def main() -> int:
                              "hi-terminal", "hi-buyer-curve", "top-buyer-clone",
                              "top-opus-buyer-clone",
                              "top-buyer-clone-hi-cap10",
+                             "top-opus-buyer-clone-hi-unknown",
                              "stall-current-break",
                              "hidden-min-share-veto", "table-vcont-precedence",
                              "fp-complete", "pers-selectivity", "pers-prose",
@@ -7575,6 +8188,7 @@ def main() -> int:
                    "hi-terminal", "hi-buyer-curve", "top-buyer-clone",
                    "top-opus-buyer-clone",
                    "top-buyer-clone-hi-cap10",
+                   "top-opus-buyer-clone-hi-unknown",
                    "stall-current-break",
                    "hidden-min-share-veto",
                    "table-vcont-precedence",
@@ -7585,7 +8199,8 @@ def main() -> int:
                 and args.until <= args.since):
             ap.error("--until must be greater than --since")
         if (args.ab in ("top-opus-buyer-clone",
-                        "top-buyer-clone-hi-cap10")
+                        "top-buyer-clone-hi-cap10",
+                        "top-opus-buyer-clone-hi-unknown")
                 and args.since is None):
             ap.error(f"--ab {args.ab} requires a clean --since T0")
         cohort = {
@@ -7600,6 +8215,8 @@ def main() -> int:
             "top-buyer-clone": top_buyer_clone_games,
             "top-opus-buyer-clone": top_opus_buyer_clone_games,
             "top-buyer-clone-hi-cap10": top_buyer_clone_hi_cap10_games,
+            "top-opus-buyer-clone-hi-unknown": (
+                top_opus_buyer_clone_hi_unknown_games),
             "stall-current-break": stall_current_break_games,
             "hidden-min-share-veto": hidden_min_share_veto_games,
             "table-vcont-precedence": table_vcont_precedence_games,
@@ -7622,6 +8239,8 @@ def main() -> int:
             "top-buyer-clone": report_top_buyer_clone,
             "top-opus-buyer-clone": report_top_opus_buyer_clone,
             "top-buyer-clone-hi-cap10": report_top_buyer_clone_hi_cap10,
+            "top-opus-buyer-clone-hi-unknown": (
+                report_top_opus_buyer_clone_hi_unknown),
             "stall-current-break": report_stall_current_break,
             "hidden-min-share-veto": report_hidden_min_share_veto,
             "table-vcont-precedence": report_table_vcont_precedence,
@@ -7643,6 +8262,7 @@ def main() -> int:
                                 "hi-buyer-curve", "top-buyer-clone",
                                 "top-opus-buyer-clone",
                                 "top-buyer-clone-hi-cap10",
+                                "top-opus-buyer-clone-hi-unknown",
                                 "table-vcont-precedence") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)

@@ -460,19 +460,8 @@ def _with_message(move: dict, ctx: _Context, target: float) -> dict:
     return move
 
 
-def action(game: dict) -> dict | None:
-    """Return one evidence-supported treatment move, else control fallback.
-
-    ``None`` is intentional: it means the caller must execute its unchanged
-    control policy.  In particular, no late hold, endpoint acceptance, or walk
-    threshold is manufactured merely to make this function total.
-    """
-    if not owns(game):
-        return None
-    ctx = _context(game)
-    if ctx is None:  # Defensive against a state mutation between the two reads.
-        return None
-
+def _identified_action(ctx: _Context) -> dict | None:
+    """Return the point-supported Opus move for one already parsed state."""
     if ctx.phase == "decision":
         accept_evidence = _accept_is_identified(ctx)
         if accept_evidence is not None:
@@ -504,6 +493,28 @@ def action(game: dict) -> dict | None:
         ctx,
         target,
     )
+
+
+def identified_action(game: dict) -> dict | None:
+    """Reconstruct a supported move without consulting a runtime arm bit.
+
+    Scoped experiments use this pure evidence table with their own prospective
+    salts. ``None`` remains an intentional control fallback: no late hold,
+    endpoint acceptance, or walk threshold is manufactured to make the clone
+    total.
+    """
+    try:
+        ctx = _context(game)
+        return _identified_action(ctx) if ctx is not None else None
+    except Exception:
+        return None
+
+
+def action(game: dict) -> dict | None:
+    """Return one evidence-supported treatment move, else control fallback."""
+    if not owns(game):
+        return None
+    return identified_action(game)
 
 
 def matches_wire(game: dict, wire: dict) -> bool:

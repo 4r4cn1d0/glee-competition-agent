@@ -372,6 +372,73 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   intentionally overlaps one previously captured game, and all analysis
   deduplicates by the exact joined game id.
 
+### Opus hidden unknown-horizon buyer trajectory clone — BUILT DEFAULT OFF
+- **New falsifiable experiment**: copy Opus's directly observed hidden
+  unknown-horizon buyer trajectory for live buyer types `1.0B`, `1.2B`, and
+  `1.5B`. The null is official candidate-control rating delta `<=0`. This is
+  not a retry of the broad 7aidara hidden-unknown slice (`-0.321/game`, n=11/15):
+  Opus holds near `0.6767 * own_value` and follows 43 literal observed
+  coefficients, whereas 7aidara used four different piecewise price/base paths.
+- **Flag / independent assignment**:
+  `GLEE_NEGO_TOP_OPUS_BUYER_CLONE_HI_UNKNOWN_AB`, default OFF;
+  `sha256("nego_top_opus_buyer_clone_hi_unknown_v1|" + game_id)` low bit gives
+  candidate. Missing ids fail closed. This salt has never been armed or used to
+  select an outcome.
+- **Static ITT scope**: negotiation buyer only, hidden information,
+  `horizon_known=false`, `max_rounds` absent, and own type in
+  `{1.0B,1.2B,1.5B}`, from the first eligible pre-action turn. The structurally
+  dead `.8B` buyer type is excluded before assignment because no individually
+  rational seller can leave it positive surplus. Known-cap-10, one-round,
+  complete-information, seller, malformed, and bargaining states are ineligible.
+- **Candidate action**: replay only the existing Opus reconstruction's 43
+  point-observed hidden-unknown price coefficients, exact counter message, and
+  its history/round-conditioned late acceptance. An incoming price at or below
+  the copied bid and every unsupported tail branch returns to the complete
+  current control policy. No coefficient is fitted, interpolated, or extended.
+  Hash controls always execute the complete current stack.
+- **Reachability before activation**: the latest 20 MB of each intended host
+  stream over `1787592547..1787597591` contained 1,057 supported actions in 103
+  games; all 1,057 reconstructed wires differed semantically from control. An
+  800-game champion-stack paired preflight (seed 2671) produced 241 changed
+  submitted actions and passed the generic reachability gate. These are
+  mechanism counts, not an effect estimate. Focused strategy/integration tests
+  pass 35/35 before the independent reader is added.
+- **Isolation**: the running hidden known-cap-10 7aidara arm is statically
+  disjoint and may coexist. The new arm fails closed against the broad 7aidara,
+  full Opus, Athena, both hidden-unknown opening arms, hidden-policy/floor, and
+  hidden-min-share, table-continuation, stall-break, close, and probe
+  experiments. Hardliner/Test 2 is excluded because its live extreme-opening
+  arm overlaps the first Opus wire. No bargaining flag, configuration, import,
+  or behavior may change.
+- **Primary / retention**: authenticated official dashboard rating delta over
+  every assignment, including immediate accepts, unsupported candidate
+  fallbacks, agreements, no-deals, walks, timeouts, invalids, unresolved games,
+  and games that never emit a copied counter. Stratify by host before pooling.
+  Exact-cell percentile is diagnostic; hidden counterpart values may not be
+  inferred from selected deals.
+- **Mechanism gate**: audit every turn in the first 20 assignments. Candidate
+  point-supported turns must carry the scoped source and exact reconstructed
+  wire; unsupported candidate turns must have no scoped source and run control;
+  controls must never carry the source. Any scope/hash drift, collision,
+  untraced changed wire, invalid action, duplicate, self-play contamination, or
+  official join ambiguity causes immediate disarm and rejection.
+- **Frozen decision rule**: one harm look at 20 scored official games per arm;
+  stop if candidate is at least `-1.0 rating/game` below control, its official
+  95% interval is wholly negative, or no-deals are at least 10pp worse. Final at
+  40 scored games per arm, at least 5/arm on every deployed host and own type,
+  and at least 8/arm in each message mode. Promote only if the official 95% CI
+  is wholly positive; exact-cell percentile point lift is at least `+.03` with
+  lower bound above `-.01`; candidate no-deals are no more than 5pp worse;
+  every host/type/message/scale point is nonnegative; and mechanism, source,
+  wire, assignment, duplicate, outcome, and official-join failures are zero.
+  Otherwise remain research-only.
+- **Prospective deployment boundary**: after inert code/reader/full-suite
+  verification is committed and pushed, allow only champion, composite,
+  conceder, and randomized to acquire it through natural clean rotations.
+  Record separate host T0s before reading outcomes; never restart, signal, or
+  abandon a game. The flag is currently OFF everywhere and no live outcome
+  exists.
+
 ### Direct-leader hidden unknown-horizon opening copy (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1`;
   `sha256("nego_hi_uncapped_extreme_open_v1|" + game_id) & 1` gives control or

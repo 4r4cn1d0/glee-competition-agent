@@ -22,7 +22,8 @@ import math
 
 from .. import (first_principles, nego_arms, pricing, runtime_flags,
                 top_buyer_clone, top_buyer_clone_hi_cap10,
-                top_opus_buyer_clone)
+                top_opus_buyer_clone,
+                top_opus_buyer_clone_hi_unknown)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1615,6 +1616,16 @@ def _decide(game: dict, cfg) -> dict:
         scoped_clone_action = top_buyer_clone_hi_cap10.action(game)
         if scoped_clone_action is not None:
             return scoped_clone_action
+
+    # Opus's first 43 hidden unknown-horizon buyer coefficients are direct
+    # observed wires.  In a recent pre-arm window this exact slice reached 103
+    # games / 1,057 changed states on the four intended hosts.  It is statically
+    # disjoint from the live known-cap-10 clone above; unsupported late branches
+    # deliberately fall through to the complete current stack.
+    if top_opus_buyer_clone_hi_unknown.owns(game):
+        scoped_opus_action = top_opus_buyer_clone_hi_unknown.action(game)
+        if scoped_opus_action is not None:
+            return scoped_opus_action
 
     # The observed-leader buyer clone is a full-policy treatment: both its
     # prices and accept/reject boundary must move together or the experiment
