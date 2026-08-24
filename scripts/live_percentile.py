@@ -39,6 +39,9 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab hi-buyer-curve --since T0 \
         --official-json FILE
                          # hidden cap-10 buyer-1.2 terminal-counter ITT + wire audit
+    python scripts/live_percentile.py --ab top-buyer-clone --since T0 \
+        --slots conceder --official-json FILE
+                         # complete 7aidara buyer-policy ITT + all-turn wire audit
     python scripts/live_percentile.py --ab hidden-min-share-veto --since T0 \
         --official-json FILE
                          # support-aware low-share acceptance veto + wire audit
@@ -82,6 +85,7 @@ sys.path.insert(0, REPO)
 from sim.percentile import percentile          # noqa: E402
 from sim import official_negotiation_seed      # noqa: E402
 from glee_agent import first_principles         # noqa: E402
+from glee_agent import top_buyer_clone          # noqa: E402
 from glee_agent.actions import hi_cap10_buyer_curve_arm as _hi_buyer_curve_bit  # noqa: E402
 from glee_agent.actions import hi_cap10_buyer12_terminal_arm as _hi_terminal_bit  # noqa: E402
 from glee_agent.messages import BARG_ARMS, bargaining_arm  # noqa: E402
@@ -221,6 +225,14 @@ def hi_terminal_arm(gid) -> str | None:
 def hi_buyer_curve_arm(gid) -> str | None:
     """Recover the production broad cap-10 buyer-curve assignment."""
     treatment = _hi_buyer_curve_bit(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def top_buyer_clone_arm(gid) -> str | None:
+    """Recover the observed-leader buyer-clone assignment from production."""
+    treatment = top_buyer_clone.treatment_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -471,6 +483,44 @@ def _hi_buyer_curve_signal(seat: str, state: dict) -> dict | None:
         "own_value": own_value,
         "own_mult": own_mult,
         "messages_allowed": state.get("messages_allowed") is True,
+    }
+
+
+def _top_buyer_clone_signal(seat: str, state: dict) -> dict | None:
+    """Public, pre-action scope of the full observed-leader buyer policy."""
+    if seat not in ("player_1", "player_2"):
+        return None
+    if state.get(f"{seat}_role") != "buyer":
+        return None
+    own_value = _number(state.get(f"{seat}_value"))
+    base = infer_base(own_value) if own_value is not None else None
+    if base is None:
+        return None
+    own_mult = next(
+        (mult for mult in (0.8, 1.0, 1.2, 1.5)
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    complete = state.get("complete_information")
+    known = state.get("horizon_known")
+    if own_mult is None or complete not in (True, False) or known not in (True, False):
+        return None
+    max_rounds = _number(state.get("max_rounds")) if known else None
+    if known and max_rounds is None:
+        return None
+    other = "player_2" if seat == "player_1" else "player_1"
+    seller_value = (_number(state.get(f"{other}_value"))
+                    if complete else None)
+    if complete and seller_value is None:
+        return None
+    return {
+        "base": base,
+        "own_value": own_value,
+        "own_mult": own_mult,
+        "complete_information": complete,
+        "horizon": ("inf" if not known else str(int(max_rounds))),
+        "messages_allowed": state.get("messages_allowed") is True,
+        "seller_value": seller_value,
     }
 
 
@@ -850,6 +900,71 @@ def _hi_buyer_curve_exposure_turn(slot: str, rec: dict):
         **signal,
         "first_decision": action.get("decision"),
         "first_price": _number(action.get("product_price")),
+    }
+
+
+def _top_clone_expected_action(gid: str, seat: str, state: dict,
+                               action_type: str) -> dict | None:
+    """Recompute the clone wire from an exact pre-action turn snapshot."""
+    game = {
+        "game_id": gid,
+        "game_family": "negotiation",
+        "your_player": seat,
+        "game_state": state,
+        "valid_actions": {"type": action_type},
+    }
+    return top_buyer_clone.action(game)
+
+
+def _top_clone_wire_matches(actual: dict, expected: dict | None) -> bool:
+    """Compare only fields submitted to GLEE, ignoring internal plan metadata."""
+    if not isinstance(actual, dict) or not isinstance(expected, dict):
+        return False
+    if actual.get("decision") != expected.get("decision"):
+        return False
+    actual_message = str(actual.get("message") or "").strip()
+    expected_message = str(expected.get("message") or "").strip()
+    if actual_message != expected_message:
+        return False
+    actual_price = _number(actual.get("product_price"))
+    expected_price = _number(expected.get("product_price"))
+    if actual_price is None or expected_price is None:
+        return actual_price is None and expected_price is None
+    return abs(actual_price - expected_price) <= max(
+        1e-7, abs(expected_price) * 1e-12)
+
+
+def _top_buyer_clone_exposure_turn(slot: str, rec: dict):
+    """Cohort every buyer game at its first decision, before clone action."""
+    if rec.get("game_family") != "negotiation":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _top_buyer_clone_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if (rec.get("action_type") != "decision"
+            or (state.get("current_player") or seat) != seat):
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+    arm = top_buyer_clone_arm(gid)
+    action = rec.get("action") or {}
+    expected = (_top_clone_expected_action(gid, seat, state, "decision")
+                if arm == "candidate" else None)
+    plan = rec.get("plan") or {}
+    source = plan.get("source") if isinstance(plan, dict) else None
+    return (slot, gid), ts, {
+        **signal,
+        "exposure_ts": ts,
+        "first_decision": action.get("decision"),
+        "first_price": _number(action.get("product_price")),
+        "first_source": source,
+        "first_wire_ok": (
+            _top_clone_wire_matches(action, expected)
+            if arm == "candidate" else source != "top_buyer_clone"),
     }
 
 
@@ -1584,6 +1699,36 @@ def _hi_buyer_curve_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), closed, diagnostic
 
 
+def _top_buyer_clone_row(slot: str, rec: dict, fin: dict):
+    """Build one all-buyer ITT outcome for the observed-leader clone."""
+    if fin.get("game_family") != "negotiation":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _top_buyer_clone_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    closed = _terminal_close(fin)
+    if closed is None:
+        return None
+    result = fin.get("result") or {}
+    payoff = _result_payoff(result, seat, seat)
+    pct = (percentile("negotiation", dict(state), seat, payoff)
+           if payoff is not None else None)
+    history = [entry for entry in state.get("history") or []
+               if isinstance(entry, dict)]
+    last_decision = history[-1].get("decision") if history else None
+    diagnostic = {
+        **signal,
+        "payoff": payoff,
+        "no_deal": not closed,
+        "walked_away": last_decision == "WalkAway",
+        "outcome": str(result.get("outcome") or ""),
+    }
+    return slot, pct, str(gid), closed, diagnostic
+
+
 def _stall_current_break_row(slot: str, rec: dict, fin: dict):
     """Build a terminal stale-stall outcome; exposure metadata carries scope."""
     if fin.get("game_family") != "negotiation":
@@ -2056,6 +2201,80 @@ def hi_buyer_curve_games(hours, since=None, until=None):
     yield from _price_arm_games(
         hours, _hi_buyer_curve_exposure_turn, _hi_buyer_curve_row,
         since=since, until=until)
+
+
+def _top_buyer_clone_trace_audit(rows):
+    """Attach an independent all-turn wire/source audit to each assigned game."""
+    wanted = {(row[0], row[2]) for row in rows}
+    audits = defaultdict(lambda: {
+        "buyer_turns": 0,
+        "clone_source_turns": 0,
+        "wire_failures": 0,
+        "control_contamination": 0,
+    })
+    by_slot = defaultdict(set)
+    for slot, gid in wanted:
+        by_slot[slot].add(gid)
+    for slot, gids in by_slot.items():
+        path = os.path.join(REPO, "logs", slot, "turns.jsonl")
+        try:
+            handle = open(path, encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with handle:
+            for line in handle:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                gid = str(rec.get("game_id") or "")
+                if gid not in gids or rec.get("game_family") != "negotiation":
+                    continue
+                seat = rec.get("your_player")
+                state = rec.get("state") or {}
+                if (_top_buyer_clone_signal(seat, state) is None
+                        or rec.get("action_type") != "decision"):
+                    continue
+                audit = audits[(slot, gid)]
+                audit["buyer_turns"] += 1
+                action = rec.get("action") or {}
+                plan = rec.get("plan") or {}
+                source = plan.get("source") if isinstance(plan, dict) else None
+                is_clone_source = source == "top_buyer_clone"
+                audit["clone_source_turns"] += int(is_clone_source)
+                arm = top_buyer_clone_arm(gid)
+                if arm == "candidate":
+                    expected = _top_clone_expected_action(
+                        gid, seat, state, "decision")
+                    mechanism_ok = (is_clone_source
+                                    and _top_clone_wire_matches(action, expected))
+                    audit["wire_failures"] += int(not mechanism_ok)
+                else:
+                    audit["control_contamination"] += int(is_clone_source)
+
+    enriched = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        attached = False
+        output_metadata = []
+        for item in metadata:
+            if isinstance(item, dict) and not attached:
+                output_metadata.append({**item, **audits[(slot, gid)]})
+                attached = True
+            else:
+                output_metadata.append(item)
+        if not attached:
+            output_metadata.insert(0, dict(audits[(slot, gid)]))
+        enriched.append((slot, pct, gid, completed, *output_metadata))
+    return enriched
+
+
+def top_buyer_clone_games(hours, since=None, until=None):
+    """Yield every assigned buyer game with complete clone-wire audits."""
+    rows = list(_price_arm_games(
+        hours, _top_buyer_clone_exposure_turn, _top_buyer_clone_row,
+        since=since, until=until))
+    yield from _top_buyer_clone_trace_audit(rows)
 
 
 def stall_current_break_games(hours, since=None, until=None):
@@ -4504,6 +4723,187 @@ def report_hi_buyer_curve(rows, hours, since=None, until=None,
     return 1
 
 
+def report_top_buyer_clone(rows, hours, since=None, until=None,
+                           official_path=None):
+    """Report the full 7aidara buyer-policy ITT and enforce its harm gate."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = top_buyer_clone_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        fleet_slots = diagnostic.get("fleet_slots")
+        if isinstance(fleet_slots, (list, tuple, set)):
+            gid_slots[gid].update(fleet_slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic, "resolution": resolution,
+            "official": official.get((slot, gid)),
+            "exposure_ts": diagnostic.get("exposure_ts"),
+        })
+
+    title = "GLEE_NEGO_TOP_BUYER_CLONE_AB"
+    if since is None and until is None:
+        title += f", last {hours:g}h"
+    print(title)
+    print("ITT eligibility: every negotiation buyer game from its first decision; "
+          "candidate copies the exact 7aidara complete/hidden price tables and "
+          "owns offer, accept, and stopping behavior together")
+    if since is not None or until is not None:
+        lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+        upper = f"{float(until):g}" if until is not None else "now"
+        print(f"first buyer-decision exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned buyer games in the window")
+        return 1
+
+    duplicate_gids = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    pooled = [item for item in observations if item["gid"] not in duplicate_gids]
+    print(f"pooled dependence guard: excluded {len(duplicate_gids)} game id(s) "
+          "observed in multiple fleet slots")
+
+    stats = {}
+    mechanism_failures = 0
+    for arm in ("control", "candidate"):
+        assigned = [item for item in pooled if item["arm"] == arm]
+        terminal = [item for item in assigned if item["closed"] is not None]
+        official_scores = [item["official"] for item in terminal
+                           if item["official"] is not None]
+        pcts = [item["pct"] for item in terminal if item["pct"] is not None]
+        closes = [float(bool(item["closed"])) for item in terminal]
+        no_deals = [1.0 - value for value in closes]
+        unresolved = len(assigned) - len(terminal)
+        official_missing = sum(item["official"] is None for item in terminal)
+        wire_failures = sum(
+            int(item["diagnostic"].get("wire_failures") or 0)
+            for item in assigned)
+        contamination = sum(
+            int(item["diagnostic"].get("control_contamination") or 0)
+            for item in assigned)
+        mechanism_failures += wire_failures + contamination
+        turns = sum(int(item["diagnostic"].get("buyer_turns") or 0)
+                    for item in assigned)
+        source_turns = sum(
+            int(item["diagnostic"].get("clone_source_turns") or 0)
+            for item in assigned)
+        stats[arm] = {
+            "assigned": assigned, "official": official_scores,
+            "pct": pcts, "closed": closes, "no_deal": no_deals,
+            "unresolved": unresolved, "official_missing": official_missing,
+            "wire_failures": wire_failures, "contamination": contamination,
+        }
+        official_text, _ = _mean_ci_text(official_scores)
+        pct_text, _ = _mean_ci_text(pcts)
+        close_text, _ = _mean_ci_text(closes, percent=True)
+        print(f"POOLED    {arm:9} official-dR={official_text} "
+              f"n={len(official_scores)}; local-pct={pct_text} n={len(pcts)}; "
+              f"close={close_text} n={len(closes)}; assigned={len(assigned)}; "
+              f"turns={turns}; clone-source={source_turns}; "
+              f"unresolved={unresolved}; official-missing={official_missing}; "
+              f"wire-fail={wire_failures}; control-contam={contamination}")
+
+    control, candidate = stats.get("control"), stats.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+        _print_delta("no-deal rate", candidate["no_deal"], control["no_deal"],
+                     percent=True)
+
+    print("predeclared official point estimates by own type, information, horizon:")
+    for field, values in (
+            ("own_mult", (0.8, 1.0, 1.2, 1.5)),
+            ("complete_information", (False, True)),
+            ("horizon", ("1", "10", "inf"))):
+        for value in values:
+            grouped = {
+                arm: [item["official"] for item in pooled
+                      if item["arm"] == arm
+                      and item["diagnostic"].get(field) == value
+                      and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            interval = ("CI n/a" if low is None else
+                        f"95% CI [{low:+.3f},{high:+.3f}]")
+            value_text = "n/a" if delta is None else f"{delta:+.3f}"
+            print(f"  {field}={value}: dR={value_text} {interval}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    if mechanism_failures:
+        print(f"MECHANISM REJECTION: {mechanism_failures} clone-wire/source failure(s)")
+        return 2
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need assignments")
+        return 1
+
+    ordered_candidate = sorted(
+        (item for item in pooled
+         if item["arm"] == "candidate" and item["official"] is not None),
+        key=lambda item: (item["exposure_ts"] is None,
+                          item["exposure_ts"] or math.inf))
+    severe_run = 0
+    for item in ordered_candidate:
+        severe_run = severe_run + 1 if item["official"] <= -6.0 else 0
+        if severe_run >= 3:
+            print("EMERGENCY REJECTION: three consecutive candidate games scored <= -6")
+            return 2
+
+    official_delta, official_low, _official_high = _delta_ci(
+        candidate["official"], control["official"])
+    pct_delta, pct_low, _pct_high = _delta_ci(
+        candidate["pct"], control["pct"])
+    no_deal_delta, _no_deal_low, _no_deal_high = _delta_ci(
+        candidate["no_deal"], control["no_deal"])
+    harm_ready = (len(candidate["official"]) >= 10
+                  and len(control["official"]) >= 10)
+    if harm_ready and official_delta is not None and official_delta <= -1.0:
+        print("EMERGENCY REJECTION: >=10/arm and candidate is <= -1 rating/game")
+        return 2
+    if (harm_ready and no_deal_delta is not None
+            and no_deal_delta >= 0.15):
+        print("EMERGENCY REJECTION: >=10/arm and no-deal rate is >=15pp worse")
+        return 2
+
+    unresolved = control["unresolved"] + candidate["unresolved"]
+    official_missing = (control["official_missing"]
+                        + candidate["official_missing"])
+    sample_ready = (len(candidate["official"]) >= 30
+                    and len(control["official"]) >= 30)
+    promotable = (
+        sample_ready and not unresolved and not official_missing
+        and official_delta is not None and official_delta > 0.0
+        and pct_delta is not None and pct_delta >= 0.03
+        and pct_low is not None and pct_low > -0.01
+        and no_deal_delta is not None and no_deal_delta <= 0.05)
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official/local-percentile/no-deal/outcome "
+          "gates are not all satisfied")
+    if official_low is not None:
+        print(f"diagnostic official lower bound: {official_low:+.3f}")
+    return 1
+
+
 def report_stall_current_break(rows, hours, since=None, until=None,
                                official_path=None):
     """Report the triggered stale-stall A/B over every first-break outcome."""
@@ -5195,7 +5595,7 @@ def main() -> int:
                     choices=("zopa", "rank-price", "open-claim",
                              "open-claim-official", "hidden-floor",
                              "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                             "hi-terminal", "hi-buyer-curve",
+                             "hi-terminal", "hi-buyer-curve", "top-buyer-clone",
                              "stall-current-break",
                              "hidden-min-share-veto", "table-vcont-precedence",
                              "fp-complete", "pers-selectivity", "pers-prose",
@@ -5208,7 +5608,8 @@ def main() -> int:
 
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                   "hi-terminal", "hi-buyer-curve", "stall-current-break",
+                   "hi-terminal", "hi-buyer-curve", "top-buyer-clone",
+                   "stall-current-break",
                    "hidden-min-share-veto",
                    "table-vcont-precedence",
                    "fp-complete",
@@ -5226,6 +5627,7 @@ def main() -> int:
             "hi-extreme-open": hi_extreme_open_games,
             "hi-terminal": hi_terminal_games,
             "hi-buyer-curve": hi_buyer_curve_games,
+            "top-buyer-clone": top_buyer_clone_games,
             "stall-current-break": stall_current_break_games,
             "hidden-min-share-veto": hidden_min_share_veto_games,
             "table-vcont-precedence": table_vcont_precedence_games,
@@ -5244,6 +5646,7 @@ def main() -> int:
             "hi-extreme-open": report_hi_extreme_open,
             "hi-terminal": report_hi_terminal,
             "hi-buyer-curve": report_hi_buyer_curve,
+            "top-buyer-clone": report_top_buyer_clone,
             "stall-current-break": report_stall_current_break,
             "hidden-min-share-veto": report_hidden_min_share_veto,
             "table-vcont-precedence": report_table_vcont_precedence,
@@ -5260,7 +5663,7 @@ def main() -> int:
                  if args.ab in ("pers-prose", "pers-truth",
                                 "pers-decline-veto", "stall-current-break",
                                 "hidden-min-share-veto", "hi-terminal",
-                                "hi-buyer-curve",
+                                "hi-buyer-curve", "top-buyer-clone",
                                 "table-vcont-precedence") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)

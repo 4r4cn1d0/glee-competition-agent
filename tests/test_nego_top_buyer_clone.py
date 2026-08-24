@@ -176,3 +176,18 @@ def test_candidate_bypasses_all_later_price_guards(monkeypatch):
     wire = coerce(raw, copy.deepcopy(game))
     assert raw["_plan"]["source"] == "top_buyer_clone"
     assert wire["product_price"] == raw["product_price"]
+
+
+def test_message_enabled_counter_copies_exact_7aidara_sentence(monkeypatch):
+    monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
+    game = _game(gid=_candidate_gid("message"), own=120.0, offer=149.0)
+    game["game_state"]["messages_allowed"] = True
+    action = top_buyer_clone.action(game)
+    assert action["message"] == top_buyer_clone.BUYER_COUNTER_MESSAGE
+
+
+def test_message_disabled_counter_remains_silent(monkeypatch):
+    monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "1")
+    action = top_buyer_clone.action(
+        _game(gid=_candidate_gid("silent"), own=120.0, offer=149.0))
+    assert "message" not in action

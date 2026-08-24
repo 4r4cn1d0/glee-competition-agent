@@ -182,7 +182,7 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   on all four at the operator's direction before a meaningful sample arrived.
   Do not interpret this as a positive or negative result.
 
-## READY — ONE-SLOT OBSERVED-LEADER BUYER CLONE
+## ARMED — PENDING SAFE PROCESS LOAD
 
 ### Top-four/five observable negotiation behavior, buyer only
 - **Flag / assignment**: `GLEE_NEGO_TOP_BUYER_CLONE_AB=1`; SHA-256 of
@@ -204,6 +204,9 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   bates and Mythos01 do not yet have enough complete local buyer transcripts to
   identify a competing path. This is an exact behavioral clone where wire
   moves are observed; it is not a claim to possess competitors' private source.
+  In message-enabled games every rejected buyer counter copies 7aidara's exact
+  observed sentence, `Above what I can justify. Here is where I can go.`; it is
+  quality-neutral and does not reveal the private type or final hold.
 - **Control**: the entire current Test 3 stack, selected by the opposite hash
   bit. The treatment owns both offer and acceptance policy so downstream gates
   cannot silently rewrite half the mechanism.
@@ -215,14 +218,31 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   candidate is at least `-1.0 rating/game` below control or candidate live-game
   no-deal rate is 15 percentage points higher. Three consecutive candidate
   losses of `-6` or worse also stop immediately.
-- **Promote**: at least 30 scored buyer games per arm, candidate official mean
-  percentile at least `+0.03` above control, 95% bootstrap interval not crossing
-  `-0.01`, and no-deal rate no more than 5 percentage points worse. A 30-game
-  harm read is an early stop, not permission to declare success.
-- **Verification**: focused clone tests 11/11; all negotiation tests 563/563;
+- **Promote**: at least 30 scored buyer games per arm; authenticated dashboard
+  rating-delta point difference positive; contemporaneous same-cell percentile
+  difference at least `+0.03` with its 95% interval above `-0.01`; no-deal rate
+  no more than 5 percentage points worse; every assigned outcome/official join
+  resolved; and zero wire, source, control-contamination, or duplicate failures.
+  The local percentile is only a concurrent arm comparison, never an estimate
+  of leaderboard rank. A 30-game harm read is not proof of the 0.55 target.
+- **Reader**: `scripts/live_percentile.py --ab top-buyer-clone --since T0
+  --slots conceder --official-json FILE`. It cohorts before the first buyer
+  action, audits every candidate wire and exact message against the production
+  table, requires `plan.source=top_buyer_clone`, detects clone source in hash
+  controls, keeps all unresolved/no-deal/walk outcomes, excludes duplicate game
+  ids, and enforces the emergency and promotion gates by exit status.
+- **Verification**: combined clone/reader tests 22/22; all negotiation/reader
+  tests 574/574 after the exact-message extension;
   intended Test 3 stack reachability over 1,000 simulated games yielded 3,827
-  eligible / 1,575 fired / 1,575 changed wire actions. Full suite 1,280 passed
+  eligible / 1,575 fired / 1,575 changed wire actions. Full suite 1,291 passed
   with only the two predeclared bargaining failures.
+- **Deployment state**: pushed code through `11e1af8`; Test 3 overlay set the
+  clone flag at `1787586287` (21:14:47 IST), and the supervisor accepted a named
+  zero-game cycle request at 21:14:49. PID 79383 was launched at 20:47:08,
+  before the clone existed, and stayed continuously busy after its queue ban
+  lifted. Therefore the flag is ARMED but no clone behavior is live yet. The
+  causal `T0` is the future verified Test 3 launch carrying the final clone
+  commit, never the overlay mtime. Do not interrupt its held games.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 

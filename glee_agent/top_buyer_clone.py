@@ -54,6 +54,7 @@ COMPLETE_CAP10 = (0.960, 0.898, 0.836, 0.774, 0.774)
 COMPLETE_UNKNOWN = (0.960, 0.898, 0.836, 0.774, 0.712)
 
 _MULTS = (0.8, 1.0, 1.2, 1.5)
+BUYER_COUNTER_MESSAGE = "Above what I can justify. Here is where I can go."
 
 
 def _num(value, default=math.nan) -> float:
@@ -197,6 +198,16 @@ def action(game: dict) -> dict | None:
     plan = {"source": "top_buyer_clone", "target": target,
             "accept_ceiling": accept_ceiling, "own_mult": own_mult}
 
+    def counter() -> dict:
+        move = {"decision": "RejectOffer", "product_price": target,
+                "_plan": plan}
+        # All 72 observed 7aidara offers in message-enabled games carried text;
+        # every buyer counter used this exact quality-neutral sentence.  It
+        # reveals neither private value nor whether this is the final hold.
+        if state.get("messages_allowed") is True:
+            move["message"] = BUYER_COUNTER_MESSAGE
+        return move
+
     if phase == "offer":
         return {"product_price": target, "_plan": plan}
 
@@ -204,8 +215,7 @@ def action(game: dict) -> dict | None:
         return None
     offered = _num((state.get("last_offer") or {}).get("price"))
     if not math.isfinite(offered):
-        return {"decision": "RejectOffer", "product_price": target,
-                "_plan": plan}
+        return counter()
     gain = own_value - offered
 
     # At an actual terminal receiver node there is no next counter.  The field
@@ -226,4 +236,4 @@ def action(game: dict) -> dict | None:
             and _own_price_count(state, me) >= 8):
         return {"decision": "WalkAway", "_plan": plan}
 
-    return {"decision": "RejectOffer", "product_price": target, "_plan": plan}
+    return counter()

@@ -1562,3 +1562,14 @@ acceptance, and stopping behavior travel together. Focused tests pass 11/11,
 all negotiation tests pass 563/563, Test 3 reachability is 3,827 eligible /
 1,575 fired / 1,575 changed, and the full suite is 1,280 pass plus only the two
 known bargaining failures. Bargaining code and flags were not changed.
+
+The subsequent exact-message and reader pass adds 7aidara's literal buyer
+counter sentence in message-enabled treatment games and an all-turn official
+reader (`--ab top-buyer-clone`). The reader independently reconstructs every
+candidate wire from the pre-action state, requires the clone plan source,
+detects any control contamination, keeps unresolved and every terminal outcome,
+and enforces the frozen emergency stop. Combined clone/reader tests pass 22/22;
+the full suite passes 1,291 with only the two predeclared bargaining failures.
+The flag overlay was written at `1787586287`, but Test 3 PID 79383 predates the
+clone code and remained busy. A safe named cycle is pending; no pre-launch game
+is treatment exposure, and the future verified relaunch is the only valid T0.
