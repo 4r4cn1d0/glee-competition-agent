@@ -342,9 +342,13 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
   the broad flag is explicitly zero, and no eligible game is in flight. Record
   host-specific clean T0s before viewing any new-salt outcome. Exact champion-
   stack reachability over 800 paired games produced 335 eligible states, 164
-  firings, and 164 changed wires. Focused strategy tests pass 37/37. The
-  prospective reader, full suite, commit, and push are still required before
-  activation. Never restart or alter bargaining to accelerate deployment.
+  firings, and 164 changed wires. Focused strategy tests pass 37/37; the
+  strategy/join/data commit is pushed as `9f87a48`. The prospective reader now
+  encodes the 20/arm harm and complete 40/arm promotion rules, preserves every
+  unresolved/non-close, audits all candidate/control wires and collisions, and
+  reports host/type/message/scale strata; combined clone-reader tests pass
+  43/43. Full suite: 1,476 passed with only the same two pre-existing bargaining
+  failures. Never restart or alter bargaining to accelerate deployment.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 

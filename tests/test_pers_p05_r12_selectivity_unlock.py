@@ -10,6 +10,7 @@ import pytest
 
 from glee_agent import runtime_flags
 from glee_agent.strategies import persuasion
+from scripts import check_reachability
 
 
 FLAG = "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB"
@@ -219,6 +220,16 @@ def test_exact_structural_scope_fails_closed(
     on = _decide(game)
     assert on == off
     _assert_unannotated(on)
+
+
+def test_reachability_registry_matches_exact_structural_scope() -> None:
+    game = _game(_gid(True))
+    family, gates, predicate = check_reachability.KNOWN[FLAG]
+    assert family == "persuasion"
+    assert gates == (GATE,)
+    assert predicate(game, _fake_plan())
+    game["game_state"]["p"] = 0.8
+    assert not predicate(game, _fake_plan())
 
 
 @pytest.mark.parametrize("mode", ["text", "binary"])

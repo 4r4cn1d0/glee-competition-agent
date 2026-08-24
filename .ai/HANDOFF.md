@@ -1647,3 +1647,11 @@ strategy tests are 37/37. EXPERIMENTS.md freezes the 20/arm harm and 40/arm
 final rules before activation. Next: finish the all-outcome reader, full suite,
 commit/push, wait for natural shifts, verify no eligible games in flight, then
 arm champion/composite/conceder/randomized at host-specific clean T0s.
+
+Follow-up: runtime/join/evidence commit `9f87a48` is pushed. Full suite passed
+1,476 tests with only the two predeclared bargaining failures. The independent
+reader is implemented as `--ab top-buyer-clone-hi-cap10`; unlike the first
+draft, its executable gates now exactly match this experiment's frozen 20/arm
+harm and 40/arm final rules. Combined scoped/broad/Opus clone reader tests are
+43/43. Activation still waits for natural rotation onto `9f87a48` and a clean
+no-eligible-game boundary; the flag remains absent/default OFF.
