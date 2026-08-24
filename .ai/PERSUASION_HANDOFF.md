@@ -62,7 +62,10 @@ negative). This is a diagnostic window, not a treatment result.
 Two mechanisms were directly visible. In the exact prose-arm cell (seller,
 text, p=.8, known CV, v=1.25P, 20 rounds), the buyer bought four literal `yes`
 messages, observed one low product, then passed the remaining 16 `yes` messages;
-our +4P payoff still lost 5.2 official rating. Separately, the legacy buyer
+our +4P payoff still lost 5.2 official rating. Dashboard transcript setup does
+not show text versus binary mode, so this classification is joined to local game
+`e03c909a-2fb4-4922-bd59-9b609c042e42`; an adjacent -6.2 binary game is not in
+the arm's target cohort. Separately, the legacy buyer
 parser bought three seller messages saying `Not recommended.`; all three were
 low, the game ended at zero, and it lost 4.0 official rating. The latter agrees
 with the existing default-off `GLEE_PERS_PARSE_TRI` evidence (historically 373

@@ -366,7 +366,7 @@ Test 3 before causal promotion evidence.
 4. Partially pooled per-opponent profiles.
 5. Message framing arms (orthogonal; only 7.1% of offers carry text).
 
-## PRECOMMITTED — INERT CODE, NOT YET LIVE
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Exact weak-cell token versus non-leaking prose (persuasion seller)
 - **Falsifiable hypothesis**: in the official persuasion seller cell
@@ -382,6 +382,12 @@ Test 3 before causal promotion evidence.
   percentile `.4847`, 47.5% purchase rate, and 16.7% zero outcomes. The wider
   historical positive-message contrast (token 60.8% versus prose 69.3%) is
   observational and post-action-selected; it motivates randomisation only.
+  The authenticated dashboard immediately before activation also contained an
+  exact text-cell game: after one observed low, the hidden buyer stopped at
+  4/20 purchases and the official delta was -5.2. A superficially matching
+  5/20, -6.2 transcript was binary when joined to the wire log and is excluded;
+  the dashboard does not display message mode. This is pre-treatment mechanism
+  evidence, not a causal estimate.
 - **Flag / assignment**: `GLEE_PERS_P08_R125_PROSE_AB=1`, default OFF.
   `int(sha256("pers_p08_r125_prose_v1|" + game_id).hexdigest(), 16) & 1` assigns the
   game. No game id fails closed. The bit is read only after `seller_plan`, so it
@@ -399,14 +405,14 @@ Test 3 before causal promotion evidence.
   game-id/round RNG independent of private quality. No LLM. Binary persuasion,
   buyers, other priors/ratios, seller-blind cells, and all bargaining and
   negotiation actions are unreachable.
-- **Hosts / boundary**: after inert code is pushed and the processes naturally
-  reload it, arm Test 1 (`champion`), Agent 5 (`composite`), and Test 4
-  (`randomized`) together with an explicit `PERS_TOKEN_MAX_P=0`; record the
-  latest overlay mtime as T0. Test 2 and Test 3 stay unarmed. Preserve the rest
-  of each exact live stack, including LLM off, KEEP_MSG=1 and MSG_STYLE=token.
-- **Reachability contract**: on Agent 5's exact current stack and 800 seeded
-  persuasion games: `eligible=340`, `fired=220`, `action_changed=220`; Test 1
-  and Test 4 produced the same counts. During the first 20 games per
+- **Hosts / boundary**: commit `2f4989d` naturally loaded as Test 1 PID 68351,
+  Agent 5 PID 68203, and Test 4 PID 67641. Fleet tooling armed those three with
+  `PERS_TOKEN_MAX_P=0`; clean common `T0=1787575521` (2026-08-24 18:15:21
+  IST). Test 2 and Test 3 stay unarmed. The rest of each exact live stack,
+  including LLM off, KEEP_MSG=1 and MSG_STYLE=token, was preserved.
+- **Reachability contract**: after process load, 800 seeded persuasion games on
+  each exact live stack reported Test 1 `eligible=320/fired=160/changed=160`,
+  Test 4 `220/100/100`, and Agent 5 `160/60/60`. During the first 20 games per
   arm require a stable game bit on all 20 rounds, literal `yes` for every
   control message, only current-bank prose for every candidate message, no
   recommendation mismatch, no third wording, and no invalid/timeout. Any
