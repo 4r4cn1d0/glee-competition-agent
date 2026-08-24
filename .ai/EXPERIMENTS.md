@@ -602,6 +602,13 @@ Test 3 before causal promotion evidence.
   read, all three host-specific readers reported zero exact assigned games.
   Therefore no observed rating movement is treatment evidence and the required
   first candidate low-quality `no` remains outstanding.
+- **Operational era split**: an external whole-fleet supervisor restart at
+  `1787584628` (20:47:08 IST) timed out 14 persuasion games across Test 2,
+  Agent 5, and Test 4 for `-109.4` official rating in total. Host-specific truth
+  readers and the prose reader show that none was an exact assigned experiment
+  game, so they do not enter either arm. Preserve the original cohorts, record
+  `1787584628` as a deployment-era subgroup boundary, and never attribute this
+  rating discontinuity to persuasion behavior.
 - **Read with**: run `scripts/live_percentile.py --ab pers-truth` separately for
   `hardliner --since 1787582397`, `composite --since 1787584351`, and
   `randomized --since 1787584425`, always with `--official-json FILE`. Do not

@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 20:50 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 20:58 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,11 +12,12 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official board at the 20:46 authenticated refresh: account-best Test 2 is
-  persuasion rank 5 at `2381.0`, `58.9` behind rank 3 expert, `105.3` behind
-  rank 2 Tiberius, and `174.8` behind leader gill bates. This board movement is
-  not truth-arm evidence: the all-assigned readers below still find no eligible
-  games on any activated host.
+- Official board after the 20:47 fleet restart incident: account-best Test 2 is
+  persuasion rank 5 at `2333.6`, `102.4` behind rank 3 expert, `144.6` behind
+  rank 2 Tiberius, and `222.2` behind leader gill bates. Overall Test 2 is rank
+  5 at `2305.4`, `50.0` behind rank 3 Athena. This movement is not truth-arm
+  evidence: the all-assigned readers still find no eligible games on any
+  activated host.
 - The prose arm remains live only on Test 1, Test 4, and Agent 5 from
   `T0=1787575521`. It is absent on Test 2 and Test 3.
 - The binary truth arm is live on Test 2 from clean arms mtime `T0=1787582397`
@@ -37,6 +38,27 @@ their code, configuration, experiments, or fleet flags.
   20:50 read, host-specific all-assigned readers reported zero exact eligible
   games since each clean T0, so the live mechanism is not yet behavior-verified
   and no rating movement may be attributed to it. Test 3 remains protected.
+
+## 20:47 fleet-restart incident — not persuasion behavior
+
+At 20:47:08 IST (`1787584628`) the supervisor and all five agent processes were
+restarted together; the live process table shows the common start second. The
+authenticated persuasion dashboard records 14 games timing out at 20:47 while
+in progress: Test 2 had six (`5 * -7.9`, `1 * -8.0`, total `-47.5`), Agent 5
+had three (`-7.8`, `-7.9`, `-7.8`, total `-23.5`), and Test 4 had five
+(`-7.6`, `4 * -7.7`, total `-38.4`). Total official persuasion loss was
+`-109.4`. A Test 2 transcript confirms the seller successfully played 15 rounds
+and earned `15P` before timing out on round 16; the official delta was still
+`-7.9`. This is an operational deployment failure, not evidence about the
+persuasion policy.
+
+The restart occurred after the declared truth-host T0s, but host-specific truth
+readers report zero exact assignments through the incident and the prose reader
+reports no new exact assignments. Therefore none of the 14 timeouts enters
+either arm comparison, the original cohorts remain intact, and `1787584628` is
+recorded as a mandatory activation-era split. Future fleet deployments must use
+natural per-slot drains; a simultaneous supervisor restart destroys live games
+and can erase roughly eight rating points per affected game.
 
 ## Rejected rank-gate mechanism
 
