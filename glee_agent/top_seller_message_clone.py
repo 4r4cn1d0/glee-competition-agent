@@ -415,12 +415,13 @@ def _traced_copy(
 
 
 def apply_deterministic(game: dict, action: dict) -> dict:
-    """Attach the exact seller table as part of a whole launch-map policy.
+    """Attach the exact seller table after a whole-policy flag is selected.
 
     Unlike :func:`apply_clone`, this path has no runtime flag and no hash arm:
-    selecting the ``composite`` profile selects the complete policy.  It still
-    changes only the message field and returns the original action for buyers,
-    unsupported public cells, non-price decisions, or the unsupported tail.
+    its caller already resolved the mutually exclusive default-off deterministic
+    policy flags.  It still changes only the message field and returns the
+    original action for buyers, unsupported public cells, non-price decisions,
+    or the unsupported tail.
     """
     try:
         if not eligible(game, action):

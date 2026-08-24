@@ -23,7 +23,8 @@ import math
 from .. import (deterministic_negotiation, first_principles, nego_arms, pricing,
                 runtime_flags, top_buyer_clone, top_buyer_clone_hi_cap10,
                 top_opus_buyer_clone,
-                top_opus_buyer_clone_hi_unknown)
+                top_opus_buyer_clone_hi_unknown,
+                top_seller_message_clone)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1612,11 +1613,14 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     if buyer_action is not None:
         return deterministic_negotiation.trace_action(buyer_action, selected)
 
-    # Sellers retain the measured winning current stack.  The recommended
-    # policy also keeps current hidden-cap1 (already exact at the terminal node)
-    # and hidden-unknown buyer behavior rather than the replica's eight-price
-    # walk.  Only private trace metadata is added; the public wire is unchanged.
+    # Sellers retain the measured winning decision/price stack.  The full
+    # replica additionally applies the exact message-only seller table from
+    # Test 4's live profile (implied percentile 0.568 over its first 52 clean
+    # games and 0.549 after 77).  The rank hybrid keeps current seller text and
+    # current hidden-cap1/unknown buyer behavior.
     action = _decide(game, cfg)
+    if selected == deterministic_negotiation.LEADER_REPLICA:
+        return top_seller_message_clone.apply_deterministic(game, action)
     plan = dict(action.get("_plan") or {})
     plan["deterministic_policy"] = selected
     plan["component"] = deterministic_negotiation.fallback_component(game)

@@ -2,16 +2,17 @@
 
 The competition selects the account's best *complete* agent, so these flags
 select complete negotiation components rather than per-game arms.  Neither
-policy hashes a game id or randomizes an action.  Seller turns always retain
-the current seller policy, which was the winning role in the motivating
-63-game official window (+47.9 rating total); the policies differ only in how
-they replace the diagnosed buyer half (-24.4 total, with -22.5 from no-deals).
+policy hashes a game id or randomizes an action.  Both retain the current
+seller decision/price policy, which was the winning role in the motivating
+63-game official window (+47.9 rating total); they differ in buyer coverage
+and whether they include the observed leader's seller-message table.
 
-``rank_hybrid_v1`` is the recommended component.  It copies the frozen
-7aidara buyer policy in every complete-information game and in hidden cap-10
-games, but keeps the current buyer in hidden single-round and unknown-horizon
-games.  The terminal receiver rule in single-round games already accepts every
-strictly profitable offer.  The unknown-horizon exclusion is evidence-driven:
+``rank_hybrid_v1`` is the evidence-bounded portfolio alternative.  It copies
+the frozen 7aidara buyer policy in every complete-information game and in
+hidden cap-10 games, but keeps the current buyer in hidden single-round and
+unknown-horizon games.  The terminal receiver rule in single-round games
+already accepts every strictly profitable offer.  The unknown-horizon
+exclusion is evidence-driven:
 at the frozen 91-game full-clone checkpoint, that slice scored -0.227/game for
 the clone (n=11) versus +0.093/game for control (n=15), and 10/11 clone games
 walked.  Hidden cap-10 was the opposite directional signal: +1.573/game (n=15)
@@ -19,13 +20,17 @@ versus -0.236/game (n=11), followed by a clean prospective checkpoint of
 +2.467/game (n=9) versus +1.100/game (n=16).  Neither interval proved the
 effect, so the flag remains default OFF and the limitation belongs in handoff.
 
-``leader_replica_v1`` is the evidence-backed portfolio alternative.  It copies
-the same complete buyer policy in every supported buyer regime and retains the
-current seller policy.  This is the exact behavioral treatment from the frozen
-91-game official checkpoint: +1.116/game (n=44) versus +0.247/game (n=47), a
-+0.869 point estimate whose 95% interval crossed zero; no-deals were 13/44
-versus 11/47 and walks 13/44 versus 5/47.  It is a distinct deterministic
-alternative, not a proven promotion.
+``leader_replica_v1`` reproduces the complete negotiation behavior currently
+running on Test 4: the same observed buyer policy in every supported buyer
+regime, the current seller decision/price policy, and the 57/57 observed
+message-only seller table in its supported cells.  Test 4's first clean
+post-launch interval implied an opponent-adjusted percentile of 0.568 over 52
+official games; extending the same all-game window to 77 games put it at
+0.549, essentially tied with champion's concurrent 0.548.  This is
+observational and does not prove superiority, but it is direct evidence for
+preserving the exact live profile rather than deleting one of its components
+post hoc.  The older frozen buyer-only checkpoint was +1.116/game (n=44)
+versus +0.247/game (n=47), with an interval crossing zero.
 
 Both flags being on is a configuration error and deliberately selects neither
 policy.  Flag-off behavior is therefore the pre-existing negotiation stack.

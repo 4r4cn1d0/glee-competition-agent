@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from glee_agent import deterministic_negotiation as policies
+from glee_agent import top_seller_message_clone
 from glee_agent.actions import coerce
 from glee_agent.config import Config
 from glee_agent.probes import _composite
@@ -164,18 +165,31 @@ def test_full_replica_is_distinct_in_hidden_unknown_horizon(monkeypatch):
     assert action["_plan"]["source"] == policies.LEADER_REPLICA
 
 
-@pytest.mark.parametrize("flag", [policies.RANK_HYBRID_FLAG,
-                                   policies.LEADER_REPLICA_FLAG])
-def test_both_policies_keep_seller_public_behavior_byte_identical(
-    monkeypatch, flag,
-):
+def test_rank_hybrid_keeps_seller_public_behavior_byte_identical(monkeypatch):
     game = _seller_game()
     control = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
-    monkeypatch.setenv(flag, "1")
+    monkeypatch.setenv(policies.RANK_HYBRID_FLAG, "1")
     candidate = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
 
     assert _public(candidate) == _public(control)
     assert candidate["_plan"]["component"] == "current_seller"
+
+
+def test_full_replica_adds_only_observed_seller_message(monkeypatch):
+    game = _seller_game()
+    game["game_state"]["messages_allowed"] = True
+    game["valid_actions"] = {"type": "decision"}
+    control = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    monkeypatch.setenv(policies.LEADER_REPLICA_FLAG, "1")
+    candidate = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert candidate["message"] == top_seller_message_clone.FIRST_PRICE_MESSAGE
+    assert top_seller_message_clone.audit_message_only(
+        control, candidate, top_seller_message_clone.FIRST_PRICE_MESSAGE,
+    )
+    assert candidate["_plan"][top_seller_message_clone.PLAN_TRACE]["arm"] == (
+        "leader_replica"
+    )
 
 
 def test_both_flags_on_fail_closed_to_the_existing_stack(monkeypatch):
