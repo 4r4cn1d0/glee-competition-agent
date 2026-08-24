@@ -1411,3 +1411,43 @@ Promotion requires 100 resolved official games/arm, 20/role/arm, official-delta 
 above zero, close point delta >=-5pp, nonnegative role points, and zero mechanism
 failures. One harm look is allowed at 30 official games/arm; reject if its official
 CI is wholly negative. Never touch bargaining code or any bargaining flag.
+
+## 2026-08-24 — Test 3 rotated; exact official join proven
+
+Test 3 naturally rotated from PID 67640 to PID 73157 at 19:22:14 IST and the
+refreshed state shows `GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB=1`. The first new-code
+negotiation action at `1787579568.528749` was an ineligible outgoing offer, so it
+is not causal T0. Keep T0 pending until the first plan records
+`hidden_min_share_veto` on a qualifying would-accept decision; hash controls and
+candidates both record that metadata. Do not backdate to process start.
+
+The first real dashboard/local smoke join now succeeds exactly. Dashboard record
+`Aug 24, 2026 7:08 PM`, Buyer, Agreement, +5.1, hidden cap-10, full ten-round
+offer/decision/counter transcript, and payoffs 20/10 maps uniquely to local game
+`3da88013-1084-4c01-875d-2f7843a44d9f` with one candidate and zero ambiguity.
+The authenticated UI's timestamp format, active snapshots, and timeout wire
+events exposed three synthetic-only gaps; `scripts/join_official_history.py` now
+parses the UI timestamp only with an explicit timezone, ignores known live
+snapshots, and preserves timeout as a distinct event. Focused tests: 15 passed.
+The latest 20 official Test 3 negotiation records from 19:00-19:12 (all pre-arm)
+sum +24.9 rating: agreements +38.2 (n=10), no-deals -13.9 (n=7), walks +0.6
+(n=3). This is a descriptive baseline, not the randomized estimate.
+
+## 2026-08-24 — trend-confirmed TABLE precedence arm built inert
+
+Built default OFF: `GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB`. This is the narrow
+randomized test recommended by the latest Test 3 shadow: TABLE currently returns
+before the state-dependent continuation comparator. Candidate suppresses that
+return only when three distinct improving opponent prices identify a positive
+trend, existing continuation exceeds accept-now surplus, the support-minimum
+signal is absent, and STALL would not immediately accept. It then falls through
+to the existing counter unchanged; control accepts byte-for-byte.
+
+The trigger deliberately excludes the continuation model's no-trend basis,
+because an extrapolation from our own unplayed target is not identified. It also
+refuses every overlapping negotiation arm and requires the exact future stack
+including FINAL_OPTION=0.60. Latest 100,000 Test 3 turns produced 76 first-
+eligible games; future-stack reachability over 1,500 paired games (seed 2411)
+reported 47 eligible / 19 fired / 19 changed. Do not arm it during the current
+support-minimum experiment. Its official reader and clean deployment window are
+still pending; historical completed outcomes cannot promote it.

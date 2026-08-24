@@ -440,12 +440,21 @@ Test 3 before causal promotion evidence.
 - **Read with**: `scripts/live_percentile.py --ab pers-prose --since T0
   --until T1 --slots champion,composite,randomized --official-json FILE` where
   FILE contains dashboard-exported `slot`, `game_id`, `rating_delta` records.
-- **First live observation (no decision)**: Test 1 candidate game
+- **First live observations (no decision)**: Test 1 candidate game
   `202cb810-c1a7-4d36-b98b-7d394842d258` fired on all 20 rounds with stable hash,
   unchanged recommendations, approved prose only, and no terminal failure. It
   closed 4/20 purchases (3 high, 1 low), payoff `4P`, official delta `-4.3`;
   the buyer passed all 16 rounds after the low purchase. This clean adverse
-  observation does not alter the precommitted sample or stop boundary.
+  observation does not alter the precommitted sample or stop boundary. Agent 5
+  candidate game `36053a1f-16a3-4fb3-94cb-2d580cc1764d`, against named opponent
+  `expert`, fired approved prose for all 20 rounds, sold 13/20 (7 high, 6 low),
+  earned `13P`, and received official delta `-1.4`. Pooled candidate-only n=2
+  is official mean `-2.85`, purchase rate `42.5%`, zero rate 0%, with no wire
+  failure. No control has resolved, so neither the point nor its tiny-sample CI
+  may trigger a decision. Complete dashboard transcripts are frozen in
+  `.ai/PERSUASION_OFFICIAL.json`; the reader requires all 20 messages,
+  qualities, decisions, exact setup, and seller-payoff identity before an
+  authenticated transcript may recover a locally missing final.
 
 ### Exact zero-margin binary seller truthfulness (pending inert load)
 - **Falsifiable hypothesis**: in persuasion seller/binary games with `p=.8`,
@@ -538,3 +547,61 @@ Test 3 before causal promotion evidence.
   round eligible games have local finals and 412 remain unresolved. Do not use
   resolved-only local percentile or Test 2's aggregate rating to promote or
   salvage this arm.
+
+## RUNNING — LIVE CAUSAL MEASUREMENT
+
+### Hidden support-minimum share veto (negotiation, Test 3)
+- **Flag / assignment**: `GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB=1` on Test 3 only;
+  `sha256("nego_hidden_min_share_veto_v1|" + game_id) & 1` gives control or
+  candidate per game.
+- **Eligible decision**: hidden, nonfinal, profitable offers below 40% of the
+  minimum positive feasible ZOPA implied by our own type, and only when the
+  frozen table/stall/continuation stack would otherwise accept. Control accepts
+  byte-for-byte. Candidate rejects and uses the existing profitable-side
+  counter. The terminal any-positive-cent rule is outside scope.
+- **Deployment state**: pushed inert mechanism commit `6f7e79b`; Test 3 process
+  naturally rotated onto it at 2026-08-24 19:22:14 IST (PID 73157). The overlay
+  is visible in refreshed state. Causal `T0` remains the first qualifying
+  assignment trace, not the process start or overlay mtime; no qualifying trace
+  had appeared at 19:22:46.
+- **Primary cohort / outcome**: every game from its first qualifying pre-action
+  decision, with all agreements, zeros, walks, timeouts, invalid and unresolved
+  outcomes retained. Primary outcome is authenticated-dashboard per-game rating
+  delta joined by exact modal fingerprint and minute; local pooled percentiles
+  are diagnostic only.
+- **Decision rule**: final read at 100 resolved official games per arm and at
+  least 20 per role per arm. Promote only if official-delta 95% CI is above zero,
+  close-rate point delta is at least -5pp, both role point estimates are
+  nonnegative, and mechanism/join failures are zero. One harm look at 30 official
+  games per arm rejects if the official CI is wholly negative.
+- **Read with**: `scripts/live_percentile.py --ab hidden-min-share-veto --since
+  T0 --slots conceder --official-json FILE`.
+
+## BUILT — DEFAULT OFF, WAITING FOR AN UNCONTAMINATED WINDOW
+
+### Trend-confirmed TABLE versus continuation precedence (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB=1`, default OFF;
+  `sha256("nego_table_vcont_precedence_v1|" + game_id) & 1` gives direct-TABLE
+  control or continuation candidate per game.
+- **Identified trigger**: a hidden, profitable, nonfinal offer directly clears
+  TABLE; at least three distinct echo-collapsed opponent prices show a positive
+  concession trend; the existing continuation value exceeds accept-now surplus;
+  the support-minimum signal is absent; and the next stall branch would not
+  accept anyway. No-trend extrapolations from our own unplayed target are
+  excluded.
+- **Candidate**: suppress only TABLE's early return, then use the existing
+  continuation rejection and existing profitable-side counter. Control remains
+  byte-identical. The arm freezes HORIZON_V2, CONTINUATION_ACCEPT, TABLE,
+  STALL_POLICY, and FINAL_OPTION=0.60, and fails closed against every overlapping
+  negotiation experiment, including the running Test 3 arm.
+- **Reachability / evidence**: latest 100,000 Test 3 turns contained 76 first-
+  eligible games (about 25.5 per 1,000 negotiation games). Test 3's future
+  control stack with the running veto explicitly absent produced 47 eligible,
+  19 fired, and 19 changed actions over 1,500 paired games (seed 2411). Focused
+  and all negotiation tests passed (79 and 363 respectively).
+- **Precommitted future rule**: do not co-arm with the support-minimum trial.
+  After a clean window, final read at 100 resolved official games per arm and
+  20 per role; one harm look at 30/arm. Promotion requires official-delta CI
+  above zero, close-rate lower bound above -2pp, nonnegative role/horizon/type
+  point estimates, and zero mechanism/join failures. Completed historical deals
+  do not identify whether rejecting the guaranteed offer is beneficial.

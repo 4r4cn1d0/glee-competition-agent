@@ -316,6 +316,19 @@ def _p_hidden_min_share_veto(game, p):
                 "table_accept", "stall_accept", "continuation_accept"))
 
 
+def _p_table_vcont_precedence(game, p):
+    """Pre-action direct-TABLE scope with identified improving-price evidence."""
+    if game.get("game_family") != "negotiation":
+        return False
+    if (game.get("valid_actions") or {}).get("type") != "decision":
+        return False
+    metadata = p.get("table_vcont_precedence") or {}
+    return (metadata.get("eligible") is True
+            and metadata.get("distinct_opponent_prices", 0) >= 3
+            and metadata.get("continuation_value", 0.0)
+            > metadata.get("surplus_now", 0.0))
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -344,6 +357,9 @@ KNOWN = {
         "negotiation", ("stall_current_break",), _p_stall_current_break),
     "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB": (
         "negotiation", ("hidden_min_share_veto",), _p_hidden_min_share_veto),
+    "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB": (
+        "negotiation", ("table_vcont_precedence",),
+        _p_table_vcont_precedence),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),
@@ -592,7 +608,8 @@ def main() -> int:
                 # assignment-independent eligibility check.
                 predicate_plan = (p_cnd if name in (
                                   "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
-                                  "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB")
+                                  "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
+                                  "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:

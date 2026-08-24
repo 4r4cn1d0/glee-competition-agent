@@ -185,6 +185,16 @@ STALL_CURRENT_BREAK_SALT = "nego_stall_current_break_v1|"
 HIDDEN_MIN_SHARE_VETO_SALT = "nego_hidden_min_share_veto_v1|"
 HIDDEN_MIN_SHARE_VETO_FRACTION = 0.40
 
+# TABLE currently returns before the state-dependent continuation comparator.
+# In the latest 100,000 Test 3 turns, 76 first-eligible games (about 25.5 per
+# 1,000 negotiation games) had three distinct improving opponent prices, a
+# direct TABLE acceptance outside the support-minimum veto, and an existing
+# continuation value above the offered surplus.  Completed outcomes cannot tell
+# us whether one more counter is worth risking the guaranteed deal, so this is
+# a per-game randomized precedence test rather than a fitted policy change.
+TABLE_VCONT_PRECEDENCE_SALT = "nego_table_vcont_precedence_v1|"
+TABLE_VCONT_REQUIRED_FINAL_OPTION = 0.60
+
 
 def stall_current_break_assignment(game_id) -> bool | None:
     """Stable treatment bit for the current-offer stale-stall experiment."""
@@ -206,6 +216,16 @@ def hidden_min_share_veto_assignment(game_id) -> bool | None:
     import hashlib as _hashlib
     return bool(int(_hashlib.sha256(
         (HIDDEN_MIN_SHARE_VETO_SALT + gid).encode()).hexdigest(), 16) & 1)
+
+
+def table_vcont_precedence_assignment(game_id) -> bool | None:
+    """Stable treatment bit for the TABLE-versus-continuation experiment."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    return bool(int(_hashlib.sha256(
+        (TABLE_VCONT_PRECEDENCE_SALT + gid).encode()).hexdigest(), 16) & 1)
 
 
 def hidden_min_positive_zone(my_value: float, i_am_seller: bool) -> dict | None:
@@ -311,6 +331,7 @@ def _hidden_min_share_veto_enabled() -> bool:
         "GLEE_NEGO_HIDDEN_POLICY_V1",
         "GLEE_NEGO_HIDDEN_FLOOR",
         "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
+        "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
         "GLEE_NEGO_RANK_PRICE_AB",
         "GLEE_NEGO_CLOSE_AB",
         "GLEE_NEGO_UNCAPPED_AB",
@@ -361,6 +382,129 @@ def _maybe_hidden_min_share_veto(state: dict, p: dict, offer_price: float,
     metadata["counter_price"] = round(counter, 2)
     return {"decision": "RejectOffer", "product_price": round(counter, 2),
             "_plan": p}
+
+
+def _table_vcont_precedence_enabled() -> bool:
+    """Whether the randomized TABLE-precedence test owns this exact stack."""
+    if not runtime_flags.enabled("GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB"):
+        return False
+    # Freeze the accept stack whose ordering is under test.  In particular,
+    # STALL_POLICY must remain on because the cohort excludes states that would
+    # immediately accept through that next branch; FINAL_OPTION=0.60 freezes the
+    # earlier option-value owner.  Any overlapping behavioral arm fails closed.
+    if not (_horizon_v2_enabled() and _continuation_accept_enabled()
+            and runtime_flags.enabled("GLEE_NEGO_TABLE")
+            and runtime_flags.enabled("GLEE_NEGO_STALL_POLICY")):
+        return False
+    if abs(runtime_flags.as_float("GLEE_NEGO_FINAL_OPTION", 0.0)
+           - TABLE_VCONT_REQUIRED_FINAL_OPTION) > 1e-9:
+        return False
+    conflicts = (
+        "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
+        "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
+        "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
+        "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+        "GLEE_NEGO_HIDDEN_POLICY_V1",
+        "GLEE_NEGO_HIDDEN_FLOOR",
+        "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
+        "GLEE_NEGO_FIRST_PRINCIPLES",
+        "GLEE_NEGO_FP_ALWAYS",
+        "GLEE_NEGO_RANK_PRICE_AB",
+        "GLEE_NEGO_CLOSE_AB",
+        "GLEE_NEGO_UNCAPPED_AB",
+        "GLEE_NEGO_SURPLUS_PROBE",
+    )
+    return not any(runtime_flags.enabled(name) for name in conflicts)
+
+
+def table_vcont_precedence_signal(
+    state: dict, p: dict, offer_price: float, surplus_now: float,
+    continuation: float, evidence: dict, table_threshold: float,
+) -> dict | None:
+    """Pre-action signal for a TABLE accept contradicted by observed momentum.
+
+    The continuation model is not identified when it extrapolates from our own
+    unplayed target.  This signal therefore requires three distinct, echo-
+    collapsed opponent prices and a positive measured concession trend.  It
+    also excludes support-minimum lowballs (owned by a separate experiment) and
+    states the next STALL branch would accept anyway.
+    """
+    seat = state.get("current_player")
+    if seat not in ("player_1", "player_2"):
+        return None
+    if state.get("complete_information") is not False or is_final_round(state):
+        return None
+    if p.get("their_value") is not None or int(p.get("rounds_left", 1)) <= 1:
+        return None
+    if not _profitable(offer_price, p):
+        return None
+    values = (offer_price, surplus_now, continuation, table_threshold)
+    if not all(isinstance(value, (int, float)) and math.isfinite(float(value))
+               for value in values):
+        return None
+    tolerance = max(abs(float(p.get("my_value", 0.0))) * 1e-9, 1e-9)
+    if surplus_now + tolerance < table_threshold:
+        return None
+    if continuation <= surplus_now + tolerance:
+        return None
+    if not isinstance(evidence, dict):
+        return None
+    if (evidence.get("basis") != "projected from concession trend"
+            or _num(evidence.get("rate"), 0.0) <= 0.0):
+        return None
+    if hidden_min_share_signal(state, seat) is not None:
+        return None
+
+    offers = _their_offers(state, seat)
+    scale = max([abs(price) for _, price in offers] + [abs(offer_price), 1.0])
+    distinct: list[float] = []
+    for _, price in offers:
+        if all(abs(price - prior) > scale * 1e-9 for prior in distinct):
+            distinct.append(price)
+    if len(distinct) < 3 or abs(distinct[-1] - offer_price) > scale * 1e-9:
+        return None
+
+    stall_price = _their_stall_price(state, seat)
+    if (stall_price is not None
+            and abs(offer_price - stall_price)
+            <= 0.01 * max(abs(stall_price), 1.0)):
+        return None
+    return {
+        "role": p.get("role"),
+        "offer_price": offer_price,
+        "surplus_now": surplus_now,
+        "table_threshold": table_threshold,
+        "continuation_value": continuation,
+        "continuation_rate": _num(evidence.get("rate"), 0.0),
+        "distinct_opponent_prices": len(distinct),
+    }
+
+
+def _maybe_table_vcont_precedence(
+    state: dict, p: dict, offer_price: float, surplus_now: float,
+    continuation: float, evidence: dict, table_threshold: float,
+) -> bool:
+    """Return True only when the candidate arm suppresses a direct TABLE accept."""
+    if not _table_vcont_precedence_enabled():
+        return False
+    signal = table_vcont_precedence_signal(
+        state, p, offer_price, surplus_now, continuation, evidence,
+        table_threshold)
+    if signal is None:
+        return False
+    treatment = table_vcont_precedence_assignment(p.get("game_id"))
+    if treatment is None:
+        return False
+    p["table_vcont_precedence"] = {
+        **signal,
+        "eligible": True,
+        "arm": "candidate" if treatment else "control",
+    }
+    if not treatment:
+        return False
+    _gate(p, "table_vcont_precedence")
+    p["table_accept_vetoed"] = True
+    return True
 
 
 def _current_concession_break(state: dict, me: str,
@@ -1620,14 +1764,27 @@ def _decide(game: dict, cfg) -> dict:
                 # under the option value computed above.
                 if not (own_final and p.get("final_option_value") is not None
                         and surplus_now < p["final_option_value"]):
-                    veto = _maybe_hidden_min_share_veto(
-                        state, p, offer_price, "table_accept")
-                    if veto is not None:
-                        return veto
-                    _gate(p, "table_accept")
-                    return {"decision": "AcceptOffer", "_plan": p}
-            # below threshold: fall through to counter via the offer path
-            p["table_accept_below"] = True
+                    hold_for_vcont = _maybe_table_vcont_precedence(
+                        state, p, offer_price, surplus_now, v_cont, evidence,
+                        t_thr)
+                    if not hold_for_vcont:
+                        veto = _maybe_hidden_min_share_veto(
+                            state, p, offer_price, "table_accept")
+                        if veto is not None:
+                            return veto
+                        _gate(p, "table_accept")
+                        return {"decision": "AcceptOffer", "_plan": p}
+                if not p.get("table_accept_vetoed"):
+                    # Preserve the legacy diagnostic for earlier owners (for
+                    # example FINAL_OPTION) that made TABLE fall through even
+                    # after its numeric threshold cleared.
+                    p["table_accept_below"] = True
+            else:
+                # Below threshold: fall through to counter via the offer path.
+                # A candidate precedence veto also falls through, but it passed
+                # the threshold and is recorded separately above rather than
+                # contaminating this diagnostic.
+                p["table_accept_below"] = True
 
     if runtime_flags.enabled("GLEE_NEGO_STALL_POLICY"):
         _sp = _their_stall_price(state, state.get("current_player") or "")
@@ -1667,6 +1824,9 @@ def _decide(game: dict, cfg) -> dict:
     if counter != _c0:
         _gate(p, "split")
     counter = _enforce_span_invariant(p, counter)
+    precedence = p.get("table_vcont_precedence")
+    if isinstance(precedence, dict) and precedence.get("arm") == "candidate":
+        precedence["counter_price"] = round(counter, 2)
     return {"decision": "RejectOffer", "product_price": round(counter, 2), "_plan": p}
 
 
