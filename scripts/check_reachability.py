@@ -24,6 +24,7 @@ gates that changed the pending target/decision that turn.
 
     .venv/bin/python scripts/check_reachability.py --flag GLEE_NEGO_ULTIMATUM_SHARE=0.80
     .venv/bin/python scripts/check_reachability.py --flag GLEE_BARG_SPE_WEIGHT=1.0
+    .venv/bin/python scripts/check_reachability.py --flag GLEE_PERS_P08_R125_PROSE_AB=1 --control-slot composite
     .venv/bin/python scripts/check_reachability.py --flag GLEE_NEGO_NO_SUCH=1
 
 Exit status is 0 only when eligible_count, fired_count and action_changed_count
@@ -245,6 +246,23 @@ def _p_barg_no_regress(game, p):
             and p.get("money", 0) > 0)
 
 
+def _p_p08_r125_prose(game, p):
+    """Action-level scope of the exact p=.8/r=1.25 seller wording gate."""
+    state = game.get("game_state") or {}
+    try:
+        price = float(state.get("product_price"))
+        ratio = float(state.get("v")) / price
+        prior = float(state.get("p"))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return False
+    return ((game.get("valid_actions") or {}).get("type") == "seller_message"
+            and state.get("seller_message_type") == "text"
+            and state.get("v") is not None
+            and abs(prior - 0.8) <= 1e-9
+            and abs(ratio - 1.25) <= 1e-9
+            and p.get("recommend") is True)
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -289,6 +307,8 @@ KNOWN = {
     "GLEE_BARG_MSG": ("bargaining", ("barg_msg",), _p_barg_message),
     "GLEE_BARG_OPPONENT_FLOOR": ("bargaining", ("opp_floor",), _p_offer),
     "GLEE_OPP_EXPLOIT": ("bargaining", ("opp_exploit",), lambda g, p: True),
+    "GLEE_PERS_P08_R125_PROSE_AB": (
+        "persuasion", ("p08_r125_prose",), _p_p08_r125_prose),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those
@@ -346,7 +366,11 @@ def _collect_states(field, draws, flags, families):
 
     for family, params, seat, game_seed in draws:
         grng = random.Random(game_seed)
-        opponent = field.sample_opponent(random.Random(game_seed + 1))
+        if family == "persuasion":
+            from sim.opponents import get
+            opponent = get("trust_tracking_buyer")
+        else:
+            opponent = field.sample_opponent(random.Random(game_seed + 1))
         params = dict(params)
         if opponent.name != "__field__":
             params["opponent_name"] = opponent.name
@@ -411,7 +435,7 @@ def main() -> int:
     ap.add_argument("--flag", required=True, metavar="NAME=VALUE",
                     help="candidate flag, e.g. GLEE_NEGO_ULTIMATUM_SHARE=0.80")
     ap.add_argument("--family", default=None,
-                    choices=("negotiation", "bargaining"),
+                    choices=("negotiation", "bargaining", "persuasion"),
                     help="restrict to one family (default: inferred from the "
                          "flag prefix, else both)")
     ap.add_argument("--n", type=int, default=800, help="games to draw")
@@ -420,6 +444,9 @@ def main() -> int:
     ap.add_argument("--control", default=default_control,
                     help="JSON control flag dict (default: simulator snapshot; "
                          "pass the target's current stack before deployment)")
+    ap.add_argument("--control-slot", default=None,
+                    help="read the exact named slot stack from arms.json; this "
+                         "overrides --control")
     args = ap.parse_args()
 
     if "=" not in args.flag:
@@ -437,11 +464,24 @@ def main() -> int:
         families = ["negotiation"]
     elif name.startswith("GLEE_BARG"):
         families = ["bargaining"]
+    elif name.startswith("GLEE_PERS"):
+        families = ["persuasion"]
     else:
         families = ["bargaining", "negotiation"]
 
-    control = dict(json.loads(args.control))
-    if args.control == default_control:
+    if args.control_slot:
+        arms_path = os.path.join(REPO, "arms.json")
+        with open(arms_path, encoding="utf-8") as handle:
+            arms = json.load(handle)
+        if args.control_slot not in arms:
+            print(f"unknown --control-slot {args.control_slot!r}; available: "
+                  f"{', '.join(sorted(arms))}")
+            return 2
+        control = dict(arms[args.control_slot])
+        print(f"using exact live stack for slot {args.control_slot!r}")
+    else:
+        control = dict(json.loads(args.control))
+    if not args.control_slot and args.control == default_control:
         print("warning: using replay_eval.DEFAULT_CONTROL, which is a simulator "
               "snapshot; pass the actual target fleet stack with --control "
               "before treating this as deployment evidence.")
@@ -454,9 +494,19 @@ def main() -> int:
 
     _install_flag_spy()
 
-    from sim.field_data import Field
-    field = Field()
-    draws = replay_eval._draw_games(field, families, args.n, args.seed)
+    if families == ["persuasion"]:
+        from sim import sample_config
+        rng = random.Random(args.seed)
+        draws = []
+        for _ in range(args.n):
+            config = sample_config("persuasion", rng)
+            draws.append(("persuasion", config.params, "player_1",
+                          rng.randrange(2 ** 31)))
+        field = None
+    else:
+        from sim.field_data import Field
+        field = Field()
+        draws = replay_eval._draw_games(field, families, args.n, args.seed)
     print(f"flag      : {name}={value}")
     print(f"families  : {', '.join(families)}")
     print(f"collecting states from {len(draws)} control-arm games...")

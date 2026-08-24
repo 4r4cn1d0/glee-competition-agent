@@ -278,3 +278,91 @@ Test 3 before causal promotion evidence.
 3. Full-sequence opponent-type inference.
 4. Partially pooled per-opponent profiles.
 5. Message framing arms (orthogonal; only 7.1% of offers carry text).
+
+## PRECOMMITTED — INERT CODE, NOT YET LIVE
+
+### Exact weak-cell token versus non-leaking prose (persuasion seller)
+- **Falsifiable hypothesis**: in the official persuasion seller cell
+  `seller_message_type=text`, `p=.8`, seller knows `v/u`, `v=1.25*price`, and
+  `total_rounds=20`, replacing the current literal positive token `yes` with
+  the current quality-neutral prose template raises mean official per-game
+  rating delta. The recommendation policy and negative token `no` do not
+  change. A non-positive official result falsifies the hypothesis; conversion
+  alone cannot promote it.
+- **Why this cell**: in the clean common token window
+  `[1787402777.668, 1787484376.458)`, this was the largest scoreable seller/text
+  weakness: 118 games assigned, 30 locally recovered finals, local diagnostic
+  percentile `.4847`, 47.5% purchase rate, and 16.7% zero outcomes. The wider
+  historical positive-message contrast (token 60.8% versus prose 69.3%) is
+  observational and post-action-selected; it motivates randomisation only.
+- **Flag / assignment**: `GLEE_PERS_P08_R125_PROSE_AB=1`, default OFF.
+  `int(sha256("pers_p08_r125_prose_v1|" + game_id).hexdigest(), 16) & 1` assigns the
+  game. No game id fails closed. The bit is read only after `seller_plan`, so it
+  cannot enter any recommendation decision or another arm.
+- **Pre-treatment cohort**: every target game's globally first seller-message
+  turn, before inspecting the outgoing message or any purchase. The untreated
+  baseline begins at the rank-gate disarm boundary `1787570799`; it ends at the
+  prospective clean common activation T0. The experimental cohort begins at T0
+  and includes every assignment: purchases, refusals, zero payoffs, timeouts,
+  invalid/abandoned games, unresolved outcomes, and any immediate terminal
+  result. Result-fetch timestamps never define the cohort.
+- **Control / candidate**: hash control remains byte-identical to the live
+  `yes`/`no` stack. Candidate changes only positive text to one of the six
+  combinations in the current non-leaking template bank, selected by a stable
+  game-id/round RNG independent of private quality. No LLM. Binary persuasion,
+  buyers, other priors/ratios, seller-blind cells, and all bargaining and
+  negotiation actions are unreachable.
+- **Hosts / boundary**: after inert code is pushed and the processes naturally
+  reload it, arm Test 1 (`champion`), Agent 5 (`composite`), and Test 4
+  (`randomized`) together with an explicit `PERS_TOKEN_MAX_P=0`; record the
+  latest overlay mtime as T0. Test 2 and Test 3 stay unarmed. Preserve the rest
+  of each exact live stack, including LLM off, KEEP_MSG=1 and MSG_STYLE=token.
+- **Reachability contract**: on Agent 5's exact current stack and 800 seeded
+  persuasion games: `eligible=340`, `fired=220`, `action_changed=220`; Test 1
+  and Test 4 produced the same counts. During the first 20 games per
+  arm require a stable game bit on all 20 rounds, literal `yes` for every
+  control message, only current-bank prose for every candidate message, no
+  recommendation mismatch, no third wording, and no invalid/timeout. Any
+  failure is an immediate disarm and mechanism rejection.
+- **Primary / diagnostics**: join every resolved assignment to the official
+  dashboard's per-game `rating_delta`; the local same-cell percentile is
+  diagnostic only. Report purchase rate, zero rate, payoff/price and bought
+  high/low counts without conditioning the primary analysis on purchases or
+  recommendations. Exclude detected cross-fleet game ids and reject any
+  self-play-contaminated read; hidden-opponent contamination remains explicit.
+- **Sample and rules**: no outcome decision before 120 resolved official games
+  per arm. At the observed three-host arrival rate this is about 3.2 days.
+  Extend once to 200/arm only if the official CI crosses zero and competition
+  time permits. Promote only if the official candidate-control 95% CI is wholly
+  above zero, the purchase-rate point estimate is nonnegative with lower bound
+  above -2pp, all three price-scale point estimates are nonnegative, and there
+  are zero unresolved, invalid, duplicate/self-play, official-join, or wire
+  failures. Reject immediately for any mechanism/scope failure; after at least
+  50 official games/arm reject if the official-score CI is wholly below zero or
+  the purchase-rate CI is wholly negative. Otherwise remain research-only.
+- **Subgroups**: predeclared price scale `{100, 10_000, 1_000_000}`, named
+  versus hidden opponent, host slot, and activation era. Exact-cell scale rows
+  are diagnostic unless powered; no subgroup cherry-picking can override the
+  pooled official rule.
+- **Read with**: `scripts/live_percentile.py --ab pers-prose --since T0
+  --until T1 --slots champion,composite,randomized --official-json FILE` where
+  FILE contains dashboard-exported `slot`, `game_id`, `rating_delta` records.
+
+## MECHANISM REJECTED — DISARMED
+
+### Continuation-aware persuasion rank gate (Test 2)
+- **Live window**: first observed fire `1787484376.458`; explicitly disarmed
+  through `scripts/fleet.py` at `T1=1787570799` by setting
+  `GLEE_PERS_RANK_GATE_AB=0`. Clearing the key was not a safe disarm because a
+  launch environment could retain it. Test 3 was untouched.
+- **Failure**: the arm reached all 12 tight buyer cells rather than the claimed
+  eight, including every p=.8 treatment game; it could flip both directions,
+  applied a recommendation-only DP to explicit declines, and pooled six
+  official configurations per local CDF key. Live census: 267 treatment games,
+  828 turn flips; 539 were unintended p=.8 buy-to-pass changes. One verified
+  threshold-zero flip bought a low unit after “I do not recommend this one” and
+  lost the full 1,000,000 unit price.
+- **Decision**: mechanism rejection, not an effect estimate. Only 83/495 first-
+  round eligible games have local finals and 412 remain unresolved. Do not use
+  resolved-only local percentile or Test 2's aggregate rating to promote or
+  salvage this arm.

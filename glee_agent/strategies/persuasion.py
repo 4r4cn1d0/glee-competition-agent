@@ -372,6 +372,9 @@ def _rank_buy_arm(game: dict) -> bool:
 #: Independent salt for the continuation-aware rank gate.
 PERS_RANK_GATE_SALT = "pers_rank_gate_v1|"
 
+#: Independent game-level assignment for the p=.8 seller text-wording arm.
+PERS_P08_R125_PROSE_SALT = "pers_p08_r125_prose_v1|"
+
 #: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
 #: small (231 states at T=20) and the bucketing is what keeps this off the hot
 #: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
@@ -385,6 +388,56 @@ def rank_gate_assignment(game_id) -> bool | None:
         return None
     import hashlib as _hashlib
     return bool(int(_hashlib.sha256((PERS_RANK_GATE_SALT + gid).encode()).hexdigest(), 16) & 1)
+
+
+def p08_r125_prose_assignment(game_id) -> bool | None:
+    """Stable p=.8/r=1.25 prose assignment, without consulting live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256((PERS_P08_R125_PROSE_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def _p08_r125_prose_message(game: dict, plan: dict) -> str | None:
+    """Return treatment prose only in the precommitted exact seller cell."""
+    if not runtime_flags.enabled("GLEE_PERS_P08_R125_PROSE_AB"):
+        return None
+    state = game.get("game_state") or {}
+    price = _num(state.get("product_price"), 0.0)
+    v = _num(state.get("v"), 0.0)
+    if ((game.get("valid_actions") or {}).get("type") != "seller_message"
+            or state.get("seller_message_type") != "text"
+            or abs(_num(state.get("p"), -1.0) - 0.8) > 1e-9
+            # The server intentionally withholds is_seller_know_cv itself.  A
+            # seller can identify the cell exactly because v/u are present iff
+            # that configuration lets it know the buyer's values.
+            or state.get("v") is None
+            or price <= 0.0
+            or abs(v / price - 1.25) > 1e-9
+            or not plan.get("recommend")
+            or p08_r125_prose_assignment(game.get("game_id")) is not True):
+        return None
+
+    # This arm changes only the positive wire text.  The live control remains
+    # literal ``yes`` byte-for-byte; negative recommendations remain ``no`` in
+    # both arms.  The exact known-CV p=.8/r=1.25 text cell is our largest clean
+    # seller weakness: token-era local finals bought 47.5% of rounds, scored
+    # .4847 on the diagnostic pooled CDF, and ended at zero 16.7% of the time
+    # (n=30).  The broader 60.8% token vs 69.3% prose contrast is observational,
+    # so assignment is per game and the prose draw depends only on game id +
+    # round -- never on private quality.  The shared current template bank has
+    # no quality-dependent closer.
+    from .. import messages as _messages
+    import random as _random
+    rng = _random.Random(f"{game.get('game_id')}:{state.get('round')}")
+    message = _messages.persuasion_message(game, {}, plan, rng)
+    if not message:
+        return None
+    plan["p08_r125_prose_arm"] = "prose"
+    plan.setdefault("gates_fired", []).append("p08_r125_prose")
+    return message
 
 
 def _cell_samples(state: dict, seat: str):
@@ -1104,7 +1157,9 @@ def decide(game: dict, cfg) -> dict:
                        if p["recommend"]
                        else "No. Skip this one - I do not recommend it.")
         elif style == "token":
-            message = "yes" if p["recommend"] else "no"
+            treatment_message = _p08_r125_prose_message(game, p)
+            message = (treatment_message if treatment_message is not None
+                       else ("yes" if p["recommend"] else "no"))
         else:
             message = ("I recommend this one." if p["recommend"]
                        else "I would hold off on this one.")

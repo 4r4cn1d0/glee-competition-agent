@@ -1310,3 +1310,21 @@ suite: 653 passed; only the two AGENTS.md-documented bargaining failures remain
    candidate is identical to the code default and correctly changes nothing.
    Each meaningful run must show eligible, fired, and action_changed above zero.
    Claude remains the only fleet deployer.
+
+## 2026-08-24 — persuasion workstream boundary and exact-cell prose probe
+
+Persuasion deployment state, the rejected Test 2 rank-gate mechanism, and the
+precommitted seller wording experiment are recorded in
+`.ai/PERSUASION_HANDOFF.md`. Negotiation/bargaining owners should treat that file
+as read-only; no persuasion change in this workstream alters their code or flags.
+
+Objection resolved before deployment: the historical p=.8 token/prose purchase
+contrast is observational, conditioned on positive recommendations, and crossed
+multiple policy eras. It cannot promote prose. The resulting
+`GLEE_PERS_P08_R125_PROSE_AB` code is therefore default OFF and randomized per
+game in the exact known-CV seller/text/p=.8/v=1.25P cell. On Agent 5's exact live
+stack its reachability check reports 340 eligible, 220 fired and 220 changed
+wire actions. Official dashboard per-game deltas, all assigned outcomes, zero
+mechanism failures, and the preregistered 120/arm rule are required; local CDF
+percentiles remain diagnostic only. Test 2 and Test 3 are protected from the
+research deployment.
