@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 20:58 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 21:08 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -59,6 +59,15 @@ either arm comparison, the original cohorts remain intact, and `1787584628` is
 recorded as a mandatory activation-era split. Future fleet deployments must use
 natural per-slot drains; a simultaneous supervisor restart destroys live games
 and can erase roughly eight rating points per affected game.
+
+The restart also triggered the competition's crash-loop protection on every
+slot. Each new agent process received HTTP 403 because its last three games had
+timed out on its turn; queue joins are suspended until the server-provided
+per-slot deadlines between 21:17:02 and 21:17:08 IST. The processes remain up
+and retry in place every 60 seconds. Consequently there are no post-restart
+game starts on any slot and no experiment exposure can accrue during
+`[1787584628, approximately 1787586428)`. Do not restart again: waiting for this
+specific deadline is server-enforced recovery, not passive experiment waiting.
 
 ## Rejected rank-gate mechanism
 

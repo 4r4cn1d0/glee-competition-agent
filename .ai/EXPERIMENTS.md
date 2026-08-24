@@ -608,7 +608,11 @@ Test 3 before causal promotion evidence.
   readers and the prose reader show that none was an exact assigned experiment
   game, so they do not enter either arm. Preserve the original cohorts, record
   `1787584628` as a deployment-era subgroup boundary, and never attribute this
-  rating discontinuity to persuasion behavior.
+  rating discontinuity to persuasion behavior. The timeouts also caused a
+  server-enforced crash-loop queue suspension on every slot until approximately
+  `1787586428` (21:17 IST); no experiment exposure can accrue during that
+  interval. The live processes retry in place every 60 seconds and must not be
+  restarted again.
 - **Read with**: run `scripts/live_percentile.py --ab pers-truth` separately for
   `hardliner --since 1787582397`, `composite --since 1787584351`, and
   `randomized --since 1787584425`, always with `--official-json FILE`. Do not
