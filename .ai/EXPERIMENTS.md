@@ -456,7 +456,7 @@ Test 3 before causal promotion evidence.
   qualities, decisions, exact setup, and seller-payoff identity before an
   authenticated transcript may recover a locally missing final.
 
-### Exact zero-margin binary seller truthfulness (pending inert load)
+### Exact zero-margin binary seller truthfulness (LIVE on Test 2)
 - **Falsifiable hypothesis**: in persuasion seller/binary games with `p=.8`,
   seller-visible `v/u`, `v=1.25*price`, `u=0`, and 20 rounds, recommending only
   high-quality items raises mean official per-game rating delta versus the live
@@ -494,11 +494,11 @@ Test 3 before causal promotion evidence.
   no adaptive trigger, terminal exception, prose, LLM, buyer change, or reach
   into any other seller cell.
 - **Pre-treatment cohort**: Test 2 exact-cell games whose first seller turn is
-  in `[1787570799, prospective T0)`, beginning at the rank-gate disarm. The
-  experimental cohort begins at the clean activation T0 and includes every
-  assignment: purchases, refusals, zero outcomes, timeouts, invalid/abandoned,
-  unresolved, and immediate terminal outcomes. Result-fetch time never defines
-  the cohort.
+  in `[1787570799, 1787582397)`, beginning at the rank-gate disarm. The
+  experimental cohort begins at clean `T0=1787582397` (2026-08-24 20:09:57
+  IST) and includes every assignment: purchases, refusals, zero outcomes,
+  timeouts, invalid/abandoned, unresolved, and immediate terminal outcomes.
+  Result-fetch time never defines the cohort.
 - **Preflight**: Test 2's exact hardliner stack, 800 seeded persuasion games,
   seed 2417, reported `eligible=31`, `fired=21`, and `action_changed=21`.
   Focused mechanism/reader suite: 31 passed. The full allowed suite passed 1,167
@@ -522,10 +522,14 @@ Test 3 before causal promotion evidence.
 - **Subgroups**: price scale, named versus hidden opponent, and activation era.
   No subgroup can override the pooled official rule. Local percentile and
   post-lie continuation counts remain diagnostic only.
-- **Deployment boundary**: Test 2 (`hardliner`) only after natural load of the
-  inert commit. Test 3 stays untouched; the prose arm stays absent on Test 2;
-  rank gate and backload remain explicit zero. Activate only through fleet
-  tooling at a clean timestamp.
+- **Deployment boundary**: Test 2 (`hardliner`) naturally drained PID 71871 and
+  loaded pushed code `d79ca92` as PID 76676 at 20:08:48 IST. Fleet tooling set
+  only `GLEE_PERS_P08_R125_BINARY_TRUTH_AB=1` at clean arms mtime
+  `T0=1787582397`, without a restart or signal. The post-load exact-stack rerun
+  reported `eligible=29/fired=14/action_changed=14`. Test 3 stays untouched;
+  prose and buyer-parser flags are absent on Test 2; rank gate and backload are
+  explicit zero. A real candidate low-quality `no` remains required before the
+  live mechanism is behavior-verified.
 - **Read with**: `scripts/live_percentile.py --ab pers-truth --since T0
   --slots hardliner --official-json FILE`.
 
