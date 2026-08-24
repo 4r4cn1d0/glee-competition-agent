@@ -1328,3 +1328,45 @@ wire actions. Official dashboard per-game deltas, all assigned outcomes, zero
 mechanism failures, and the preregistered 120/arm rule are required; local CDF
 percentiles remain diagnostic only. Test 2 and Test 3 are protected from the
 research deployment.
+
+## 2026-08-24 — negotiation stale-stall arm and paper review
+
+Built, default OFF: `GLEE_NEGO_STALL_CURRENT_BREAK_AB`. The existing stall
+detector reads only the last three completed `history[*].offer` prices. On a
+decision turn, the standing `last_offer` is one opponent action newer. A live
+seller-.8 game therefore classified historical 0/0/0 as a continuing stall
+even though the current buyer bid had advanced to 440,779.69; `stall_park`
+rewrote the scheduled ~1,400,527 counter to 900,000. Last-20k shadows found
+52-120 favorable current breaks and 35-107 changed counters per major slot.
+
+The treatment is a triggered 50/50 per-game hash. At the first state where the
+current opponent offer improves for us by strictly more than 1% relative to the
+historical stall price *and* suppressing the writer gives us a strictly stronger
+counter, treatment suppresses only the offer-target stall writer; control is
+byte-identical. Wrong-direction schedule states are logged as ineligible.
+`_their_stall_price` itself is unchanged, so
+dead-game walking and stall acceptance retain their old semantics. The arm
+fails closed unless `CONTINUATION_ACCEPT=1`, and refuses mixed stacks carrying
+the first-offer, extreme-open, terminal-counter, hidden-policy, hidden-floor, or
+first-principles experiments. This prevents target assignment from leaking into
+legacy decisions or becoming an unanalysed factorial.
+
+Do not arm while the current opening/terminal probes are live. The old park was
+accepted in the motivating transcript, so semantically correcting stale state
+may still lower close rate; this is a randomized hypothesis, not a direct bug
+fix. Read every first-trigger outcome with `scripts/live_percentile.py --ab
+stall-current-break --since T0 --slots ... --official-json FILE`. Promotion
+requires 100 resolved official games/arm, 20/arm in each role, official rating
+delta CI above zero, close lower CI above -2pp, nonnegative role/information/
+horizon/scale/message point estimates, and zero mechanism failures.
+
+Paper review: arXiv:2502.16242 studies a different six-party HarborCo game, so
+its deals and policies do not transfer. Its communication-free baseline is the
+useful methodological result: once acceptability is structurally identifiable,
+multi-agent dialogue adds little. The GLEE paper (arXiv:2410.05254v3, Section
+4) is directly aligned with our localization: its negotiation efficiency is
+17.3-17.4pp above baseline for complete-information unknown-horizon games, but
+only 4.1-5.5pp for hidden unknown-horizon and 8.3-9.2pp for hidden cap-10. That
+supports horizon-specific experiments and rejects a universal curve. Its
+model-pair effects support a later named-opponent arm, but efficiency/fairness
+are not our percentile objective, so neither paper authorizes a deployment.

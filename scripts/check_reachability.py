@@ -263,6 +263,23 @@ def _p_p08_r125_prose(game, p):
             and p.get("recommend") is True)
 
 
+def _p_stall_current_break(game, p):
+    """Pre-action scope of the current-offer stale-stall treatment."""
+    if game.get("game_family") != "negotiation":
+        return False
+    state = game.get("game_state") or {}
+    me = state.get("current_player") or game.get("your_player")
+    if (game.get("valid_actions") or {}).get("type") != "decision":
+        return False
+    from glee_agent.strategies import negotiation
+    stale = negotiation._their_stall_price(state, me)
+    metadata = p.get("stall_current_break") or {}
+    return (stale is not None
+            and negotiation._current_concession_break(state, me, stale)
+            is not None
+            and metadata.get("eligible") is True)
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -287,6 +304,8 @@ KNOWN = {
                               lambda g, p: p.get("opponent_bound") is not None),
     "GLEE_NEGO_STALL_POLICY": ("negotiation", ("stall_park", "stall_accept"),
                                lambda g, p: True),
+    "GLEE_NEGO_STALL_CURRENT_BREAK_AB": (
+        "negotiation", ("stall_current_break",), _p_stall_current_break),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),
@@ -518,7 +537,7 @@ def main() -> int:
     cnd = _replay(states, candidate)
 
     gate_names = set(known[1]) if known else set()
-    eligible = fired = changed = 0
+    eligible = fired = changed = wrong_direction = 0
     examples: list[str] = []
     for game, (a_ctl, p_ctl, _), (a_cnd, p_cnd, consulted) in zip(states, ctl, cnd):
         g_ctl = p_ctl.get("gates_fired") or []
@@ -526,7 +545,14 @@ def main() -> int:
 
         if known:
             try:
-                ok = bool(known[2](game, p_ctl))
+                # This treatment records its pre-action directional eligibility
+                # only while the candidate flag is consulted. Its hash-control
+                # games record the same metadata, so p_cnd is still an exact,
+                # assignment-independent eligibility check.
+                predicate_plan = (p_cnd if name ==
+                                  "GLEE_NEGO_STALL_CURRENT_BREAK_AB"
+                                  else p_ctl)
+                ok = bool(known[2](game, predicate_plan))
             except Exception:
                 ok = False
         else:
@@ -550,6 +576,20 @@ def main() -> int:
 
         if _action_differs(a_ctl, a_cnd):
             changed += 1
+            if name == "GLEE_NEGO_STALL_CURRENT_BREAK_AB":
+                st = game.get("game_state") or {}
+                me = st.get("current_player") or game.get("your_player")
+                role = st.get(f"{me}_role")
+                ctl_price = a_ctl.get("product_price")
+                cnd_price = a_cnd.get("product_price")
+                directional = (
+                    a_ctl.get("decision") == a_cnd.get("decision")
+                    and ctl_price is not None
+                    and cnd_price is not None
+                    and ((role == "seller" and cnd_price > ctl_price)
+                         or (role == "buyer" and cnd_price < ctl_price))
+                )
+                wrong_direction += int(not directional)
             if len(examples) < 3:
                 st = game.get("game_state") or {}
                 examples.append(
@@ -569,6 +609,9 @@ def main() -> int:
     print(f"  fired_count          {fired:6d}   ({fired_basis})")
     print(f"  action_changed_count {changed:6d}   "
           "(submitted actions differ between the two arms)")
+    if name == "GLEE_NEGO_STALL_CURRENT_BREAK_AB":
+        print(f"  wrong_direction_count{wrong_direction:6d}   "
+              "(candidate wire is not strictly more favorable for our role)")
     for line in examples:
         print(line)
 
@@ -587,6 +630,10 @@ def main() -> int:
             print("  hint: consulted but inert -> check the probe transform "
                   "(glee_agent/probes.py overwrites several cfg knobs) and "
                   "whether another gate overrides it downstream.")
+        return 1
+    if wrong_direction:
+        print(f"\nFAIL: {wrong_direction} stale-break action(s) moved the wire "
+              "against our role; do not deploy it until this is zero.")
         return 1
     print("\nPASS: the candidate is reachable, fires, and moves real actions.")
     return 0

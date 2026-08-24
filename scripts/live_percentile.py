@@ -198,6 +198,16 @@ def hi_terminal_arm(gid) -> str | None:
     return "candidate" if treatment else "control"
 
 
+def stall_current_break_arm(gid) -> str | None:
+    """Recover the production stale-stall assignment without copying its salt."""
+    from glee_agent.strategies.negotiation import stall_current_break_assignment
+
+    treatment = stall_current_break_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
 def pers_selectivity_arm(gid) -> str | None:
     """Recover the buyer-selectivity arm from the action path's pure helper."""
     treatment = buyer_selectivity_assignment(gid)
@@ -665,6 +675,98 @@ def _hi_terminal_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _stall_current_break_signal(seat: str, state: dict) -> dict | None:
+    """Observable first-trigger state for the stale-stall target experiment."""
+    from glee_agent.strategies import negotiation
+
+    if seat not in ("player_1", "player_2"):
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    role = state.get(f"{seat}_role")
+    if role not in ("seller", "buyer"):
+        return None
+    stale = negotiation._their_stall_price(state, seat)
+    if stale is None:
+        return None
+    current = negotiation._current_concession_break(state, seat, stale)
+    if current is None:
+        return None
+    own_value = _number(state.get(f"{seat}_value"))
+    if own_value is None:
+        return None
+    base = infer_base(own_value)
+    max_rounds = _number(state.get("max_rounds"))
+    horizon = ("inf" if state.get("horizon_known") is False
+               or max_rounds is None else str(int(max_rounds)))
+    return {
+        "role": role,
+        "own_value": own_value,
+        "base": base,
+        "scale": base,
+        "complete": state.get("complete_information") is True,
+        "horizon": horizon,
+        "messages": state.get("messages_allowed") is True,
+        "round": int(_number(state.get("round")) or 0),
+        "stale_price": stale,
+        "current_price": current,
+    }
+
+
+def _stall_current_break_exposure_turn(slot: str, rec: dict):
+    """Cohort a game at its first favorable current break, before action."""
+    if rec.get("game_family") != "negotiation":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _stall_current_break_signal(seat, state)
+    if not gid or signal is None or rec.get("action_type") != "decision":
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+
+    arm = stall_current_break_arm(gid)
+    action = rec.get("action") or {}
+    plan = rec.get("plan") or {}
+    logged = (plan.get("stall_current_break")
+              if isinstance(plan, dict) else None)
+    if isinstance(logged, dict) and logged.get("eligible") is False:
+        return None
+    gates = plan.get("gates_fired") if isinstance(plan, dict) else []
+    gates = gates if isinstance(gates, list) else []
+    pre_target = (_number(logged.get("pre_stall_target"))
+                  if isinstance(logged, dict) else None)
+    control_target = (_number(logged.get("control_target"))
+                      if isinstance(logged, dict) else None)
+    writer_changed = (pre_target is not None and control_target is not None
+                      and abs(pre_target - control_target) > 1e-9)
+    plan_arm = logged.get("arm") if isinstance(logged, dict) else None
+    mechanism_ok = (isinstance(logged, dict)
+                    and logged.get("eligible") is True
+                    and plan_arm == arm)
+    if arm == "candidate":
+        mechanism_ok = mechanism_ok and (
+            ("stall_current_break" in gates) == writer_changed)
+    else:
+        mechanism_ok = mechanism_ok and "stall_current_break" not in gates
+    signal.update({
+        "action_decision": action.get("decision") if isinstance(action, dict) else None,
+        "wire_price": (_number(action.get("product_price"))
+                       if isinstance(action, dict) else None),
+        "plan_arm": plan_arm,
+        "pre_stall_target": pre_target,
+        "control_target": control_target,
+        "final_target": (_number(logged.get("final_target"))
+                         if isinstance(logged, dict) else None),
+        "writer_changed": writer_changed,
+        "gate_fired": "stall_current_break" in gates,
+        "mechanism_ok": mechanism_ok,
+    })
+    return (slot, gid), ts, signal
+
+
 def _pers_selectivity_exposure_turn(slot: str, rec: dict):
     """Return the first eligible persuasion buyer-decision exposure."""
     if rec.get("game_family") != "persuasion":
@@ -996,6 +1098,24 @@ def _hi_terminal_row(slot: str, rec: dict, fin: dict):
         "no_deal": not closed,
     }
     return slot, pct, str(gid), closed, diagnostic
+
+
+def _stall_current_break_row(slot: str, rec: dict, fin: dict):
+    """Build a terminal stale-stall outcome; exposure metadata carries scope."""
+    if fin.get("game_family") != "negotiation":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    if not gid or seat not in ("player_1", "player_2"):
+        return None
+    closed = _terminal_close(fin)
+    if closed is None:
+        return None
+    state = fin.get("game_state") or {}
+    payoff = _result_payoff(fin.get("result") or {}, seat, seat)
+    pct = (percentile("negotiation", dict(state), seat, payoff)
+           if payoff is not None else None)
+    return slot, pct, str(gid), closed
 
 
 def _pers_selectivity_history_metrics(history) -> dict:
@@ -1335,6 +1455,13 @@ def hi_terminal_games(hours, since=None, until=None):
     """Yield every assigned buyer-1.2 cap-10 game, not only terminal reaches."""
     yield from _price_arm_games(
         hours, _hi_terminal_exposure_turn, _hi_terminal_row,
+        since=since, until=until)
+
+
+def stall_current_break_games(hours, since=None, until=None):
+    """Yield every game from its first pre-action favorable current break."""
+    yield from _price_arm_games(
+        hours, _stall_current_break_exposure_turn, _stall_current_break_row,
         since=since, until=until)
 
 
@@ -2716,6 +2843,227 @@ def report_hi_terminal(rows, hours, since=None, until=None):
     return 0
 
 
+def report_stall_current_break(rows, hours, since=None, until=None,
+                               official_path=None):
+    """Report the triggered stale-stall A/B over every first-break outcome."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = stall_current_break_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        slots = diagnostic.get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[gid].update(slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic,
+            "resolution": resolution, "official": official.get((slot, gid)),
+        })
+
+    print("GLEE_NEGO_STALL_CURRENT_BREAK_AB")
+    print("triggered ITT: first decision where three completed opponent offers "
+          "look stalled but the standing current offer improves for us by >1%; "
+          "accepts, counters, walks, no-deals, and unresolved games all remain")
+    print("primary: official dashboard per-game rating delta; local pooled-CDF "
+          "percentile is diagnostic only")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"first-trigger exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned favorable current-break games in the window")
+        return 1
+
+    duplicates = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    independent = [item for item in observations if item["gid"] not in duplicates]
+    print(f"pooled dependence guard: excluded {len(duplicates)} cross-fleet "
+          "game id(s)")
+
+    def summarize(population):
+        stats = {
+            "official": [], "pct": [], "closed": [], "terminal": 0,
+            "pending": 0, "invalid": 0, "official_missing": 0,
+            "mechanism_fail": 0, "writer_changed": 0, "countered": 0,
+        }
+        for item in population:
+            diagnostic = item["diagnostic"]
+            stats["mechanism_fail"] += int(
+                diagnostic.get("mechanism_ok") is not True)
+            stats["writer_changed"] += int(
+                diagnostic.get("writer_changed") is True)
+            stats["countered"] += int(
+                diagnostic.get("wire_price") is not None)
+            if item["closed"] is None:
+                field = ("invalid" if item["resolution"] == "invalid-final"
+                         else "pending")
+                stats[field] += 1
+                continue
+            stats["terminal"] += 1
+            stats["closed"].append(float(bool(item["closed"])))
+            if item["pct"] is not None:
+                stats["pct"].append(item["pct"])
+            if item["official"] is not None:
+                stats["official"].append(item["official"])
+            else:
+                stats["official_missing"] += 1
+        return stats
+
+    def print_line(label, arm, stats):
+        official_text, _ = _mean_ci_text(stats["official"])
+        pct_text, _ = _mean_ci_text(stats["pct"])
+        close_text, _ = _mean_ci_text(stats["closed"], percent=True)
+        print(f"{label:18} {arm:9} official-dR={official_text} "
+              f"n={len(stats['official'])}; local-pct={pct_text} "
+              f"n={len(stats['pct'])}; close={close_text} "
+              f"n={len(stats['closed'])}; terminal={stats['terminal']} "
+              f"pending={stats['pending']} badfin={stats['invalid']} "
+              f"official-missing={stats['official_missing']} "
+              f"writer-changed={stats['writer_changed']} "
+              f"countered={stats['countered']} "
+              f"mechanism-fail={stats['mechanism_fail']}")
+
+    by_slot_arm = defaultdict(list)
+    for item in observations:
+        by_slot_arm[(item["slot"], item["arm"])].append(item)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        print_line(NAMES.get(slot, slot), arm, summarize(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in independent if item["arm"] == arm]
+        if assigned:
+            pooled[arm] = summarize(assigned)
+            print_line("POOLED", arm, pooled[arm])
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+
+    def stratum_key(item, field):
+        value = item["diagnostic"].get(field)
+        if field == "complete":
+            return "complete" if value is True else "hidden"
+        if field == "messages":
+            return "text" if value is True else "silent"
+        return str(value)
+
+    print("pre-treatment stratum point estimates (official candidate-control):")
+    for field in ("role", "complete", "horizon", "scale", "messages"):
+        values = sorted({stratum_key(item, field) for item in independent})
+        for value in values:
+            population = [item for item in independent
+                          if stratum_key(item, field) == value]
+            grouped = {
+                arm: [item["official"] for item in population
+                      if item["arm"] == arm and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            if delta is None:
+                rendered = "official unavailable"
+            elif low is None:
+                rendered = f"{delta:+.4f} (CI unavailable)"
+            else:
+                rendered = f"{delta:+.4f} [{low:+.4f},{high:+.4f}]"
+            print(f"  {field}={value}: {rendered}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    # Dependence exclusion protects the causal CI, not mechanism safety. A
+    # malformed wire in a cross-fleet duplicate is still a deployment failure.
+    mechanism_failures = sum(
+        item["diagnostic"].get("mechanism_ok") is not True
+        for item in observations)
+    unresolved = sum(
+        stats["pending"] + stats["invalid"] for stats in pooled.values())
+    official_missing = sum(
+        stats["official_missing"] for stats in pooled.values())
+    print("DECISION RULE: do not decide before 100 resolved official games/arm "
+          "and 20/arm in each role. Promote only if official-dR 95% CI >0, "
+          "close-rate lower CI >-2pp, every role/information/horizon/scale/"
+          "message point estimate is nonnegative, and mechanism failures=0. "
+          "Reject on a negative official CI or any mechanism failure.")
+    if mechanism_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or official_missing:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, terminal outcomes "
+              f"missing official delta={official_missing}")
+        return 1
+
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+    official_delta, official_low, official_high = _delta_ci(
+        candidate["official"], control["official"])
+    _close_delta, close_low, _close_high = _delta_ci(
+        candidate["closed"], control["closed"])
+    if official_high is not None and official_high < 0:
+        print("OFFICIAL REJECTION: official-dR 95% CI is below zero")
+        return 2
+
+    arm_minimum_met = all(
+        len(pooled[arm]["official"]) >= 100
+        for arm in ("control", "candidate"))
+    role_minimum_met = True
+    stratum_nonnegative = True
+    strata_complete = True
+    for field in ("role", "complete", "horizon", "scale", "messages"):
+        values = {stratum_key(item, field) for item in independent}
+        for value in values:
+            population = [item for item in independent
+                          if stratum_key(item, field) == value]
+            grouped = {
+                arm: [item["official"] for item in population
+                      if item["arm"] == arm and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, _low, _high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            strata_complete &= bool(grouped["control"] and grouped["candidate"])
+            stratum_nonnegative &= delta is not None and delta >= 0
+            if field == "role":
+                role_minimum_met &= all(
+                    len(grouped[arm]) >= 20
+                    for arm in ("control", "candidate"))
+
+    promotable = (
+        arm_minimum_met
+        and role_minimum_met
+        and official_delta is not None
+        and official_low is not None
+        and official_low > 0
+        and close_low is not None
+        and close_low > -0.02
+        and strata_complete
+        and stratum_nonnegative
+    )
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/CI/noninferiority/stratum gates are not "
+          "all satisfied")
+    return 1
+
+
 def report_barg_msg(rows, hours):
     """Report the primary silence/text contrast and each assigned text register."""
     arms = defaultdict(lambda: defaultdict(list))
@@ -2783,12 +3131,12 @@ def main() -> int:
     ap.add_argument("--slots", default="")
     ap.add_argument("--official-json", default=None,
                     help="dashboard export containing slot, game_id, and "
-                         "rating_delta records for --ab pers-prose")
+                         "rating_delta records for an official-join A/B")
     ap.add_argument("--ab", nargs="?", const="zopa",
                     choices=("zopa", "rank-price", "open-claim",
                              "open-claim-official", "hidden-floor",
                              "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                             "hi-terminal",
+                             "hi-terminal", "stall-current-break",
                              "fp-complete", "pers-selectivity", "pers-prose",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
@@ -2798,7 +3146,7 @@ def main() -> int:
 
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                   "hi-terminal", "fp-complete",
+                   "hi-terminal", "stall-current-break", "fp-complete",
                    "pers-selectivity", "pers-prose"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
@@ -2811,6 +3159,7 @@ def main() -> int:
             "hi-first-offer": hi_first_offer_games,
             "hi-extreme-open": hi_extreme_open_games,
             "hi-terminal": hi_terminal_games,
+            "stall-current-break": stall_current_break_games,
             "fp-complete": fp_complete_games,
             "pers-selectivity": pers_selectivity_games,
             "pers-prose": pers_prose_games,
@@ -2823,6 +3172,7 @@ def main() -> int:
             "hi-first-offer": report_hi_first_offer,
             "hi-extreme-open": report_hi_extreme_open,
             "hi-terminal": report_hi_terminal,
+            "stall-current-break": report_stall_current_break,
             "fp-complete": report_fp_complete,
             "pers-selectivity": report_pers_selectivity,
             "pers-prose": report_pers_prose,
@@ -2831,7 +3181,7 @@ def main() -> int:
             args.hours, since=args.since, until=args.until)
             if not keep or r[0] in keep]
         extra = ({"official_path": args.official_json}
-                 if args.ab == "pers-prose" else {})
+                 if args.ab in ("pers-prose", "stall-current-break") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)
 

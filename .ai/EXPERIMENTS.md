@@ -272,6 +272,37 @@ Test 3 before causal promotion evidence.
   flag. The implementation remains inert for auditability; any reconsideration
   needs a new prospective design, not another fit to this corpus.
 
+## BUILT — DEFAULT OFF, WAITING FOR AN UNCONTAMINATED WINDOW
+
+### Current-offer stale-stall break (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_STALL_CURRENT_BREAK_AB=1`;
+  `sha256("nego_stall_current_break_v1|" + game_id) & 1`.
+- **Trigger**: the existing historical helper reports a three-offer <=1% stall,
+  the current standing opponent offer has improved for our seat by strictly
+  more than 1% of `max(abs(stale), abs(current), 1)`, and suppressing the stale
+  writer would make our counter strictly more favorable (seller asks more;
+  buyer bids less). Wrong-direction schedule states are shadowed but ineligible.
+- **Candidate**: suppress only `stall_park`'s target rewrite on that turn.
+  Control retains the exact existing target. Dead-game walk, stall acceptance,
+  and every non-triggered state keep the original helper and behavior.
+- **Identification**: cohort on the globally first qualifying pre-action turn;
+  the arm has no earlier behavioral path, so trigger reach is pre-treatment.
+  Keep immediate accepts, emitted counters, walks, no-deals, cold missing
+  finals, and all later outcomes. Exclude cross-fleet duplicate game IDs.
+- **Safety**: fail closed unless `CONTINUATION_ACCEPT=1`; refuse co-arming with
+  either first-offer probe, the terminal-counter probe, hidden-policy,
+  hidden-floor, or either first-principles switch. Close the cohort if the
+  accept stack or anchors change.
+- **Decision rule**: first decision at 100 resolved official games/arm and
+  20/arm per role. Promote only if official per-game rating-delta CI >0,
+  close-rate lower CI >-2pp, all role/information/horizon/scale/message point
+  estimates >=0, and mechanism failures=0. Reject on official CI <0 or any
+  mechanism failure. Local pooled-CDF percentile is diagnostic only.
+- **Read with**: `scripts/live_percentile.py --ab stall-current-break --since
+  T0 --until T1 --slots SLOTS --official-json FILE`.
+- **Live on**: nowhere. Do not arm until the overlapping opening/terminal
+  experiments are closed or an uncontaminated slot is deliberately selected.
+
 ## NEXT (not built)
 1. General accept/counter/walk response model (item 5 of the operator plan).
 2. State-dependent price discrimination / shallow DP over the frontier.

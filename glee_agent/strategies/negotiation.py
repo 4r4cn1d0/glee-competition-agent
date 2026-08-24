@@ -169,6 +169,97 @@ def _their_stall_price(state: dict, me: str):
     return None
 
 
+STALL_CURRENT_BREAK_SALT = "nego_stall_current_break_v1|"
+
+
+def stall_current_break_assignment(game_id) -> bool | None:
+    """Stable treatment bit for the current-offer stale-stall experiment."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    return bool(
+        int(_hashlib.sha256((STALL_CURRENT_BREAK_SALT + gid).encode()).hexdigest(), 16)
+        & 1
+    )
+
+
+def _current_concession_break(state: dict, me: str,
+                              stall_price: float) -> float | None:
+    """Return a current opponent price that invalidates the historical stall.
+
+    ``_their_stall_price`` deliberately remains unchanged because dead-game
+    walking and stall acceptance use its completed-history definition.  This
+    helper is only for the offer-target writer: the standing ``last_offer`` is
+    one opponent action newer than that history and can show that the apparent
+    stall has already ended.
+    """
+    if me not in ("player_1", "player_2"):
+        return None
+    other = "player_2" if me == "player_1" else "player_1"
+    last = state.get("last_offer") or {}
+    if not isinstance(last, dict) or last.get("from_player") != other:
+        return None
+    try:
+        current = float(last.get("price"))
+        stale = float(stall_price)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(current) or not math.isfinite(stale):
+        return None
+    scale = max(abs(stale), abs(current), 1.0)
+    gap = 0.01 * scale
+    role = state.get(f"{me}_role")
+    if role == "seller" and current > stale + gap:
+        return current
+    if role == "buyer" and current < stale - gap:
+        return current
+    return None
+
+
+def _target_improves_for_role(state: dict, me: str, candidate: float,
+                              control: float) -> bool:
+    """Whether ``candidate`` asks strictly more for us than ``control``."""
+    try:
+        candidate = float(candidate)
+        control = float(control)
+    except (TypeError, ValueError):
+        return False
+    if not math.isfinite(candidate) or not math.isfinite(control):
+        return False
+    tolerance = 1e-12 * max(abs(candidate), abs(control), 1.0)
+    role = state.get(f"{me}_role")
+    if role == "seller":
+        return candidate > control + tolerance
+    if role == "buyer":
+        return candidate < control - tolerance
+    return False
+
+
+def _stall_current_break_enabled() -> bool:
+    """Whether the isolated stale-stall treatment is safe to consult.
+
+    The candidate changes a target, so it is offer-only only while the deployed
+    continuation-value acceptor owns decisions.  The listed price probes can
+    alter whether a later stale state is reached (or overwrite its counter), so
+    refusing a mixed stack prevents an accidental, unanalyzed factorial.
+    """
+    if not runtime_flags.enabled("GLEE_NEGO_STALL_CURRENT_BREAK_AB"):
+        return False
+    if not _continuation_accept_enabled():
+        return False
+    conflicts = (
+        "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
+        "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
+        "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+        "GLEE_NEGO_HIDDEN_POLICY_V1",
+        "GLEE_NEGO_HIDDEN_FLOOR",
+        "GLEE_NEGO_FIRST_PRINCIPLES",
+        "GLEE_NEGO_FP_ALWAYS",
+    )
+    return not any(runtime_flags.enabled(name) for name in conflicts)
+
+
 def _rounds_left(state: dict, assumed_horizon: int) -> tuple[int, bool]:
     """(rounds remaining including this one, whether the cap is real).
 
@@ -701,28 +792,74 @@ def plan(game: dict, cfg) -> dict:
     # docstring): freeze against an unprofitable stall -- further concession is
     # what makes stonewalling pay; converge onto a profitable one -- each extra
     # round is 70%-no-deal territory.
+    stall_current_break = None
     if runtime_flags.enabled("GLEE_NEGO_STALL_POLICY"):
         _sp = _their_stall_price(state, me)
         if _sp is not None:
             _t0 = target
+            _control_target = target
             if (_sp > my_value) if i_am_seller else (_sp < my_value):
-                target = _sp
+                _control_target = _sp
             else:
                 # v2: stallers stall their OFFERS, not their acceptance (53% of
                 # stalled closes were them taking our price). Park at the
                 # fitted profitable sweet spot; freeze only when none exists.
                 _park = pricing.stall_park(my_value, i_am_seller)
                 if _park is not None:
-                    target = _park
+                    _control_target = _park
                 else:
                     _prev = [float((r.get("offer") or {}).get("price"))
                              for r in state.get("history") or []
                              if (r.get("offer") or {}).get("from_player") == me
                              and (r.get("offer") or {}).get("price") is not None]
                     if _prev:
-                        target = _prev[-1]
-            if _tr is not None and target != _t0:
-                _tr.append("stall_park")
+                        _control_target = _prev[-1]
+
+            _current = _current_concession_break(state, me, _sp)
+            _safe_direction = _target_improves_for_role(
+                state, me, _t0, _control_target)
+            _enabled = _current is not None and _stall_current_break_enabled()
+            _assigned = (stall_current_break_assignment(game.get("game_id"))
+                         if _enabled and _safe_direction else None)
+            if _enabled and not _safe_direction:
+                # Record why a raw favorable-current shadow did not enter the
+                # experiment. Suppressing the writer when the ordinary target
+                # is less favorable than stall control would test extra
+                # concession, not stale-state correction; exact-stack replay
+                # found real wrong-direction actions before this guard.
+                stall_current_break = {
+                    "eligible": False,
+                    "stale_price": _sp,
+                    "current_price": _current,
+                    "pre_stall_target": _t0,
+                    "control_target": _control_target,
+                }
+            if _assigned is not None:
+                # Live evidence over the last 20k turns per slot found 52-120
+                # favorable current breaks and 35-107 changed counters; a real
+                # seller-.8 example had historical 0/0/0, current 440,779.69,
+                # yet the stale park rewrote ~1,400,527 to 900,000.  Suppress
+                # only this one target writer in the treatment arm.  The old
+                # park was accepted in that example, so stronger holding is a
+                # randomized hypothesis, not a direct bug-fix deployment.
+                stall_current_break = {
+                    "eligible": True,
+                    "arm": "candidate" if _assigned else "control",
+                    "stale_price": _sp,
+                    "current_price": _current,
+                    "pre_stall_target": _t0,
+                    "control_target": _control_target,
+                }
+            if _assigned is True:
+                # Leave ``target`` at the pre-stall schedule.  Dead-game,
+                # posterior and terminal writers below remain free to own the
+                # final counter exactly as in control.
+                if _tr is not None and target != _control_target:
+                    _tr.append("stall_current_break")
+            else:
+                target = _control_target
+                if _tr is not None and target != _t0:
+                    _tr.append("stall_park")
 
     # Dead-game play (clean-room panel, all four frames): when the opponent's
     # own offers PROVE no profitable close plausibly exists, the 0 atom is our
@@ -937,6 +1074,9 @@ def plan(game: dict, cfg) -> dict:
     }
     if rank_price is not None:
         out["rank_price"] = rank_price
+    if stall_current_break is not None:
+        stall_current_break["final_target"] = target
+        out["stall_current_break"] = stall_current_break
     if _tr is not None:
         out["gates_fired"] = _tr
     return out
