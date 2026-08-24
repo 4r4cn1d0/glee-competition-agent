@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import math
 
-from .. import first_principles, nego_arms, pricing, runtime_flags, top_buyer_clone
+from .. import (first_principles, nego_arms, pricing, runtime_flags,
+                top_buyer_clone, top_opus_buyer_clone)
 from .. import table_policy
 
 from ..actions import _num, is_final_round
@@ -1613,6 +1614,16 @@ def _decide(game: dict, cfg) -> dict:
         clone_action = top_buyer_clone.action(game)
         if clone_action is not None:
             return clone_action
+
+    # The second direct-leader reconstruction is intentionally partial.  It
+    # owns only point-identified Opus buyer wires and decisions; every
+    # unidentified late branch executes the complete current control policy.
+    # Its module also fails closed while the 7aidara clone is armed, preventing
+    # a game from entering two imitation experiments.
+    if top_opus_buyer_clone.owns(game):
+        opus_action = top_opus_buyer_clone.action(game)
+        if opus_action is not None:
+            return opus_action
 
     # The first-principles policy owns its cells outright: it is consulted before
     # plan() so no concession schedule, stall detector or span invariant can see

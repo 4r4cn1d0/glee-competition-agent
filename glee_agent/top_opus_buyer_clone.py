@@ -236,7 +236,10 @@ def _context(game: dict) -> _Context | None:
     valid = game.get("valid_actions")
     if not isinstance(state, dict) or not isinstance(valid, dict):
         return None
-    if state.get("game_family") != "negotiation":
+    # The production turn logger injects ``game_family`` into state, while the
+    # simulator and the SDK's raw observation keep it only at the top level.
+    # Accept omission but reject an explicit contradictory family.
+    if state.get("game_family") not in (None, "negotiation"):
         return None
 
     phase = valid.get("type")
@@ -497,3 +500,21 @@ def action(game: dict) -> dict | None:
         ctx,
         target,
     )
+
+
+def matches_wire(game: dict, wire: dict) -> bool:
+    """Whether ``wire`` is the exact semantic action this clone produced.
+
+    ``actions.coerce`` deliberately strips private ``_plan`` metadata before
+    applying numeric postconditions.  The Opus reconstruction is partial, so
+    checking :func:`owns` alone would also exempt unidentified fallback turns
+    from the control stack.  Recomputing the deterministic action lets only an
+    actually copied price bypass those later writers.
+    """
+    if not isinstance(wire, dict):
+        return False
+    expected = action(game)
+    if expected is None:
+        return False
+    semantic_keys = ("decision", "product_price", "message")
+    return all(wire.get(key) == expected.get(key) for key in semantic_keys)

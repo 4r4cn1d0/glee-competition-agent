@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 
 import pytest
 
 from glee_agent import top_opus_buyer_clone as clone
+from glee_agent.actions import coerce
+from glee_agent.config import Config
+from glee_agent.strategies import negotiation
 
 
 NEW_FLAG = "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB"
@@ -114,6 +118,9 @@ def test_default_off_hash_control_and_old_clone_collision(monkeypatch):
 def test_only_negotiation_buyer_seat_is_eligible(monkeypatch):
     _on(monkeypatch)
     assert clone.owns(_game())
+    sdk_shape = _game()
+    sdk_shape["game_state"].pop("game_family")
+    assert clone.owns(sdk_shape)
     assert not clone.owns(_game(role="seller"))
     assert not clone.owns(_game(family="bargaining"))
 
@@ -248,6 +255,38 @@ def test_reject_is_copied_only_for_incoming_price_worse_than_wire(monkeypatch):
     assert worse["product_price"] == 81.2
     assert equal is None
     assert better is None
+
+
+def test_dispatch_preserves_copied_wire_but_not_unidentified_fallback(
+        monkeypatch):
+    _on(monkeypatch)
+    monkeypatch.setenv("GLEE_NEGO_HIDDEN_FLOOR", "1.99")
+    gid = next(
+        candidate
+        for index in range(10_000)
+        for candidate in (f"dispatch-{index}",)
+        if (clone.treatment_assignment(candidate) is True
+            and int(hashlib.sha256(
+                ("hidden_floor|" + candidate).encode()).hexdigest(), 16) & 1)
+    )
+
+    copied_game = _game(gid=gid, own=120.0, offer=149.0)
+    raw = negotiation.decide(copy.deepcopy(copied_game), Config.from_env())
+    copied_wire = coerce(raw, copy.deepcopy(copied_game))
+    assert raw["_plan"]["source"] == "top_opus_buyer_clone"
+    assert copied_wire["product_price"] == 81.2
+
+    # Known horizon 20 has no observed Opus wire.  It must execute the current
+    # policy including the live hidden-price postcondition, not gain an
+    # accidental exemption merely because the game hash is candidate.
+    fallback_game = _game(
+        gid=gid, own=120.0, cap=20, round_no=1, offer=149.0)
+    assert clone.owns(fallback_game)
+    assert clone.action(fallback_game) is None
+    fallback_raw = negotiation.decide(
+        copy.deepcopy(fallback_game), Config.from_env())
+    fallback_wire = coerce(fallback_raw, copy.deepcopy(fallback_game))
+    assert fallback_wire["product_price"] <= 1.0
 
 
 def test_observed_acceptance_states_are_time_and_type_conditioned(monkeypatch):

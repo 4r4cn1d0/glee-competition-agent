@@ -198,6 +198,12 @@ def _p_top_buyer_clone(game, p):
     return eligible(game)
 
 
+def _p_top_opus_buyer_clone(game, p):
+    """Static scope of the partial direct-Opus buyer treatment."""
+    from glee_agent.top_opus_buyer_clone import eligible
+    return eligible(game)
+
+
 def _p_hi_uncapped_first_offer(game, p):
     """Static scope of the hidden unknown-horizon first-offer probe."""
     from glee_agent.actions import _hidden_own_price_count, _num
@@ -339,6 +345,27 @@ def _p_p08_r125_text_decline_veto(game, p):
             and rounds == 20)
 
 
+def _p_p05_r12_selectivity_unlock(game, p):
+    """Structural scope of the exact buyer selectivity-unlock experiment."""
+    state = game.get("game_state") or {}
+    seat = game.get("your_player")
+    try:
+        price = float(state.get("product_price"))
+        ratio = float(state.get("v")) / price
+        prior = float(state.get("p"))
+        low_value = float(state.get("u"))
+        rounds = float(state.get("total_rounds"))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return False
+    return ((game.get("valid_actions") or {}).get("type") == "buyer_decision"
+            and seat == "player_2"
+            and state.get("seller_message_type") in ("text", "binary")
+            and abs(prior - 0.5) <= 1e-9
+            and abs(ratio - 1.2) <= 1e-9
+            and abs(low_value) <= 1e-9 * max(1.0, abs(price))
+            and abs(rounds - 20.0) <= 20e-9)
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -395,6 +422,8 @@ KNOWN = {
         "negotiation", (), _p_hi_cap10_buyer_curve),
     "GLEE_NEGO_TOP_BUYER_CLONE_AB": (
         "negotiation", (), _p_top_buyer_clone),
+    "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB": (
+        "negotiation", (), _p_top_opus_buyer_clone),
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB": (
         "negotiation", (), _p_hi_uncapped_first_offer),
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB": (
@@ -444,6 +473,9 @@ KNOWN = {
     "GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB": (
         "persuasion", ("p08_r125_text_decline_veto",),
         _p_p08_r125_text_decline_veto),
+    "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB": (
+        "persuasion", ("p05_r12_selectivity_unlock",),
+        _p_p05_r12_selectivity_unlock),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those
@@ -466,6 +498,7 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
     "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB",
     "GLEE_NEGO_TOP_BUYER_CLONE_AB",
+    "GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB",
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
