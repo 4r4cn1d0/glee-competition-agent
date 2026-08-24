@@ -59,6 +59,9 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab pers-decline-veto --since T0 \
         --official-json FILE
                        # exact buyer/text explicit-decline veto ITT + wire audit
+    python scripts/live_percentile.py --ab pers-p05-unlock --since T0 \
+        --official-json FILE
+                       # p=.5/r=1.2 buyer selectivity-unlock ITT + wire audit
     python scripts/live_percentile.py --ab barg-msg        # B0 silence vs B1-B3
 
 CAVEAT, stated because it decides how far the numbers can be pushed: the cell
@@ -93,6 +96,7 @@ from glee_agent.pricing import infer_base       # noqa: E402
 from glee_agent.strategies.persuasion import (  # noqa: E402
     _recommendation_signal as _pers_recommendation_signal,
     buyer_selectivity_assignment,
+    p05_r12_selectivity_unlock_assignment,
     p08_r125_binary_truth_assignment,
     p08_r125_prose_assignment,
     p08_r125_text_decline_veto_assignment,
@@ -295,6 +299,14 @@ def pers_truth_arm(gid) -> str | None:
 def pers_decline_veto_arm(gid) -> str | None:
     """Recover the exact buyer/text decline-veto production assignment."""
     treatment = p08_r125_text_decline_veto_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def pers_p05_unlock_arm(gid) -> str | None:
+    """Recover the p=.5/r=1.2 selectivity-unlock production assignment."""
+    treatment = p05_r12_selectivity_unlock_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -648,6 +660,100 @@ def _pers_decline_veto_signal(seat: str, state: dict) -> dict | None:
         # unobservable config bit enter assignment.
         "is_seller_know_cv": state.get("is_seller_know_cv"),
         "total_rounds": int(rounds),
+    }
+
+
+def _pers_p05_unlock_signal(seat: str, state: dict) -> dict | None:
+    """Return the prospective all-assigned p=.5/r=1.2 buyer cell.
+
+    This structural cohort is fixed at the globally first buyer decision.  It
+    deliberately does not require a recommendation, a prior decline, a trace,
+    or a purchase: those are treatment reach and outcome variables.  Seller
+    knowledge is also not a production gate because buyers do not observe it;
+    the terminal label is retained as a precommitted official-cell subgroup.
+    """
+    if (seat != "player_2"
+            or (state.get("player_2_role") is not None
+                and state.get("player_2_role") != "buyer")):
+        return None
+    mode = str(state.get("seller_message_type") or "").strip().lower()
+    if mode not in ("text", "binary"):
+        return None
+    price = _number(state.get("product_price"))
+    prior = _number(state.get("p"))
+    high_value = _number(state.get("v"))
+    low_value = _number(state.get("u"))
+    rounds = _number(state.get("total_rounds"))
+    if None in (price, prior, high_value, low_value, rounds) or price <= 0.0:
+        return None
+    numeric_scale = max(1.0, abs(price), abs(high_value), abs(low_value))
+    if (abs(prior - 0.5) > 1e-9
+            or abs(high_value / price - 1.2) > 1e-9
+            or abs(low_value) > 1e-9 * numeric_scale
+            or abs(rounds - 20.0) > 1e-9 * 20.0):
+        return None
+    return {
+        "price": price,
+        "p": prior,
+        "v": high_value,
+        "u": low_value,
+        "ratio": high_value / price,
+        "mode": mode,
+        "seller_message_type": mode,
+        "is_seller_know_cv": state.get("is_seller_know_cv"),
+        "total_rounds": 20,
+    }
+
+
+def _pers_p05_unlock_predicate(state: dict, plan: dict) -> dict:
+    """Independently reconstruct the one-way unlock predicate for one turn."""
+    history = [entry for entry in state.get("history") or []
+               if isinstance(entry, dict)]
+    current_positive = _pers_recommendation_signal({
+        "seller_message": state.get("seller_message"),
+    }) is True
+    prior_declines = sum(
+        _pers_recommendation_signal(entry) is False for entry in history)
+    price = _number(state.get("product_price"))
+    plan_price = _number(plan.get("price"))
+    expected = _number(plan.get("expected_value"))
+    price_matches = False
+    ev_strictly_profitable = False
+    if price is not None and plan_price is not None:
+        price_matches = math.isclose(
+            plan_price, price, rel_tol=1e-9, abs_tol=1e-9)
+    if plan_price is not None and expected is not None:
+        tolerance = 1e-9 * max(1.0, abs(plan_price), abs(expected))
+        ev_strictly_profitable = expected > plan_price + tolerance
+    gates = plan.get("gates_fired")
+    gates = gates if isinstance(gates, list) else []
+    other_gates = [gate for gate in gates if gate != _PERS_P05_UNLOCK_GATE]
+    conflict_prefixes = ("rank_", "buyer_selectivity_", "lcb_", "parser_")
+    conflict_free = (
+        not other_gates
+        and not plan.get("uninformed_veto")
+        and not any(str(key).startswith(conflict_prefixes) for key in plan)
+    )
+    predicate = (
+        plan.get("buyer_v2") is True
+        and plan.get("tight") is True
+        and plan.get("blocked") is True
+        and current_positive
+        and prior_declines >= 1
+        and price_matches
+        and ev_strictly_profitable
+        and conflict_free
+    )
+    return {
+        "predicate": predicate,
+        "current_positive": current_positive,
+        "prior_declines": prior_declines,
+        "expected_value": expected,
+        "price": price,
+        "plan_price": plan_price,
+        "price_matches": price_matches,
+        "ev_strictly_profitable": ev_strictly_profitable,
+        "conflict_free": conflict_free,
     }
 
 
@@ -1372,6 +1478,45 @@ def _pers_decline_veto_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _pers_p05_unlock_exposure_turn(slot: str, rec: dict):
+    """Cohort the structural cell at its globally first buyer decision."""
+    if rec.get("game_family") != "persuasion":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _pers_p05_unlock_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if rec.get("action_type") != "buyer_decision":
+        return None
+    if rec.get("phase") not in (None, "buyer_decision"):
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+    action = rec.get("action") or {}
+    opponent = rec.get("opponent") or {}
+    if isinstance(opponent, dict):
+        opponent_name = opponent.get("name")
+        opponent_type = opponent.get("type")
+    else:
+        opponent_name = None
+        opponent_type = None
+    signal.update({
+        "first_decision_ts": ts,
+        "first_decision": (action.get("decision")
+                           if isinstance(action, dict) else None),
+        "first_message": state.get("seller_message"),
+        "opponent_name": opponent_name,
+        "opponent_type": opponent_type,
+        "opponent_visibility": ("named" if opponent_name else "hidden"),
+    })
+    return (slot, gid), ts, signal
+
+
 def _terminal_close(fin: dict) -> bool | None:
     """Return agreement/completion status, or None without a terminal outcome."""
     result = fin.get("result") or {}
@@ -1962,6 +2107,70 @@ def _pers_decline_veto_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), completed, diagnostic
 
 
+def _pers_p05_unlock_history_metrics(history) -> dict:
+    """Summarize every played buyer decision without outcome selection."""
+    entries = [entry for entry in history or [] if isinstance(entry, dict)]
+    purchases = refusals = unknown_decisions = 0
+    for entry in entries:
+        bought = entry.get("bought")
+        decision = str(entry.get("buyer_decision") or "").strip().lower()
+        if bought is True or decision in ("yes", "buy", "bought", "purchase"):
+            purchases += 1
+        elif bought is False or decision in ("no", "pass", "refuse", "decline"):
+            refusals += 1
+        else:
+            unknown_decisions += 1
+    return {
+        "rounds": len(entries),
+        "purchases": purchases,
+        "refusals": refusals,
+        "unknown_decisions": unknown_decisions,
+        "purchase_rate": purchases / len(entries) if entries else None,
+        "seller_messages": [entry.get("seller_message") for entry in entries],
+        "buyer_decisions": [entry.get("buyer_decision") for entry in entries],
+        "qualities": [entry.get("quality") for entry in entries],
+        "strict_prior_declines": sum(
+            _pers_recommendation_signal(entry) is False for entry in entries),
+    }
+
+
+def _pers_p05_unlock_row(slot: str, rec: dict, fin: dict):
+    """Build one terminal structural-cell outcome, including bottom tails."""
+    if fin.get("game_family") != "persuasion":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _pers_p05_unlock_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    completed = _terminal_close(fin)
+    if completed is None:
+        return None
+    result = fin.get("result") or {}
+    payoff = _result_payoff(result, seat, seat)
+    pct = (percentile("persuasion", dict(state), seat, payoff)
+           if payoff is not None else None)
+    price = signal["price"]
+    status = str(fin.get("status") or "").strip().lower()
+    outcome = str(result.get("outcome") or "").strip().lower()
+    metrics = _pers_p05_unlock_history_metrics(state.get("history"))
+    diagnostic = {
+        **signal,
+        **metrics,
+        "payoff": payoff,
+        "payoff_per_price": (
+            payoff / price if payoff is not None and price else None),
+        "zero_outcome": payoff == 0.0 if payoff is not None else None,
+        "negative_outcome": payoff < 0.0 if payoff is not None else None,
+        "status": status,
+        "outcome": outcome,
+        "timeout": status == "timeout" or outcome == "timeout",
+        "immediate_terminal": metrics["rounds"] == 0,
+    }
+    return slot, pct, str(gid), completed, diagnostic
+
+
 def _game_record_final(record: dict) -> dict:
     """Rebuild the final envelope stored by the continuous outcome collector."""
     state = dict(record.get("config") or {})
@@ -2397,6 +2606,195 @@ def pers_decline_veto_games(hours, since=None, until=None):
         hours, _pers_decline_veto_exposure_turn, _pers_decline_veto_row,
         since=since, until=until))
     yield from _pers_decline_veto_trace_audit(rows)
+
+
+_PERS_P05_UNLOCK_GATE = "p05_r12_selectivity_unlock"
+_PERS_P05_UNLOCK_TRACE_FIELDS = (
+    _PERS_P05_UNLOCK_GATE,
+    "p05_r12_selectivity_unlock_prior_declines",
+    "p05_r12_selectivity_unlock_expected_value",
+)
+
+
+def _pers_p05_unlock_trace_shape(plan: dict) -> dict:
+    """Describe presence of the adjacent production trace without trusting it."""
+    plan = plan if isinstance(plan, dict) else {}
+    gates = plan.get("gates_fired")
+    gates = gates if isinstance(gates, list) else []
+    gate_count = sum(gate == _PERS_P05_UNLOCK_GATE for gate in gates)
+    present_fields = [field for field in _PERS_P05_UNLOCK_TRACE_FIELDS
+                      if field in plan]
+    return {
+        "trace_present": bool(present_fields or gate_count),
+        "present_fields": tuple(present_fields),
+        "gate_count": gate_count,
+    }
+
+
+def _pers_p05_unlock_trace_audit(rows, hours, since=None, until=None):
+    """Audit first and every buyer turn, plus any out-of-cell arm trace."""
+    wanted = {(row[0], row[2]) for row in rows}
+    by_key = defaultdict(list)
+    now = time.time()
+    cut = float(since) if since is not None else now - hours * 3600
+    end = float(until) if until is not None else now
+    global_non_target_fires = 0
+    global_control_fires = 0
+    global_trace_turns = 0
+
+    for path in sorted(glob.glob(os.path.join(REPO, "logs", "*", "turns.jsonl"))):
+        slot = os.path.basename(os.path.dirname(path))
+        if slot not in NAMES:
+            continue
+        try:
+            handle = open(path, encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with handle:
+            for line in handle:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if (rec.get("game_family") != "persuasion"
+                        or rec.get("action_type") != "buyer_decision"):
+                    continue
+                gid = str(rec.get("game_id") or "")
+                if not gid:
+                    continue
+                ts = _number(rec.get("ts"))
+                state = rec.get("state") or {}
+                plan = rec.get("plan") or {}
+                shape = _pers_p05_unlock_trace_shape(plan)
+                signal = _pers_p05_unlock_signal(rec.get("your_player"), state)
+                in_global_window = ts is not None and cut <= ts < end
+                if shape["trace_present"] and in_global_window:
+                    global_trace_turns += 1
+                    if signal is None:
+                        global_non_target_fires += 1
+                    elif pers_p05_unlock_arm(gid) == "control":
+                        global_control_fires += 1
+                if (slot, gid) in wanted:
+                    by_key[(slot, gid)].append((ts, rec, signal, shape))
+
+    audits = {}
+    for key in wanted:
+        records = sorted(
+            by_key.get(key, []),
+            key=lambda item: (math.inf if item[0] is None else item[0]),
+        )
+        audit = {
+            "eligible_turns": 0,
+            "predicate_turns": 0,
+            "unlock_traces": 0,
+            "action_changed": 0,
+            "wire_failures": 0,
+            "candidate_purchase_without_predicate": 0,
+            "control_trace_turns": 0,
+            "first_turn_audited": 0,
+            "first_turn_trace": 0,
+            "global_trace_turns": global_trace_turns,
+            "global_non_target_fires": global_non_target_fires,
+            "global_control_fires": global_control_fires,
+        }
+        arm = pers_p05_unlock_arm(key[1])
+        target_records = [item for item in records if item[2] is not None]
+        for index, (_ts, rec, _signal, shape) in enumerate(target_records):
+            audit["eligible_turns"] += 1
+            if index == 0:
+                audit["first_turn_audited"] = 1
+                audit["first_turn_trace"] = int(shape["trace_present"])
+            state = rec.get("state") or {}
+            plan = rec.get("plan") or {}
+            plan = plan if isinstance(plan, dict) else {}
+            action = rec.get("action") or {}
+            action = action if isinstance(action, dict) else {}
+            decision = str(action.get("decision") or "").strip().lower()
+            reconstructed = _pers_p05_unlock_predicate(state, plan)
+            predicate = reconstructed["predicate"] is True
+            audit["predicate_turns"] += int(predicate)
+            audit["unlock_traces"] += int(shape["trace_present"])
+
+            traced_declines = _number(plan.get(
+                "p05_r12_selectivity_unlock_prior_declines"))
+            traced_expected = _number(plan.get(
+                "p05_r12_selectivity_unlock_expected_value"))
+            expected = reconstructed["expected_value"]
+            gates = plan.get("gates_fired")
+            gates = gates if isinstance(gates, list) else []
+            trace_complete = (
+                plan.get(_PERS_P05_UNLOCK_GATE) is True
+                and set(shape["present_fields"])
+                == set(_PERS_P05_UNLOCK_TRACE_FIELDS)
+                and shape["gate_count"] == 1
+                and gates == [_PERS_P05_UNLOCK_GATE]
+                and traced_declines is not None
+                and traced_declines == reconstructed["prior_declines"]
+                and traced_expected is not None
+                and expected is not None
+                and math.isclose(traced_expected, expected,
+                                 rel_tol=1e-12, abs_tol=1e-9)
+            )
+            valid_change = (
+                arm == "candidate"
+                and predicate
+                and shape["trace_present"]
+                and trace_complete
+                and plan.get("buy") is True
+                and decision == "yes"
+            )
+            audit["action_changed"] += int(valid_change)
+
+            if arm == "control" and shape["trace_present"]:
+                audit["control_trace_turns"] += 1
+            # A blocked candidate could only submit a purchase through an
+            # overlay.  If the exact strict predicate is false, that purchase
+            # is treatment contamination even when its trace is absent.
+            if (arm == "candidate" and plan.get("blocked") is True
+                    and decision == "yes" and not predicate):
+                audit["candidate_purchase_without_predicate"] += 1
+
+            mechanism_ok = True
+            if arm == "control":
+                mechanism_ok = not shape["trace_present"]
+            elif predicate:
+                mechanism_ok = valid_change
+            else:
+                mechanism_ok = not shape["trace_present"]
+                if plan.get("blocked") is True and decision == "yes":
+                    mechanism_ok = False
+            audit["wire_failures"] += int(not mechanism_ok)
+
+        # The row exists only because a first structural turn was observed. A
+        # missing audit copy therefore means the all-turn reader failed closed.
+        if not target_records:
+            audit["wire_failures"] += 1
+        audits[key] = audit
+
+    enriched = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        attached = False
+        output_metadata = []
+        for item in metadata:
+            if isinstance(item, dict) and not attached:
+                output_metadata.append({**item, **audits[(slot, gid)]})
+                attached = True
+            else:
+                output_metadata.append(item)
+        if not attached:
+            output_metadata.insert(0, dict(audits[(slot, gid)]))
+        enriched.append((slot, pct, gid, completed, *output_metadata))
+    return enriched
+
+
+def pers_p05_unlock_games(hours, since=None, until=None):
+    """Yield all p=.5/r=1.2 assigned games with independent trace audits."""
+    rows = list(_price_arm_games(
+        hours, _pers_p05_unlock_exposure_turn, _pers_p05_unlock_row,
+        since=since, until=until))
+    yield from _pers_p05_unlock_trace_audit(
+        rows, hours, since=since, until=until)
 
 
 def _quantile(values, probability):
@@ -3357,6 +3755,117 @@ def _pers_buyer_official_terminal(record, diagnostic):
     }
 
 
+def _pers_p05_unlock_official_terminal(record, diagnostic):
+    """Validate an authenticated terminal buyer transcript for this arm.
+
+    Unlike older exact readers, this prospective cohort retains authenticated
+    timeouts and immediate terminal actions with fewer than 20 played rounds.
+    ``rounds=20`` is the configured horizon; the three transcript lists encode
+    the actually played prefix and must agree exactly with the reported payoff.
+    """
+    if not isinstance(record, dict) or record.get("terminal") is not True:
+        return None
+    transcript = record.get("persuasion")
+    if (record.get("source") != "authenticated-dashboard-transcript"
+            or str(record.get("family") or "").strip().lower() != "persuasion"
+            or str(record.get("role") or "").strip().lower() != "buyer"
+            or not isinstance(transcript, dict)):
+        return False
+    expected_config = {
+        "price": diagnostic.get("price"),
+        "p": diagnostic.get("p"),
+        "v": diagnostic.get("v"),
+        "u": diagnostic.get("u"),
+        "rounds": 20.0,
+    }
+    for field, wanted in expected_config.items():
+        observed = _number(transcript.get(field))
+        wanted_number = _number(wanted)
+        if (observed is None or wanted_number is None
+                or not math.isclose(observed, wanted_number,
+                                    rel_tol=1e-9, abs_tol=1e-9)):
+            return False
+    mode = str(transcript.get("mode") or "").strip().lower()
+    if mode != diagnostic.get("mode") or mode not in ("text", "binary"):
+        return False
+    seller_knows = transcript.get("is_seller_know_cv")
+    if not isinstance(seller_knows, bool):
+        return False
+    messages = transcript.get("seller_messages")
+    qualities = transcript.get("qualities")
+    decisions = transcript.get("buyer_decisions")
+    if not all(isinstance(values, list)
+               for values in (messages, qualities, decisions)):
+        return False
+    played = len(messages)
+    if not (len(qualities) == played == len(decisions) and 0 <= played <= 20):
+        return False
+    normalized_decisions = []
+    for value in decisions:
+        decision = str(value or "").strip().lower()
+        if decision in ("yes", "buy", "bought", "purchase"):
+            normalized_decisions.append("buy")
+        elif decision in ("no", "pass", "refuse", "decline"):
+            normalized_decisions.append("pass")
+        else:
+            return False
+    normalized_qualities = []
+    for decision, value in zip(normalized_decisions, qualities):
+        quality = str(value or "").strip().lower()
+        # The dashboard withholds quality on passed rounds.  That is valid and
+        # payoff-irrelevant; purchased rounds still require high/low so the
+        # buyer-payoff identity remains fully audited.
+        if decision == "buy" and quality not in ("high", "low"):
+            return False
+        if decision == "pass" and quality not in ("high", "low"):
+            quality = "hidden"
+        normalized_qualities.append(quality)
+    price = _number(diagnostic.get("price"))
+    high_value = _number(diagnostic.get("v"))
+    low_value = _number(diagnostic.get("u"))
+    payoff = _number(transcript.get("buyer_payoff"))
+    if None in (price, high_value, low_value, payoff) or price <= 0.0:
+        return False
+    expected_payoff = sum(
+        (high_value - price if quality == "high" else low_value - price)
+        for decision, quality in zip(normalized_decisions,
+                                     normalized_qualities)
+        if decision == "buy"
+    )
+    if not math.isclose(payoff, expected_payoff,
+                        rel_tol=1e-9, abs_tol=1e-9):
+        return False
+    local_payoff = _number(diagnostic.get("payoff"))
+    if (local_payoff is not None
+            and not math.isclose(local_payoff, payoff,
+                                 rel_tol=1e-9, abs_tol=1e-9)):
+        return False
+    history = [
+        {
+            "seller_message": message,
+            "buyer_decision": decision,
+            "bought": decision == "buy",
+            "quality": quality,
+        }
+        for message, decision, quality in zip(
+            messages, normalized_decisions, normalized_qualities)
+    ]
+    metrics = _pers_p05_unlock_history_metrics(history)
+    return {
+        **diagnostic,
+        **metrics,
+        "mode": mode,
+        "seller_message_type": mode,
+        "is_seller_know_cv": seller_knows,
+        "payoff": payoff,
+        "payoff_per_price": payoff / price,
+        "zero_outcome": payoff == 0.0,
+        "negative_outcome": payoff < 0.0,
+        "immediate_terminal": played == 0,
+        "official_terminal_recovery": True,
+    }
+
+
 def _pers_prose_observations(rows, official):
     observations = []
     for row in rows:
@@ -3503,6 +4012,108 @@ def _pers_decline_veto_observations(rows, official):
             "wire_failures": wire_failures,
         })
     return observations
+
+
+def _pers_p05_unlock_observations(rows, official):
+    """Join all structural assignments and validate terminal transcript labels."""
+    observations = []
+    for row in rows:
+        slot, pct, gid, completed, *metadata = row
+        arm = pers_p05_unlock_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if completed is None else "terminal")
+        official_record = official.get((slot, gid))
+        recovered = _pers_p05_unlock_official_terminal(
+            official_record, diagnostic)
+        official_join_failure = recovered is False
+        if isinstance(recovered, dict):
+            diagnostic = recovered
+            if completed is None:
+                completed = True
+                resolution = "official-terminal"
+        elif recovered is False and completed is None:
+            resolution = "invalid-final"
+        observations.append({
+            "slot": slot,
+            "gid": gid,
+            "arm": arm,
+            "pct": pct,
+            "completed": completed,
+            "resolution": resolution,
+            "diagnostic": diagnostic,
+            "official": (None if official_record is None else
+                         official_record.get("rating_delta")),
+            "official_join_failure": official_join_failure,
+        })
+    return observations
+
+
+def _summarize_pers_p05_unlock(observations):
+    stats = {
+        "official": [], "pct": [], "payoff_per_price": [],
+        "zero": [], "negative": [], "purchases": [], "refusals": [],
+        "purchase_rate": [], "terminal": 0, "pending": 0, "invalid": 0,
+        "official_missing": 0, "payoff_missing": 0,
+        "knowledge_missing": 0, "unknown_decisions": 0,
+        "timeouts": 0, "immediate_terminal": 0,
+        "eligible_turns": 0, "predicate_turns": 0, "unlock_traces": 0,
+        "action_changed": 0, "wire_failures": 0,
+        "candidate_purchase_without_predicate": 0,
+        "control_trace_turns": 0, "first_turn_audited": 0,
+        "first_turn_trace": 0, "official_join_failures": 0,
+    }
+    for observation in observations:
+        diagnostic = observation["diagnostic"]
+        for field in (
+                "eligible_turns", "predicate_turns", "unlock_traces",
+                "action_changed", "wire_failures",
+                "candidate_purchase_without_predicate", "control_trace_turns",
+                "first_turn_audited", "first_turn_trace"):
+            stats[field] += int(_number(diagnostic.get(field)) or 0)
+        stats["official_join_failures"] += int(
+            observation["official_join_failure"])
+        if observation["completed"] is None:
+            field = ("invalid" if observation["resolution"] == "invalid-final"
+                     else "pending")
+            stats[field] += 1
+            continue
+        stats["terminal"] += 1
+        if observation["pct"] is not None:
+            stats["pct"].append(observation["pct"])
+        if observation["official"] is None:
+            stats["official_missing"] += 1
+        else:
+            stats["official"].append(observation["official"])
+        payoff = _number(diagnostic.get("payoff_per_price"))
+        if payoff is None:
+            stats["payoff_missing"] += 1
+        else:
+            stats["payoff_per_price"].append(payoff)
+        for source, target in (
+                ("purchases", "purchases"), ("refusals", "refusals"),
+                ("purchase_rate", "purchase_rate")):
+            value = _number(diagnostic.get(source))
+            if value is not None:
+                stats[target].append(value)
+        for source, target in (
+                ("zero_outcome", "zero"),
+                ("negative_outcome", "negative")):
+            value = diagnostic.get(source)
+            if isinstance(value, bool):
+                stats[target].append(float(value))
+        stats["knowledge_missing"] += int(
+            diagnostic.get("is_seller_know_cv") not in (True, False))
+        stats["unknown_decisions"] += int(
+            _number(diagnostic.get("unknown_decisions")) or 0)
+        stats["timeouts"] += int(diagnostic.get("timeout") is True)
+        stats["immediate_terminal"] += int(
+            diagnostic.get("immediate_terminal") is True)
+    return stats
 
 
 def _summarize_pers_prose(observations):
@@ -4007,6 +4618,336 @@ def report_pers_decline_veto(rows, hours, since=None, until=None,
         return 0
     print("PROMOTION BLOCKED: sample/official-CI/payoff/bottom-tail/scale "
           "gates are not all satisfied")
+    return 1
+
+
+def _print_pers_p05_unlock_line(label, arm, stats):
+    official, n_official = _mean_ci_text(stats["official"])
+    pct, n_pct = _mean_ci_text(stats["pct"])
+    payoff, n_payoff = _mean_ci_text(stats["payoff_per_price"])
+    zero, n_zero = _mean_ci_text(stats["zero"], percent=True)
+    negative, n_negative = _mean_ci_text(stats["negative"], percent=True)
+    purchases = sum(stats["purchases"])
+    refusals = sum(stats["refusals"])
+    print(
+        f"{label:9} {arm:9} official-dR={official} n={n_official}; "
+        f"local-pct={pct} n={n_pct}; payoff/P={payoff} n={n_payoff}; "
+        f"zero={zero} n={n_zero}; negative={negative} n={n_negative}; "
+        f"purchases={purchases:g} refusals={refusals:g}; "
+        f"terminal={stats['terminal']} timeout={stats['timeouts']} "
+        f"immediate={stats['immediate_terminal']} pending={stats['pending']} "
+        f"badfin={stats['invalid']} official-missing={stats['official_missing']} "
+        f"knowledge-missing={stats['knowledge_missing']} "
+        f"eligible={stats['eligible_turns']} predicate={stats['predicate_turns']} "
+        f"traces={stats['unlock_traces']} changed={stats['action_changed']} "
+        f"wire-fail={stats['wire_failures']}"
+    )
+
+
+def _pers_p05_official_groups(population, predicate):
+    return {
+        arm: [item["official"] for item in population
+              if item["arm"] == arm and item["official"] is not None
+              and predicate(item)]
+        for arm in ("control", "candidate")
+    }
+
+
+def _print_pers_p05_group(label, grouped):
+    delta, low, high = _delta_ci(grouped["candidate"], grouped["control"])
+    if delta is None:
+        rendered = "official unavailable"
+    elif low is None:
+        rendered = f"{delta:+.4f} (CI unavailable)"
+    else:
+        rendered = f"{delta:+.4f} [{low:+.4f},{high:+.4f}]"
+    print(f"  {label}: {rendered}; "
+          f"n={len(grouped['control'])}/{len(grouped['candidate'])} "
+          "control/candidate")
+    return delta
+
+
+def report_pers_p05_unlock(rows, hours, since=None, until=None,
+                           official_path=None):
+    """Report the prospective p=.5/r=1.2 buyer unlock causal experiment."""
+    try:
+        official = _load_pers_official_records(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+    observations = _pers_p05_unlock_observations(rows, official)
+    print("GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB, buyer/player_2, p=.5, "
+          "v=1.2P, u=0, 20 rounds, text+binary, seller-known+seller-blind")
+    print("primary: authenticated official dashboard per-game rating delta, "
+          "all-assigned intent-to-treat; local same-cell percentile is "
+          "diagnostic only")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"globally first buyer-decision cohort window: [{lower}, {upper})")
+    print("cohort includes purchases, refusals, zeros, negative payoffs, "
+          "timeouts, invalid/unresolved games, and immediate terminal actions; "
+          "it is never conditioned on a decline, trace, firing, or outcome")
+    if not observations:
+        print("no assigned structural-cell buyer games in the window")
+        return 1
+
+    key_counts = Counter((item["slot"], item["gid"])
+                         for item in observations)
+    duplicate_keys = {key for key, count in key_counts.items() if count > 1}
+    gid_slots = defaultdict(set)
+    for item in observations:
+        slots = item["diagnostic"].get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[item["gid"]].update(slots)
+        else:
+            gid_slots[item["gid"]].add(item["slot"])
+    cross_slot_gids = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    contaminated_gids = cross_slot_gids | {gid for _slot, gid in duplicate_keys}
+    independent = [item for item in observations
+                   if item["gid"] not in contaminated_gids]
+
+    by_slot_arm = defaultdict(list)
+    for item in observations:
+        by_slot_arm[(item["slot"], item["arm"])].append(item)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        _print_pers_p05_unlock_line(
+            NAMES.get(slot, slot), arm,
+            _summarize_pers_p05_unlock(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in independent if item["arm"] == arm]
+        if assigned:
+            pooled[arm] = _summarize_pers_p05_unlock(assigned)
+            _print_pers_p05_unlock_line("POOLED", arm, pooled[arm])
+    print(f"dependence guard: duplicate slot/game rows={len(duplicate_keys)}; "
+          f"cross-slot/self-play game ids={len(cross_slot_gids)}; all are "
+          "excluded from estimates and block promotion")
+
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    official_delta = official_low = official_high = None
+    payoff_delta = zero_delta = negative_delta = None
+    negative_low = None
+    if control and candidate:
+        print("pooled candidate-control (all-assigned intent-to-treat):")
+        _print_delta("OFFICIAL per-game rating delta",
+                     candidate["official"], control["official"])
+        _print_delta("local same-cell percentile (diagnostic only)",
+                     candidate["pct"], control["pct"])
+        _print_delta("normalized payoff / price",
+                     candidate["payoff_per_price"],
+                     control["payoff_per_price"])
+        _print_delta("zero-outcome rate", candidate["zero"], control["zero"],
+                     percent=True)
+        _print_delta("negative-outcome rate", candidate["negative"],
+                     control["negative"], percent=True)
+        _print_delta("purchase count per assigned game",
+                     candidate["purchases"], control["purchases"])
+        _print_delta("refusal count per assigned game",
+                     candidate["refusals"], control["refusals"])
+        official_delta, official_low, official_high = _delta_ci(
+            candidate["official"], control["official"])
+        payoff_delta, _lo, _hi = _delta_ci(
+            candidate["payoff_per_price"], control["payoff_per_price"])
+        zero_delta, _lo, _hi = _delta_ci(candidate["zero"], control["zero"])
+        negative_delta, negative_low, _negative_high = _delta_ci(
+            candidate["negative"], control["negative"])
+
+    print("predeclared official subgroup diagnostics:")
+    mode_ready = mode_nonnegative = True
+    for mode in ("text", "binary"):
+        grouped = _pers_p05_official_groups(
+            independent,
+            lambda item, mode=mode: item["diagnostic"].get("mode") == mode)
+        delta = _print_pers_p05_group(f"mode={mode}", grouped)
+        mode_ready &= all(len(grouped[arm]) >= 20
+                          for arm in ("control", "candidate"))
+        mode_nonnegative &= delta is not None and delta >= 0.0
+
+    knowledge_ready = knowledge_nonnegative = True
+    for knows in (True, False):
+        grouped = _pers_p05_official_groups(
+            independent,
+            lambda item, knows=knows: item["diagnostic"].get(
+                "is_seller_know_cv") is knows)
+        delta = _print_pers_p05_group(
+            f"terminal seller-knowledge={str(knows).lower()}", grouped)
+        knowledge_ready &= all(len(grouped[arm]) >= 15
+                               for arm in ("control", "candidate"))
+        knowledge_nonnegative &= delta is not None and delta >= 0.0
+
+    scales = (100.0, 10000.0, 1000000.0)
+    scale_ready = scale_nonnegative = True
+    for scale in scales:
+        grouped = _pers_p05_official_groups(
+            independent,
+            lambda item, scale=scale: math.isclose(
+                _number(item["diagnostic"].get("price")) or math.nan,
+                scale, rel_tol=1e-9, abs_tol=1e-9))
+        delta = _print_pers_p05_group(f"scale={scale:g}", grouped)
+        scale_ready &= all(len(grouped[arm]) >= 15
+                           for arm in ("control", "candidate"))
+        scale_nonnegative &= delta is not None and delta >= 0.0
+
+    intersection_ready = True
+    for mode in ("text", "binary"):
+        for knows in (True, False):
+            grouped = _pers_p05_official_groups(
+                independent,
+                lambda item, mode=mode, knows=knows: (
+                    item["diagnostic"].get("mode") == mode
+                    and item["diagnostic"].get("is_seller_know_cv") is knows))
+            _print_pers_p05_group(
+                f"mode={mode} x knowledge={str(knows).lower()}", grouped)
+            intersection_ready &= all(len(grouped[arm]) >= 10
+                                      for arm in ("control", "candidate"))
+
+    host_nonnegative = True
+    for slot in sorted({item["slot"] for item in independent}):
+        grouped = _pers_p05_official_groups(
+            independent, lambda item, slot=slot: item["slot"] == slot)
+        delta = _print_pers_p05_group(
+            f"host={NAMES.get(slot, slot)}", grouped)
+        host_nonnegative &= delta is not None and delta >= 0.0
+
+    print("predeclared opponent diagnostics (descriptive, no promotion gate):")
+    for visibility in ("named", "hidden"):
+        grouped = _pers_p05_official_groups(
+            independent,
+            lambda item, visibility=visibility: item["diagnostic"].get(
+                "opponent_visibility") == visibility)
+        _print_pers_p05_group(f"opponent={visibility}", grouped)
+    named_opponents = sorted({
+        str(item["diagnostic"].get("opponent_name"))
+        for item in independent
+        if item["diagnostic"].get("opponent_name")
+    })
+    for name in named_opponents:
+        grouped = _pers_p05_official_groups(
+            independent,
+            lambda item, name=name: str(item["diagnostic"].get(
+                "opponent_name")) == name)
+        _print_pers_p05_group(f"named-opponent={name}", grouped)
+
+    all_stats = _summarize_pers_p05_unlock(observations)
+    global_non_target = max(
+        (int(_number(item["diagnostic"].get(
+            "global_non_target_fires")) or 0) for item in observations),
+        default=0)
+    global_control = max(
+        (int(_number(item["diagnostic"].get(
+            "global_control_fires")) or 0) for item in observations),
+        default=0)
+    global_traces = max(
+        (int(_number(item["diagnostic"].get(
+            "global_trace_turns")) or 0) for item in observations),
+        default=0)
+    first_turn_missing = len(observations) - all_stats["first_turn_audited"]
+    offgrid_scales = sum(
+        not any(math.isclose(_number(item["diagnostic"].get("price"))
+                             or math.nan, scale,
+                             rel_tol=1e-9, abs_tol=1e-9)
+                for scale in scales)
+        for item in observations)
+    print("mechanism audit: "
+          f"first-turn-audited={all_stats['first_turn_audited']}/"
+          f"{len(observations)}, first-turn-traces="
+          f"{all_stats['first_turn_trace']}; all eligible turns="
+          f"{all_stats['eligible_turns']}, predicate="
+          f"{all_stats['predicate_turns']}, fired="
+          f"{all_stats['unlock_traces']}, action_changed="
+          f"{all_stats['action_changed']}; control-traces="
+          f"{all_stats['control_trace_turns']}, candidate purchases without "
+          f"predicate={all_stats['candidate_purchase_without_predicate']}, "
+          f"non-target fires={global_non_target}, global control fires="
+          f"{global_control}, global traces={global_traces}, wire failures="
+          f"{all_stats['wire_failures']}")
+    print("control byte-identity contract: controls and non-triggering "
+          "candidates must have no unlock marker, adjacent values, or gate; "
+          "the reader audits that observable no-trace contract on every turn")
+    print("outcome/join audit: "
+          f"unresolved={all_stats['pending']}, invalid="
+          f"{all_stats['invalid']}, terminal official-missing="
+          f"{all_stats['official_missing']}, official transcript failures="
+          f"{all_stats['official_join_failures']}, payoff-missing="
+          f"{all_stats['payoff_missing']}, seller-knowledge unavailable="
+          f"{all_stats['knowledge_missing']}, unknown decisions="
+          f"{all_stats['unknown_decisions']}, off-grid scales={offgrid_scales}")
+
+    print("DECISION RULE: one harm look at 30 resolved official games/arm; "
+          "reject if the official 95% CI is wholly negative, or if candidate "
+          "negative-outcome rate is >=10pp worse with a wholly positive CI. "
+          "Fixed final read at 100 official games/arm, >=20/arm/mode, "
+          ">=15/arm/seller-knowledge, >=15/arm/scale, and >=10/arm in every "
+          "mode x seller-knowledge intersection. Promote only if official CI "
+          ">0, normalized-payoff point >0, zero/negative point deltas <=0, "
+          "every mode/knowledge/scale/host official point is nonnegative, "
+          "eligible>0, fired>0, action_changed>0, and mechanism, scope, "
+          "self-play, duplicate, invalid, unresolved, and official-join "
+          "failures are zero. An official CI crossing zero remains "
+          "research-only.")
+
+    mechanism_failures = (
+        all_stats["wire_failures"] + global_non_target + global_control
+        + all_stats["control_trace_turns"]
+        + all_stats["candidate_purchase_without_predicate"]
+        + max(0, first_turn_missing)
+    )
+    if mechanism_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+
+    incomplete_or_contaminated = any((
+        duplicate_keys, cross_slot_gids, all_stats["pending"],
+        all_stats["invalid"], all_stats["official_missing"],
+        all_stats["official_join_failures"], all_stats["payoff_missing"],
+        all_stats["knowledge_missing"], all_stats["unknown_decisions"],
+        offgrid_scales,
+    ))
+    if incomplete_or_contaminated:
+        print("PROMOTION BLOCKED: incomplete, unlabelled, invalid, or "
+              "contaminated all-assigned cohort")
+        return 1
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+
+    harm_ready = all(len(pooled[arm]["official"]) >= 30
+                     for arm in ("control", "candidate"))
+    if harm_ready and official_high is not None and official_high < 0.0:
+        print("OFFICIAL HARM REJECTION: >=30/arm and official-dR CI is wholly "
+              "negative")
+        return 2
+    if (harm_ready and negative_delta is not None and negative_low is not None
+            and negative_delta >= 0.10 and negative_low > 0.0):
+        print("BOTTOM-TAIL HARM REJECTION: >=30/arm, candidate negative-rate "
+              "is >=10pp worse, and its difference CI is wholly positive")
+        return 2
+
+    final_ready = all(len(pooled[arm]["official"]) >= 100
+                      for arm in ("control", "candidate"))
+    reach_ready = (all_stats["eligible_turns"] > 0
+                   and all_stats["unlock_traces"] > 0
+                   and all_stats["action_changed"] > 0)
+    promotable = (
+        final_ready and mode_ready and knowledge_ready and scale_ready
+        and intersection_ready and mode_nonnegative and knowledge_nonnegative
+        and scale_nonnegative and host_nonnegative and reach_ready
+        and official_delta is not None and official_low is not None
+        and official_low > 0.0
+        and payoff_delta is not None and payoff_delta > 0.0
+        and zero_delta is not None and zero_delta <= 0.0
+        and negative_delta is not None and negative_delta <= 0.0
+    )
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    if (official_low is None or official_high is None
+            or official_low <= 0.0 <= official_high):
+        print("RESEARCH-ONLY: official confidence interval crosses zero or is "
+              "not yet estimable")
+    print("PROMOTION BLOCKED: sample/official-CI/payoff/bottom-tail/subgroup/"
+          "reach gates are not all satisfied")
     return 1
 
 
@@ -5600,6 +6541,7 @@ def main() -> int:
                              "hidden-min-share-veto", "table-vcont-precedence",
                              "fp-complete", "pers-selectivity", "pers-prose",
                              "pers-truth", "pers-decline-veto",
+                             "pers-p05-unlock",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
                          "keeps the legacy GLEE_NEGO_ZOPA_AB report")
@@ -5614,7 +6556,7 @@ def main() -> int:
                    "table-vcont-precedence",
                    "fp-complete",
                    "pers-selectivity", "pers-prose", "pers-truth",
-                   "pers-decline-veto"):
+                   "pers-decline-veto", "pers-p05-unlock"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
             ap.error("--until must be greater than --since")
@@ -5636,6 +6578,7 @@ def main() -> int:
             "pers-prose": pers_prose_games,
             "pers-truth": pers_truth_games,
             "pers-decline-veto": pers_decline_veto_games,
+            "pers-p05-unlock": pers_p05_unlock_games,
         }[args.ab]
         reporter = {
             "open-claim": report_open_claim,
@@ -5655,13 +6598,15 @@ def main() -> int:
             "pers-prose": report_pers_prose,
             "pers-truth": report_pers_truth,
             "pers-decline-veto": report_pers_decline_veto,
+            "pers-p05-unlock": report_pers_p05_unlock,
         }[args.ab]
         price_rows = [r for r in cohort(
             args.hours, since=args.since, until=args.until)
             if not keep or r[0] in keep]
         extra = ({"official_path": args.official_json}
                  if args.ab in ("pers-prose", "pers-truth",
-                                "pers-decline-veto", "stall-current-break",
+                                "pers-decline-veto", "pers-p05-unlock",
+                                "stall-current-break",
                                 "hidden-min-share-veto", "hi-terminal",
                                 "hi-buyer-curve", "top-buyer-clone",
                                 "table-vcont-precedence") else {})

@@ -767,3 +767,7 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-24 12:47Z — surface: the persuasion buyer DP and its belief update
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-24 15:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

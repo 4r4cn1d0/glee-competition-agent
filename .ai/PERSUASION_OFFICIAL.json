@@ -206,6 +206,63 @@
         "seller_payoff": 19000000,
         "buyer_payoff": 3500000
       }
+    },
+    {
+      "source": "authenticated-dashboard-transcript",
+      "family": "persuasion",
+      "role": "buyer",
+      "terminal": true,
+      "slot": "randomized",
+      "game_id": "84d6df91-b3bb-4a40-8d8e-6263b3393589",
+      "rating_delta": -7.8,
+      "dashboard_completed_at": "2026-08-24 21:49 IST",
+      "join_audit": {
+        "local_first_ts": 1787588264.582484,
+        "local_last_ts": 1787588390.173037,
+        "opponent": "hidden",
+        "basis": "unique minute, exact setup, exact 20-message transcript, exact terminal payoffs"
+      },
+      "persuasion": {
+        "price": 1000000,
+        "p": 0.8,
+        "v": 1250000,
+        "u": 0,
+        "mode": "text",
+        "is_seller_know_cv": false,
+        "rounds": 20,
+        "seller_messages": [
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it.",
+          "This one I recommend — worth buying.",
+          "I recommend this one. At this price I'd take it."
+        ],
+        "qualities": [
+          "high", "high", "low", "high", "low", "low", "low", "high", "low", "high",
+          "high", "low", "high", "high", "high", "high", "low", null, null, null
+        ],
+        "buyer_decisions": [
+          "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy", "buy",
+          "buy", "buy", "buy", "buy", "buy", "buy", "buy", "pass", "pass", "pass"
+        ],
+        "seller_payoff": 17000000,
+        "buyer_payoff": -4500000
+      }
     }
   ]
 }

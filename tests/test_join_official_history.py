@@ -110,6 +110,38 @@ def _write_local(tmp_path, game):
         json.dumps(game), encoding="utf-8")
 
 
+def _write_turns(tmp_path, rows):
+    slot = tmp_path / SLOT
+    slot.mkdir(parents=True, exist_ok=True)
+    # An empty final directory proves that a live-prefix match does not depend
+    # on a partially written or result-selected game file.
+    (slot / "games").mkdir(exist_ok=True)
+    (slot / "turns.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+
+def _live_turn(game_id="live-game", *, ts=6_000):
+    return {
+        "ts": ts,
+        "game_id": game_id,
+        "game_family": "negotiation",
+        "your_player": "player_1",
+        "phase": "decision",
+        "action_type": "decision",
+        "state": {
+            "game_family": "negotiation",
+            "player_1_role": "seller",
+            "player_2_role": "buyer",
+            "player_1_value": "6.00",
+            "complete_information": False,
+            "horizon_known": False,
+            "max_rounds": None,
+            "history": _history(echo=True)[:1],
+        },
+        "action": {"decision": "AcceptOffer"},
+    }
+
+
 def _join(tmp_path, rows, **kwargs):
     return J.join_history(
         rows,
@@ -135,6 +167,65 @@ def test_unique_join_emits_live_percentile_schema_and_audit(tmp_path):
     assert audit["timestamp_mode"] == "first"
     assert report["matched"] == 1
     assert report["unresolved"] == report["ambiguous"] == []
+
+
+def test_live_turn_prefix_joins_before_final_file_exists(tmp_path):
+    _write_turns(tmp_path, [_live_turn()])
+
+    document, report = _join(
+        tmp_path, [_dashboard_row(timestamp=6_000)], include_live_turns=True)
+
+    assert [game["game_id"] for game in document["games"]] == ["live-game"]
+    audit = document["games"][0]["join_audit"]
+    assert audit["match_rule"] == "exact-modal-turn-prefix+first-minute/v1"
+    assert report["live_turn_records"] == 1
+    assert report["unresolved"] == report["ambiguous"] == []
+
+
+def test_live_turn_fallback_is_opt_in(tmp_path):
+    _write_turns(tmp_path, [_live_turn()])
+
+    document, report = _join(tmp_path, [_dashboard_row(timestamp=6_000)])
+
+    assert document["games"] == []
+    assert report["live_turn_records"] == 0
+    assert len(report["unresolved"]) == 1
+
+
+def test_live_prefix_allows_only_the_unobserved_terminal_opponent_decision(
+        tmp_path):
+    turn = _live_turn()
+    turn["phase"] = turn["action_type"] = "offer"
+    turn["state"]["history"] = []
+    turn["action"] = {"product_price": "10.00"}
+    _write_turns(tmp_path, [turn])
+    transcript = [
+        {"offer": {"role": "seller", "price": "10.00"}},
+        {"decision": {"role": "buyer", "action": "RejectOffer"}},
+    ]
+    row = _dashboard_row(
+        timestamp=6_000, transcript=transcript,
+        seller_payoff=0, buyer_payoff=0, outcome="no_deal")
+
+    document, report = _join(
+        tmp_path, [row], include_live_turns=True)
+
+    assert [game["game_id"] for game in document["games"]] == ["live-game"]
+    assert report["unresolved"] == []
+
+
+def test_two_identical_live_prefixes_remain_ambiguous(tmp_path):
+    _write_turns(tmp_path, [
+        _live_turn("live-one"),
+        _live_turn("live-two", ts=6_001),
+    ])
+
+    document, report = _join(
+        tmp_path, [_dashboard_row(timestamp=6_000)], include_live_turns=True)
+
+    assert document["games"] == []
+    assert report["unresolved"] == []
+    assert report["ambiguous"][0]["candidate_count"] == 2
 
 
 def test_repeated_transcript_is_resolved_by_minute_not_nearest_guess(tmp_path):

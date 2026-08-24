@@ -410,6 +410,10 @@ PERS_P08_R125_BINARY_TRUTH_SALT = "pers_p08_r125_binary_truth_v1|"
 PERS_P08_R125_TEXT_DECLINE_VETO_SALT = (
     "pers_p08_r125_text_decline_veto_v1|")
 
+#: Independent assignment for the exact p=.5/r=1.2 buyer unlock arm.
+PERS_P05_R12_SELECTIVITY_UNLOCK_SALT = (
+    "pers_p05_r12_selectivity_unlock_v1|")
+
 #: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
 #: small (231 states at T=20) and the bucketing is what keeps this off the hot
 #: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
@@ -457,6 +461,17 @@ def p08_r125_text_decline_veto_assignment(game_id) -> bool | None:
     return bool(int(digest, 16) & 1)
 
 
+def p05_r12_selectivity_unlock_assignment(game_id) -> bool | None:
+    """Stable exact-cell buyer-unlock assignment, independent of live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(
+        (PERS_P05_R12_SELECTIVITY_UNLOCK_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
 def _p08_r125_text_decline_veto_candidate(game: dict) -> bool:
     """Whether this turn is assigned to the exact buyer decline-veto arm."""
     if not runtime_flags.enabled("GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB"):
@@ -485,6 +500,119 @@ def _p08_r125_text_decline_veto_candidate(game: dict) -> bool:
         return False
     return p08_r125_text_decline_veto_assignment(
         game.get("game_id")) is True
+
+
+_P05_R12_SELECTIVITY_UNLOCK_CONFLICT_FLAGS = (
+    # These optional buyer paths can reject or revive the same action.  Refuse
+    # to reinterpret their output: the first causal window must isolate only
+    # the tight-prior unlock against the current live buyer-v2 control.
+    "GLEE_PERS_BUYER_GUARD",
+    "GLEE_PERS_BUYER_STRIKE",
+    "GLEE_PERS_BUYER_LCB",
+    "GLEE_PERS_RANK_GATE_AB",
+    "GLEE_PERS_RANK_BUY_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_MARGIN",
+    "GLEE_PERS_UNINFORMED_VETO",
+    "GLEE_PERS_PARSE_TRI",
+    "GLEE_PERS_PARSE_V2",
+)
+
+
+def _p05_r12_conflict_flag_is_armed(name: str) -> bool:
+    """Treat every nonzero/malformed conflicting overlay as armed."""
+    raw = runtime_flags.get(name)
+    if raw is None:
+        return False
+    value = str(raw).strip().lower()
+    if value in ("", "0", "0.0", "false", "no", "off"):
+        return False
+    try:
+        return not math.isfinite(float(value)) or abs(float(value)) > 1e-15
+    except ValueError:
+        return True
+
+
+def _p05_r12_selectivity_unlock_trigger(game: dict, plan: dict) -> int | None:
+    """Return the prior strict-decline count only for a real unlock action."""
+    if not runtime_flags.enabled("GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB"):
+        return None
+    if p05_r12_selectivity_unlock_assignment(game.get("game_id")) is not True:
+        return None
+    state = game.get("game_state") or {}
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"
+            or state.get("seller_message_type") not in ("text", "binary")):
+        return None
+    # Roles/configuration labels are omitted in the documented active payload.
+    # When a role label is available, an inconsistent one must fail closed; the
+    # seller-knowledge label is deliberately not inspected because both
+    # official configurations are part of the precommitted treatment union.
+    if (state.get("player_2_role") is not None
+            and state.get("player_2_role") != "buyer"):
+        return None
+    if (state.get("current_player") is not None
+            and state.get("current_player") != "player_2"):
+        return None
+
+    price = _num(state.get("product_price"), math.nan)
+    prior = _num(state.get("p"), math.nan)
+    high_value = _num(state.get("v"), math.nan)
+    low_value = _num(state.get("u"), math.nan)
+    rounds_value = _num(state.get("total_rounds"), math.nan)
+    if (not all(math.isfinite(value) for value in
+                (price, prior, high_value, low_value, rounds_value))
+            or price <= 0.0):
+        return None
+    numeric_scale = max(1.0, abs(price), abs(high_value), abs(low_value))
+    if (abs(prior - 0.5) > 1e-9
+            or abs(high_value / price - 1.2) > 1e-9
+            or abs(low_value) > 1e-9 * numeric_scale
+            or abs(rounds_value - 20.0) > 1e-9 * 20.0):
+        return None
+
+    # Compute and retain the complete current buyer plan before this check.  An
+    # experiment overlay may only unlock the tight-prior pass produced by the
+    # live buyer-v2 stack; it must never override another guard or an alternate
+    # parser/rank/selectivity policy.
+    if (plan.get("buy") is not False
+            or plan.get("buyer_v2") is not True
+            or plan.get("tight") is not True
+            or plan.get("blocked") is not True):
+        return None
+    if any(_p05_r12_conflict_flag_is_armed(name)
+           for name in _P05_R12_SELECTIVITY_UNLOCK_CONFLICT_FLAGS):
+        return None
+    conflict_prefixes = ("rank_", "buyer_selectivity_", "lcb_", "parser_")
+    if (plan.get("gates_fired")
+            or plan.get("uninformed_veto")
+            or any(str(key).startswith(conflict_prefixes) for key in plan)):
+        return None
+
+    current = {"seller_message": state.get("seller_message")}
+    if _recommendation_signal(current) is not True:
+        return None
+    history = [entry for entry in (state.get("history") or [])
+               if isinstance(entry, dict)]
+    prior_declines = sum(
+        _recommendation_signal(entry) is False for entry in history)
+    if prior_declines < 1:
+        return None
+
+    expected = _num(plan.get("expected_value"), math.nan)
+    plan_price = _num(plan.get("price"), math.nan)
+    if not (math.isfinite(expected) and math.isfinite(plan_price)):
+        return None
+    price_scale = max(1.0, abs(price), abs(plan_price))
+    if abs(plan_price - price) > 1e-9 * price_scale:
+        return None
+    # Strictly positive money EV with a scale-relative tolerance: equality and
+    # float noise around it remain control passes.
+    edge_scale = max(1.0, abs(expected), abs(plan_price))
+    if expected <= plan_price + 1e-9 * edge_scale:
+        return None
+    return prior_declines
 
 
 def _p08_r125_binary_truth_candidate(game: dict, state: dict, price: float,
@@ -1316,6 +1444,25 @@ def decide(game: dict, cfg) -> dict:
         p["p08_r125_text_decline_veto"] = True
         p.setdefault("gates_fired", []).append(
             "p08_r125_text_decline_veto")
+
+    # EXACT p=.5/r=1.2 SELECTIVITY UNLOCK (default OFF, stable per game).
+    # Since the rank-gate disarm, all 45 audited exact games passed on all
+    # 900/900 decisions and every game finished at zero.  In the directly
+    # observed seller-known mirror, opponent buyers bought 114 high and zero
+    # low units from our selective sellers across 37 games.  This candidate
+    # therefore unlocks only a strict positive after a prior strict decline,
+    # and only when the already-computed posterior has positive money EV.  The
+    # contrast is observational and causal value remains unproved, so hash
+    # controls and every non-triggering candidate remain the complete current
+    # buyer plan byte-for-byte; metadata exists only on a real pass-to-buy move.
+    prior_declines = _p05_r12_selectivity_unlock_trigger(game, p)
+    if prior_declines is not None:
+        p["buy"] = True
+        p["p05_r12_selectivity_unlock"] = True
+        p["p05_r12_selectivity_unlock_prior_declines"] = prior_declines
+        p["p05_r12_selectivity_unlock_expected_value"] = p["expected_value"]
+        p.setdefault("gates_fired", []).append(
+            "p05_r12_selectivity_unlock")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 

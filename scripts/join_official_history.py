@@ -16,6 +16,13 @@ counteroffer-as-next-offer echo, and accepts only a unique global one-to-one
 match.  Timestamp semantics must either be explicit or be frozen by an
 unconflicted calibration that distinguishes first local action from completion.
 
+``--include-live-turns`` adds a fail-closed fallback for games whose dashboard
+result is already visible while the local final collector is still behind.  It
+requires an exact setup and transcript prefix from the submitted turn stream,
+allows at most the single terminal opponent decision that cannot appear in our
+pre-action log, and still requires a unique global timestamp match.  Rating and
+payoff never enter that fallback key.
+
 Example:
 
     python scripts/join_official_history.py export.json \
@@ -68,6 +75,8 @@ class DashboardRecord:
     outcome: str
     rating_delta: int | float
     fingerprint: str
+    setup_key: str
+    transcript_key: tuple[tuple[Any, ...], ...]
 
 
 @dataclass(frozen=True)
@@ -75,9 +84,12 @@ class LocalRecord:
     slot: str
     game_id: str
     path: str
-    fingerprint: str
+    fingerprint: str | None
     first_ts: float | None
     completion_ts: float | None
+    setup_key: str
+    transcript_key: tuple[tuple[Any, ...], ...]
+    match_rule: str
 
     @property
     def first_minute(self) -> int | None:
@@ -491,6 +503,17 @@ def _fingerprint(role: str, outcome: str, setup: Mapping[str, Any],
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _setup_key(setup: Mapping[str, Any]) -> str:
+    """Stable exact setup key shared by final-file and live-turn joins."""
+    return json.dumps(setup, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=True)
+
+
+def _transcript_key(transcript: Sequence[Sequence[Any]]) -> tuple[tuple[Any, ...], ...]:
+    """Freeze canonical events so prefix equality cannot mutate underneath us."""
+    return tuple(tuple(event) for event in transcript)
+
+
 def _timestamp_epoch(value: Any, timezone_name: str | None) -> float:
     if isinstance(value, bool) or value is None:
         raise JoinInputError("timestamp is missing or boolean")
@@ -723,6 +746,8 @@ def _dashboard_records(export: Any, *, slots: set[str],
                 outcome=outcome,
                 rating_delta=rating_delta,
                 fingerprint=_fingerprint(role, outcome, setup, transcript, payoffs),
+                setup_key=_setup_key(setup),
+                transcript_key=_transcript_key(transcript),
             ))
         except (JoinInputError, TypeError, ValueError) as exc:
             unresolved.append({
@@ -836,6 +861,9 @@ def _local_record(raw: Mapping[str, Any], *, slot: str, path: Path) -> LocalReco
         fingerprint=_fingerprint(role, outcome, setup, transcript, payoffs),
         first_ts=first_ts,
         completion_ts=completion_ts,
+        setup_key=_setup_key(setup),
+        transcript_key=_transcript_key(transcript),
+        match_rule="exact-modal-fingerprint",
     )
 
 
@@ -883,6 +911,187 @@ def _load_local_records(logs_root: Path, slots: set[str]
                 filtered.append(record)
         records = filtered
     return records, errors
+
+
+def _iter_recent_turns(path: Path, *, since: float,
+                       until: float) -> Iterable[Mapping[str, Any]]:
+    """Read a chronological JSONL tail without scanning multi-gigabyte logs.
+
+    Turn streams are append-only and timestamp ordered.  Reading backwards
+    matters operationally: the five live files are each around a gigabyte, but
+    an authenticated dashboard page normally covers minutes rather than days.
+    """
+    block_size = 1 << 20
+    collected: list[Mapping[str, Any]] = []
+    with path.open("rb") as handle:
+        handle.seek(0, 2)
+        position = handle.tell()
+        carry = b""
+        stop = False
+        while position > 0 and not stop:
+            amount = min(block_size, position)
+            position -= amount
+            handle.seek(position)
+            chunk = handle.read(amount) + carry
+            lines = chunk.split(b"\n")
+            if position > 0:
+                carry = lines.pop(0)
+            else:
+                carry = b""
+            for encoded in reversed(lines):
+                if not encoded.strip():
+                    continue
+                try:
+                    raw = json.loads(encoded)
+                    ts = float(raw.get("ts"))
+                except (UnicodeDecodeError, json.JSONDecodeError, TypeError,
+                        ValueError, AttributeError):
+                    continue
+                if not math.isfinite(ts):
+                    continue
+                if ts > until:
+                    continue
+                if ts < since:
+                    stop = True
+                    break
+                if isinstance(raw, Mapping):
+                    collected.append(raw)
+    yield from reversed(collected)
+
+
+def _turn_action_events(record: Mapping[str, Any], role: str
+                        ) -> list[list[Any]]:
+    """Canonicalize the submitted action absent from its pre-action state."""
+    action = record.get("action")
+    if not isinstance(action, Mapping):
+        raise JoinInputError("live turn is missing submitted action")
+    action_type = str(record.get("action_type") or record.get("phase")
+                      or "").strip().lower()
+    events: list[list[Any]] = []
+    if action_type == "offer":
+        price = _first(action, ("product_price", "price", "offer_price"))
+        if price is None:
+            raise JoinInputError("live offer action is missing price")
+        events.append(["offer", role, money_to_cents(price)])
+        return events
+    if action_type != "decision":
+        raise JoinInputError(f"unrecognized live action_type {action_type!r}")
+    decision = action.get("decision")
+    events.append(["decision", role, _normalize_decision(decision)])
+    counter = _first(action, ("product_price", "counter_price"))
+    if counter is not None:
+        if events[-1][2] != "reject":
+            raise JoinInputError("non-rejection live decision carried a counter")
+        events.append(["counter", role, money_to_cents(counter)])
+    return events
+
+
+def _live_turn_record(record: Mapping[str, Any], *, slot: str,
+                      path: Path, first_ts: float,
+                      last_ts: float) -> LocalRecord:
+    """Build an exact pre-action transcript prefix from the latest own turn."""
+    if record.get("game_family") != "negotiation":
+        raise JoinInputError("not a negotiation turn")
+    game_id = str(record.get("game_id") or "").strip()
+    if not game_id:
+        raise JoinInputError("live turn is missing game_id")
+    state = record.get("state")
+    if not isinstance(state, Mapping):
+        raise JoinInputError("live turn is missing state")
+    player = str(record.get("your_player") or "").strip().lower()
+    roles = _role_map(state)
+    if player not in roles:
+        raise JoinInputError("live turn is missing a valid your_player")
+    role = roles[player]
+    setup = _canonical_setup(state, role)
+    history = state.get("history") or []
+    transcript = (_canonical_transcript(history, state, role)
+                  if history else [])
+    transcript.extend(_turn_action_events(record, role))
+    if not transcript:
+        raise JoinInputError("live turn has no semantic transcript prefix")
+    return LocalRecord(
+        slot=slot,
+        game_id=game_id,
+        path=f"{path}#{game_id}",
+        fingerprint=None,
+        first_ts=first_ts,
+        # The dashboard time is terminal time.  Our last submitted action is
+        # exact when we terminate and precedes an opponent terminal response by
+        # only one server turn; the existing one-minute dual tolerance covers
+        # that latency without choosing a nearest candidate.
+        completion_ts=last_ts,
+        setup_key=_setup_key(setup),
+        transcript_key=_transcript_key(transcript),
+        match_rule="exact-modal-turn-prefix",
+    )
+
+
+def _load_live_turn_records(logs_root: Path, slots: set[str], *,
+                            since: float, until: float,
+                            excluded: set[tuple[str, str]]
+                            ) -> tuple[list[LocalRecord], list[dict[str, Any]]]:
+    records: list[LocalRecord] = []
+    errors: list[dict[str, Any]] = []
+    # Unknown-horizon games are capped by the platform's 99-round safety clock;
+    # fifteen minutes is ample to include their first own turn while keeping the
+    # reverse scan small.
+    scan_since = since - 15 * 60
+    scan_until = until + 2 * 60
+    for slot in sorted(slots):
+        path = logs_root / slot / "turns.jsonl"
+        if not path.is_file():
+            errors.append({"slot": slot, "path": str(path),
+                           "reason": "selected slot has no turns.jsonl"})
+            continue
+        grouped: dict[str, dict[str, Any]] = {}
+        try:
+            iterator = _iter_recent_turns(
+                path, since=scan_since, until=scan_until)
+            for raw in iterator:
+                if raw.get("game_family") != "negotiation":
+                    continue
+                gid = str(raw.get("game_id") or "").strip()
+                if not gid or (slot, gid) in excluded:
+                    continue
+                try:
+                    ts = float(raw.get("ts"))
+                except (TypeError, ValueError):
+                    continue
+                group = grouped.setdefault(gid, {
+                    "first_ts": ts, "last_ts": ts, "latest": raw})
+                group["first_ts"] = min(group["first_ts"], ts)
+                if ts >= group["last_ts"]:
+                    group["last_ts"] = ts
+                    group["latest"] = raw
+        except OSError as exc:
+            errors.append({"slot": slot, "path": str(path), "reason": str(exc)})
+            continue
+        for gid, group in grouped.items():
+            try:
+                records.append(_live_turn_record(
+                    group["latest"], slot=slot, path=path,
+                    first_ts=group["first_ts"], last_ts=group["last_ts"]))
+            except (JoinInputError, TypeError, ValueError):
+                # A malformed or unsupported live record is not guessed and is
+                # not a fleet-wide collector failure.  It simply cannot become
+                # a candidate for any dashboard row.
+                continue
+    return records, errors
+
+
+def _turn_prefix_matches(dashboard: DashboardRecord,
+                         local: LocalRecord) -> bool:
+    """Require exact setup and all observed events, with <=1 terminal suffix."""
+    if local.match_rule != "exact-modal-turn-prefix":
+        return False
+    if dashboard.setup_key != local.setup_key:
+        return False
+    prefix = local.transcript_key
+    full = dashboard.transcript_key
+    missing = len(full) - len(prefix)
+    return (bool(prefix) and missing in (0, 1)
+            and full[:len(prefix)] == prefix)
 
 
 def _duplicate_dashboard_rows(records: Sequence[DashboardRecord]) -> set[int]:
@@ -1009,7 +1218,8 @@ def _unique_global_matches(candidate_map: Mapping[int, set[int]]
 def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
                  timestamp_mode: str = "auto",
                  dashboard_timezone: str | None = None,
-                 minute_tolerance: int | None = None
+                 minute_tolerance: int | None = None,
+                 include_live_turns: bool = False,
                  ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return (official JSON document, diagnostic report) without guessing."""
     selected = {str(slot).strip() for slot in slots if str(slot).strip()}
@@ -1023,7 +1233,8 @@ def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
 
     dashboard, unresolved = _dashboard_records(
         export, slots=selected, dashboard_timezone=dashboard_timezone)
-    local, local_errors = _load_local_records(Path(logs_root), selected)
+    logs_path = Path(logs_root)
+    local, local_errors = _load_local_records(logs_path, selected)
     duplicate_rows = _duplicate_dashboard_rows(dashboard)
 
     requested_mode = str(timestamp_mode or "").strip().lower()
@@ -1045,19 +1256,42 @@ def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
         if tolerance < 0 or tolerance != minute_tolerance:
             raise JoinInputError("minute_tolerance must be nonnegative")
 
+    exact_count = len(local)
+    if include_live_turns and dashboard:
+        excluded = {(record.slot, record.game_id) for record in local}
+        live, live_errors = _load_live_turn_records(
+            logs_path, selected,
+            since=min(record.minute_utc for record in dashboard) * 60,
+            until=(max(record.minute_utc for record in dashboard) + 1) * 60,
+            excluded=excluded,
+        )
+        local.extend(live)
+        local_errors.extend(live_errors)
+
     dashboard_by_row = {record.row: record for record in dashboard}
     ambiguous: list[dict[str, Any]] = []
     by_fingerprint: dict[tuple[str, str], list[int]] = defaultdict(list)
     for index, record in enumerate(local):
-        by_fingerprint[(record.slot, record.fingerprint)].append(index)
+        if record.fingerprint is not None:
+            by_fingerprint[(record.slot, record.fingerprint)].append(index)
     candidate_map: dict[int, set[int]] = {}
     candidate_counts: dict[int, int] = {}
     for record in dashboard:
-        candidates = {
+        exact_candidates = {
             index for index in by_fingerprint.get(
                 (record.slot, record.fingerprint), [])
             if _timestamp_matches(record, local[index], mode=frozen_mode,
                                   tolerance=tolerance)
+        }
+        # A final-file fingerprint is strictly stronger than a live prefix and
+        # wins whenever present.  The fallback can therefore never turn one
+        # exact historical join into an ambiguity.
+        candidates = exact_candidates or {
+            index for index in range(exact_count, len(local))
+            if (local[index].slot == record.slot
+                and _timestamp_matches(record, local[index], mode=frozen_mode,
+                                       tolerance=tolerance)
+                and _turn_prefix_matches(record, local[index]))
         }
         candidate_counts[record.row] = len(candidates)
         if record.row in duplicate_rows:
@@ -1072,7 +1306,9 @@ def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
             unresolved.append({
                 "dashboard_row": record.row,
                 "slot": record.slot,
-                "reason": "no local candidate satisfies fingerprint and timestamp",
+                "reason": ("no local candidate satisfies exact fingerprint/"
+                           "turn-prefix and timestamp" if include_live_turns else
+                           "no local candidate satisfies fingerprint and timestamp"),
                 "candidate_count": 0,
             })
         else:
@@ -1107,7 +1343,8 @@ def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
                 "local_completion_ts": local_record.completion_ts,
                 "fingerprint_sha256": dashboard_record.fingerprint,
                 "candidate_count": candidate_counts[row],
-                "match_rule": f"exact-modal-fingerprint+{frozen_mode}-minute/v1",
+                "match_rule": (
+                    f"{local_record.match_rule}+{frozen_mode}-minute/v1"),
             },
         })
 
@@ -1118,6 +1355,8 @@ def join_history(export: Any, *, logs_root: str | Path, slots: Iterable[str],
         "timestamp_mode_source": mode_source,
         "minute_tolerance": tolerance,
         "matched": len(games),
+        "exact_local_records": exact_count,
+        "live_turn_records": len(local) - exact_count,
         "unresolved": sorted(unresolved, key=lambda issue: issue["dashboard_row"]),
         "ambiguous": sorted(ambiguous, key=lambda issue: issue["dashboard_row"]),
         "local_errors": local_errors,
@@ -1154,6 +1393,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="minute distance allowed (dual defaults to 1; others 0)")
     parser.add_argument("--dashboard-timezone", default=None,
                         help="IANA timezone required for naive ISO timestamps")
+    parser.add_argument("--include-live-turns", action="store_true",
+                        help="use exact recent turn prefixes when final files lag")
     parser.add_argument("--output", default="-", help="output JSON path or -")
     args = parser.parse_args(argv)
     try:
@@ -1164,6 +1405,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             timestamp_mode=args.timestamp_mode,
             dashboard_timezone=args.dashboard_timezone,
             minute_tolerance=args.minute_tolerance,
+            include_live_turns=args.include_live_turns,
         )
         _write_output(document, args.output)
     except JoinInputError as exc:
