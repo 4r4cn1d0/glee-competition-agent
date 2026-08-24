@@ -555,6 +555,9 @@ KNOWN = {
     "GLEE_BARG_DISCOUNT_NO_REGRESS_AB": (
         "bargaining", ("discount_no_regress",),
         _p_barg_discount_no_regress),
+    "GLEE_BARG_DISCOUNT_NO_REGRESS": (
+        "bargaining", ("discount_no_regress",),
+        _p_barg_discount_no_regress),
     # Test 4's custom randomized probe bypasses STRATEGIES.  This default-off
     # router is the prerequisite that makes bargaining gates reachable there.
     "GLEE_PROBE_RANDOMIZED_BARG_BASE": (
@@ -904,7 +907,8 @@ def main() -> int:
                                   "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
                                   "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
                                   "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
-                                  "GLEE_BARG_DISCOUNT_NO_REGRESS_AB")
+                                  "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
+                                  "GLEE_BARG_DISCOUNT_NO_REGRESS")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:

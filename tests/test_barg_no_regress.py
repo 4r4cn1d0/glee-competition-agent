@@ -21,6 +21,7 @@ MONEY = 1000.0
 FLAG = "GLEE_BARG_NO_REGRESS"
 EPS_FLAG = "GLEE_BARG_NO_REGRESS_EPS"
 DISCOUNT_AB_FLAG = "GLEE_BARG_DISCOUNT_NO_REGRESS_AB"
+DISCOUNT_FLAG = "GLEE_BARG_DISCOUNT_NO_REGRESS"
 LIVE_FLAGS = {
     "GLEE_BARG_ACCEPT_FLOOR": "0.50",
     "GLEE_BARG_FLOOR_GAIN": "0.05",
@@ -160,6 +161,48 @@ def test_discount_candidate_accepts_when_next_counter_is_worth_less(monkeypatch)
         "delta_me": 0.95,
         "projected_round": 2,
     }
+
+
+@pytest.mark.parametrize("hash_arm", ["candidate", "control"])
+def test_deterministic_discount_guard_has_no_hash_arm(monkeypatch, hash_arm):
+    gid = _gid_for_discount_arm(hash_arm)
+    _, game = _bob_decision(0.60, game_id=gid)
+    monkeypatch.setenv(DISCOUNT_FLAG, "1")
+
+    out = _play(game)
+
+    assert out["decision"] == "accept"
+    assert out["_plan"]["discount_no_regress"] == {
+        "eligible": True,
+        "offered_share": 0.6,
+        "planned_counter_share": 0.61,
+        "discounted_counter_share": 0.5795,
+        "delta_me": 0.95,
+        "projected_round": 2,
+        "mode": "deterministic",
+    }
+
+
+def test_deterministic_discount_guard_excludes_patient_cell(monkeypatch):
+    _, game = _bob_decision(0.60, delta_2=1.0)
+    monkeypatch.setenv(DISCOUNT_FLAG, "1")
+
+    out = _play(game)
+
+    assert out["decision"] == "reject"
+    assert "discount_no_regress" not in out["_plan"]
+
+
+def test_discount_guard_fails_closed_if_ab_is_also_armed(monkeypatch):
+    gid = _gid_for_discount_arm("candidate")
+    _, game = _bob_decision(0.60, game_id=gid)
+    monkeypatch.setenv(DISCOUNT_FLAG, "1")
+    monkeypatch.setenv(DISCOUNT_AB_FLAG, "1")
+
+    out = _play(game)
+
+    assert out["decision"] == "reject"
+    assert "discount_no_regress" not in out["_plan"]
 
 
 def test_discount_hash_control_logs_same_signal_but_keeps_reject(monkeypatch):

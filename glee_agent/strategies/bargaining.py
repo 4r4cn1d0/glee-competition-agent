@@ -895,7 +895,7 @@ def _decide(game: dict, cfg) -> dict:
             decision = "accept"
             _gate(p, "inflation_accept")
 
-    # DISCOUNT-AWARE NO-REGRESSION ARM. The nominal guard below asks whether our
+    # DISCOUNT-AWARE NO-REGRESSION GUARD. The nominal guard below asks whether our
     # next counter keeps no more nominal pot than the offer in hand. That misses
     # the economically relevant comparison when our pot is shrinking: a 61%
     # counter one round later at delta_me=.95 is worth 57.95% today, so rejecting
@@ -909,30 +909,35 @@ def _decide(game: dict, cfg) -> dict:
     # (+0.00752,+0.03259). The same rule was harmful at delta_me=1, so that cell
     # is excluded rather than pooled into the treatment.
     #
-    # Eligibility is computed and logged in BOTH hash arms before either arm
-    # changes the decision. That makes the first eligible turn a pre-treatment
-    # cohort: controls reject, candidates accept, and neither arm can select
-    # itself into the sample through a later outcome. The older nominal guard is
-    # required OFF so it cannot change a hash control. Default OFF leaves both
-    # action and plan byte-for-byte on the previous path.
+    # The deterministic switch applies the rule to every eligible discounted
+    # game, without a hash or cell assignment. It is separate from the retained
+    # research A/B so the fleet cannot silently become randomized: if both are
+    # armed, this block fails closed. The older nominal guard is also required
+    # OFF because it includes the measured-harm delta_me=1 cell. Default OFF
+    # leaves both action and plan byte-for-byte on the previous path.
+    deterministic_discount_guard_on = runtime_flags.enabled(
+        "GLEE_BARG_DISCOUNT_NO_REGRESS")
     discount_arm_on = runtime_flags.enabled(
         "GLEE_BARG_DISCOUNT_NO_REGRESS_AB")
     nominal_guard_on = runtime_flags.enabled("GLEE_BARG_NO_REGRESS")
     if (decision == "reject" and money > 0.0 and my_gain > 0.0
             and p["rounds_left"] > 1 and p["delta_me"] < 1.0
-            and discount_arm_on and not nominal_guard_on):
-        arm = discount_no_regress_assignment(game.get("game_id"))
+            and (deterministic_discount_guard_on or discount_arm_on)
+            and not (deterministic_discount_guard_on and discount_arm_on)
+            and not nominal_guard_on):
+        arm = (None if deterministic_discount_guard_on else
+               discount_no_regress_assignment(game.get("game_id")))
         try:
             counter = _post_reject_offer(game, cfg)
             own_key = "alice_gain" if mine else "bob_gain"
             counter_gain = _num(counter.get(own_key), -1.0)
-            if arm is not None and 0.0 <= counter_gain <= money:
+            if ((deterministic_discount_guard_on or arm is not None)
+                    and 0.0 <= counter_gain <= money):
                 offered_share = my_gain / money
                 counter_share = counter_gain / money
                 discounted_counter_share = counter_share * p["delta_me"]
                 eligible = discounted_counter_share <= offered_share + 1e-12
-                p["discount_no_regress"] = {
-                    "arm": arm,
+                signal = {
                     "eligible": eligible,
                     "offered_share": round(offered_share, 6),
                     "planned_counter_share": round(counter_share, 6),
@@ -941,15 +946,25 @@ def _decide(game: dict, cfg) -> dict:
                     "delta_me": p["delta_me"],
                     "projected_round": int(_num(state.get("round"), 1)) + 1,
                 }
-                if eligible and arm == "candidate":
+                if deterministic_discount_guard_on:
+                    signal["mode"] = "deterministic"
+                else:
+                    signal["arm"] = arm
+                p["discount_no_regress"] = signal
+                if eligible and (deterministic_discount_guard_on
+                                 or arm == "candidate"):
                     decision = "accept"
                     _gate(p, "discount_no_regress")
         except Exception:
-            p["discount_no_regress"] = {
-                "arm": arm,
+            failure = {
                 "eligible": False,
                 "status": "projection_failed",
             }
+            if deterministic_discount_guard_on:
+                failure["mode"] = "deterministic"
+            else:
+                failure["arm"] = arm
+            p["discount_no_regress"] = failure
 
     # NO-REGRESSION GUARD. In nine measured games the old decision path rejected
     # a live offer and the next outgoing policy kept no more of the pot; the
