@@ -30,6 +30,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 import sys
 from collections import defaultdict, deque
 from dataclasses import dataclass
@@ -43,6 +44,14 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 OUTPUT_SCHEMA = "glee.official-rating-join/v1"
 REPORT_SCHEMA = "glee.official-rating-join-report/v1"
 _CENT = Decimal("0.01")
+
+_CAPTURE_CARD = re.compile(
+    r"^Negotiation\s*You played\s*(Buyer|Seller)\s*vs an agent\s*"
+    r"(Agreement|No deal|Walked away)\s*·\s*(.+?)\s*"
+    r"Rating\s*([+-]?\d+(?:\.\d+)?)\s*›$",
+    re.IGNORECASE,
+)
+_CAPTURE_ROUND = re.compile(r"(?m)^Round (\d+)\r?$")
 
 
 class JoinInputError(ValueError):
@@ -532,6 +541,119 @@ def _timestamp_epoch(value: Any, timezone_name: str | None) -> float:
     return parsed.astimezone(timezone.utc).timestamp()
 
 
+def _capture_field(text: str, label: str) -> str | None:
+    match = re.search(
+        rf"(?im)^{re.escape(label)}:[ \t]*\r?\n\$?([^\r\n]+)$", text)
+    return None if match is None else match.group(1).strip()
+
+
+def _capture_dashboard_row(raw: Mapping[str, Any]) -> dict[str, Any]:
+    """Convert a raw authenticated card/modal capture to the structured schema.
+
+    Browser collection only needs the card's accessible text and the dialog's
+    ``innerText``.  Parsing stays here, versioned and tested beside the exact
+    join, instead of living in an ephemeral browser-session transform.
+    """
+    card = str(raw.get("card_text") or "").strip()
+    modal = str(raw.get("modal_text") or "")
+    card_match = _CAPTURE_CARD.match(card)
+    if card_match is None:
+        raise JoinInputError("raw dashboard capture has an unrecognized card")
+    if not modal.strip():
+        raise JoinInputError("raw dashboard capture is missing modal_text")
+    role, outcome, timestamp, rating = card_match.groups()
+
+    own_value = _capture_field(modal, "Your valuation")
+    if own_value is None:
+        raise JoinInputError("raw dashboard modal is missing own valuation")
+    opponent_value = _capture_field(modal, "Opponent valuation")
+    rounds_raw = _capture_field(modal, "Max rounds")
+    if rounds_raw is None:
+        raise JoinInputError("raw dashboard modal is missing max rounds")
+    setup: dict[str, Any] = {
+        "own_value": own_value,
+        "complete_information": opponent_value is not None,
+    }
+    if opponent_value is not None:
+        setup["opponent_value"] = opponent_value
+    if rounds_raw.isdigit() and int(rounds_raw) > 0:
+        setup["max_rounds"] = int(rounds_raw)
+    elif rounds_raw.strip().lower() in {
+            "no limit", "none", "unknown", "unlimited", "uncapped"}:
+        setup["horizon"] = "unknown"
+    else:
+        raise JoinInputError(f"unrecognized captured max rounds {rounds_raw!r}")
+
+    final_match = re.search(r"(?im)^FINAL RESULT\b", modal)
+    if final_match is None:
+        raise JoinInputError("raw dashboard modal is missing final result")
+    transcript_text = modal[:final_match.start()]
+    starts = list(_CAPTURE_ROUND.finditer(transcript_text))
+    if not starts:
+        raise JoinInputError("raw dashboard modal has no rounds")
+    transcript: list[dict[str, Any]] = []
+    for index, start in enumerate(starts):
+        end = starts[index + 1].start() if index + 1 < len(starts) \
+            else len(transcript_text)
+        block = transcript_text[start.start():end]
+        header = re.match(
+            r"^Round (\d+)\r?\n(?:You \((Buyer|Seller)\)|(Buyer|Seller))"
+            r"[ \t]*\r?\n\s*Offered:\s*\$([0-9,().-]+)",
+            block,
+        )
+        if header is None:
+            raise JoinInputError(
+                f"raw dashboard modal round {start.group(1)} is malformed")
+        round_number = int(header.group(1))
+        actor = (header.group(2) or header.group(3)).lower()
+        other = "buyer" if actor == "seller" else "seller"
+        decisions = list(re.finditer(
+            r"(?im)^(Accept|Reject|Walk away|Walked away|Timeout|Timed out)"
+            r"(?:counter:\s*\$([0-9,().-]+))?[ \t]*$",
+            block,
+        ))
+        if not decisions:
+            raise JoinInputError(
+                f"raw dashboard modal round {round_number} is missing decision")
+        decision = decisions[-1]
+        item: dict[str, Any] = {
+            "round": round_number,
+            "offer": {"price": header.group(4), "role": actor},
+            "decision": {"action": decision.group(1), "role": other},
+        }
+        if decision.group(2) is not None:
+            item["counteroffer"] = {
+                "price": decision.group(2), "role": other}
+        transcript.append(item)
+    transcript.sort(key=lambda item: item["round"])
+    if [item["round"] for item in transcript] != sorted({
+            item["round"] for item in transcript}):
+        raise JoinInputError("raw dashboard modal has duplicate round numbers")
+
+    result_text = modal[final_match.start():]
+    own_payoff = re.search(
+        r"(?im)^YOUR PAYOFF[ \t]*\r?\n\s*\$([0-9,().-]+)", result_text)
+    opponent_payoff = re.search(
+        r"(?im)^OPPONENT[ \t]*\r?\n\s*\$([0-9,().-]+)", result_text)
+    if own_payoff is None or opponent_payoff is None:
+        raise JoinInputError("raw dashboard modal is missing terminal payoffs")
+    return {
+        "slot": raw.get("slot"),
+        "timestamp": timestamp,
+        "role": role,
+        "outcome": outcome,
+        "rating_delta": rating,
+        "modal": {
+            "setup": setup,
+            "transcript": transcript,
+            "payoffs": {
+                "own": own_payoff.group(1),
+                "opponent": opponent_payoff.group(1),
+            },
+        },
+    }
+
+
 def _dashboard_records(export: Any, *, slots: set[str],
                        dashboard_timezone: str | None
                        ) -> tuple[list[DashboardRecord], list[dict[str, Any]]]:
@@ -555,6 +677,11 @@ def _dashboard_records(export: Any, *, slots: set[str],
         try:
             if not isinstance(raw, Mapping):
                 raise JoinInputError("dashboard row must be an object")
+            if "card_text" in raw or "modal_text" in raw:
+                captured = _capture_dashboard_row(raw)
+                if captured.get("slot") is None:
+                    captured["slot"] = inherited_slot
+                raw = captured
             slot = str(raw.get("slot") or inherited_slot or "").strip()
             if not slot:
                 raise JoinInputError("dashboard row is missing slot")

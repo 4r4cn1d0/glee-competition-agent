@@ -320,3 +320,86 @@ def test_active_live_snapshot_is_ignored_not_reported(tmp_path):
 
     assert [game["game_id"] for game in document["games"]] == ["completed"]
     assert report["local_errors"] == []
+
+
+def test_raw_authenticated_card_and_modal_capture_matches_structured_row():
+    card = (
+        "NegotiationYou played Seller vs an agentAgreement · "
+        "Aug 24, 2026 7:08 PMRating+3.25›")
+    # The dialog is newest-first and includes prose containing the word
+    # "accepting". Only the standalone final action line is semantic.
+    modal = """Negotiation
+Game transcript
+
+Aug 24, 2026, 7:08 PM
+
+GAME SETUP
+
+Your valuation:
+$6.00
+Max rounds:
+No limit
+Messages:
+Allowed
+Round 2
+You (Buyer)
+
+Offered: $8.00
+
+Accept
+
+Round 1
+You (Seller)
+
+Offered: $10.00“A sentence about accepting a fair deal.”
+
+Rejectcounter: $8.00
+
+FINAL RESULT — YOU REACHED A DEAL
+
+YOUR PAYOFF
+
+$2.00
+
+OPPONENT
+
+$4.00"""
+    captured, captured_errors = J._dashboard_records(
+        [{"slot": SLOT, "card_text": card, "modal_text": modal}],
+        slots={SLOT}, dashboard_timezone="Asia/Kolkata")
+    structured = _dashboard_row(
+        timestamp="Aug 24, 2026 7:08 PM", rating=3.25)
+    expected, expected_errors = J._dashboard_records(
+        [structured], slots={SLOT}, dashboard_timezone="Asia/Kolkata")
+
+    assert captured_errors == expected_errors == []
+    assert captured[0].fingerprint == expected[0].fingerprint
+    assert captured[0].rating_delta == 3.25
+    assert captured[0].minute_utc == expected[0].minute_utc
+
+
+def test_raw_capture_fails_closed_on_missing_round_decision():
+    card = (
+        "NegotiationYou played Buyer vs an agentNo deal · "
+        "Aug 24, 2026 7:08 PMRating-7.1›")
+    modal = """Your valuation:
+$1,200,000
+Max rounds:
+1
+Round 1
+Seller
+
+Offered: $1,200,000
+
+FINAL RESULT — NO DEAL WAS REACHED
+YOUR PAYOFF
+$0
+OPPONENT
+$0"""
+
+    records, errors = J._dashboard_records(
+        [{"slot": SLOT, "card_text": card, "modal_text": modal}],
+        slots={SLOT}, dashboard_timezone="Asia/Kolkata")
+
+    assert records == []
+    assert "missing decision" in errors[0]["reason"]
