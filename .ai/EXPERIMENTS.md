@@ -123,7 +123,7 @@
 Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
 measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 
-## READY — DEFAULT OFF, CODE DEPLOY PENDING
+## RUNNING — LIVE CAUSAL MEASUREMENT
 
 ### Direct-leader hidden unknown-horizon opening copy (negotiation)
 - **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1`;
@@ -157,14 +157,21 @@ measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 - **Read with**: `scripts/live_percentile.py --ab hi-extreme-open --since T0
   --until T1 --slots champion,composite,hardliner,randomized`. The local
   hidden-value-pooled percentile never authorizes promotion.
+- **Live on / boundary**: Test 1 (`champion`), Test 2 (`hardliner`), Test 4
+  (`randomized`), and Agent 5 (`composite`) from the clean common boundary
+  `T0=1787571320` (2026-08-24 17:05:20 IST). All four processes naturally
+  rotated onto pushed commit `8a21e8e` before the flag was set; the overlay
+  mtime was `1787571316`, four seconds before T0. Test 3 remains unarmed.
 - **Preflight**: champion's exact live stack, 1,000 paired negotiation games,
   seed 1907: 100 eligible / 49 fired / 49 changed final wire actions. Focused
   suite 88 passed; full suite 1,048 passed with only the two predeclared
   bargaining failures.
 
-The code is pushed default OFF before any flag is armed. Record per-slot code
-load boundaries or wait for all four natural rotations before setting one clean
-common T0. Do not arm Test 3 before causal promotion evidence.
+The first post-boundary assignment was a composite hash control in buyer-1.2;
+its ordinary first counter remained unchanged and the reader reported
+`wire_ok=true`. This proves control preservation, not candidate firing or
+outcome value. Require a literal treatment wire at 1.485B/.81B before declaring
+the live mechanism verified. Do not arm Test 3 before causal promotion evidence.
 
 ## REJECTED — DEFAULT OFF, DO NOT RUN
 

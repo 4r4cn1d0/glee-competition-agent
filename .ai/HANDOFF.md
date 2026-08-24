@@ -3,6 +3,32 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-24 — direct-leader opening copy activated on research slots
+
+Codex activated `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1` on `champion`,
+`hardliner`, `randomized`, and `composite` at the clean common first-action
+boundary `T0=1787571320` (17:05:20 IST). Every target process had naturally
+rotated onto pushed commit `8a21e8e`; no process was signalled, drained, or
+restarted for deployment. The final overlay write was at `1787571316`, four
+seconds before T0. `conceder` / Test 3 remains unarmed, and no bargaining flag
+or bargaining code was changed.
+
+This is the default-off per-game 50/50 direct-leader arm described below. It
+changes only the first hidden unknown-horizon outgoing price in seller
+.8B/1.0B and buyer 1.2B/1.5B cells, to 1.485B or .81B respectively. The running
+seller-1.2/buyer-1.0 first-offer probe and cap-10 terminal probe are disjoint;
+`HIDDEN_POLICY_V1` and `HIDDEN_FLOOR` were absent on all four slots at
+activation. The first post-T0 assignment was a composite buyer-1.2 hash control
+and retained its ordinary counter with `wire_ok=true`; treatment-wire firing is
+still pending and must be verified separately.
+
+Read with `scripts/live_percentile.py --ab hi-extreme-open --since 1787571320
+--slots champion,composite,hardliner,randomized`. Do not decide before 100
+resolved games per arm and 15 per own-type/arm, and never promote from its local
+hidden-pooled diagnostic. Official per-game score CI, close-rate noninferiority,
+all subgroup signs, unresolved outcomes, cross-fleet duplicate IDs, and exact
+wire integrity remain the precommitted gates.
+
 ## 2026-08-24 — direct-leader opening copy built, default OFF
 
 Codex reconstructed the current top negotiation agents from direct encounters,
