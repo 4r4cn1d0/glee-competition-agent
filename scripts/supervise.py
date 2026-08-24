@@ -320,7 +320,14 @@ class Agent:
                   f"(restart #{self.restarts}) policy={policy} families={families}"
                   f"{' arm=' + repr(arm) if arm else ''} =====\n")
         out.flush()
-        self.proc = subprocess.Popen(cmd, cwd=REPO, env=env, stdout=out,
+        # A long-lived desktop-launched supervisor can outlive the terminal that
+        # supplied fd 0.  On 2026-08-24 that descriptor became ``(revoked)``;
+        # every otherwise clean slot relaunch then died before importing our
+        # code with ``init_sys_streams: OSError [Errno 9]``.  Agents are fully
+        # non-interactive, so give each child an explicit stable stdin instead
+        # of inheriting a terminal descriptor whose lifetime we do not own.
+        self.proc = subprocess.Popen(cmd, cwd=REPO, env=env,
+                                     stdin=subprocess.DEVNULL, stdout=out,
                                      stderr=subprocess.STDOUT)
         self.started_at = time.time()
         return True
