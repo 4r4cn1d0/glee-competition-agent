@@ -84,10 +84,9 @@ changes, all and only explicit-decline BUY-to-PASS, with zero violations.
 Comparison across 26,236 synthesized messages found zero legacy/default parser
 verdict changes; only the intended expanded decline overlaps changed.
 Focused tests passed 142/142 and persuasion-wide review passed 380/380.  The
-full suite finished 1,797 passed / three unrelated failures: the two declared
-bargaining failures (stale 450-vs-468 horizon expectation and live bargaining
-grid drift), plus a live-log negotiation grid-drift alarm.  No persuasion test
-failed.
+final full suite on the combined HEAD finished 1,798 passed with exactly the
+two declared bargaining failures (stale 450-vs-468 horizon expectation and
+live bargaining grid drift).  No persuasion or negotiation test failed.
 
 Portfolio backup: existing deterministic seller `GLEE_PERS_DP_V3=1` with
 `GLEE_PERS_DP_V3_MARGIN=.25` is the only meaningfully distinct broad candidate
