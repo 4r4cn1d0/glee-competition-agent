@@ -167,6 +167,31 @@ def _p_hi_cap10_buyer12_terminal(game, p):
             and game.get("valid_actions", {}).get("type") == "decision")
 
 
+def _p_hi_cap10_buyer_curve(game, p):
+    """Static scope of the broad hidden cap-10 buyer curve postcondition."""
+    from glee_agent.actions import _num
+    from glee_agent.pricing import infer_base
+
+    state = game.get("game_state") or {}
+    seat = game.get("your_player") or state.get("current_player")
+    own_value = _num(state.get(f"{seat}_value"), float("nan"))
+    base = infer_base(own_value)
+    if base is None:
+        return False
+    own_mult = next(
+        (mult for mult in (0.8, 1.0, 1.2, 1.5)
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    return (state.get("complete_information") is False
+            and state.get("horizon_known") is True
+            and _num(state.get("max_rounds"), -1.0) == 10.0
+            and state.get(f"{seat}_role") == "buyer"
+            and own_mult in (1.0, 1.2, 1.5)
+            and bool(game.get("game_id"))
+            and game.get("valid_actions", {}).get("type") == "decision")
+
+
 def _p_hi_uncapped_first_offer(game, p):
     """Static scope of the hidden unknown-horizon first-offer probe."""
     from glee_agent.actions import _hidden_own_price_count, _num
@@ -360,6 +385,8 @@ KNOWN = {
     "GLEE_NEGO_HIDDEN_POLICY_V1": ("negotiation", (), _p_hidden_policy),
     "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB": (
         "negotiation", (), _p_hi_cap10_buyer12_terminal),
+    "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB": (
+        "negotiation", (), _p_hi_cap10_buyer_curve),
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB": (
         "negotiation", (), _p_hi_uncapped_first_offer),
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB": (
@@ -429,6 +456,7 @@ POSTCONDITION_FLAGS = {
     "GLEE_NEGO_OPEN_CLAIM_ALWAYS",
     "GLEE_NEGO_HIDDEN_FLOOR", "GLEE_NEGO_HIDDEN_POLICY_V1",
     "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+    "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB",
     "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
     "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",

@@ -207,6 +207,18 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
   agreements, no-deals, and walks, and nothing here establishes that copying
   one wire causes a higher official score. That question requires a per-game
   randomized arm over every assigned trajectory.
+- In hidden cap-10 games where a named leader was the buyer, 18 direct games
+  expose opponent price paths (Clod n=4, Athena n=3, doodod n=8, opus 5(4)
+  n=3). Two completed Clod agreements identify its private value as `1.2B`:
+  agreement `1.008B` plus buyer payoff `.192B`. Their full paths were
+  `[.817887,.817962,.821681,.855342,1.008]B` and
+  `[.810850,.811234,.819553,.864849,1.008]B`; normalized by buyer value, the
+  pointwise midpoint is `[.678640,.678831,.683848,.716746,.840000]`.
+  Literal `.677B` and `1.015B` opening families from doodod/opus are consistent
+  with scaling that curve to other buyer values, but private buyer type is not
+  recoverable in their no-deals. Therefore only Clod's `1.2B` curve is directly
+  type-identified; applying the normalized curve to `1.0B/1.5B` is a randomized
+  extrapolation, not a validated leader fact.
 
 ## GLEE_OPP_EXPLOIT: built, never armed, and its DEFAULT is the harmful setting
 - Per-opponent bargaining accept thresholds vary enormously and really are

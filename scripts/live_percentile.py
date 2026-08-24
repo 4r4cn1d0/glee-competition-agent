@@ -36,6 +36,8 @@ field responds -- these are the payoffs the field actually paid us.
     python scripts/live_percentile.py --ab hidden-policy --since T0 --until T1
                                        # hidden policy + zone-capture diagnostics
     python scripts/live_percentile.py --ab hi-terminal --since T0 --until T1
+    python scripts/live_percentile.py --ab hi-buyer-curve --since T0 \
+        --official-json FILE
                          # hidden cap-10 buyer-1.2 terminal-counter ITT + wire audit
     python scripts/live_percentile.py --ab hidden-min-share-veto --since T0 \
         --official-json FILE
@@ -80,6 +82,7 @@ sys.path.insert(0, REPO)
 from sim.percentile import percentile          # noqa: E402
 from sim import official_negotiation_seed      # noqa: E402
 from glee_agent import first_principles         # noqa: E402
+from glee_agent.actions import hi_cap10_buyer_curve_arm as _hi_buyer_curve_bit  # noqa: E402
 from glee_agent.actions import hi_cap10_buyer12_terminal_arm as _hi_terminal_bit  # noqa: E402
 from glee_agent.messages import BARG_ARMS, bargaining_arm  # noqa: E402
 from glee_agent.pricing import infer_base       # noqa: E402
@@ -210,6 +213,14 @@ def hi_extreme_open_arm(gid) -> str | None:
 def hi_terminal_arm(gid) -> str | None:
     """Recover the production terminal-counter assignment without duplicating its salt."""
     treatment = _hi_terminal_bit(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def hi_buyer_curve_arm(gid) -> str | None:
+    """Recover the production broad cap-10 buyer-curve assignment."""
+    treatment = _hi_buyer_curve_bit(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -431,6 +442,34 @@ def _hi_terminal_signal(seat: str, state: dict) -> dict | None:
     return {
         "base": base,
         "own_value": own_value,
+        "messages_allowed": state.get("messages_allowed") is True,
+    }
+
+
+def _hi_buyer_curve_signal(seat: str, state: dict) -> dict | None:
+    """Pre-treatment public cell for the broad cap-10 buyer curve."""
+    if seat not in ("player_1", "player_2"):
+        return None
+    if (state.get("complete_information") is not False
+            or state.get("horizon_known") is not True
+            or _number(state.get("max_rounds")) != 10.0
+            or state.get(f"{seat}_role") != "buyer"):
+        return None
+    own_value = _number(state.get(f"{seat}_value"))
+    base = infer_base(own_value) if own_value is not None else None
+    if base is None:
+        return None
+    own_mult = next(
+        (mult for mult in (1.0, 1.2, 1.5)
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    if own_mult is None:
+        return None
+    return {
+        "base": base,
+        "own_value": own_value,
+        "own_mult": own_mult,
         "messages_allowed": state.get("messages_allowed") is True,
     }
 
@@ -788,6 +827,30 @@ def _hi_terminal_exposure_turn(slot: str, rec: dict):
     if ts is None:
         return None
     return (slot, gid), ts, signal
+
+
+def _hi_buyer_curve_exposure_turn(slot: str, rec: dict):
+    """Cohort at the first eligible buyer decision, before its action."""
+    if rec.get("game_family") != "negotiation":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _hi_buyer_curve_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if (rec.get("action_type") != "decision"
+            or (state.get("current_player") or seat) != seat):
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+    action = rec.get("action") or {}
+    return (slot, gid), ts, {
+        **signal,
+        "first_decision": action.get("decision"),
+        "first_price": _number(action.get("product_price")),
+    }
 
 
 def _stall_current_break_signal(seat: str, state: dict) -> dict | None:
@@ -1462,6 +1525,65 @@ def _hi_terminal_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), closed, diagnostic
 
 
+def _hi_buyer_curve_row(slot: str, rec: dict, fin: dict):
+    """Build the broad buyer ITT outcome and audit every emitted counter."""
+    if fin.get("game_family") != "negotiation":
+        return None
+    gid = rec.get("game_id") or fin.get("game_id")
+    seat = fin.get("your_player")
+    state = fin.get("game_state") or {}
+    signal = _hi_buyer_curve_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    closed = _terminal_close(fin)
+    if closed is None:
+        return None
+    result = fin.get("result") or {}
+    payoff = _result_payoff(result, seat, seat)
+    pct = (percentile("negotiation", dict(state), seat, payoff)
+           if payoff is not None else None)
+
+    from glee_agent.actions import _HI_CAP10_BUYER_CURVE
+
+    wire_rounds = []
+    wire_prices = []
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        if (entry.get("decided_by") != seat
+                or entry.get("decision") != "RejectOffer"):
+            continue
+        price = _counter_price(entry)
+        if price is None:
+            continue
+        wire_rounds.append(_number(entry.get("round")))
+        wire_prices.append(price)
+    curve_count = min(len(wire_prices), len(_HI_CAP10_BUYER_CURVE))
+    curve_wire_prices = wire_prices[:curve_count]
+    expected = [
+        round(signal["own_value"] * _HI_CAP10_BUYER_CURVE[index], 2)
+        for index in range(curve_count)
+    ]
+    wire_ok = all(abs(actual - target)
+                  <= max(1e-7, abs(target) * 1e-12)
+                  for actual, target in zip(curve_wire_prices, expected))
+    diagnostic = {
+        **signal,
+        "wire_rounds": wire_rounds,
+        "wire_prices": wire_prices,
+        "curve_wire_prices": curve_wire_prices,
+        "expected_wire_prices": expected,
+        "wire_ok": wire_ok,
+        "outgoing_counters": len(wire_prices),
+        "curve_counters": curve_count,
+        "terminal_control_price": (
+            wire_prices[len(_HI_CAP10_BUYER_CURVE)]
+            if len(wire_prices) > len(_HI_CAP10_BUYER_CURVE) else None),
+        "no_deal": not closed,
+    }
+    return slot, pct, str(gid), closed, diagnostic
+
+
 def _stall_current_break_row(slot: str, rec: dict, fin: dict):
     """Build a terminal stale-stall outcome; exposure metadata carries scope."""
     if fin.get("game_family") != "negotiation":
@@ -1926,6 +2048,13 @@ def hi_terminal_games(hours, since=None, until=None):
     """Yield every assigned buyer-1.2 cap-10 game, not only terminal reaches."""
     yield from _price_arm_games(
         hours, _hi_terminal_exposure_turn, _hi_terminal_row,
+        since=since, until=until)
+
+
+def hi_buyer_curve_games(hours, since=None, until=None):
+    """Yield every assigned viable hidden cap-10 buyer game."""
+    yield from _price_arm_games(
+        hours, _hi_buyer_curve_exposure_turn, _hi_buyer_curve_row,
         since=since, until=until)
 
 
@@ -3994,8 +4123,15 @@ def report_hidden_floor(rows, hours, since=None, until=None):
         since=since, until=until)
 
 
-def report_hi_terminal(rows, hours, since=None, until=None):
-    """Report the terminal-counter arm without conditioning on reaching round 9."""
+def report_hi_terminal(rows, hours, since=None, until=None,
+                       official_path=None):
+    """Report the terminal-counter ITT with official rating and wire audits."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
     observations = []
     gid_slots = defaultdict(set)
     for slot, pct, gid, closed, *metadata in rows:
@@ -4013,6 +4149,7 @@ def report_hi_terminal(rows, hours, since=None, until=None):
         observations.append({
             "slot": slot, "pct": pct, "gid": gid, "closed": closed,
             "arm": arm, "diagnostic": diagnostic, "resolution": resolution,
+            "official": official.get((slot, gid)),
         })
 
     title = "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB"
@@ -4022,9 +4159,9 @@ def report_hi_terminal(rows, hours, since=None, until=None):
     print("ITT eligibility: hidden cap-10 negotiation, our role buyer, own value "
           "1.2*base; cohort begins at the first buyer decision, before terminal "
           "reach or outcome is known")
-    print("IMPORTANT: pct below uses the local hidden-value-pooled CDF and is a "
-          "same-window diagnostic, not the official full-configuration score. "
-          "Promotion requires official per-game score evidence.")
+    print("primary: authenticated dashboard per-game rating delta. Local pct "
+          "uses the hidden-value-pooled CDF and is diagnostic only, not the "
+          "official full-configuration score")
     if since is not None or until is not None:
         lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
         upper = f"{float(until):g}" if until is not None else "now"
@@ -4044,27 +4181,56 @@ def report_hi_terminal(rows, hours, since=None, until=None):
         terminal = [item for item in assigned if item["closed"] is not None]
         pcts = [item["pct"] for item in terminal if item["pct"] is not None]
         closes = [float(bool(item["closed"])) for item in terminal]
+        official_scores = [item["official"] for item in terminal
+                           if item["official"] is not None]
         reached = [item for item in terminal
                    if item["diagnostic"].get("reached_terminal_counter")]
         unresolved = len(assigned) - len(terminal)
-        stats[arm] = {"pct": pcts, "closed": closes, "reached": reached,
-                      "unresolved": unresolved}
+        official_missing = sum(item["official"] is None for item in terminal)
+        stats[arm] = {
+            "pct": pcts, "closed": closes, "official": official_scores,
+            "reached": reached, "unresolved": unresolved,
+            "official_missing": official_missing,
+        }
+        official_text, _ = _mean_ci_text(official_scores)
         pct_text, _ = _mean_ci_text(pcts)
         close_text, _ = _mean_ci_text(closes, percent=True)
-        print(f"POOLED    {arm:9} pct={pct_text} n={len(pcts)}; "
+        print(f"POOLED    {arm:9} official-dR={official_text} "
+              f"n={len(official_scores)}; local-pct={pct_text} n={len(pcts)}; "
               f"close={close_text} n={len(closes)}; "
-              f"terminal-counter={len(reached)}; unresolved={unresolved}")
+              f"terminal-counter={len(reached)}; unresolved={unresolved}; "
+              f"official-missing={official_missing}")
 
     control, candidate = stats.get("control"), stats.get("candidate")
     if control and candidate:
         print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
         _print_delta("local pooled-CDF percentile (diagnostic)",
                      candidate["pct"], control["pct"])
         _print_delta("close rate", candidate["closed"], control["closed"],
                      percent=True)
-        _delta, low, _high = _delta_ci(candidate["closed"], control["closed"])
-        if low is not None and low <= -0.02:
-            print("CLOSE NONINFERIORITY NOT MET: lower 95% bound is not above -2pp")
+
+    stratum_deltas = {}
+    print("predeclared official point estimates by scale and message setting:")
+    for field, values in (("base", (100.0, 10000.0, 1000000.0)),
+                          ("messages_allowed", (False, True))):
+        for value in values:
+            grouped = {
+                arm: [item["official"] for item in pooled
+                      if item["arm"] == arm
+                      and item["diagnostic"].get(field) == value
+                      and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            stratum_deltas[(field, value)] = (delta, grouped)
+            rendered = ("official unavailable" if delta is None else
+                        f"{delta:+.4f} (CI unavailable)" if low is None else
+                        f"{delta:+.4f} [{low:+.4f},{high:+.4f}]")
+            print(f"  {field}={value}: {rendered}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
 
     wire_failures = []
     for item in pooled:
@@ -4087,9 +4253,255 @@ def report_hi_terminal(rows, hours, since=None, until=None):
               "all exactly base+$0.01")
 
     unresolved = sum(value["unresolved"] for value in stats.values())
-    if unresolved:
-        print(f"INCOMPLETE OUTCOMES: {unresolved}; promotion is blocked")
-    return 0
+    official_missing = sum(value["official_missing"] for value in stats.values())
+    print("DECISION RULE: fixed final read at >=100 resolved official games/arm "
+          "and >=10/arm in every scale x message cell. Promote only if "
+          "official-dR CI >0, close-rate point delta >0 with lower CI >-2pp, "
+          "every scale/message point is nonnegative, and all wires/joins/"
+          "outcomes are clean. One harm look at >=30 official games/arm rejects "
+          "if the official CI is wholly negative.")
+    if wire_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or official_missing:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, terminal outcomes "
+              f"missing official delta={official_missing}")
+        return 1
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+
+    official_delta, official_low, official_high = _delta_ci(
+        candidate["official"], control["official"])
+    close_delta, close_low, _close_high = _delta_ci(
+        candidate["closed"], control["closed"])
+    harm_ready = all(len(stats[arm]["official"]) >= 30
+                     for arm in ("control", "candidate"))
+    if harm_ready and official_high is not None and official_high < 0:
+        print("OFFICIAL REJECTION: >=30/arm and official-dR CI is below zero")
+        return 2
+
+    sample_ready = all(len(stats[arm]["official"]) >= 100
+                       for arm in ("control", "candidate"))
+    cells_ready = True
+    for base in (100.0, 10000.0, 1000000.0):
+        for messages in (False, True):
+            cell_counts = {
+                arm: sum(
+                    item["arm"] == arm
+                    and item["diagnostic"].get("base") == base
+                    and item["diagnostic"].get("messages_allowed") is messages
+                    and item["official"] is not None
+                    for item in pooled)
+                for arm in ("control", "candidate")
+            }
+            cells_ready &= all(cell_counts[arm] >= 10
+                               for arm in ("control", "candidate"))
+    strata_nonnegative = all(
+        delta is not None and delta >= 0
+        for delta, _grouped in stratum_deltas.values())
+    promotable = (
+        sample_ready and cells_ready and strata_nonnegative
+        and official_delta is not None and official_low is not None
+        and official_low > 0 and close_delta is not None and close_delta > 0
+        and close_low is not None and close_low > -0.02)
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official-CI/close/stratum gates are not "
+          "all satisfied")
+    return 1
+
+
+def report_hi_buyer_curve(rows, hours, since=None, until=None,
+                          official_path=None):
+    """Report the broad leader-curve ITT with official and wire gates."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = hi_buyer_curve_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        fleet_slots = diagnostic.get("fleet_slots")
+        if isinstance(fleet_slots, (list, tuple, set)):
+            gid_slots[gid].update(fleet_slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic, "resolution": resolution,
+            "official": official.get((slot, gid)),
+        })
+
+    title = "GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB"
+    if since is None and until is None:
+        title += f", last {hours:g}h"
+    print(title)
+    print("ITT eligibility: hidden cap-10 negotiation, our role buyer, own "
+          "value in {1.0,1.2,1.5}*base; cohort begins at the first buyer "
+          "decision before accept/reject or any candidate price")
+    print("candidate: the first four outgoing prices equal the frozen Clod "
+          "midpoint curve times our own value; terminal price is current "
+          "control in both arms. Primary outcome is authenticated "
+          "dashboard rating delta. Local pooled-CDF percentile is diagnostic")
+    if since is not None or until is not None:
+        lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+        upper = f"{float(until):g}" if until is not None else "now"
+        print(f"first buyer-decision exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned broad hidden cap-10 buyer games in the window")
+        return 1
+
+    duplicate_gids = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    pooled = [item for item in observations if item["gid"] not in duplicate_gids]
+    print(f"pooled dependence guard: excluded {len(duplicate_gids)} game id(s) "
+          "observed in multiple fleet slots")
+
+    stats = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in pooled if item["arm"] == arm]
+        terminal = [item for item in assigned if item["closed"] is not None]
+        pcts = [item["pct"] for item in terminal if item["pct"] is not None]
+        closes = [float(bool(item["closed"])) for item in terminal]
+        official_scores = [item["official"] for item in terminal
+                           if item["official"] is not None]
+        unresolved = len(assigned) - len(terminal)
+        official_missing = sum(item["official"] is None for item in terminal)
+        counters = sum(
+            int(item["diagnostic"].get("curve_counters") or 0)
+            for item in terminal)
+        stats[arm] = {
+            "pct": pcts, "closed": closes, "official": official_scores,
+            "unresolved": unresolved, "official_missing": official_missing,
+            "curve_counters": counters,
+        }
+        official_text, _ = _mean_ci_text(official_scores)
+        pct_text, _ = _mean_ci_text(pcts)
+        close_text, _ = _mean_ci_text(closes, percent=True)
+        print(f"POOLED    {arm:9} official-dR={official_text} "
+              f"n={len(official_scores)}; local-pct={pct_text} n={len(pcts)}; "
+              f"close={close_text} n={len(closes)}; curve-counters={counters}; "
+              f"unresolved={unresolved}; official-missing={official_missing}")
+
+    control, candidate = stats.get("control"), stats.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+
+    stratum_deltas = {}
+    print("predeclared official point estimates by own type, scale, and messages:")
+    for field, values in (
+            ("own_mult", (1.0, 1.2, 1.5)),
+            ("base", (100.0, 10000.0, 1000000.0)),
+            ("messages_allowed", (False, True))):
+        for value in values:
+            grouped = {
+                arm: [item["official"] for item in pooled
+                      if item["arm"] == arm
+                      and item["diagnostic"].get(field) == value
+                      and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            stratum_deltas[(field, value)] = (delta, grouped)
+            rendered = ("official unavailable" if delta is None else
+                        f"{delta:+.4f} (CI unavailable)" if low is None else
+                        f"{delta:+.4f} [{low:+.4f},{high:+.4f}]")
+            print(f"  {field}={value}: {rendered}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    wire_failures = []
+    candidate_counter_count = 0
+    for item in pooled:
+        if item["arm"] != "candidate" or item["closed"] is None:
+            continue
+        diagnostic = item["diagnostic"]
+        candidate_counter_count += int(diagnostic.get("curve_counters") or 0)
+        if diagnostic.get("wire_ok") is not True:
+            wire_failures.append((
+                item["gid"], diagnostic.get("curve_wire_prices"),
+                diagnostic.get("expected_wire_prices")))
+    if wire_failures:
+        print(f"FALSIFICATION: {len(wire_failures)} candidate game(s) emitted "
+              f"a non-curve counter; first={wire_failures[0]}")
+    else:
+        print(f"wire mechanism: {candidate_counter_count} candidate counter(s), "
+              "all on the frozen four-point value-scaled early curve")
+
+    unresolved = sum(value["unresolved"] for value in stats.values())
+    official_missing = sum(value["official_missing"] for value in stats.values())
+    print("DECISION RULE: one harm look at >=30 official games/arm; reject if "
+          "the official-score or close-rate CI is wholly negative. Fixed final "
+          "read at >=100 official games/arm and >=15/arm for each own type. "
+          "Promote only if official-dR CI >0, close lower CI >-2pp, each own-"
+          "type point is nonnegative, no scale/message point is <=-1 rating/"
+          "game, and all wires/joins/outcomes are clean.")
+    if wire_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or official_missing:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, terminal outcomes "
+              f"missing official delta={official_missing}")
+        return 1
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+
+    official_delta, official_low, official_high = _delta_ci(
+        candidate["official"], control["official"])
+    close_delta, close_low, close_high = _delta_ci(
+        candidate["closed"], control["closed"])
+    harm_ready = all(len(stats[arm]["official"]) >= 30
+                     for arm in ("control", "candidate"))
+    if harm_ready and ((official_high is not None and official_high < 0)
+                       or (close_high is not None and close_high < 0)):
+        print("HARM REJECTION: >=30/arm and an official-score/close CI is "
+              "wholly negative")
+        return 2
+
+    sample_ready = all(len(stats[arm]["official"]) >= 100
+                       for arm in ("control", "candidate"))
+    types_ready = all(
+        len(grouped[arm]) >= 15
+        for (field, _value), (_delta, grouped) in stratum_deltas.items()
+        if field == "own_mult"
+        for arm in ("control", "candidate"))
+    type_points_ok = all(
+        delta is not None and delta >= 0
+        for (field, _value), (delta, _grouped) in stratum_deltas.items()
+        if field == "own_mult")
+    nuisance_points_ok = all(
+        delta is not None and delta > -1.0
+        for (field, _value), (delta, _grouped) in stratum_deltas.items()
+        if field in ("base", "messages_allowed"))
+    promotable = (
+        sample_ready and types_ready and type_points_ok and nuisance_points_ok
+        and official_delta is not None and official_low is not None
+        and official_low > 0 and close_delta is not None
+        and close_low is not None and close_low > -0.02)
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official-CI/close/type/nuisance gates are "
+          "not all satisfied")
+    return 1
 
 
 def report_stall_current_break(rows, hours, since=None, until=None,
@@ -4783,7 +5195,8 @@ def main() -> int:
                     choices=("zopa", "rank-price", "open-claim",
                              "open-claim-official", "hidden-floor",
                              "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                             "hi-terminal", "stall-current-break",
+                             "hi-terminal", "hi-buyer-curve",
+                             "stall-current-break",
                              "hidden-min-share-veto", "table-vcont-precedence",
                              "fp-complete", "pers-selectivity", "pers-prose",
                              "pers-truth", "pers-decline-veto",
@@ -4795,7 +5208,8 @@ def main() -> int:
 
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                   "hi-terminal", "stall-current-break", "hidden-min-share-veto",
+                   "hi-terminal", "hi-buyer-curve", "stall-current-break",
+                   "hidden-min-share-veto",
                    "table-vcont-precedence",
                    "fp-complete",
                    "pers-selectivity", "pers-prose", "pers-truth",
@@ -4811,6 +5225,7 @@ def main() -> int:
             "hi-first-offer": hi_first_offer_games,
             "hi-extreme-open": hi_extreme_open_games,
             "hi-terminal": hi_terminal_games,
+            "hi-buyer-curve": hi_buyer_curve_games,
             "stall-current-break": stall_current_break_games,
             "hidden-min-share-veto": hidden_min_share_veto_games,
             "table-vcont-precedence": table_vcont_precedence_games,
@@ -4828,6 +5243,7 @@ def main() -> int:
             "hi-first-offer": report_hi_first_offer,
             "hi-extreme-open": report_hi_extreme_open,
             "hi-terminal": report_hi_terminal,
+            "hi-buyer-curve": report_hi_buyer_curve,
             "stall-current-break": report_stall_current_break,
             "hidden-min-share-veto": report_hidden_min_share_veto,
             "table-vcont-precedence": report_table_vcont_precedence,
@@ -4843,7 +5259,8 @@ def main() -> int:
         extra = ({"official_path": args.official_json}
                  if args.ab in ("pers-prose", "pers-truth",
                                 "pers-decline-veto", "stall-current-break",
-                                "hidden-min-share-veto",
+                                "hidden-min-share-veto", "hi-terminal",
+                                "hi-buyer-curve",
                                 "table-vcont-precedence") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)

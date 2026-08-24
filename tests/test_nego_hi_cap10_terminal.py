@@ -224,11 +224,26 @@ def test_report_labels_local_cdf_and_checks_wire(capsys):
         ("champion", 0.7, candidate, True,
          {**base, "reached_terminal_counter": True, "wire_price": 100.01}),
     ]
-    assert live_percentile.report_hi_terminal(rows, 24.0) == 0
+    assert live_percentile.report_hi_terminal(rows, 24.0) == 1
     output = capsys.readouterr().out
     assert "not the official full-configuration score" in output
     assert "intent-to-treat" in output
     assert "all exactly base+$0.01" in output
+    assert "terminal outcomes missing official delta=2" in output
+
+
+def test_report_rejects_a_malformed_candidate_terminal_wire(capsys):
+    control, candidate = _gid(False), _gid(True)
+    base = {"base": 100.0, "expected_wire_price": 100.01,
+            "fleet_slots": ("champion",), "messages_allowed": False}
+    rows = [
+        ("champion", 0.4, control, False,
+         {**base, "reached_terminal_counter": False, "wire_price": None}),
+        ("champion", 0.7, candidate, True,
+         {**base, "reached_terminal_counter": True, "wire_price": 100.02}),
+    ]
+    assert live_percentile.report_hi_terminal(rows, 24.0) == 2
+    assert "MECHANISM REJECTION" in capsys.readouterr().out
 
 
 def test_round9_counter_is_the_round10_standing_offer(monkeypatch):

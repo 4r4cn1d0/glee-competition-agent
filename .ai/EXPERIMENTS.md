@@ -103,12 +103,22 @@
 - **Primary cohort**: every matching game from its first buyer decision, not
   only games that reach round 9.  Include all terminal outcomes and block while
   any assigned outcome is unresolved.
-- **Decision rule**: official per-game score delta 95% CI above zero; close-rate
-  point estimate positive with lower 95% bound above -2pp; every fired wire
-  exactly `base+$0.01`; no material scale/message sign reversal.  Reject on
-  negative official-score CI or any mechanism failure.
-- **Read with**: `scripts/live_percentile.py --ab hi-terminal --since T0 --until T1`.
-  Its local hidden-value-pooled percentile is diagnostic, not promotion-grade.
+- **Decision rule, frozen before the first official outcome join**: fixed final
+  read at 100 resolved official games per arm and at least 10 per arm in every
+  scale x message cell. Promote only if official per-game score delta 95% CI is
+  above zero; close-rate point estimate is positive with lower 95% bound above
+  -2pp; scale and message point estimates are all nonnegative; every fired wire
+  is exactly `base+$0.01`; and mechanism/join/outcome failures are zero. One
+  harm look at 30 official games per arm rejects if the official CI is wholly
+  negative. Reject immediately on any mechanism failure. This prospective
+  clarification was made after local diagnostic outcomes were visible but
+  before harvesting any official terminal-arm records; it prevents repeated
+  official-score peeking.
+- **Read with**: `scripts/live_percentile.py --ab hi-terminal --since T0
+  --until T1 --official-json FILE`. The reader now joins authenticated official
+  rating deltas, retains the all-assigned ITT and unresolved outcomes, audits
+  exact terminal wires, excludes cross-fleet duplicates, and enforces the fixed
+  rule above. Its local hidden-value-pooled percentile remains diagnostic.
 - **Reachability**: 57 eligible / 20 fired / 20 changed on 3,000 paired games.
 - **Live on / boundary**: Test 1 (`champion`), Agent 5 (`composite`), and Test 4
   (`randomized`) from the clean common boundary `T0=1787568551` (2026-08-24
@@ -122,6 +132,49 @@
 
 Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
 measurement. Codex owns deployment under the operator's 2026-08-24 directive.
+
+## READY — DEFAULT OFF, FAST NEXT TEST
+
+### Broad direct-leader hidden cap-10 buyer trajectory
+- **Flag / assignment**: `GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB=1`;
+  `sha256("nego_hi_cap10_buyer_curve_v1|" + game_id) & 1`.
+- **Why this replaces the slow loop**: the posted 63-game official window was
+  `-24.4` on the buyer side and `+47.9` on the seller side; buyer no-deals alone
+  contributed `-22.5`. The old terminal-only arm reaches one own type on one
+  counter. This arm covers every hidden cap-10 buyer with own type
+  `1.0B/1.2B/1.5B`, approximately 9% of negotiation games, and changes the first
+  four price opportunities while leaving terminal price, AcceptOffer, and
+  WalkAway byte-identical.
+- **Candidate**: the frozen fraction-of-own-value early curve
+  `[.6786404167,.6788316667,.6838475000,.7167462500]`. It is the first-four
+  pointwise midpoint of two completed, type-identified Clod buyer-`1.2B` paths;
+  both later ended at exactly `1.008B`, but that terminal is not copied. Scaling
+  the early curve to buyer `1.0B/1.5B` is part of the treatment: matching
+  `.677B/1.015B` literal opening families exist in direct top-agent traces, but
+  their hidden private types are not identified in no-deals.
+- **Isolation**: the mechanism fails closed if the old buyer-1.2 terminal arm,
+  HIDDEN_POLICY, HIDDEN_FLOOR, HIDDEN_MIN_SHARE_VETO, TABLE_VCONT_PRECEDENCE,
+  STALL_CURRENT_BREAK, CLOSE_AB, or PROBE_V1 is armed. Unknown-horizon opening
+  probes are disjoint. Hash controls return before any later hidden-price writer
+  and keep the current wire byte-for-byte.
+- **Cohort / reader**: every matching game from its first buyer decision before
+  action, including immediate accepts and games that never emit a candidate
+  price. Read with `scripts/live_percentile.py --ab hi-buyer-curve --since T0
+  --slots SLOTS --official-json FILE`. It audits every candidate counter against
+  the frozen four-point early curve, retains unresolved/all outcomes, and removes
+  cross-fleet duplicate IDs.
+- **Frozen decision rule before deployment**: one harm look at 30 official
+  games/arm rejects if either official-score or close-rate CI is wholly
+  negative. Final read at 100 official games/arm and at least 15/arm per own
+  type. Promote only if official-delta 95% CI is above zero, close lower CI is
+  above -2pp, every own-type point is nonnegative, no scale/message point is
+  `<=-1` rating/game, and wire/join/outcome failures are zero.
+- **Verification**: exact intended-stack reachability over 1,500 paired games,
+  seed 2601, produced 549 eligible states / 227 fired / 227 changed wire
+  actions. Focused arm/terminal/opening tests are 125/125;
+  negotiation/action/reader tests are 530/530. The flag is absent and behavior
+  remains unchanged. Full suite: 1,269 passed with only the two predeclared
+  bargaining failures; no bargaining behavior or configuration changed.
 
 ## RUNNING — LIVE CAUSAL MEASUREMENT
 

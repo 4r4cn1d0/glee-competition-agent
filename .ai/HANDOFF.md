@@ -1491,3 +1491,38 @@ Authenticated/API state around 19:44-19:48 IST: Test 2 was sixth overall at
 were Clod 2894.70, 7aidara_Gamma 2675.62, and opus 5(4) 2652.36; our best visible
 negotiation rating was Test 4 at 2070.5. These are transient monitoring values,
 not policy-effect estimates.
+
+## 2026-08-24 — broad cap-10 buyer curve built for an hours-scale read
+
+`GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB` is implemented default OFF. It replaces the
+rare-cell-first optimization loop with a high-frequency, all-viable-type hidden
+cap-10 buyer test. Candidate owns only the first four outgoing counter prices
+and uses their pointwise midpoint across two completed, type-reconstructed Clod
+buyer-1.2B paths, normalized by our visible buyer value:
+`[.6786404167,.6788316667,.6838475,.71674625]`. Control keeps the current stack
+exactly; the fifth/terminal price and accept/walk decisions are unchanged. The
+two Clod paths both closed at `1.008B` with private value `1.2B`, but that
+terminal is not part of this arm. Scaling to 1.0B/1.5B is an explicit randomized
+extrapolation, not a claim that hidden no-deal types were observed.
+
+The runtime refuses overlap with the old buyer-1.2 terminal arm, broad hidden
+writers, hidden support-veto, TABLE precedence, stale-stall, CLOSE_AB, or
+PROBE_V1. Do not arm until each overlapping flag is explicitly `0` on every
+target. The official reader is
+`--ab hi-buyer-curve`; it cohorts before the first action, retains immediate
+accepts and all non-closes, audits every candidate counter, and uses dashboard
+rating delta as primary. Harm/final rules are frozen in EXPERIMENTS.md.
+
+Independent review correctly rejected the original five-price bundle: it
+aliased early imitation with the unsettled terminal mechanism and overclaimed
+the cross-type evidence. The implementation was changed before activation.
+The remaining scaling is a randomized treatment whose official effect is
+reported separately by own type; no causal or behavioral identification is
+claimed in advance.
+
+Exact intended champion stack with the old terminal flag disabled, 1,500 paired
+games seed 2601 after terminal isolation: 549 eligible / 227 fired / 227 changed.
+Focused tests 125 pass; the impacted negotiation/action/reader set is 530 pass.
+Full suite: 1,269 passed with only the two predeclared bargaining failures. No
+bargaining code, bargaining flag, live arm, process, key, or deployment file
+was changed.

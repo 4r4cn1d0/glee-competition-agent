@@ -52,6 +52,22 @@ _HI_UNCAPPED_EXTREME_BUYER_PRICE = 0.81
 # exactly one terminal counter and must be recoverable from game_id alone.
 _HI_CAP10_BUYER12_TERMINAL_SALT = "nego_hi_cap10_buyer12_terminal_v1|"
 
+# Direct-leader cap-10 buyer trajectory.  Two completed Clod buyer-1.2B games
+# exposed the same terminal 1.008B bid and closely matching normalized paths;
+# their first-four pointwise midpoint is the early schedule below.  Literal
+# .677B and 1.015B opening families from doodod/opus are consistent with scaling this
+# schedule to 1.0B/1.5B, but those buyers' private values are not identified in
+# no-deals.  The scaling is therefore an explicit extrapolation, not measured
+# behavior.  Opponent type and the causal value of an unplayed path are also
+# unidentified, so the per-game hash and default-OFF gate keep it randomized.
+_HI_CAP10_BUYER_CURVE_SALT = "nego_hi_cap10_buyer_curve_v1|"
+_HI_CAP10_BUYER_CURVE = (
+    0.6786404167,
+    0.6788316667,
+    0.6838475000,
+    0.7167462500,
+)
+
 BARGAINING_DECISIONS = {"accept", "reject", "walkaway"}
 NEGOTIATION_DECISIONS = {"AcceptOffer", "RejectOffer", "WalkAway"}
 YES_NO = {"yes", "no"}
@@ -221,6 +237,16 @@ def hi_cap10_buyer12_terminal_arm(game_id) -> bool | None:
     return bool(int(digest, 16) & 1)
 
 
+def hi_cap10_buyer_curve_arm(game_id) -> bool | None:
+    """Stable assignment for the broad hidden cap-10 buyer curve arm."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    digest = hashlib.sha256(
+        (_HI_CAP10_BUYER_CURVE_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
 def hi_uncapped_first_offer_arm(game_id) -> str | None:
     """Stable three-way assignment for the hidden first-offer probe."""
     gid = str(game_id or "")
@@ -276,6 +302,79 @@ def _hi_cap10_buyer12_terminal_context(action: dict, game: dict) -> dict | None:
     if treatment is not True:
         return None
     return {"base": base, "price": base + 0.01}
+
+
+def _hi_cap10_buyer_curve_context(game: dict) -> dict | None:
+    """Return an isolated assignment for the leader-shaped buyer path.
+
+    The context includes hash controls so the arm owns the complete price path
+    in its scope.  It fails closed when any overlapping hidden price or
+    accept/reject experiment is armed; otherwise a nominal control could be a
+    different policy and the candidate-control contrast would be unidentified.
+    """
+    if not runtime_flags.enabled("GLEE_NEGO_HI_CAP10_BUYER_CURVE_AB"):
+        return None
+    if game.get("game_family") != "negotiation":
+        return None
+    if (runtime_flags.enabled("GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB")
+            or runtime_flags.enabled("GLEE_NEGO_HIDDEN_POLICY_V1")
+            or runtime_flags.as_float("GLEE_NEGO_HIDDEN_FLOOR", 0.0) > 0.0
+            or runtime_flags.enabled("GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB")
+            or runtime_flags.enabled("GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB")
+            or runtime_flags.enabled("GLEE_NEGO_STALL_CURRENT_BREAK_AB")
+            or runtime_flags.enabled("GLEE_NEGO_CLOSE_AB")
+            or runtime_flags.enabled("GLEE_NEGO_PROBE_V1")):
+        return None
+
+    state = game.get("game_state") or {}
+    if (state.get("complete_information") is not False
+            or state.get("horizon_known") is not True
+            or _num(state.get("max_rounds"), math.nan) != 10.0
+            or (game.get("valid_actions") or {}).get("type") != "decision"):
+        return None
+
+    gid = str(game.get("game_id") or "")
+    me = game.get("your_player") or state.get("current_player")
+    if (not gid or me not in ("player_1", "player_2")
+            or state.get(f"{me}_role") != "buyer"):
+        return None
+    own_value = _num(state.get(f"{me}_value"), math.nan)
+    base = pricing.infer_base(own_value) if math.isfinite(own_value) else None
+    if base is None:
+        return None
+    own_mult = next(
+        (mult for mult in _HIDDEN_VALUE_MULTS
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    # Buyer .8B has no strictly positive hidden counterpart type.  The three
+    # remaining types make this a broad ~9% negotiation arm rather than the old
+    # buyer-1.2/round-9-only trigger, while retaining a coherent value-scaled
+    # schedule.
+    if own_mult not in (1.0, 1.2, 1.5):
+        return None
+    return {
+        "arm": hi_cap10_buyer_curve_arm(gid),
+        "me": me,
+        "own_value": own_value,
+        "own_mult": own_mult,
+        "base": base,
+    }
+
+
+def _hi_cap10_buyer_curve_price(game: dict, context: dict) -> float | None:
+    """Return one of four Clod-shaped early prices for hash candidates."""
+    if context.get("arm") is not True:
+        return None
+    state = game.get("game_state") or {}
+    index = _hidden_own_price_count(state, context["me"])
+    # The fifth/terminal counter is deliberately identical in both arms.  The
+    # existing one-cent terminal experiment and Clod's observed .84*own terminal
+    # are competing mechanisms; changing it here would alias early imitation
+    # with terminal pricing and make neither effect identifiable.
+    if index >= len(_HI_CAP10_BUYER_CURVE):
+        return None
+    return context["own_value"] * _HI_CAP10_BUYER_CURVE[index]
 
 
 def _hidden_policy_context(game: dict) -> dict | None:
@@ -609,6 +708,25 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     if first_principles.owns(game):
         return
     state = game.get("game_state") or {}
+
+    # BROAD HIDDEN CAP-10 BUYER CURVE, default OFF.  Direct top-agent traces
+    # reveal the same normalized Boulware-like sequence across buyer values:
+    # Clod's two completed, type-identified 1.2B paths end at exactly 1.008B.
+    # Literal .677B and 1.015B opening families from doodod/opus are consistent
+    # with the value scaling, but their private types are not identified in
+    # no-deals; applying the curve to 1.0B/1.5B is part of the treatment.  Each
+    # candidate owns only the first four outgoing counters; the terminal price
+    # is the current stack in both arms.  Hash controls preserve the current
+    # stack byte-for-byte.  AcceptOffer/WalkAway never carry a price and
+    # remain unchanged.  Both arms return here so no later writer contaminates
+    # the comparison.  Causal value must come from official ITT outcomes, not
+    # the selected direct-leader agreements.
+    buyer_curve = _hi_cap10_buyer_curve_context(game)
+    if buyer_curve is not None:
+        candidate = _hi_cap10_buyer_curve_price(game, buyer_curve)
+        if candidate is not None:
+            action["product_price"] = max(0.0, round(candidate, 2))
+        return
 
     # Hidden cap-10 buyer 1.2B terminal-counter A/B, default OFF.  In 234 live
     # games this cell produced 118 no-deals; 81 of those terminal bids were below
