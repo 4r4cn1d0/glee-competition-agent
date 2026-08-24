@@ -171,6 +171,20 @@ def _their_stall_price(state: dict, me: str):
 
 STALL_CURRENT_BREAK_SALT = "nego_stall_current_break_v1|"
 
+# The validated competition support is {0.8, 1.0, 1.2, 1.5} * B.  Therefore
+# our own type identifies the smallest strictly-positive feasible ZOPA even
+# though it does not identify the opponent's type.  Forty percent is deliberately
+# conservative relative to the 0.610 shoulder in our completed-deal distribution:
+# in the current five-slot corpus, 1,473 nonfinal hidden offers that the policy
+# accepted paid less than this bound (1,243 through continuation/stall after the
+# table said "below", plus 230 direct table accepts).  Of 479 locally recovered
+# finals, 474 captured strictly under 40% of the realised surplus; the other five
+# were two exact-boundary float artefacts and three irrational negative-payoff
+# opponent offers.  The causal value of HOLDING is not identified by those
+# selected agreements, so the behavior remains a per-game randomized arm.
+HIDDEN_MIN_SHARE_VETO_SALT = "nego_hidden_min_share_veto_v1|"
+HIDDEN_MIN_SHARE_VETO_FRACTION = 0.40
+
 
 def stall_current_break_assignment(game_id) -> bool | None:
     """Stable treatment bit for the current-offer stale-stall experiment."""
@@ -182,6 +196,171 @@ def stall_current_break_assignment(game_id) -> bool | None:
         int(_hashlib.sha256((STALL_CURRENT_BREAK_SALT + gid).encode()).hexdigest(), 16)
         & 1
     )
+
+
+def hidden_min_share_veto_assignment(game_id) -> bool | None:
+    """Stable treatment bit for the support-aware hidden acceptance veto."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    return bool(int(_hashlib.sha256(
+        (HIDDEN_MIN_SHARE_VETO_SALT + gid).encode()).hexdigest(), 16) & 1)
+
+
+def hidden_min_positive_zone(my_value: float, i_am_seller: bool) -> dict | None:
+    """Return the smallest positive hidden ZOPA allowed by validated support.
+
+    The value support is discrete.  A seller at .8B or 1.0B can first trade
+    with the next type .2B away; a seller at 1.2B needs the 1.5B buyer (.3B).
+    Buyer types mirror that map.  Extreme seller-1.5/buyer-.8 cells have no
+    positive ZOPA and are already owned by DEADGAME_V1, so they return None.
+    """
+    try:
+        value = float(my_value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(value):
+        return None
+    base = pricing.infer_base(value)
+    if base is None:
+        return None
+    multiplier = value / base
+    if i_am_seller:
+        support_gap = ((0.8, 0.2), (1.0, 0.2), (1.2, 0.3))
+    else:
+        support_gap = ((1.0, 0.2), (1.2, 0.2), (1.5, 0.3))
+    gap = next((candidate for own, candidate in support_gap
+                if abs(multiplier - own) <= 1e-6), None)
+    if gap is None:
+        return None
+    return {
+        "base": base,
+        "own_multiplier": round(multiplier, 1),
+        "min_positive_zone": gap * base,
+    }
+
+
+def hidden_min_share_signal(state: dict, seat: str,
+                            fraction: float = HIDDEN_MIN_SHARE_VETO_FRACTION
+                            ) -> dict | None:
+    """Pre-action signal for a profitable offer below the support-aware floor."""
+    if seat not in ("player_1", "player_2"):
+        return None
+    if state.get("complete_information") is not False:
+        return None
+    # Keep the shared production/reader predicate honest on its own.  The
+    # candidate never overrules the dominant real-final action: accept every
+    # strictly profitable terminal offer because rejection is certainly zero.
+    if is_final_round(state):
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    role = state.get(f"{seat}_role")
+    if role not in ("seller", "buyer"):
+        return None
+    own_value = state.get(f"{seat}_value")
+    support = hidden_min_positive_zone(own_value, role == "seller")
+    if support is None:
+        return None
+    try:
+        offer = float((state.get("last_offer") or {}).get("price"))
+        own_value = float(own_value)
+        fraction = float(fraction)
+    except (TypeError, ValueError):
+        return None
+    if not all(math.isfinite(value) for value in (offer, own_value, fraction)):
+        return None
+    surplus = offer - own_value if role == "seller" else own_value - offer
+    floor = fraction * support["min_positive_zone"]
+    # Exclude exact-boundary offers despite binary-float multiplication (8.00
+    # must not become "< 40% of 20" because .4*.2*100 is 8.000000000000002).
+    tolerance = max(support["base"] * 1e-9, 1e-9)
+    if surplus <= 0.0 or surplus + tolerance >= floor:
+        return None
+    return {
+        **support,
+        "role": role,
+        "own_value": own_value,
+        "offer_price": offer,
+        "surplus": surplus,
+        "veto_fraction": fraction,
+        "veto_floor": floor,
+        # Conditional on a positive-ZOPA latent cell, the actual ZOPA is at
+        # least this minimum, so actual capture is no larger than this ratio.
+        # A legal but irrational loss-making opponent offer can violate that
+        # premise; its causal frequency is intentionally left to the A/B.
+        "positive_zone_share_upper": surplus / support["min_positive_zone"],
+    }
+
+
+def _hidden_min_share_veto_enabled() -> bool:
+    """Whether the randomized veto can safely compose with the current stack."""
+    if not runtime_flags.enabled("GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB"):
+        return False
+    # This experiment changes an acceptance decision made by this exact stack.
+    # Closing it when any owner changes is safer than silently estimating a
+    # mixture of policies under one hash salt.
+    if not (_horizon_v2_enabled() and _continuation_accept_enabled()
+            and runtime_flags.enabled("GLEE_NEGO_TABLE")):
+        return False
+    conflicts = (
+        "GLEE_NEGO_HI_UNCAPPED_FIRST_OFFER_AB",
+        "GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB",
+        "GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB",
+        "GLEE_NEGO_HIDDEN_POLICY_V1",
+        "GLEE_NEGO_HIDDEN_FLOOR",
+        "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
+        "GLEE_NEGO_RANK_PRICE_AB",
+        "GLEE_NEGO_CLOSE_AB",
+        "GLEE_NEGO_UNCAPPED_AB",
+        "GLEE_NEGO_SURPLUS_PROBE",
+    )
+    return not any(runtime_flags.enabled(name) for name in conflicts)
+
+
+def _maybe_hidden_min_share_veto(state: dict, p: dict, offer_price: float,
+                                 control_acceptor: str) -> dict | None:
+    """Replace one provably-low-share control acceptance in the candidate arm.
+
+    Call only at a branch that is otherwise about to return AcceptOffer.  That
+    makes first eligibility independent of treatment and keeps hash controls
+    exactly on the current policy.  The candidate uses the existing profitable-
+    side counter construction; no concession schedule or price parameter is
+    bundled into the accept/reject experiment.
+    """
+    if not _hidden_min_share_veto_enabled():
+        return None
+    seat = state.get("current_player")
+    signal = hidden_min_share_signal(state, seat)
+    if signal is None:
+        return None
+    treatment = hidden_min_share_veto_assignment(p.get("game_id"))
+    if treatment is None:
+        return None
+    metadata = {
+        **signal,
+        "eligible": True,
+        "arm": "candidate" if treatment else "control",
+        "control_acceptor": control_acceptor,
+    }
+    p["hidden_min_share_veto"] = metadata
+    if not treatment:
+        return None
+
+    _gate(p, "hidden_min_share_veto")
+    counter = p["target"]
+    if _profitable(offer_price, p):
+        counter = (max(offer_price, counter) if p["i_am_seller"]
+                   else min(offer_price, counter))
+    before_split = counter
+    counter = _maybe_split(state, p, counter)
+    if counter != before_split:
+        _gate(p, "split")
+    counter = _enforce_span_invariant(p, counter)
+    metadata["counter_price"] = round(counter, 2)
+    return {"decision": "RejectOffer", "product_price": round(counter, 2),
+            "_plan": p}
 
 
 def _current_concession_break(state: dict, me: str,
@@ -1441,6 +1620,10 @@ def _decide(game: dict, cfg) -> dict:
                 # under the option value computed above.
                 if not (own_final and p.get("final_option_value") is not None
                         and surplus_now < p["final_option_value"]):
+                    veto = _maybe_hidden_min_share_veto(
+                        state, p, offer_price, "table_accept")
+                    if veto is not None:
+                        return veto
                     _gate(p, "table_accept")
                     return {"decision": "AcceptOffer", "_plan": p}
             # below threshold: fall through to counter via the offer path
@@ -1450,6 +1633,10 @@ def _decide(game: dict, cfg) -> dict:
         _sp = _their_stall_price(state, state.get("current_player") or "")
         if (_sp is not None and _profitable(offer_price, p)
                 and abs(offer_price - _sp) <= 0.01 * max(abs(_sp), 1.0)):
+            veto = _maybe_hidden_min_share_veto(
+                state, p, offer_price, "stall_accept")
+            if veto is not None:
+                return veto
             _gate(p, "stall_accept")
             return {"decision": "AcceptOffer", "_plan": p}
 
@@ -1458,6 +1645,10 @@ def _decide(game: dict, cfg) -> dict:
         # our own current ask — those are different questions, and conflating
         # them is what threw away 716 profitable offers.
         if _profitable(offer_price, p) and surplus_now >= v_cont:
+            veto = _maybe_hidden_min_share_veto(
+                state, p, offer_price, "continuation_accept")
+            if veto is not None:
+                return veto
             return {"decision": "AcceptOffer", "_plan": p}
     else:
         # Legacy rule, retained as the control arm.

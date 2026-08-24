@@ -50,6 +50,17 @@ they go in EXPERIMENTS.md until they have evidence.
   6; as buyer we open at 0.16x our own value and reach 0.82x only by round 9.
   Medians for eventually-deal and eventually-no-deal games are IDENTICAL for
   rounds 1-6 and only diverge at round 8. max_rounds is 10 in 84% of games.
+- **The current hidden accept stack frequently closes below its own table
+  threshold and below a support-aware surplus floor.** Across the five current
+  slot turn streams, 1,473 nonfinal hidden offers accepted by the policy paid us
+  less than 40% of the smallest positive ZOPA consistent with our observed own
+  type: 1,243 had `table_accept_below=true` and then fell into stall/continuation
+  acceptance; another 230 were direct table accepts. Among 479 locally recovered
+  agreement finals, 474 captured strictly below 40% of realised positive surplus,
+  two were exactly 40% float-boundary cases, and three came from opponents that
+  accepted a negative payoff. This is a mechanism diagnosis over selected
+  agreements, not evidence that rejecting improves rating; the continuation
+  counterfactual requires the prospective randomized arm in EXPERIMENTS.
 - Persuasion p=0.8 buyer cells all beat their breakeven when measured POOLED
   (good% 83-92% vs breakeven 80-83%). An earlier per-game average said
   otherwise and was biased by games with few purchases.

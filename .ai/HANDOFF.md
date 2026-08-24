@@ -1370,3 +1370,44 @@ only 4.1-5.5pp for hidden unknown-horizon and 8.3-9.2pp for hidden cap-10. That
 supports horizon-specific experiments and rejects a universal curve. Its
 model-pair effects support a later named-opponent arm, but efficiency/fairness
 are not our percentile objective, so neither paper authorizes a deployment.
+
+## 2026-08-24 — negotiation hidden minimum-share acceptance arm
+
+Built default OFF: `GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB`. This is a prospective
+decision experiment, not a retroactive claim that every low-share agreement
+should have been rejected. The validated hidden support lets our own type identify
+the smallest positive feasible ZOPA; the arm marks a nonfinal profitable offer
+strictly below 40% of that minimum only when the current table/stall/continuation
+stack is otherwise about to accept. Hash controls accept byte-for-byte as before.
+Candidates reject and emit the existing profitable-side counter. Every first
+assignment and every eventual zero/agreement/pending result stays in the ITT.
+
+The broader all-acceptor estimand is deliberate. Historical current-slot turns
+contain 1,243 below-table fallthrough accepts and 230 direct table accepts under
+the same support floor. Restricting the arm to `table_accept_below` would leave a
+known low-share region shadowed by the table's late 0.034B/0.076B thresholds.
+Conversely, assigning every low-share state before knowing whether control rejects
+would only dilute the effect. The hook therefore runs at each would-be acceptance
+branch and records which control acceptor owned the decision.
+
+Adversarial objections resolved before deployment:
+
+1. The support bound is conditional on a positive-ZOPA latent cell. Three of 479
+   recovered historical finals had negative opponent payoff, so the arm is not a
+   dominance guard; the randomized official rating outcome must pay for that risk.
+2. The pure shared signal now excludes real final rounds itself. The terminal
+   any-positive rule remains untouched and is covered by a dedicated test.
+3. First-principles is not a global conflict because its hidden scope is only a
+   single-round seller cell and returns before this path. All genuinely overlapping
+   opening/terminal/hidden/accept experiments still fail closed.
+4. Exact Test 3 stack reachability at seed 2309 over 1,500 paired negotiations is
+   55 eligible / 26 fired / 26 changed actions. Dedicated tests are 50/50 and the
+   impacted negotiation/reader suite is 444/444.
+
+Precommit: arm only `conceder` after inert code is pushed and that process naturally
+rotates. Record T0 after the overlay is live. Read with `scripts/live_percentile.py
+--ab hidden-min-share-veto --since T0 --slots conceder --official-json FILE`.
+Promotion requires 100 resolved official games/arm, 20/role/arm, official-delta CI
+above zero, close point delta >=-5pp, nonnegative role points, and zero mechanism
+failures. One harm look is allowed at 30 official games/arm; reject if its official
+CI is wholly negative. Never touch bargaining code or any bargaining flag.

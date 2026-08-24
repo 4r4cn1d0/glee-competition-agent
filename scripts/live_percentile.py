@@ -37,6 +37,9 @@ field responds -- these are the payoffs the field actually paid us.
                                        # hidden policy + zone-capture diagnostics
     python scripts/live_percentile.py --ab hi-terminal --since T0 --until T1
                          # hidden cap-10 buyer-1.2 terminal-counter ITT + wire audit
+    python scripts/live_percentile.py --ab hidden-min-share-veto --since T0 \
+        --official-json FILE
+                         # support-aware low-share acceptance veto + wire audit
     python scripts/live_percentile.py --ab fp-complete --since T0 --until T1
                          # exact official-CDF first-principles promotion cells
     python scripts/live_percentile.py --ab pers-selectivity --since T0 --until T1
@@ -203,6 +206,16 @@ def stall_current_break_arm(gid) -> str | None:
     from glee_agent.strategies.negotiation import stall_current_break_assignment
 
     treatment = stall_current_break_assignment(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
+def hidden_min_share_veto_arm(gid) -> str | None:
+    """Recover the production support-aware acceptance-veto assignment."""
+    from glee_agent.strategies.negotiation import hidden_min_share_veto_assignment
+
+    treatment = hidden_min_share_veto_assignment(gid)
     if treatment is None:
         return None
     return "candidate" if treatment else "control"
@@ -767,6 +780,81 @@ def _stall_current_break_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _hidden_min_share_veto_exposure_turn(slot: str, rec: dict):
+    """Cohort the first low-share offer the untreated stack would accept."""
+    if (rec.get("game_family") != "negotiation"
+            or rec.get("action_type") != "decision"):
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    plan = rec.get("plan") or {}
+    logged = (plan.get("hidden_min_share_veto")
+              if isinstance(plan, dict) else None)
+    if not gid or not isinstance(logged, dict) or logged.get("eligible") is not True:
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+
+    from glee_agent.strategies import negotiation
+    signal = negotiation.hidden_min_share_signal(state, seat)
+    arm = hidden_min_share_veto_arm(gid)
+    action = rec.get("action") or {}
+    gates = plan.get("gates_fired") if isinstance(plan, dict) else []
+    gates = gates if isinstance(gates, list) else []
+    source = logged.get("control_acceptor")
+    source_ok = source in ("table_accept", "stall_accept", "continuation_accept")
+    mechanism_ok = signal is not None and arm is not None and source_ok
+    mechanism_ok = mechanism_ok and logged.get("arm") == arm
+    for key in ("base", "own_value", "offer_price", "surplus",
+                "min_positive_zone", "veto_fraction", "veto_floor",
+                "positive_zone_share_upper"):
+        actual = _number(logged.get(key))
+        expected = _number((signal or {}).get(key))
+        mechanism_ok = mechanism_ok and actual is not None and expected is not None
+        if actual is not None and expected is not None:
+            mechanism_ok = mechanism_ok and abs(actual - expected) <= max(
+                1e-8, abs(expected) * 1e-9)
+    wire_price = (_number(action.get("product_price"))
+                  if isinstance(action, dict) else None)
+    logged_counter = _number(logged.get("counter_price"))
+    if arm == "candidate":
+        mechanism_ok = mechanism_ok and (
+            action.get("decision") == "RejectOffer"
+            and wire_price is not None
+            and logged_counter is not None
+            and abs(wire_price - logged_counter) <= 1e-9
+            and "hidden_min_share_veto" in gates)
+    else:
+        mechanism_ok = mechanism_ok and (
+            action.get("decision") == "AcceptOffer"
+            and wire_price is None
+            and logged_counter is None
+            and "hidden_min_share_veto" not in gates)
+
+    max_rounds = _number(state.get("max_rounds"))
+    horizon = ("inf" if state.get("horizon_known") is False
+               or max_rounds is None else str(int(max_rounds)))
+    diagnostic = {
+        **(signal or {}),
+        "role": (signal or logged).get("role"),
+        "own_multiplier": (signal or logged).get("own_multiplier"),
+        "scale": (signal or logged).get("base"),
+        "complete": False,
+        "horizon": horizon,
+        "messages": state.get("messages_allowed") is True,
+        "round": int(_number(state.get("round")) or 0),
+        "control_acceptor": source,
+        "plan_arm": logged.get("arm"),
+        "action_decision": action.get("decision"),
+        "wire_price": wire_price,
+        "counter_price": logged_counter,
+        "mechanism_ok": bool(mechanism_ok),
+    }
+    return (slot, gid), ts, diagnostic
+
+
 def _pers_selectivity_exposure_turn(slot: str, rec: dict):
     """Return the first eligible persuasion buyer-decision exposure."""
     if rec.get("game_family") != "persuasion":
@@ -1118,6 +1206,11 @@ def _stall_current_break_row(slot: str, rec: dict, fin: dict):
     return slot, pct, str(gid), closed
 
 
+def _hidden_min_share_veto_row(slot: str, rec: dict, fin: dict):
+    """Build one terminal outcome for the first-accepted-low-share ITT cohort."""
+    return _stall_current_break_row(slot, rec, fin)
+
+
 def _pers_selectivity_history_metrics(history) -> dict:
     """Summarize realized buyer behavior without selecting on a decline."""
     entries = [entry for entry in history or [] if isinstance(entry, dict)]
@@ -1463,6 +1556,13 @@ def stall_current_break_games(hours, since=None, until=None):
     yield from _price_arm_games(
         hours, _stall_current_break_exposure_turn, _stall_current_break_row,
         since=since, until=until)
+
+
+def hidden_min_share_veto_games(hours, since=None, until=None):
+    """Yield games from the first low-share control acceptance opportunity."""
+    yield from _price_arm_games(
+        hours, _hidden_min_share_veto_exposure_turn,
+        _hidden_min_share_veto_row, since=since, until=until)
 
 
 def pers_selectivity_games(hours, since=None, until=None):
@@ -3064,6 +3164,203 @@ def report_stall_current_break(rows, hours, since=None, until=None,
     return 1
 
 
+def report_hidden_min_share_veto(rows, hours, since=None, until=None,
+                                 official_path=None):
+    """Report the support-aware low-share acceptance-veto experiment."""
+    try:
+        official = _load_official_deltas(official_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"cannot load official delta export: {exc}")
+        return 2
+
+    observations = []
+    gid_slots = defaultdict(set)
+    for slot, pct, gid, closed, *metadata in rows:
+        arm = hidden_min_share_veto_arm(gid)
+        if arm is None:
+            continue
+        diagnostic = next(
+            (item for item in metadata if isinstance(item, dict)), {})
+        resolution = next(
+            (item for item in metadata if isinstance(item, str)),
+            "unresolved" if closed is None else "terminal")
+        slots = diagnostic.get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[gid].update(slots)
+        else:
+            gid_slots[gid].add(slot)
+        observations.append({
+            "slot": slot, "pct": pct, "gid": gid, "closed": closed,
+            "arm": arm, "diagnostic": diagnostic, "resolution": resolution,
+            "official": official.get((slot, gid)),
+        })
+
+    print("GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB")
+    print("triggered ITT: first nonfinal hidden offer that the current accept stack "
+          "would close while paying us <40% of the smallest positive ZOPA allowed "
+          "by the validated competition value support")
+    print("primary: official dashboard per-game rating delta; local pooled-CDF "
+          "percentile is diagnostic only; every agreement/no-deal/walk/pending "
+          "outcome remains in its assigned arm")
+    lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+    upper = f"{float(until):g}" if until is not None else "now"
+    print(f"first-trigger exposure window: [{lower}, {upper})")
+    if not observations:
+        print("no assigned low-share control-accept opportunities in the window")
+        return 1
+
+    duplicates = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    independent = [item for item in observations if item["gid"] not in duplicates]
+    print(f"pooled dependence guard: excluded {len(duplicates)} cross-fleet "
+          "game id(s)")
+
+    def summarize(population):
+        stats = {
+            "official": [], "pct": [], "closed": [], "terminal": 0,
+            "pending": 0, "invalid": 0, "official_missing": 0,
+            "mechanism_fail": 0, "sources": Counter(),
+        }
+        for item in population:
+            diagnostic = item["diagnostic"]
+            stats["mechanism_fail"] += int(
+                diagnostic.get("mechanism_ok") is not True)
+            stats["sources"][str(diagnostic.get("control_acceptor"))] += 1
+            if item["closed"] is None:
+                field = ("invalid" if item["resolution"] == "invalid-final"
+                         else "pending")
+                stats[field] += 1
+                continue
+            stats["terminal"] += 1
+            stats["closed"].append(float(bool(item["closed"])))
+            if item["pct"] is not None:
+                stats["pct"].append(item["pct"])
+            if item["official"] is None:
+                stats["official_missing"] += 1
+            else:
+                stats["official"].append(item["official"])
+        return stats
+
+    def print_line(label, arm, stats):
+        official_text, _ = _mean_ci_text(stats["official"])
+        pct_text, _ = _mean_ci_text(stats["pct"])
+        close_text, _ = _mean_ci_text(stats["closed"], percent=True)
+        sources = ",".join(f"{key}:{value}" for key, value
+                           in sorted(stats["sources"].items()))
+        print(f"{label:18} {arm:9} official-dR={official_text} "
+              f"n={len(stats['official'])}; local-pct={pct_text} "
+              f"n={len(stats['pct'])}; close={close_text} "
+              f"n={len(stats['closed'])}; terminal={stats['terminal']} "
+              f"pending={stats['pending']} badfin={stats['invalid']} "
+              f"official-missing={stats['official_missing']} "
+              f"mechanism-fail={stats['mechanism_fail']} sources={sources}")
+
+    by_slot_arm = defaultdict(list)
+    for item in observations:
+        by_slot_arm[(item["slot"], item["arm"])].append(item)
+    for (slot, arm), assigned in sorted(by_slot_arm.items()):
+        print_line(NAMES.get(slot, slot), arm, summarize(assigned))
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in independent if item["arm"] == arm]
+        if assigned:
+            pooled[arm] = summarize(assigned)
+            print_line("POOLED", arm, pooled[arm])
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("pooled candidate-control (intent-to-treat):")
+        _print_delta("official rating delta", candidate["official"],
+                     control["official"])
+        _print_delta("local pooled-CDF percentile (diagnostic)",
+                     candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+
+    def stratum_value(item, field):
+        value = item["diagnostic"].get(field)
+        if field == "messages":
+            return "text" if value is True else "silent"
+        return str(value)
+
+    print("pre-treatment stratum point estimates (official candidate-control):")
+    stratum_deltas = {}
+    for field in ("role", "horizon", "own_multiplier", "scale", "messages",
+                  "control_acceptor"):
+        values = sorted({stratum_value(item, field) for item in independent})
+        for value in values:
+            population = [item for item in independent
+                          if stratum_value(item, field) == value]
+            grouped = {
+                arm: [item["official"] for item in population
+                      if item["arm"] == arm and item["official"] is not None]
+                for arm in ("control", "candidate")
+            }
+            delta, low, high = _delta_ci(
+                grouped["candidate"], grouped["control"])
+            stratum_deltas[(field, value)] = (delta, grouped)
+            if delta is None:
+                rendered = "official unavailable"
+            elif low is None:
+                rendered = f"{delta:+.4f} (CI unavailable)"
+            else:
+                rendered = f"{delta:+.4f} [{low:+.4f},{high:+.4f}]"
+            print(f"  {field}={value}: {rendered}; "
+                  f"n={len(grouped['control'])}/{len(grouped['candidate'])}")
+
+    mechanism_failures = sum(
+        item["diagnostic"].get("mechanism_ok") is not True
+        for item in observations)
+    unresolved = sum(
+        stats["pending"] + stats["invalid"] for stats in pooled.values())
+    official_missing = sum(
+        stats["official_missing"] for stats in pooled.values())
+    print("DECISION RULE: efficacy only at >=100 resolved official games/arm and "
+          ">=20/arm in each role. Promote if official-dR 95% CI >0, close-rate "
+          "point delta >=-5pp, both role point estimates are nonnegative, and "
+          "mechanism failures=0. At >=30/arm reject for official-dR 95% CI <0; "
+          "reject immediately for any mechanism failure.")
+    if mechanism_failures:
+        print("MECHANISM REJECTION: disarm immediately")
+        return 2
+    if unresolved or official_missing:
+        print(f"PROMOTION BLOCKED: unresolved={unresolved}, terminal outcomes "
+              f"missing official delta={official_missing}")
+        return 1
+    if not control or not candidate:
+        print("PROMOTION BLOCKED: both randomized arms need resolved outcomes")
+        return 1
+
+    official_delta, official_low, official_high = _delta_ci(
+        candidate["official"], control["official"])
+    close_delta, _close_low, _close_high = _delta_ci(
+        candidate["closed"], control["closed"])
+    reached_harm_look = all(len(pooled[arm]["official"]) >= 30
+                            for arm in ("control", "candidate"))
+    if reached_harm_look and official_high is not None and official_high < 0:
+        print("OFFICIAL REJECTION: >=30/arm and official-dR 95% CI is below zero")
+        return 2
+
+    arm_minimum_met = all(len(pooled[arm]["official"]) >= 100
+                          for arm in ("control", "candidate"))
+    role_minimum_met = True
+    role_nonnegative = True
+    for value in ("buyer", "seller"):
+        delta, grouped = stratum_deltas.get(("role", value), (None, {}))
+        role_nonnegative &= delta is not None and delta >= 0
+        role_minimum_met &= bool(grouped) and all(
+            len(grouped[arm]) >= 20 for arm in ("control", "candidate"))
+    promotable = (
+        arm_minimum_met and role_minimum_met and role_nonnegative
+        and official_delta is not None and official_low is not None
+        and official_low > 0 and close_delta is not None and close_delta >= -0.05)
+    if promotable:
+        print("PROMOTION GATE PASSED")
+        return 0
+    print("PROMOTION BLOCKED: sample/official-CI/close/role gates are not all "
+          "satisfied")
+    return 1
+
+
 def report_barg_msg(rows, hours):
     """Report the primary silence/text contrast and each assigned text register."""
     arms = defaultdict(lambda: defaultdict(list))
@@ -3137,6 +3434,7 @@ def main() -> int:
                              "open-claim-official", "hidden-floor",
                              "hidden-policy", "hi-first-offer", "hi-extreme-open",
                              "hi-terminal", "stall-current-break",
+                             "hidden-min-share-veto",
                              "fp-complete", "pers-selectivity", "pers-prose",
                              "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
@@ -3146,7 +3444,8 @@ def main() -> int:
 
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
                    "hidden-policy", "hi-first-offer", "hi-extreme-open",
-                   "hi-terminal", "stall-current-break", "fp-complete",
+                   "hi-terminal", "stall-current-break", "hidden-min-share-veto",
+                   "fp-complete",
                    "pers-selectivity", "pers-prose"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
@@ -3160,6 +3459,7 @@ def main() -> int:
             "hi-extreme-open": hi_extreme_open_games,
             "hi-terminal": hi_terminal_games,
             "stall-current-break": stall_current_break_games,
+            "hidden-min-share-veto": hidden_min_share_veto_games,
             "fp-complete": fp_complete_games,
             "pers-selectivity": pers_selectivity_games,
             "pers-prose": pers_prose_games,
@@ -3173,6 +3473,7 @@ def main() -> int:
             "hi-extreme-open": report_hi_extreme_open,
             "hi-terminal": report_hi_terminal,
             "stall-current-break": report_stall_current_break,
+            "hidden-min-share-veto": report_hidden_min_share_veto,
             "fp-complete": report_fp_complete,
             "pers-selectivity": report_pers_selectivity,
             "pers-prose": report_pers_prose,
@@ -3181,7 +3482,8 @@ def main() -> int:
             args.hours, since=args.since, until=args.until)
             if not keep or r[0] in keep]
         extra = ({"official_path": args.official_json}
-                 if args.ab in ("pers-prose", "stall-current-break") else {})
+                 if args.ab in ("pers-prose", "stall-current-break",
+                                "hidden-min-share-veto") else {})
         return reporter(price_rows, args.hours, since=args.since,
                         until=args.until, **extra)
 

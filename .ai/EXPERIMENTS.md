@@ -303,6 +303,62 @@ Test 3 before causal promotion evidence.
 - **Live on**: nowhere. Do not arm until the overlapping opening/terminal
   experiments are closed or an uncontaminated slot is deliberately selected.
 
+### Hidden support minimum-share acceptance veto (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB=1`, default OFF;
+  `sha256("nego_hidden_min_share_veto_v1|" + game_id) & 1` assigns control or
+  candidate once per game. Missing ids fail closed.
+- **Structural signal**: validated hidden values are
+  `{.8,1.0,1.2,1.5}*B`. From our observed own type, the smallest strictly
+  positive ZOPA is `.2B` for seller-.8/1.0 and buyer-1.0/1.2, `.3B` for
+  seller-1.2 and buyer-1.5, and nonexistent for seller-1.5/buyer-.8. On a real
+  nonfinal hidden decision, mark an offer only when it is profitable and our
+  surplus is strictly below 40% of that minimum, with a scale tolerance that
+  excludes exact-boundary float artefacts. The share bound is conditional on a
+  positive-ZOPA latent cell; irrational loss-making opponent offers are legal
+  and remain part of the randomized outcome.
+- **Pre-treatment eligibility**: the globally first marked offer that the exact
+  current stack is otherwise about to accept through direct table acceptance,
+  stall acceptance, or continuation acceptance. States the control already
+  rejects are never assigned, so the estimand is the decision-level effect of
+  holding instead of accepting—not a diluted universal state cohort. Control
+  remains byte-identical. Candidate returns `RejectOffer` through the existing
+  profitable-side counter construction; no concession parameter is bundled.
+- **Scope / safety**: requires `HORIZON_V2=1`, `CONTINUATION_ACCEPT=1`, and
+  `TABLE=1`; refuses the live first-offer, extreme-open, terminal-counter,
+  hidden-policy/floor, stale-current-break, rank-price, close, uncapped, and
+  surplus probes. First-principles is not a flag-level conflict: its only hidden
+  cell is single-round and its owner returns before this nonfinal path. The real
+  final-round any-positive rule is dominant and unreachable by the veto.
+- **Historical motivation, not effect evidence**: five-slot turn streams contain
+  1,473 matching accepted offers (1,243 below-table fallthroughs and 230 direct
+  table accepts). Of 479 locally recovered finals, 474 captured <40% of realised
+  positive surplus; two were exact-boundary float cases and three were irrational
+  negative-opponent-payoff deals. Conditioning on accepted deals cannot identify
+  what rejection would have earned.
+- **Primary cohort/outcome**: include every first assignment and every eventual
+  agreement, no-deal, walk, invalid, cold-missing, and pending outcome. Exclude
+  cross-fleet duplicate game ids from the pooled causal estimate but retain them
+  for mechanism auditing. Primary is official dashboard per-game `rating_delta`;
+  local hidden-value-pooled percentile is diagnostic only. Freeze the exact
+  accept stack and activation boundary for the whole window.
+- **Decision rule**: efficacy only at 100 resolved official games per arm and 20
+  per arm in each role. Promote only if candidate-control official-rating 95% CI
+  is wholly above zero, close-rate point delta is at least -5pp, both role point
+  estimates are nonnegative, and mechanism failures are zero. At the single
+  preplanned harm look after 30 official games per arm, reject if the official
+  95% CI is wholly below zero. Reject immediately for any scope/hash/wire failure;
+  unresolved or official-missing outcomes block promotion.
+- **Reader**: `scripts/live_percentile.py --ab hidden-min-share-veto --since T0
+  --until T1 --slots conceder --official-json FILE`. It recomputes the production
+  signal and assignment, verifies control `AcceptOffer` and candidate
+  `RejectOffer`/counter wires, and enforces the decision rule by exit status.
+- **Exact-stack reachability**: Test 3 (`conceder`) control stack, 1,500 paired
+  negotiation games, seed 2309: 55 eligible, 26 fired, 26 changed submitted
+  actions. Focused impacted suite: 444 passed; dedicated mechanism/reader suite:
+  50 passed.
+- **Live on**: nowhere pending inert commit/push and a natural Test 3 rotation.
+  Test 3 is the only current uncontaminated slot; never alter its bargaining flags.
+
 ## NEXT (not built)
 1. General accept/counter/walk response model (item 5 of the operator plan).
 2. State-dependent price discrimination / shallow DP over the frontier.

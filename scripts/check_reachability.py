@@ -280,6 +280,18 @@ def _p_stall_current_break(game, p):
             and metadata.get("eligible") is True)
 
 
+def _p_hidden_min_share_veto(game, p):
+    """Pre-action scope where the current stack would accept a low-share offer."""
+    if game.get("game_family") != "negotiation":
+        return False
+    if (game.get("valid_actions") or {}).get("type") != "decision":
+        return False
+    metadata = p.get("hidden_min_share_veto") or {}
+    return (metadata.get("eligible") is True
+            and metadata.get("control_acceptor") in (
+                "table_accept", "stall_accept", "continuation_accept"))
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -306,6 +318,8 @@ KNOWN = {
                                lambda g, p: True),
     "GLEE_NEGO_STALL_CURRENT_BREAK_AB": (
         "negotiation", ("stall_current_break",), _p_stall_current_break),
+    "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB": (
+        "negotiation", ("hidden_min_share_veto",), _p_hidden_min_share_veto),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),
@@ -549,8 +563,9 @@ def main() -> int:
                 # only while the candidate flag is consulted. Its hash-control
                 # games record the same metadata, so p_cnd is still an exact,
                 # assignment-independent eligibility check.
-                predicate_plan = (p_cnd if name ==
-                                  "GLEE_NEGO_STALL_CURRENT_BREAK_AB"
+                predicate_plan = (p_cnd if name in (
+                                  "GLEE_NEGO_STALL_CURRENT_BREAK_AB",
+                                  "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:
