@@ -277,6 +277,23 @@ def _recommendation_signal(entry: dict) -> bool | None:
     return None
 
 
+def _strict_binary_signal(entry: dict) -> bool | None:
+    """Read only the documented binary yes/no wire, without fuzzy text parsing."""
+    message = entry.get("seller_message")
+    if isinstance(message, bool):
+        return message
+    if isinstance(message, str):
+        token = message.strip().lower()
+        if token == "yes":
+            return True
+        if token == "no":
+            return False
+    recommended = entry.get("recommended")
+    if message is None and isinstance(recommended, bool):
+        return recommended
+    return None
+
+
 def _recommended(entry: dict) -> bool:
     """Legacy boolean reading of a seller move.
 
@@ -414,6 +431,10 @@ PERS_P08_R125_TEXT_DECLINE_VETO_SALT = (
 PERS_P05_R12_SELECTIVITY_UNLOCK_SALT = (
     "pers_p05_r12_selectivity_unlock_v1|")
 
+#: Independent assignment for the exact p=1/3, v=4P binary buyer pulse.
+PERS_P033_R4_BINARY_POSTDECLINE_PULSE_SALT = (
+    "pers_p033_r4_binary_postdecline_pulse_v1|")
+
 #: One solved DP per (cell, horizon, m_hat bucket, q_hat bucket). The tables are
 #: small (231 states at T=20) and the bucketing is what keeps this off the hot
 #: path: measured 0.97 ms to solve, and a cache hit costs a dict lookup.
@@ -469,6 +490,18 @@ def p05_r12_selectivity_unlock_assignment(game_id) -> bool | None:
     import hashlib as _hashlib
     digest = _hashlib.sha256(
         (PERS_P05_R12_SELECTIVITY_UNLOCK_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
+
+
+def p033_r4_binary_postdecline_pulse_assignment(game_id) -> bool | None:
+    """Stable exact-cell buyer-pulse assignment, independent of live flags."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(
+        (PERS_P033_R4_BINARY_POSTDECLINE_PULSE_SALT + gid).encode()
+    ).hexdigest()
     return bool(int(digest, 16) & 1)
 
 
@@ -613,6 +646,160 @@ def _p05_r12_selectivity_unlock_trigger(game: dict, plan: dict) -> int | None:
     if expected <= plan_price + 1e-9 * edge_scale:
         return None
     return prior_declines
+
+
+_P033_R4_BINARY_POSTDECLINE_PULSE_CONFLICT_FLAGS = (
+    # The candidate is an isolated comparison against the complete live
+    # buyer-v2 plan.  Fail closed instead of reinterpreting another optional
+    # overlay's purchase or refusal.
+    "GLEE_PERS_BUYER_GUARD",
+    "GLEE_PERS_BUYER_STRIKE",
+    "GLEE_PERS_BUYER_LCB",
+    "GLEE_PERS_BUYER_AUDIT",
+    "GLEE_PERS_RANK_GATE_AB",
+    "GLEE_PERS_RANK_BUY_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_STRIKE_AB",
+    "GLEE_PERS_BUYER_SELECTIVITY_MARGIN",
+    "GLEE_PERS_UNINFORMED_VETO",
+    "GLEE_PERS_PARSE_TRI",
+    "GLEE_PERS_PARSE_V2",
+)
+
+
+def _p033_r4_binary_postdecline_pulse_trigger(
+        game: dict, plan: dict) -> dict | None:
+    """Return the audited post-decline epoch only on a real buy-to-pass veto."""
+    flag = "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB"
+    if not runtime_flags.enabled(flag):
+        return None
+    if p033_r4_binary_postdecline_pulse_assignment(
+            game.get("game_id")) is not True:
+        return None
+
+    state = game.get("game_state") or {}
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"
+            or state.get("seller_message_type") != "binary"):
+        return None
+    if (state.get("player_2_role") is not None
+            and state.get("player_2_role") != "buyer"):
+        return None
+    if (state.get("current_player") is not None
+            and state.get("current_player") != "player_2"):
+        return None
+
+    price = _num(state.get("product_price"), math.nan)
+    prior = _num(state.get("p"), math.nan)
+    high_value = _num(state.get("v"), math.nan)
+    low_value = _num(state.get("u"), math.nan)
+    rounds_value = _num(state.get("total_rounds"), math.nan)
+    if (not all(math.isfinite(value) for value in
+                (price, prior, high_value, low_value, rounds_value))
+            or price <= 0.0):
+        return None
+    numeric_scale = max(1.0, abs(price), abs(high_value), abs(low_value))
+    if (abs(prior - (1.0 / 3.0)) > 1e-9
+            or abs(high_value / price - 4.0) > 1e-9
+            or abs(low_value) > 1e-9 * numeric_scale
+            or abs(rounds_value - 20.0) > 1e-9 * 20.0):
+        return None
+
+    # This is a default-off rank hypothesis, not a claim that declining is
+    # money-EV optimal.  Blind buying in this cell has +P/3 expected payoff per
+    # round.  In the frozen 58-game all-assigned recent cohort, the pulse was
+    # reachable in seven games / 27 turns; its fixed-stream diagnostic was
+    # -0.0556P payoff but +0.00382 local percentile, and both intervals crossed
+    # zero.  Those conflicting observational diagnostics forbid promotion and
+    # are why the control stays byte-identical under a stable game hash.
+    if (plan.get("buy") is not True
+            or plan.get("buyer_v2") is not True
+            or plan.get("tight") is not False
+            or plan.get("blocked") is not False):
+        return None
+    if any(_p05_r12_conflict_flag_is_armed(name)
+           for name in _P033_R4_BINARY_POSTDECLINE_PULSE_CONFLICT_FLAGS):
+        return None
+    conflict_prefixes = ("rank_", "buyer_selectivity_", "lcb_", "parser_")
+    if (plan.get("gates_fired")
+            or plan.get("uninformed_veto")
+            or any(str(key).startswith(conflict_prefixes) for key in plan)):
+        return None
+
+    current = {"seller_message": state.get("seller_message")}
+    if _strict_binary_signal(current) is not True:
+        return None
+    expected = _num(plan.get("expected_value"), math.nan)
+    plan_price = _num(plan.get("price"), math.nan)
+    if not (math.isfinite(expected) and math.isfinite(plan_price)):
+        return None
+    price_scale = max(1.0, abs(price), abs(plan_price))
+    if (abs(plan_price - price) > 1e-9 * price_scale
+            or expected < plan_price - 1e-9 * price_scale):
+        return None
+
+    history = [entry for entry in (state.get("history") or [])
+               if isinstance(entry, dict)]
+
+    # Replay the pulse from public history.  `last_pulsed_low_count` consumes
+    # the evidence that caused a one-message veto, so the same three lows can
+    # never produce an absorbing refusal loop.  The candidate resumes buying;
+    # only a newly PURCHASED positive-message low can increment `lows` and arm
+    # another future pulse.  A bought historical pulse is impossible under a
+    # clean game-level activation and fails closed as a mechanism inconsistency.
+    seen_decline = False
+    first_decline_round = None
+    highs = lows = 0
+    last_pulsed_low_count = 0
+    pulses_consumed = 0
+    replay_valid = True
+    for index, entry in enumerate(history):
+        signal = _strict_binary_signal(entry)
+        pulse_due = (
+            signal is True
+            and seen_decline
+            and lows >= 3
+            and 3 * highs - lows <= 0
+            and lows > last_pulsed_low_count
+        )
+        if pulse_due:
+            last_pulsed_low_count = lows
+            pulses_consumed += 1
+            if entry.get("bought") is True:
+                replay_valid = False
+                break
+        elif signal is True and seen_decline and entry.get("bought") is True:
+            quality = str(entry.get("quality") or "").strip().lower()
+            if quality == "high":
+                highs += 1
+            elif quality == "low":
+                lows += 1
+            else:
+                replay_valid = False
+                break
+        if signal is False and not seen_decline:
+            seen_decline = True
+            recorded_round = _num(entry.get("round"), index + 1)
+            if not math.isfinite(recorded_round):
+                recorded_round = index + 1
+            first_decline_round = int(recorded_round)
+
+    # In v=4P,u=0, a positive message breaks even at 25% high quality.  The
+    # integer form is exact and scale-free: H/(H+L) <= 1/4 iff 3H-L <= 0.
+    # Requiring three caught lows avoids a one-observation pulse.  Requiring a
+    # larger low count than the last pulse proves new revealed evidence arrived.
+    margin = 3 * highs - lows
+    if (not replay_valid or not seen_decline or lows < 3 or margin > 0
+            or lows <= last_pulsed_low_count):
+        return None
+    return {
+        "first_decline_round": first_decline_round,
+        "postdecline_highs": highs,
+        "postdecline_lows": lows,
+        "postdecline_margin": margin,
+        "prior_pulses": pulses_consumed,
+        "last_pulsed_low_count": last_pulsed_low_count,
+    }
 
 
 def _p08_r125_binary_truth_candidate(game: dict, state: dict, price: float,
@@ -1463,6 +1650,24 @@ def decide(game: dict, cfg) -> dict:
         p["p05_r12_selectivity_unlock_expected_value"] = p["expected_value"]
         p.setdefault("gates_fired", []).append(
             "p05_r12_selectivity_unlock")
+
+    # EXACT p=1/3, v=4P BINARY POST-DECLINE PULSE (default OFF, stable game
+    # hash).  This is the narrow causal version of the observed bait pattern:
+    # after the seller has first demonstrated that it can say `no`, a candidate
+    # skips one later `yes` only once at least three revealed lows have pulled
+    # that post-decline stream to the exact 25% break-even line.  It then
+    # resumes and cannot pulse again until a newly purchased `yes` reveals low.
+    # It changes only a final buyer-v2 buy into a pass and emits metadata only
+    # beside that real wire change; hash controls and non-triggering candidates
+    # remain the complete current stack byte-for-byte.
+    postdecline = _p033_r4_binary_postdecline_pulse_trigger(game, p)
+    if postdecline is not None:
+        p["buy"] = False
+        p["p033_r4_binary_postdecline_pulse"] = True
+        for key, value in postdecline.items():
+            p[f"p033_r4_binary_postdecline_pulse_{key}"] = value
+        p.setdefault("gates_fired", []).append(
+            "p033_r4_binary_postdecline_pulse")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 

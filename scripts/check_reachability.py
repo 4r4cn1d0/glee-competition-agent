@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import os
 import random
 import sys
@@ -372,6 +373,82 @@ def _p_p05_r12_selectivity_unlock(game, p):
             and abs(rounds - 20.0) <= 20e-9)
 
 
+def _p_p033_r4_binary_postdecline_pulse(game, p):
+    """Pre-action scope where the exact buyer pulse can change a control buy."""
+    state = game.get("game_state") or {}
+    seat = game.get("your_player")
+    try:
+        price = float(state.get("product_price"))
+        ratio = float(state.get("v")) / price
+        prior = float(state.get("p"))
+        low_value = float(state.get("u"))
+        rounds = float(state.get("total_rounds"))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return False
+    structural = (
+            all(math.isfinite(value)
+                for value in (price, ratio, prior, low_value, rounds))
+            and price > 0.0
+            and (game.get("valid_actions") or {}).get("type") == "buyer_decision"
+            and seat == "player_2"
+            and (state.get("current_player") is None
+                 or state.get("current_player") == "player_2")
+            and state.get("seller_message_type") == "binary"
+            and (state.get("player_2_role") is None
+                 or state.get("player_2_role") == "buyer")
+            and abs(prior - (1.0 / 3.0)) <= 1e-9
+            and abs(ratio - 4.0) <= 1e-9
+            and abs(low_value) <= 1e-9 * max(1.0, abs(price))
+            and abs(rounds - 20.0) <= 20e-9
+            and p.get("buy") is True
+            and p.get("buyer_v2") is True
+            and p.get("tight") is False
+            and p.get("blocked") is False)
+    if not structural:
+        return False
+
+    def strict(entry):
+        message = entry.get("seller_message")
+        if isinstance(message, bool):
+            return message
+        if isinstance(message, str):
+            token = message.strip().lower()
+            if token == "yes":
+                return True
+            if token == "no":
+                return False
+        if message is None and isinstance(entry.get("recommended"), bool):
+            return entry.get("recommended")
+        return None
+
+    if strict({"seller_message": state.get("seller_message")}) is not True:
+        return False
+    seen_decline = False
+    highs = lows = last_pulsed_lows = 0
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        signal = strict(entry)
+        due = (signal is True and seen_decline and lows >= 3
+               and 3 * highs - lows <= 0 and lows > last_pulsed_lows)
+        if due:
+            last_pulsed_lows = lows
+            if entry.get("bought") is True:
+                return False
+        elif signal is True and seen_decline and entry.get("bought") is True:
+            quality = str(entry.get("quality") or "").strip().lower()
+            if quality == "high":
+                highs += 1
+            elif quality == "low":
+                lows += 1
+            else:
+                return False
+        if signal is False:
+            seen_decline = True
+    return (seen_decline and lows >= 3 and 3 * highs - lows <= 0
+            and lows > last_pulsed_lows)
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -484,6 +561,9 @@ KNOWN = {
     "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB": (
         "persuasion", ("p05_r12_selectivity_unlock",),
         _p_p05_r12_selectivity_unlock),
+    "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB": (
+        "persuasion", ("p033_r4_binary_postdecline_pulse",),
+        _p_p033_r4_binary_postdecline_pulse),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those
@@ -528,7 +608,7 @@ def _install_flag_spy() -> None:
     runtime_flags.get = spy
 
 
-def _collect_states(field, draws, flags, families):
+def _collect_states(field, draws, flags, families, target_flag=None):
     """Play the control arm once, banking a deep copy of every state our seat
     was handed (both offer and decision phases), in the wanted families."""
     from sim import Config as SimConfig
@@ -559,6 +639,35 @@ def _collect_states(field, draws, flags, families):
                 # arena or production opponent model.
                 honest = get("honest_seller")
 
+                if (target_flag ==
+                        "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB"):
+                    # The ordinary honest seller never produces the exact
+                    # post-decline false-positive stream this guard needs.  A
+                    # quality-independent first `no` followed by `yes` gives
+                    # engine-revealed bought outcomes enough support to prove
+                    # eligible>0, fired>0 and action_changed>0 without changing
+                    # any arena or live opponent implementation.
+                    def bait_then_spam_seller(game):
+                        state = game.get("game_state") or {}
+                        action_type = (game.get("valid_actions") or {}).get("type")
+                        try:
+                            round_no = int(float(state.get("round") or 1))
+                        except (TypeError, ValueError):
+                            round_no = 1
+                        positive = round_no > 1
+                        if action_type == "seller_message":
+                            return {"message": "yes" if positive else "no"}
+                        if action_type == "seller_recommendation":
+                            return {"decision": "yes" if positive else "no"}
+                        return honest(game)
+
+                    bait_then_spam_seller.name = "bait_then_spam_seller"
+                    opponent = bait_then_spam_seller
+                    # Skip the decline-phrase fixture below.
+                    exact_decline_fixture = False
+                else:
+                    exact_decline_fixture = True
+
                 def exact_decline_seller(game):
                     state = game.get("game_state") or {}
                     quality = str(state.get("current_quality") or "").lower()
@@ -571,7 +680,8 @@ def _collect_states(field, draws, flags, families):
                     return honest(game)
 
                 exact_decline_seller.name = "exact_decline_seller"
-                opponent = exact_decline_seller
+                if exact_decline_fixture:
+                    opponent = exact_decline_seller
         else:
             opponent = field.sample_opponent(random.Random(game_seed + 1))
         params = dict(params)
@@ -588,7 +698,7 @@ def _collect_states(field, draws, flags, families):
     return banked
 
 
-def _replay(states, flags):
+def _replay(states, flags, probe_name="composite"):
     """Run decide() directly on every banked state under this flag set.
 
     Direct decide() (not the dispatch wrapper) so the returned action still
@@ -602,12 +712,21 @@ def _replay(states, flags):
     from glee_agent.dispatch import STRATEGIES
     from glee_agent.probes import make_probe
 
-    _, cfg = make_probe("composite", Config.from_env())
+    strategy, cfg = make_probe(probe_name, Config.from_env(), seed=20260824)
+    from glee_agent.probes import PROBES
+    custom_probe = PROBES[probe_name][1] is not None
     out = []
     for game in states:
         _CONSULTED.clear()
-        action = STRATEGIES[game["game_family"]](copy.deepcopy(game), cfg)
-        plan = action.pop("_plan", None) if isinstance(action, dict) else None
+        if custom_probe:
+            # Custom probes bypass STRATEGIES entirely in production. Running
+            # their wrapped callable here is what exposes an otherwise false
+            # positive where a flag fires only under the composite heuristic.
+            action = strategy(copy.deepcopy(game))
+            plan = None
+        else:
+            action = STRATEGIES[game["game_family"]](copy.deepcopy(game), cfg)
+            plan = action.pop("_plan", None) if isinstance(action, dict) else None
         # Final-action guards run here in production, after strategy planning.
         # Replaying through coerce makes action_changed describe the wire action.
         action = coerce(action, game)
@@ -714,12 +833,14 @@ def main() -> int:
     print(f"flag      : {name}={value}")
     print(f"families  : {', '.join(families)}")
     print(f"collecting states from {len(draws)} control-arm games...")
-    states = _collect_states(field, draws, control, families)
+    states = _collect_states(
+        field, draws, control, families, target_flag=name)
     print(f"banked {len(states)} decision points; replaying twice "
           "(control vs control+candidate)...")
 
-    ctl = _replay(states, control)
-    cnd = _replay(states, candidate)
+    probe_name = args.control_slot or "composite"
+    ctl = _replay(states, control, probe_name=probe_name)
+    cnd = _replay(states, candidate, probe_name=probe_name)
 
     gate_names = set(known[1]) if known else set()
     eligible = fired = changed = wrong_direction = 0
