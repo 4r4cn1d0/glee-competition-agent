@@ -1,11 +1,87 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 01:44 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 03:12 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
 
-## Live persuasion boundary
+## 03:10 deterministic whole-policy rollout — live on all five complete agents
+
+- Commit `e6ca9c6` added the default-OFF deterministic
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1`. It is a buyer-v2 final veto only:
+  an existing BUY becomes PASS when the current seller signal is a strict binary
+  decline or an explicit text decline recognized by the expanded parser. It
+  never creates a purchase, never reinterprets history, and never changes the
+  seller policy. Commits `c085878`, `acd2453`, and `d615ac8` corrected and
+  recorded the evidence; `HEAD == origin/main == d615ac8` at deployment.
+- Pre-deployment verification passed on every exact named stack over 800 games:
+  `eligible=763`, `fired=763`, and `action_changed=763` for Test 1/champion,
+  Test 2/champion, Test 3/conceder, Test 4/composite, and Agent 5/hardliner.
+  Focused tests passed 142, the persuasion audit passed 380, and the full suite
+  passed 1,798 with only the two known bargaining failures. A 4,000-state
+  property audit produced 273 changes, all legal BUY-to-PASS; 26,236 synthesized
+  parser messages produced zero default-OFF/legacy changes.
+- Deployment used `scripts/fleet.py` only. The final overlay boundary is
+  `1787606572.088` (2026-08-25 02:52:52 IST): the deterministic flag is `1` and
+  all ten persuasion `*_AB` flags are explicit `0` on all five slots. No
+  bargaining or negotiation key was changed, `control.json` was not edited by
+  this workstream, and no process was restarted or signalled.
+- Clean post-code/post-overlay process boundaries are:
+
+  | Complete agent | Slot | PID | T0 | deterministic profile |
+  |---|---|---:|---:|---|
+  | Test 1 | champion | 37884 | 1787607314 | champion |
+  | Test 2 | hardliner | 38947 | 1787607608 | champion |
+  | Test 3 | conceder | 36614 | 1787606834 | conceder |
+  | Test 4 | randomized (legacy slot name) | 37202 | 1787607037 | composite |
+  | Agent 5 | composite | 37885 | 1787607315 | hardliner |
+
+  Every command retains `--families bargaining,negotiation,persuasion` and
+  `--llm-mode off`. Test 3 and Test 2 completed natural clean max-time drains.
+  Test 4, Test 1, and Agent 5 crossed previously queued authoritative-idle
+  boundaries; the supervisor recorded zero games abandoned for each. The Test 4
+  slot name does not imply random behavior: its loaded profile is deterministic
+  `composite`.
+- The first eight emitted vetoes were audited in full: Test 1 (five), Test 4
+  (two), and Agent 5 (one). All eight were buyer/player 2,
+  explicit current declines, heuristic PASS actions, and had only the new gate.
+  Exact recorded-state replay was PASS/`no` with the flag ON versus BUY/`yes`
+  with it OFF; the only differences were `decision`, `plan.buy`, the marker, and
+  its appended gate. The first post-cutover health read covered 2,907 persuasion
+  turns across the five host-specific eras with zero persuasion errors, zero
+  out-of-scope vetoes, and zero legacy persuasion gates. Thus live
+  `eligible>0`, `fired>0`, and
+  `action_changed>0` are verified. Continue the same audit through the first 20
+  firings; any scope, parser, legality, legacy-gate, timeout, or replay failure is
+  a mechanism failure.
+- Frozen fixed-stream evidence is diagnostic rather than causal: 1,934 assigned
+  buyer games (1,925 completed, six active, three no-deal) contained 85 games
+  and 176 turns that this veto would change; 175 of 176 changed turns were low
+  quality. Text had 987 assigned / 981 completed / 156 changed turns (155 low,
+  one high; local diagnostic `+0.009012` percentile). Binary had 947 assigned /
+  944 completed / 20 changed turns (20 low, zero high; local `+0.000983`). The
+  authenticated export did not contain enough buyer joins for an official
+  causal estimate, so official post-cutover rating movement remains monitoring
+  evidence, not a causal A/B estimate.
+- Authenticated rollout baseline immediately after the five-host cutover:
+  Test 1 `2266.2` persuasion / 12,924 games; Test 2 `2393.8` / 13,581; Test 3
+  `2098.4` / 14,466; Test 4 `2421.2` / 6,716; Agent 5 `2402.4` / 12,464. The
+  persuasion leaderboard snapshot showed account-best Test 4 rank 4 at
+  `2431.8`, 70.0 behind rank 3 HAWK, 74.2 behind rank 2 king, and 124.0 behind
+  leader gill bates. The per-agent stats and board are separately timed official
+  snapshots; compare each source like-for-like on later reads.
+- Automation `monitor-glee-persuasion-experiment` now runs every 15 minutes. It
+  checks all five complete agents, every persuasion outcome, live mechanism
+  integrity, official rating/rank movement, and broad deterministic improvement
+  opportunities. New ideas must remain broad, deterministic, and default OFF;
+  no randomized policy, hash arm, A/B probe, or narrow-cell deployment may be
+  introduced.
+
+Everything below this point is historical pre-rollout evidence. It remains
+useful for measured negatives and incident boundaries, but its old live-arm
+statements are superseded by the all-zero A/B boundary above.
+
+## Historical live persuasion boundary
 
 - All five slots use buyer-v2, tight-prior `.65`, honest rounds `99`, lie
   shading `0`, backload off, KEEP_MSG on, token message style, and LLM off.
