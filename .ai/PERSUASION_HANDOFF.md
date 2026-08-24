@@ -1,9 +1,27 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 04:20 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 04:40 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 04:39 monitoring checkpoint — top-three sustained
+
+- Test 4 remains official persuasion rank `3` at `2489.61`, `38.20` behind
+  rank-2 HAWK and `71.40` behind rank-1 gill bates. Its like-for-like movement
+  is `+68.41` over 198 added persuasion games. This remains inside the measured
+  cross-agent noise range and is monitoring evidence, not a causal veto effect.
+- The last two old processes completed natural clean drains: Test 2 launched
+  PID `50751` at 04:26:34 after 4,577 seconds, and Test 1 launched PID `50781`
+  at 04:26:55 after 4,890 seconds. Neither abandoned a game. All five current
+  processes now retain their intended deterministic profiles, full three-family
+  queues, LLM off, persuasion veto `1`, and all ten persuasion A/B flags `0`.
+- The extended mechanism audit is clean through `41/41/41`
+  eligible/fired/action-changed events in 26 games across 21,106 post-boundary
+  turns / 1,068 assigned games. All 26 affected games are authenticated
+  completed; exact replay and scope/parser/source/gate checks pass, with zero
+  persuasion errors or affected-game timeouts. No deterministic policy change
+  is justified by this checkpoint.
 
 ## 04:19 monitoring checkpoint — authenticated persuasion rank 3
 
