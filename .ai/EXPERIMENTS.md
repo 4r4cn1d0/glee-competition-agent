@@ -595,8 +595,18 @@ Test 3 before causal promotion evidence.
   host/activation-era diagnostics, require every host point estimate
   nonnegative for promotion, and reject detected cross-fleet duplicates. Test 3
   remains untouched.
-- **Read with**: `scripts/live_percentile.py --ab pers-truth --since T0
-  --slots hardliner --official-json FILE`.
+- **Research-host activation**: Agent 5 (`composite`) naturally loaded pushed
+  code as PID 79006 at 20:42:18 IST and fleet tooling set only the truth flag at
+  `T0=1787584351` (20:42:31). Test 4 (`randomized`) naturally loaded as PID
+  79064 at 20:42:58 and was armed at `T0=1787584425` (20:43:45). At the 20:50
+  read, all three host-specific readers reported zero exact assigned games.
+  Therefore no observed rating movement is treatment evidence and the required
+  first candidate low-quality `no` remains outstanding.
+- **Read with**: run `scripts/live_percentile.py --ab pers-truth` separately for
+  `hardliner --since 1787582397`, `composite --since 1787584351`, and
+  `randomized --since 1787584425`, always with `--official-json FILE`. Do not
+  pool from a common earlier timestamp: that would admit pre-activation games
+  from the later research hosts.
 
 ### Exact buyer/text explicit-decline veto (built default OFF)
 - **Falsifiable hypothesis**: in persuasion buyer/text games with `p=.8`,

@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-24 20:19 IST. This file is the deployment boundary for
+Last updated: 2026-08-24 20:50 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -12,27 +12,31 @@ their code, configuration, experiments, or fleet flags.
 - Test 2's invalid `GLEE_PERS_RANK_GATE_AB` arm was explicitly set to `0` with
   `scripts/fleet.py` at unix `1787570799` (2026-08-24 16:56:39 IST). Test 3 was
   not changed. The disarm is a mechanism rejection, not a causal effect result.
-- Official board at the 19:35 authenticated refresh: account-best Test 1 is
-  persuasion rank 3 of 75 at `2429.1` (top 4.0%; about the 97th percentile by
-  rank), `7.0` behind rank 2 expert and `126.7` behind leader gill bates.
+- Official board at the 20:46 authenticated refresh: account-best Test 2 is
+  persuasion rank 5 at `2381.0`, `58.9` behind rank 3 expert, `105.3` behind
+  rank 2 Tiberius, and `174.8` behind leader gill bates. This board movement is
+  not truth-arm evidence: the all-assigned readers below still find no eligible
+  games on any activated host.
 - The prose arm remains live only on Test 1, Test 4, and Agent 5 from
   `T0=1787575521`. It is absent on Test 2 and Test 3.
-- The binary truth arm is live only on Test 2 from clean arms mtime
-  `T0=1787582397` (2026-08-24 20:09:57 IST). Test 2 naturally drained PID 71871
-  and loaded pushed code `d79ca92` as PID 76676 at 20:08:48 IST before the flag
-  was set through `scripts/fleet.py`. At activation, prose and buyer-parser
-  flags were absent, rank gate/backload were zero, and Test 3 was untouched.
+- The binary truth arm is live on Test 2 from clean arms mtime `T0=1787582397`
+  (2026-08-24 20:09:57 IST), on Agent 5 from `T0=1787584351` (20:42:31 IST),
+  and on Test 4 from `T0=1787584425` (20:43:45 IST). Test 2 naturally drained
+  PID 71871 and loaded pushed code `d79ca92` as PID 76676 at 20:08:48 IST;
+  Agent 5 loaded PID 79006 at 20:42:18 and Test 4 loaded PID 79064 at 20:42:58
+  before fleet tooling set only the truth flag at each clean boundary. Prose is
+  absent on Test 2 and text-only on Agent 5/Test 4, so it cannot overlap this
+  binary arm. Buyer-parser flags remain absent, rank gate/backload are zero, and
+  Test 3 is untouched.
 - The exact text explicit-decline buyer veto is implemented default OFF and is
   not live on any slot. It must not be armed until the binary-truth experiment
   is decided and disarmed.
 - Before any binary-truth assignment or outcome existed, the research boundary
-  was prospectively expanded to allow Agent 5 and Test 4 after their next
-  natural post-`d79ca92` loads. Test 2 produced zero eligible games in its first
-  14 post-T0 minutes; exact-stack preflight on both research hosts reported
-  `eligible=32/fired=18/action_changed=18` over 800 games. Their prose treatment
-  is text-only and truth is binary-only, so the gates are disjoint. Neither
-  research host is armed yet; each requires its own clean T0. Test 3 remains
-  protected.
+  was prospectively expanded to Agent 5 and Test 4. Exact-stack preflight on
+  both reported `eligible=32/fired=18/action_changed=18` over 800 games. At the
+  20:50 read, host-specific all-assigned readers reported zero exact eligible
+  games since each clean T0, so the live mechanism is not yet behavior-verified
+  and no rating movement may be attributed to it. Test 3 remains protected.
 
 ## Rejected rank-gate mechanism
 
