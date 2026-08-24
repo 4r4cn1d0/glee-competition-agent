@@ -3,6 +3,34 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-24 — direct-leader opening copy built, default OFF
+
+Codex reconstructed the current top negotiation agents from direct encounters,
+without conditioning on deals. Clod/Athena/doodod are at
+2918.75/2840.38/2649.25 and appear in 47/38/69 of our negotiation games. In
+hidden cap-10 plus unknown-horizon games their seller opening medians are
+1.488/1.490/1.485B (n=10/8/12) and buyer medians are
+.8108/.8075/.810B (n=9/7/14). This validates the literal behavior to copy, not
+the causal value of copying it.
+
+`GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1` is a default-off 50/50 per-game arm
+that copies 1.485B/.81B on the first outgoing hidden unknown-horizon price in
+seller .8B/1.0B and buyer 1.2B/1.5B cells only. It changes no decision and
+falls back to the full current policy after one rejection. These types exclude
+the running first-offer probe's seller 1.2B/buyer 1.0B cells and the dead
+seller 1.5B/buyer .8B cells, so all live negotiation measurements remain
+disjoint. Broad hidden policy/floor flags make the arm inert rather than
+contaminate its hash control.
+
+Exact champion-stack reachability on 1,000 paired games (seed 1907) passed at
+100 eligible / 49 fired / 49 changed final wires. Focused tests are 88 passed;
+the full suite is 1,048 passed with only the two predeclared bargaining
+failures. The reader cohorts at the first pre-action turn, verifies literal
+wires, retains unresolved outcomes, guards cross-fleet duplicate IDs, and
+labels its hidden-pooled score non-promotion-grade. The code must land inert and
+load through natural rotations before any arm boundary is recorded. Test 3 is
+not a research slot. No bargaining code or flag was changed.
+
 ## 2026-08-24 — hidden cap-10 terminal counter deployed on research slots
 
 Codex activated `GLEE_NEGO_HI_CAP10_BUYER12_TERMINAL_AB=1` on `champion`,

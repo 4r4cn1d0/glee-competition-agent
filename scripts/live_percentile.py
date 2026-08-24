@@ -177,6 +177,16 @@ def hi_first_offer_arm(gid) -> str | None:
     return hi_uncapped_first_offer_arm(gid)
 
 
+def hi_extreme_open_arm(gid) -> str | None:
+    """Recover the production direct-leader opening assignment."""
+    from glee_agent.actions import hi_uncapped_extreme_open_arm
+
+    treatment = hi_uncapped_extreme_open_arm(gid)
+    if treatment is None:
+        return None
+    return "candidate" if treatment else "control"
+
+
 def hi_terminal_arm(gid) -> str | None:
     """Recover the production terminal-counter assignment without duplicating its salt."""
     treatment = _hi_terminal_bit(gid)
@@ -539,6 +549,59 @@ def _hi_first_offer_exposure_turn(slot: str, rec: dict):
     return (slot, gid), ts, signal
 
 
+def _hi_extreme_open_signal(seat: str, state: dict) -> dict | None:
+    """Public pre-action signal for the four direct-leader copy cells."""
+    signal = _hidden_policy_signal(seat, state)
+    if (signal is None or signal.get("horizon") != "inf"
+            or state.get("horizon_known") is not False):
+        return None
+    role, own_mult = signal.get("role"), signal.get("own_mult")
+    if not ((role == "seller" and own_mult in (0.8, 1.0))
+            or (role == "buyer" and own_mult in (1.2, 1.5))):
+        return None
+    return signal
+
+
+def _hi_extreme_open_exposure_turn(slot: str, rec: dict):
+    """Cohort the disjoint leader-copy arm before its first action."""
+    from glee_agent.actions import _hidden_own_price_count
+
+    if rec.get("game_family") != "negotiation":
+        return None
+    gid = str(rec.get("game_id") or "")
+    seat = rec.get("your_player")
+    state = rec.get("state") or {}
+    signal = _hi_extreme_open_signal(seat, state)
+    if not gid or signal is None:
+        return None
+    if (state.get("current_player") or seat) != seat:
+        return None
+    if _hidden_own_price_count(state, seat) != 0:
+        return None
+    expected_action = "offer" if signal["role"] == "seller" else "decision"
+    if rec.get("action_type") != expected_action:
+        return None
+    ts = _number(rec.get("ts"))
+    if ts is None:
+        return None
+
+    action = rec.get("action") or {}
+    actual = (_number(action.get("product_price"))
+              if isinstance(action, dict) else None)
+    arm = hi_extreme_open_arm(gid)
+    expected = None
+    if arm == "candidate" and actual is not None:
+        expected = round(signal["base"] *
+                         (1.485 if signal["role"] == "seller" else 0.81), 2)
+    return (slot, gid), ts, {
+        **signal,
+        "first_action": action.get("decision") or rec.get("action_type"),
+        "first_price": actual,
+        "expected_price": expected,
+        "wire_ok": expected is None or abs(actual - expected) <= 1e-9,
+    }
+
+
 def _hi_terminal_exposure_turn(slot: str, rec: dict):
     """Cohort on the buyer's first decision, before terminal reach is known."""
     if rec.get("game_family") != "negotiation":
@@ -801,6 +864,15 @@ def _hi_first_offer_row(slot: str, rec: dict, fin: dict):
     state = fin.get("game_state") or {}
     seat = fin.get("your_player")
     if _hi_first_offer_signal(seat, state) is None:
+        return None
+    return _hidden_policy_row(slot, rec, fin)
+
+
+def _hi_extreme_open_row(slot: str, rec: dict, fin: dict):
+    """Build one direct-leader opening outcome and zone diagnostic."""
+    state = fin.get("game_state") or {}
+    seat = fin.get("your_player")
+    if _hi_extreme_open_signal(seat, state) is None:
         return None
     return _hidden_policy_row(slot, rec, fin)
 
@@ -1133,6 +1205,13 @@ def hi_first_offer_games(hours, since=None, until=None):
     """Yield every assigned identified hidden unknown-horizon game."""
     yield from _price_arm_games(
         hours, _hi_first_offer_exposure_turn, _hi_first_offer_row,
+        since=since, until=until)
+
+
+def hi_extreme_open_games(hours, since=None, until=None):
+    """Yield every assigned disjoint direct-leader opening game."""
+    yield from _price_arm_games(
+        hours, _hi_extreme_open_exposure_turn, _hi_extreme_open_row,
         since=since, until=until)
 
 
@@ -1488,6 +1567,66 @@ def report_hi_first_offer(rows, hours, since=None, until=None):
     print("PROMOTION BLOCKED BY DESIGN: require official-score 95% CI above "
           "zero, close-rate lower bound above -2pp, zero wire failures, and no "
           "role/scale sign reversal. Conditional deal share is never sufficient.")
+    return 2 if wire_failures else 0
+
+
+def report_hi_extreme_open(rows, hours, since=None, until=None):
+    """Report the disjoint two-arm direct-leader opening experiment."""
+    observations = _hidden_policy_observations(rows, hi_extreme_open_arm)
+    print("GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB, direct-leader hidden "
+          "no-limit first turns")
+    print("LOCAL DIAGNOSTIC ONLY: pct below pools the hidden counterpart value. "
+          "This report never authorizes promotion; join official per-game score "
+          "before any rollout.")
+    if since is not None or until is not None:
+        lower = f"{float(since):g}" if since is not None else f"now-{hours:g}h"
+        upper = f"{float(until):g}" if until is not None else "now"
+        print(f"first-turn cohort window: [{lower}, {upper})")
+    if not observations:
+        print("no eligible direct-leader opening assignments in the window")
+        return 1
+
+    gid_slots = defaultdict(set)
+    for observation in observations:
+        slots = observation["diagnostic"].get("fleet_slots")
+        if isinstance(slots, (list, tuple, set)):
+            gid_slots[observation["gid"]].update(slots)
+        else:
+            gid_slots[observation["gid"]].add(observation["slot"])
+    duplicates = {gid for gid, slots in gid_slots.items() if len(slots) > 1}
+    pooled_obs = [item for item in observations if item["gid"] not in duplicates]
+
+    pooled = {}
+    for arm in ("control", "candidate"):
+        assigned = [item for item in pooled_obs if item["arm"] == arm]
+        if not assigned:
+            continue
+        pooled[arm] = _summarize_hidden_policy(assigned)
+        _print_hidden_policy_line("POOLED", arm, pooled[arm])
+    print(f"pooled dependence guard: excluded {len(duplicates)} cross-fleet "
+          "game id(s)")
+
+    control, candidate = pooled.get("control"), pooled.get("candidate")
+    if control and candidate:
+        print("candidate-control (diagnostic, not promotion-grade):")
+        _print_delta("hidden-pooled percentile", candidate["pct"], control["pct"])
+        _print_delta("close rate", candidate["closed"], control["closed"],
+                     percent=True)
+        _print_delta("reconstructed-zone capture ITT", candidate["capture"],
+                     control["capture"])
+
+    wire_failures = [
+        item for item in pooled_obs
+        if item["arm"] == "candidate"
+        and item["diagnostic"].get("expected_price") is not None
+        and item["diagnostic"].get("wire_ok") is not True
+    ]
+    unresolved = sum(stats["pending"] + stats["invalid"]
+                     for stats in pooled.values())
+    print(f"wire failures={len(wire_failures)}; unresolved outcomes={unresolved}")
+    print("PROMOTION BLOCKED BY DESIGN: require official-score 95% CI above "
+          "zero, close-rate lower bound above -2pp, zero wire failures, and no "
+          "role/type/scale/message reversal.")
     return 2 if wire_failures else 0
 
 
@@ -2306,7 +2445,8 @@ def main() -> int:
     ap.add_argument("--ab", nargs="?", const="zopa",
                     choices=("zopa", "rank-price", "open-claim",
                              "open-claim-official", "hidden-floor",
-                             "hidden-policy", "hi-first-offer", "hi-terminal",
+                             "hidden-policy", "hi-first-offer", "hi-extreme-open",
+                             "hi-terminal",
                              "fp-complete", "pers-selectivity", "barg-msg"),
                     help="split games by a recoverable hash arm; bare --ab "
                          "keeps the legacy GLEE_NEGO_ZOPA_AB report")
@@ -2314,7 +2454,8 @@ def main() -> int:
     keep = {s.strip() for s in args.slots.split(",") if s.strip()}
 
     if args.ab in ("open-claim", "open-claim-official", "hidden-floor",
-                   "hidden-policy", "hi-first-offer", "hi-terminal", "fp-complete",
+                   "hidden-policy", "hi-first-offer", "hi-extreme-open",
+                   "hi-terminal", "fp-complete",
                    "pers-selectivity"):
         if (args.since is not None and args.until is not None
                 and args.until <= args.since):
@@ -2325,6 +2466,7 @@ def main() -> int:
             "hidden-floor": hidden_floor_games,
             "hidden-policy": hidden_policy_games,
             "hi-first-offer": hi_first_offer_games,
+            "hi-extreme-open": hi_extreme_open_games,
             "hi-terminal": hi_terminal_games,
             "fp-complete": fp_complete_games,
             "pers-selectivity": pers_selectivity_games,
@@ -2335,6 +2477,7 @@ def main() -> int:
             "hidden-floor": report_hidden_floor,
             "hidden-policy": report_hidden_policy,
             "hi-first-offer": report_hi_first_offer,
+            "hi-extreme-open": report_hi_extreme_open,
             "hi-terminal": report_hi_terminal,
             "fp-complete": report_fp_complete,
             "pers-selectivity": report_pers_selectivity,

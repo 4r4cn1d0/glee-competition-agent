@@ -182,6 +182,21 @@ rejection risk — an effect a coarse 0.05 grid on x can step straight over.
 - We also draw our OWN agents as opponents (champion/test3/test4 appear in the
   opponent field), so cross-agent comparisons can be contaminated by self-play.
 
+## Direct behavior of the current negotiation leaders (24 Aug)
+- The authenticated negotiation board put Clod at 2918.75, Athena at 2840.38,
+  and doodod at 2649.25. Our turn logs contain 47, 38, and 69 direct negotiation
+  games against them respectively, so their wire behavior can be measured
+  without inferring it from rank or conditioning on deals.
+- In hidden multi-round games (cap-10 plus explicitly unknown horizon), seller
+  first-price medians were Clod 1.488B (n=10), Athena 1.490B (n=8), and doodod
+  1.485B (n=12). Buyer first-price medians were .8108B (n=9), .8075B (n=7),
+  and .810B (n=14). This independently reproduces the 1.485B/.81B extreme
+  opening at both horizons and both seats.
+- This is behavior evidence, not a policy-effect estimate. The games include
+  agreements, no-deals, and walks, and nothing here establishes that copying
+  one wire causes a higher official score. That question requires a per-game
+  randomized arm over every assigned trajectory.
+
 ## GLEE_OPP_EXPLOIT: built, never armed, and its DEFAULT is the harmful setting
 - Per-opponent bargaining accept thresholds vary enormously and really are
   exploitable: chotu accepts at 0.257 (we keep 74%), Ira 0.168, against

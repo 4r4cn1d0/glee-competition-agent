@@ -37,6 +37,17 @@ _HIDDEN_POLICY_UNCAPPED_PROGRESS_CAP = 0.85
 _HI_UNCAPPED_FIRST_OFFER_SALT = "nego_hi_uncapped_first_offer_v1|"
 _HI_UNCAPPED_FIRST_OFFER_ARMS = ("control", "share80", "share95")
 
+# Direct-leader imitation in the four other viable own-type cells.  Across all
+# of our direct hidden-information encounters (not conditioned on agreement),
+# seller opening medians were 1.488B for Clod (n=10 cap/unknown), 1.490B for
+# Athena (n=8), and 1.485B for doodod (n=12); buyer medians were .8108B (n=9),
+# .8075B (n=7), and .810B (n=14).  Their current leaderboard ratings are
+# 2918.75, 2840.38, and 2649.25.  The causal value of copying that first wire is
+# still unknown, so this remains a per-game default-OFF randomized arm.
+_HI_UNCAPPED_EXTREME_OPEN_SALT = "nego_hi_uncapped_extreme_open_v1|"
+_HI_UNCAPPED_EXTREME_SELLER_PRICE = 1.485
+_HI_UNCAPPED_EXTREME_BUYER_PRICE = 0.81
+
 # Separate salt from every broader hidden-price experiment.  This arm changes
 # exactly one terminal counter and must be recoverable from game_id alone.
 _HI_CAP10_BUYER12_TERMINAL_SALT = "nego_hi_cap10_buyer12_terminal_v1|"
@@ -219,6 +230,16 @@ def hi_uncapped_first_offer_arm(game_id) -> str | None:
         (_HI_UNCAPPED_FIRST_OFFER_SALT + gid).encode()).hexdigest()
     return _HI_UNCAPPED_FIRST_OFFER_ARMS[
         int(digest, 16) % len(_HI_UNCAPPED_FIRST_OFFER_ARMS)]
+
+
+def hi_uncapped_extreme_open_arm(game_id) -> bool | None:
+    """Stable assignment for the disjoint direct-leader opening probe."""
+    gid = str(game_id or "")
+    if not gid:
+        return None
+    digest = hashlib.sha256(
+        (_HI_UNCAPPED_EXTREME_OPEN_SALT + gid).encode()).hexdigest()
+    return bool(int(digest, 16) & 1)
 
 
 def _hi_cap10_buyer12_terminal_context(action: dict, game: dict) -> dict | None:
@@ -424,6 +445,62 @@ def _hi_uncapped_first_offer_price(context: dict) -> float | None:
     return own - share * (own - counterpart)
 
 
+def _hi_uncapped_extreme_open_context(game: dict) -> dict | None:
+    """Return the disjoint hidden no-limit leader-opening assignment."""
+    if not runtime_flags.enabled("GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB"):
+        return None
+    if game.get("game_family") != "negotiation":
+        return None
+    # A hash control must remain the current stack.  If either broad hidden
+    # writer is later armed, make this whole experiment inert rather than let a
+    # lower postcondition alter controls while candidate wires return early.
+    if (runtime_flags.enabled("GLEE_NEGO_HIDDEN_POLICY_V1")
+            or runtime_flags.as_float("GLEE_NEGO_HIDDEN_FLOOR", 0.0) > 0.0):
+        return None
+    state = game.get("game_state") or {}
+    if (state.get("complete_information") is not False
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None):
+        return None
+
+    gid = str(game.get("game_id") or "")
+    me = game.get("your_player") or state.get("current_player")
+    role = state.get(f"{me}_role")
+    own_value = _num(state.get(f"{me}_value"), math.nan)
+    base = pricing.infer_base(own_value) if math.isfinite(own_value) else None
+    if not gid or role not in ("seller", "buyer") or base is None:
+        return None
+    own_mult = next(
+        (mult for mult in _HIDDEN_VALUE_MULTS
+         if abs(own_value / base - mult) <= 1e-6),
+        None,
+    )
+    # The running identified-cell probe owns seller 1.2B and buyer 1.0B.  Dead
+    # seller 1.5B / buyer .8B cells are already handled by DEADGAME_V1.  These
+    # four cells are therefore both viable and disjoint from every live probe.
+    if ((role == "seller" and own_mult not in (0.8, 1.0))
+            or (role == "buyer" and own_mult not in (1.2, 1.5))):
+        return None
+    if _hidden_own_price_count(state, me) != 0:
+        return None
+    return {
+        "arm": hi_uncapped_extreme_open_arm(gid),
+        "base": base,
+        "own_mult": own_mult,
+        "i_am_seller": role == "seller",
+    }
+
+
+def _hi_uncapped_extreme_open_price(context: dict) -> float | None:
+    """Copy the leaders' literal first wire in hash-treatment games only."""
+    if context.get("arm") is not True:
+        return None
+    multiplier = (_HI_UNCAPPED_EXTREME_SELLER_PRICE
+                  if context["i_am_seller"]
+                  else _HI_UNCAPPED_EXTREME_BUYER_PRICE)
+    return multiplier * context["base"]
+
+
 def _hidden_policy_progress(state: dict, me: str, i_am_seller: bool) -> float:
     """Squared concession progress for this outgoing price opportunity."""
     index = _hidden_own_price_count(state, me)
@@ -557,6 +634,19 @@ def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     first_offer = _hi_uncapped_first_offer_context(game)
     if first_offer is not None:
         candidate = _hi_uncapped_first_offer_price(first_offer)
+        if candidate is not None:
+            action["product_price"] = max(0.0, round(candidate, 2))
+        return
+
+    # DIRECT-LEADER EXTREME OPEN, default OFF.  This copies only the literal
+    # first wire shared by the current top three agents in our direct hidden
+    # encounters: sellers ask 1.485B and buyers bid .81B.  It covers the four
+    # viable own-type cells excluded from the identified-cell probe above and
+    # reverts to the complete current policy after one rejection.  Returning in
+    # both hash arms prevents lower postconditions from contaminating control.
+    extreme_open = _hi_uncapped_extreme_open_context(game)
+    if extreme_open is not None:
+        candidate = _hi_uncapped_extreme_open_price(extreme_open)
         if candidate is not None:
             action["product_price"] = max(0.0, round(candidate, 2))
         return

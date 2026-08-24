@@ -123,6 +123,49 @@
 Do not co-arm this experiment with `GLEE_NEGO_HIDDEN_POLICY_V1` in its first
 measurement. Codex owns deployment under the operator's 2026-08-24 directive.
 
+## READY — DEFAULT OFF, CODE DEPLOY PENDING
+
+### Direct-leader hidden unknown-horizon opening copy (negotiation)
+- **Flag / assignment**: `GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB=1`;
+  `sha256("nego_hi_uncapped_extreme_open_v1|" + game_id) & 1` gives control or
+  candidate per game.
+- **Behavior evidence**: across all direct hidden multi-round encounters, not
+  only agreements, Clod/Athena/doodod opened as sellers at median
+  1.488/1.490/1.485B (n=10/8/12) and as buyers at .8108/.8075/.810B
+  (n=9/7/14). Their current negotiation ratings were
+  2918.75/2840.38/2649.25.
+- **Candidate**: in explicitly unknown-horizon hidden games, copy the literal
+  1.485B seller ask or .81B buyer bid on the first outgoing price only, then
+  return to the complete current policy. Eligibility is restricted to seller
+  own types .8B/1.0B and buyer own types 1.2B/1.5B. The running identified-cell
+  probe owns seller 1.2B/buyer 1.0B, while DEADGAME_V1 already owns seller
+  1.5B/buyer .8B; all scopes are disjoint.
+- **Why one wire**: the direct evidence identifies the opening boundary but not
+  whether the leaders' later holds cause their rating. A persistent copy is a
+  separate mechanism. This arm tests imitation without bundling a concession
+  schedule or changing accept/reject/walk decisions.
+- **Cohort**: every matching first action before treatment, including buyers
+  that accept without emitting a counter. Keep every agreement, no-deal, walk,
+  timeout, and unresolved game; exclude cross-fleet duplicate game IDs from the
+  pooled estimate.
+- **Decision rule**: do not decide before 100 resolved games per arm and at
+  least 15 per arm in each own-type cell. Promote only if official per-game
+  score candidate-control 95% CI is above zero, close-rate lower 95% bound is
+  above -2pp, every role/type/scale/message point estimate is nonnegative, and
+  wire failures are zero. Reject on an official-score CI below zero or any
+  mechanism failure. Conditional agreement share is diagnostic only.
+- **Read with**: `scripts/live_percentile.py --ab hi-extreme-open --since T0
+  --until T1 --slots champion,composite,hardliner,randomized`. The local
+  hidden-value-pooled percentile never authorizes promotion.
+- **Preflight**: champion's exact live stack, 1,000 paired negotiation games,
+  seed 1907: 100 eligible / 49 fired / 49 changed final wire actions. Focused
+  suite 88 passed; full suite 1,048 passed with only the two predeclared
+  bargaining failures.
+
+The code is pushed default OFF before any flag is armed. Record per-slot code
+load boundaries or wait for all four natural rotations before setting one clean
+common T0. Do not arm Test 3 before causal promotion evidence.
+
 ## REJECTED — DEFAULT OFF, DO NOT RUN
 
 ### Hidden unknown-horizon 95%-share support ladder (negotiation)
