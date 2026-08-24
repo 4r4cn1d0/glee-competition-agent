@@ -1,6 +1,6 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 01:26 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 01:44 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
@@ -408,3 +408,36 @@ snapshot and original host boundary only through external `T1`; use the T2
 snapshot with each new host T0 for current evidence. Never replay a host with a
 snapshot frozen after that host's boundary or combine later-host pre-activation
 games into the earlier host.
+
+## 01:35 operator supersession — deterministic full-stack portfolio
+
+The operator superseded all live experiments with a deterministic portfolio:
+all five slots queue all three families, LLM is off, and every cell/A/B flag is
+explicitly zero. The pulse overlay was set to `0` in the fleet write at
+`1787601931.688070774` and the all-zero state was verified by
+`T2=1787601952`. This ends the brief re-arm eras. The pulse is **stopped**, not
+promoted or effect-rejected, and must not be automatically re-armed.
+
+The brief champion era contains one additional all-assigned candidate,
+`c0e26e93-685b-4a86-8fe8-54f6d7e57c17`, beginning at
+`1787601553.841179`. All 20 local buyer turns are contiguous; the pulse never
+became reachable, emitted no trace, and changed no action. Its terminal/official
+record is still unresolved, so it remains in ITT and independently blocks any
+effect decision. Composite had no exact assignment in its brief re-arm era.
+
+The pending natural launch map is Test 1=`champion`, Agent 5=`composite`, Test
+2=`hardliner`, Test 3=`conceder`, and the historically named Test 4
+`randomized` slot=`composite`. Every slot keeps the full
+`bargaining,negotiation,persuasion` queue. At the time of this record, the old
+PIDs were still running `champion` on all five slots; no cycle was forced.
+Record each replacement PID/profile only after its natural drain and launch.
+
+For persuasion specifically, the five current overlays are byte-identical:
+buyer-v2 `1`, tight prior `.65`, lie shading `0`, honest rounds `99`, KEEP_MSG
+`1`, token style, backload/token-max/rank-gate `0`, and every persuasion A/B
+flag `0`. Runtime lie/honest overlays override the nominal hardliner/champion
+profile transforms, and the buyer path does not read probe configuration.
+Therefore all pending profile labels currently collapse to one deterministic
+persuasion policy. The portfolio is diverse overall, but it does not create a
+persuasion comparison or causal experiment. Do not infer persuasion differences
+from profile labels; verify emitted plans and official all-outcome evidence.
