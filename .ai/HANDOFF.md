@@ -3,6 +3,47 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 08:45 IST — Test 2 support V3 built default OFF
+
+The human feedback contained two exact negotiation rules and several requests
+for more evidence.  The first exact rule was already live in V2: a one-round
+buyer accepts iff the incoming price leaves strictly positive payoff.  The
+second was already live only for hidden unknown-horizon sellers: never carry an
+ask outside the official `{80,100,120,150}*scale` buyer support.  No behavior
+was invented for “move up a bit,” value-dependent thresholds, or the pending
+inference answer.
+
+Fresh authenticated Test 2 outcomes from 07:53--08:18 retained every result.
+The hidden cap-10 seller slice was seven games: four agreements, two no-deals,
+one walk, `-1.2` rating total.  All seven opening asks exceeded the largest
+possible buyer value.  Two agreements left the seller only `0.40` and `0.85`
+and scored `-5.7` and `-6.3`.  This identifies a literal support inconsistency,
+not the causal value of an unplayed ask.
+
+Default-OFF whole-policy selector `GLEE_NEGO_TEST2_SUPPORT_V3` keeps the entire
+V2 matrix and additionally replaces only outgoing hidden cap-10 seller asks or
+rejection counters with the existing support-grid prices: `119.99` for seller
+types `80/100`, `149.99` for seller type `120`, scaled identically at every
+price level.  Seller `150` stays on the dead-game policy.  Accept/reject/walk
+decisions are unchanged; in particular, the previously negative broad hidden
+accept-all-profitable policy is not revived.  The V2+V3 pair intentionally
+selects V3 during an atomic migration; collisions with every unrelated whole
+policy still fail closed.
+
+Focused deterministic-policy tests pass 58/58 and the negotiation/isolation
+suite passes 650/650.  The full suite is 2,098 passed with only the same three
+pre-existing failures recorded by the preceding negotiation commits: stale
+bargaining horizon-floor expectation plus bargaining and negotiation live-grid
+drift.  Exact current Test 2 stack reachability over 1,200 games passes with
+15,443 consulted states, 15,443 V3 trace changes, and 450 submitted wire
+changes; examples move `3,970,600 -> 1,199,999.99` while preserving
+`RejectOffer`.  Promotion configuration is Test 2 only:
+`GLEE_NEGO_TEST2_SUPPORT_V3=1`; V2 may remain `1` during the atomic transition
+or be explicitly set to `0`.  Keep Agent 5 on V1.  Do not change bargaining or
+persuasion.  Codex did not edit live overlays, processes, `arms.json`, or
+`control.json`; the deployment owner must arm the flag after the pushed code is
+loaded.
+
 ## 2026-08-25 07:57 IST — V2 isolated to Test 2; Agent 5 retained on V1
 
 Operator narrowed deployment after observing Agent 5 rising quickly: Test 2 is

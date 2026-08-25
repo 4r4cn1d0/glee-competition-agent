@@ -1939,23 +1939,33 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     # games and 0.549 after 77).  The rank hybrid keeps current seller text and
     # current hidden-cap1/unknown buyer behavior.
     action = _decide(game, cfg)
-    if selected == deterministic_negotiation.AGENT5_DEFAULT_V2:
+    if selected in (
+        deterministic_negotiation.AGENT5_DEFAULT_V2,
+        deterministic_negotiation.TEST2_SUPPORT_V3,
+    ):
         # The official hidden support identifies legal price bounds, but not a
         # better accept/reject counterfactual.  Preserve the complete baseline
         # decision and replace only an outgoing unknown-horizon seller price.
         action = nego_support_v2.apply_hidden_unknown_seller(game, action)
+    if selected == deterministic_negotiation.TEST2_SUPPORT_V3:
+        # Fresh Test 2 evidence found the same literal support violation in all
+        # seven hidden cap-10 seller openings.  V3 changes only a carried ask or
+        # rejection counter; the baseline decision remains the owner.
+        action = nego_support_v2.apply_hidden_cap10_seller(game, action)
     if selected == deterministic_negotiation.LEADER_REPLICA:
         return top_seller_message_clone.apply_deterministic(game, action)
     if selected in (
         deterministic_negotiation.AGENT5_DEFAULT,
         deterministic_negotiation.AGENT5_DEFAULT_V2,
+        deterministic_negotiation.TEST2_SUPPORT_V3,
     ):
         action = top_seller_message_clone.apply_deterministic(
             game, action, arm=selected)
     plan = dict(action.get("_plan") or {})
     plan["deterministic_policy"] = selected
-    support_owned = plan.get("component") == (
-        nego_support_v2.UNKNOWN_SELLER_COMPONENT
+    support_owned = plan.get("component") in (
+        nego_support_v2.UNKNOWN_SELLER_COMPONENT,
+        nego_support_v2.CAP10_SELLER_COMPONENT,
     )
     if support_owned:
         previous_source = plan.get("source")
@@ -1968,6 +1978,8 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
         agent5_gate = deterministic_negotiation.AGENT5_DEFAULT_GATE
     elif selected == deterministic_negotiation.AGENT5_DEFAULT_V2:
         agent5_gate = deterministic_negotiation.AGENT5_DEFAULT_V2_GATE
+    elif selected == deterministic_negotiation.TEST2_SUPPORT_V3:
+        agent5_gate = deterministic_negotiation.TEST2_SUPPORT_V3_GATE
     else:
         agent5_gate = None
     if agent5_gate is not None and runtime_flags.enabled("GLEE_TRACE_GATES"):

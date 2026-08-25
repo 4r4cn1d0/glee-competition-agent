@@ -21,6 +21,7 @@ def _deterministic_flags_off(monkeypatch):
     monkeypatch.setenv(policies.LEADER_REPLICA_FLAG, "0")
     monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "0")
     monkeypatch.setenv(policies.AGENT5_DEFAULT_V2_FLAG, "0")
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB", "0")
@@ -157,6 +158,27 @@ def _hidden_unknown_seller_game(
             "round": round_no,
         }
         game["valid_actions"] = {"type": "decision"}
+    return game
+
+
+def _hidden_cap10_seller_game(
+    *,
+    own: float = 100.0,
+    phase: str = "offer",
+    incoming: float = 98.0,
+    round_no: int = 1,
+    history: list[dict] | None = None,
+) -> dict:
+    game = _hidden_unknown_seller_game(
+        own=own,
+        phase=phase,
+        incoming=incoming,
+        round_no=round_no,
+        history=history,
+    )
+    state = game["game_state"]
+    state["horizon_known"] = True
+    state["max_rounds"] = 10
     return game
 
 
@@ -496,6 +518,18 @@ def test_agent5_v2_is_one_mutually_exclusive_whole_policy(monkeypatch):
     assert policies.mode() is None
 
 
+def test_test2_v3_is_one_mutually_exclusive_whole_policy(monkeypatch):
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    assert policies.mode() == policies.TEST2_SUPPORT_V3
+
+    # The predecessor may remain set during one atomic Test 2 overlay update.
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_V2_FLAG, "1")
+    assert policies.mode() == policies.TEST2_SUPPORT_V3
+
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    assert policies.mode() is None
+
+
 def test_agent5_v2_keeps_first_principles_hard_precedence(monkeypatch):
     monkeypatch.setenv(policies.AGENT5_DEFAULT_V2_FLAG, "1")
     game = _terminal_seller_game(complete=False, own=80.0)
@@ -703,3 +737,124 @@ def test_agent5_v2_complete_one_round_buyer_accepts_positive_cent(monkeypatch):
 
     assert action["decision"] == "AcceptOffer"
     assert action["_plan"]["source"] == policies.AGENT5_DEFAULT_V2
+
+
+@pytest.mark.parametrize(
+    ("own", "expected"),
+    [
+        (80.0, 119.99),
+        (100.0, 119.99),
+        (120.0, 149.99),
+        (10000.0, 11999.99),
+    ],
+)
+def test_test2_v3_hidden_cap10_seller_uses_support_ask(
+    monkeypatch, own, expected,
+):
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    game = _hidden_cap10_seller_game(own=own)
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["product_price"] == pytest.approx(expected)
+    assert action["_plan"]["source"] == policies.TEST2_SUPPORT_V3
+    assert action["_plan"]["component"] == (
+        nego_support_v2.CAP10_SELLER_COMPONENT
+    )
+
+
+def test_test2_v3_keeps_v2_unknown_seller_support(monkeypatch):
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    game = _hidden_unknown_seller_game(own=100.0)
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["product_price"] == pytest.approx(119.99)
+    assert action["_plan"]["source"] == policies.TEST2_SUPPORT_V3
+    assert action["_plan"]["component"] == (
+        nego_support_v2.UNKNOWN_SELLER_COMPONENT
+    )
+
+
+def test_test2_v3_preserves_hidden_cap10_seller_decision(monkeypatch):
+    game = _hidden_cap10_seller_game(
+        own=100.0,
+        phase="decision",
+        incoming=98.0,
+        round_no=5,
+    )
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_V2_FLAG, "1")
+    control = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_V2_FLAG, "0")
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    candidate = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert candidate["decision"] == control["decision"]
+    if control["decision"] == "RejectOffer":
+        assert candidate["product_price"] == pytest.approx(119.99)
+        assert candidate["_plan"]["component"] == (
+            nego_support_v2.CAP10_SELLER_COMPONENT
+        )
+
+
+def test_test2_v3_does_not_change_hidden_cap10_accept(monkeypatch):
+    game = _hidden_cap10_seller_game(
+        own=100.0,
+        phase="decision",
+        incoming=119.0,
+        round_no=10,
+    )
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["decision"] == "AcceptOffer"
+    assert "product_price" not in action
+
+
+def test_test2_v3_dead_hidden_cap10_seller_keeps_existing_policy(monkeypatch):
+    game = _hidden_cap10_seller_game(own=150.0)
+    control = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    candidate = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert _public(candidate) == _public(control)
+    assert candidate["_plan"]["component"] == "current_seller"
+
+
+def test_test2_v3_cap10_support_price_bypasses_downstream_guards(monkeypatch):
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    monkeypatch.setenv("GLEE_NEGO_HIDDEN_FLOOR", "1.99")
+    monkeypatch.setenv("GLEE_NEGO_OPEN_CLAIM_ALWAYS", "1")
+    monkeypatch.setenv("GLEE_NEGO_ZOPA_CLAMP", "1")
+    game = _hidden_cap10_seller_game(own=100.0)
+
+    raw = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    wire = coerce(copy.deepcopy(raw), copy.deepcopy(game))
+
+    assert raw["product_price"] == pytest.approx(119.99)
+    assert wire["product_price"] == raw["product_price"]
+
+
+@pytest.mark.parametrize(
+    ("offered", "expected"),
+    [(119.99, "AcceptOffer"), (120.0, "RejectOffer")],
+)
+def test_test2_v3_complete_one_round_buyer_uses_positive_boundary(
+    monkeypatch, offered, expected,
+):
+    monkeypatch.setenv(policies.TEST2_SUPPORT_V3_FLAG, "1")
+    game = _buyer_game(
+        complete=True,
+        known=True,
+        cap=1,
+        own=120.0,
+        other=100.0,
+        offer=offered,
+        round_no=1,
+    )
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["decision"] == expected
+    assert action["_plan"]["source"] == policies.TEST2_SUPPORT_V3

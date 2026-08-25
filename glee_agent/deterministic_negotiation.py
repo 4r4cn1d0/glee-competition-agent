@@ -2,12 +2,12 @@
 
 The competition selects the account's best *complete* agent, so these flags
 select complete negotiation components rather than per-game arms.  None hashes
-a game id or randomizes an action.  The first three retain the current seller
-decision/price policy, which was the winning role in the motivating 63-game
-official window (+47.9 rating total); V2 changes only support-inconsistent
-seller prices and preserves the seller decision.  They otherwise differ in
-buyer coverage and whether they include the observed leader's seller-message
-table.
+a game id or randomizes an action.  The leader replica and V1 retain the current
+seller decision/price policy, which was the winning role in the motivating
+63-game official window (+47.9 rating total).  V2 and Test 2 V3 replace only
+support-inconsistent seller prices and preserve the seller decision.  The
+policies otherwise differ in buyer coverage and whether they include the
+observed leader's seller-message table.
 
 ``rank_hybrid_v1`` is the evidence-bounded portfolio alternative.  It copies
 the frozen 7aidara buyer policy in every complete-information game and in
@@ -54,9 +54,20 @@ cent above the greatest feasible seller type.  Bound inference still has first
 precedence.  Both additions are deterministic and use no outcome-conditioned
 continuation model.
 
-More than one whole-policy flag being on is a configuration error and
-deliberately selects none. Flag-off behavior is the pre-existing negotiation
-stack.
+``test2_support_v3`` is the Test 2-only deterministic successor requested after
+the human-strategy review.  It keeps the complete V2 matrix and extends the same
+support-grid seller ask to hidden cap-10 games.  It does not generalize the
+terminal any-positive acceptance rule to nonfinal hidden decisions: that broad
+change previously measured negative.  The selector is default OFF and mutually
+exclusive with every unrelated policy, so merging it cannot move Agent 5 or the
+live Test 2 policy until deployment explicitly enables it on Test 2.  Its V2
+predecessor may remain set during that atomic migration.
+
+More than one unrelated whole-policy flag being on is a configuration error and
+deliberately selects none.  The sole migration exception is V2 plus its Test 2
+V3 successor: V3 wins so the live overlay can be changed atomically without a
+momentary fall-through to the legacy stack.  Flag-off behavior is the
+pre-existing negotiation stack.
 """
 
 from __future__ import annotations
@@ -71,6 +82,7 @@ RANK_HYBRID_FLAG = "GLEE_NEGO_RANK_HYBRID_V1"
 LEADER_REPLICA_FLAG = "GLEE_NEGO_LEADER_REPLICA_V1"
 AGENT5_DEFAULT_FLAG = "GLEE_NEGO_AGENT5_DEFAULT_V1"
 AGENT5_DEFAULT_V2_FLAG = "GLEE_NEGO_AGENT5_DEFAULT_V2"
+TEST2_SUPPORT_V3_FLAG = "GLEE_NEGO_TEST2_SUPPORT_V3"
 
 RANK_HYBRID = "rank_hybrid_v1"
 LEADER_REPLICA = "leader_replica_v1"
@@ -78,26 +90,32 @@ AGENT5_DEFAULT = "agent5_default_v1"
 AGENT5_DEFAULT_GATE = "agent5_default_v1"
 AGENT5_DEFAULT_V2 = "agent5_default_v2"
 AGENT5_DEFAULT_V2_GATE = "agent5_default_v2"
+TEST2_SUPPORT_V3 = "test2_support_v3"
+TEST2_SUPPORT_V3_GATE = "test2_support_v3"
 
 WHOLE_POLICY_FLAGS = (
     RANK_HYBRID_FLAG,
     LEADER_REPLICA_FLAG,
     AGENT5_DEFAULT_FLAG,
     AGENT5_DEFAULT_V2_FLAG,
+    TEST2_SUPPORT_V3_FLAG,
 )
-_AGENT5_POLICIES = (AGENT5_DEFAULT, AGENT5_DEFAULT_V2)
+_AGENT5_POLICIES = (AGENT5_DEFAULT, AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3)
 
 __all__ = [
     "RANK_HYBRID_FLAG",
     "LEADER_REPLICA_FLAG",
     "AGENT5_DEFAULT_FLAG",
     "AGENT5_DEFAULT_V2_FLAG",
+    "TEST2_SUPPORT_V3_FLAG",
     "RANK_HYBRID",
     "LEADER_REPLICA",
     "AGENT5_DEFAULT",
     "AGENT5_DEFAULT_GATE",
     "AGENT5_DEFAULT_V2",
     "AGENT5_DEFAULT_V2_GATE",
+    "TEST2_SUPPORT_V3",
+    "TEST2_SUPPORT_V3_GATE",
     "WHOLE_POLICY_FLAGS",
     "mode",
     "buyer_action",
@@ -110,14 +128,20 @@ __all__ = [
 
 def mode() -> str | None:
     """Return exactly one selected deterministic policy, else fail closed."""
+    v3_enabled = runtime_flags.enabled(TEST2_SUPPORT_V3_FLAG)
+    policy_flags = [
+        (RANK_HYBRID_FLAG, RANK_HYBRID),
+        (LEADER_REPLICA_FLAG, LEADER_REPLICA),
+        (AGENT5_DEFAULT_FLAG, AGENT5_DEFAULT),
+    ]
+    # V3 is a strict V2 superset.  Ignore the predecessor only during this one
+    # declared migration pair; every unrelated collision still fails closed.
+    if not v3_enabled:
+        policy_flags.append((AGENT5_DEFAULT_V2_FLAG, AGENT5_DEFAULT_V2))
+    policy_flags.append((TEST2_SUPPORT_V3_FLAG, TEST2_SUPPORT_V3))
     selected = [
         policy
-        for flag, policy in (
-            (RANK_HYBRID_FLAG, RANK_HYBRID),
-            (LEADER_REPLICA_FLAG, LEADER_REPLICA),
-            (AGENT5_DEFAULT_FLAG, AGENT5_DEFAULT),
-            (AGENT5_DEFAULT_V2_FLAG, AGENT5_DEFAULT_V2),
-        )
+        for flag, policy in policy_flags
         if runtime_flags.enabled(flag)
     ]
     if len(selected) != 1:
@@ -244,7 +268,7 @@ def direct_action(game: dict, selected: str | None = None) -> dict | None:
                 plan["gates_fired"] = gates
             result["_plan"] = plan
             return result
-    if selected == AGENT5_DEFAULT_V2:
+    if selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3):
         action = nego_support_v2.terminal_buyer_action(game)
         if action is not None:
             result = dict(action)
@@ -253,8 +277,9 @@ def direct_action(game: dict, selected: str | None = None) -> dict | None:
             plan["component"] = nego_support_v2.TERMINAL_BUYER_COMPONENT
             if runtime_flags.enabled("GLEE_TRACE_GATES"):
                 gates = list(plan.get("gates_fired") or [])
-                if AGENT5_DEFAULT_V2_GATE not in gates:
-                    gates.append(AGENT5_DEFAULT_V2_GATE)
+                gate = _agent5_gate(selected)
+                if gate is not None and gate not in gates:
+                    gates.append(gate)
                 plan["gates_fired"] = gates
             result["_plan"] = plan
             return result
@@ -267,8 +292,11 @@ def matches_wire(game: dict, wire: dict) -> bool:
     if not isinstance(wire, dict):
         return False
     selected = mode()
-    if (selected == AGENT5_DEFAULT_V2
+    if (selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3)
             and nego_support_v2.matches_hidden_unknown_seller_wire(game, wire)):
+        return True
+    if (selected == TEST2_SUPPORT_V3
+            and nego_support_v2.matches_hidden_cap10_seller_wire(game, wire)):
         return True
     expected = direct_action(game, selected)
     if not isinstance(expected, dict):
@@ -284,6 +312,8 @@ def _agent5_gate(selected: str) -> str | None:
         return AGENT5_DEFAULT_GATE
     if selected == AGENT5_DEFAULT_V2:
         return AGENT5_DEFAULT_V2_GATE
+    if selected == TEST2_SUPPORT_V3:
+        return TEST2_SUPPORT_V3_GATE
     return None
 
 
