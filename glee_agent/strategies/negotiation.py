@@ -54,6 +54,21 @@ HI_UNKNOWN_BUYER_WALK_ACCEPT_GATE = (
     "hi_unknown_buyer_walk_accept_v1"
 )
 
+# Default-off deterministic horizon correction for Test 2's complete V3
+# negotiation policy.  The server labels this horizon unknown, but 1,225/1,225
+# observed games that reached it terminated after the seller/P1 offer on round
+# 99.  At that node a buyer/P2 rejection or walk has payoff zero: a standing
+# offer leaving at least one cent therefore strictly dominates it.  This is not
+# the measured-negative broad hidden/unknown accept-all-profitable policy;
+# rounds 1--98 retain V3's continuation logic byte-for-byte.
+TEST2_UNKNOWN_R99_ACCEPT_FLAG = (
+    "GLEE_NEGO_TEST2_UNKNOWN_R99_ACCEPT_V1"
+)
+TEST2_UNKNOWN_R99_ACCEPT_GATE = (
+    "test2_unknown_r99_accept_v1"
+)
+UNKNOWN_HORIZON_TERMINAL_ROUND = 99
+
 # The measured cohort used the exact current stack.  Refuse a mixed/randomized
 # policy so a future activation cannot silently become a renamed version of an
 # older arm or an unanalysed factorial treatment.
@@ -2029,6 +2044,107 @@ def _maybe_hi_unknown_buyer_walk_accept(
     return {"decision": "AcceptOffer", "_plan": result_plan}
 
 
+def _maybe_test2_unknown_r99_accept(game: dict, action: dict) -> dict:
+    """Accept Test 2 V3's profitable standing offer at the true r99 cap.
+
+    This is backward induction at an identified terminal node, not an estimate
+    of an unplayed continuation.  Two concrete Agent 5 failures exposed the
+    dominated baseline action: a 12,000 buyer rejected 11,000 and a 100 buyer
+    rejected 89 on round 99, producing zero instead of 1,000 and 11.  Their
+    diagnostic same-cell percentiles would move from .0594 to .4196 and .0634
+    to .7254 respectively; those CDF magnitudes are not causal estimates, while
+    the positive-payoff direction is pointwise identified.
+
+    The guard owns only the canonical seller/P1 -> buyer/P2 decision at round
+    99 under Test 2's selected V3 policy.  Complete and hidden information are
+    both eligible because the terminal dominance proof uses only the buyer's
+    visible value and the standing offer.  A one-cent boundary, exact offer
+    provenance, and the preserved V3 plan source make malformed states fail
+    closed.  With the flag off the selected action is returned unchanged.
+    """
+    selected = deterministic_negotiation.mode()
+    if (selected != deterministic_negotiation.TEST2_SUPPORT_V3
+            or not isinstance(action, dict)
+            or action.get("decision") not in ("RejectOffer", "WalkAway")):
+        return action
+
+    plan_data = action.get("_plan")
+    if (not isinstance(plan_data, dict)
+            or plan_data.get("source") != selected
+            or plan_data.get("component") != "observed_leader_buyer"):
+        return action
+
+    public_keys = {
+        key for key in action if not str(key).startswith("_")
+    }
+    if (not public_keys.issubset({"decision", "product_price", "message"})
+            or "decision" not in public_keys):
+        return action
+
+    state = game.get("game_state")
+    valid_actions = game.get("valid_actions")
+    if (not isinstance(state, dict)
+            or not isinstance(valid_actions, dict)
+            or game.get("game_family") != "negotiation"
+            or state.get("game_family") not in (None, "negotiation")
+            or valid_actions.get("type") != "decision"
+            or game.get("phase") not in (None, "decision")
+            or state.get("phase") not in (None, "decision")
+            or not isinstance(state.get("complete_information"), bool)
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None
+            or not isinstance(state.get("messages_allowed"), bool)):
+        return action
+
+    me = state.get("current_player")
+    if (me != "player_2" or game.get("your_player") != me
+            or state.get("player_2_role") != "buyer"
+            or state.get("player_1_role") != "seller"):
+        return action
+
+    round_number = _strict_finite_scalar(state.get("round"))
+    own_value = _strict_finite_scalar(state.get("player_2_value"))
+    standing = state.get("last_offer")
+    if (round_number != float(UNKNOWN_HORIZON_TERMINAL_ROUND)
+            or own_value is None or own_value <= 0.0
+            or not isinstance(standing, dict)
+            or standing.get("from_player") != "player_1"):
+        return action
+    offer_round = _strict_finite_scalar(standing.get("round"))
+    offer_price = _strict_finite_scalar(standing.get("price"))
+    buyer_gain = own_value - offer_price if offer_price is not None else None
+    if (offer_round != round_number or offer_price is None
+            or offer_price <= 0.0 or buyer_gain is None
+            # Preserve the literal cent boundary despite binary-float noise.
+            or buyer_gain < 0.01 - 1e-9):
+        return action
+
+    # Consult the behavior flag only after proving the exact structural node.
+    # This keeps default-OFF behavior inert and reachability counts meaningful.
+    if not runtime_flags.enabled(TEST2_UNKNOWN_R99_ACCEPT_FLAG):
+        return action
+
+    result_plan = dict(plan_data)
+    result_plan[TEST2_UNKNOWN_R99_ACCEPT_GATE] = {
+        "eligible": True,
+        "mode": "deterministic",
+        "baseline_decision": action["decision"],
+        "information": (
+            "complete" if state["complete_information"] else "hidden"
+        ),
+        "round": UNKNOWN_HORIZON_TERMINAL_ROUND,
+        "offer_price": offer_price,
+        "own_value": own_value,
+        "buyer_gain": buyer_gain,
+    }
+    if _trace_enabled():
+        result_plan["gates_fired"] = list(
+            result_plan.get("gates_fired") or []
+        )
+        _gate(result_plan, TEST2_UNKNOWN_R99_ACCEPT_GATE)
+    return {"decision": "AcceptOffer", "_plan": result_plan}
+
+
 def decide(game: dict, cfg) -> dict:
     """Choose a default-off deterministic component or the existing stack.
 
@@ -2065,6 +2181,7 @@ def decide(game: dict, cfg) -> dict:
             except Exception:
                 pass              # a message is never worth risking the move
     action = _maybe_complete_unknown_late_stasis(game, action)
+    action = _maybe_test2_unknown_r99_accept(game, action)
     return _maybe_hi_unknown_buyer_walk_accept(game, action)
 
 
