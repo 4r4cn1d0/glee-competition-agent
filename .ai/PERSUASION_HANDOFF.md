@@ -1,9 +1,33 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 20:46 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 21:15 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 21:15 Test 4 strict-edge audit — mechanism clean, effect decision blocked
+
+- The complete post-`Tcfg=1787656144.0263646` Test 4 cohort through
+  `1787672720.3951201` contains 576 persuasion assignments: 286 seller and 290
+  buyer. Five hundred seventy-three are terminal and three buyer games remain
+  active at rounds 13, 3, and 2. There were no timeouts, strategy errors,
+  abandoned games, or immediate terminals. The one carry-in game is retained.
+- Exact replay covered all `11,477/11,477` turns. The 10,652 nonfires were
+  byte-identical to control; all 825 changes had one legal strict-edge gate and
+  no V1, legacy A/B, component, or multi-gate overlap. Truth is
+  `278/278/278` eligible/fired/changed in 30 games; positive prose is
+  `559/535/535` in 29 games, with 24 correct truth preemptions; buyer V2 is
+  `12/12/12` in two games. Truth/prose have passed first-20 audit coverage;
+  buyer V2 remains short at 12/20.
+- Authenticated aggregate display movement is concerning but not causal:
+  Test 4 moved from `2376.94/8,502` at the first post-boundary snapshot to
+  `2302.40/9,072`, or -74.54 over 570 count advances, while the four unchanged
+  slots averaged -16.10. Known roughly +/-125 identical-agent noise, differing
+  game mix, zero authenticated per-game rating joins, and three unresolved
+  games block a promotion or rejection. The account-best Agent 5 remains rank
+  4 at 2424.25, 52.32 below third. Preserve the challenger pending valid joins;
+  do not promote it to Agent 5 and do not infer harm from selected fires or raw
+  payoff.
 
 ## 20:46 Test 2 replacement loaded — activation still waiting for zero persuasion games
 
