@@ -37,6 +37,36 @@ OUT = os.path.join(REPO, "models", "percentile_cdf_v3.json")
 MAX_PER_CELL = 2000
 
 
+def _cap_cell_distribution(values, limit=MAX_PER_CELL):
+    """Return a sorted, deterministic rank-preserving sample of one cell.
+
+    Saturated cells used to be written as ``sorted(values)[-limit:]``.  That
+    retained only the largest payoffs, so a 106,802-game refit removed every
+    zero from some bargaining cells and moved their observed minimum to 0.47.
+    An ordinary 0.48 payoff then appeared to be near the third percentile even
+    though the uncensored checked-in distribution placed it near the median.
+
+    Evenly spaced order statistics cap file size while retaining both tails,
+    atoms such as zero, and the empirical rank distribution.  Integer index
+    arithmetic makes the selected sample reproducible across Python versions.
+    """
+    if limit <= 0:
+        raise ValueError("cell sample limit must be positive")
+    ordered = sorted(values)
+    count = len(ordered)
+    if count <= limit:
+        return ordered
+    if limit == 1:
+        return [ordered[count // 2]]
+
+    source_span = count - 1
+    sample_span = limit - 1
+    return [
+        ordered[(index * source_span + sample_span // 2) // sample_span]
+        for index in range(limit)
+    ]
+
+
 def barg_cell(gs, role_seat):
     return "|".join(str(x) for x in (
         "bargaining", gs.get("money_to_divide"), gs.get("max_rounds"),
@@ -117,8 +147,9 @@ def main() -> int:
                                 gs.get(f"{them}_role"), gs)].append(
                     round(theirs / base, 4))
     doc = {"_schema": "glee.percentile_cdf/v3", "_games": games,
-           "cells": {k: sorted(v)[-MAX_PER_CELL:] if len(v) > MAX_PER_CELL
-                     else sorted(v)
+           "_cell_cap": {"max_samples": MAX_PER_CELL,
+                         "method": "evenly_spaced_order_statistics"},
+           "cells": {k: _cap_cell_distribution(v)
                      for k, v in cells.items() if len(v) >= 25}}
     tmp = OUT + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
