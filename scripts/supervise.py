@@ -189,7 +189,8 @@ AGENT_MAX_TIME = 900
 #: Live control surface, re-read every loop. Nothing here needs a code change or
 #: a supervisor restart.
 #:   {"shift_seconds": 900,
-#:    "disabled": ["conceder"],        # drain at next boundary, do not relaunch
+#:    "disabled": ["conceder"],        # stop at boundary, do not relaunch
+#:    "drain_now": ["composite"],      # runner cooperatively banks now
 #:    "cycle_now": ["composite"]}      # apply arms.json at next boundary
 CONTROL_PATH = os.path.join(REPO, "control.json")
 
@@ -611,7 +612,10 @@ def main() -> int:
         for agent in agents:
             if agent.probe in disabled:
                 if agent.alive:
-                    continue          # let its shift finish; do not signal it
+                    # A drain_now request is observed cooperatively by code-loaded
+                    # runners.  Ordinary disabled slots and legacy processes use
+                    # their max-time boundary.  Never signal either kind here.
+                    continue
                 if agent.proc is not None:
                     print(f"  [{time.strftime('%H:%M:%S')}] {agent.probe} disabled via "
                           f"control.json; leaving it down", flush=True)

@@ -5,18 +5,18 @@
     python scripts/fleet.py set composite GLEE_NEGO_SPLIT_CANDIDATE=1
     python scripts/fleet.py clear conceder
     python scripts/fleet.py stop randomized
+    python scripts/fleet.py bank composite
     python scripts/fleet.py start randomized
     python scripts/fleet.py llm composite off
     python scripts/fleet.py shift 600
     python scripts/fleet.py safe-restart   # supervisor code update, interlocked
 
-Everything is applied at the agent's next SHIFT BOUNDARY, never by signalling a
-running agent. That is not a limitation to work around, it is the safety
-property: measured live, a healthy agent holds 6-9 games at all times and never
-reaches zero, so interrupting one abandons real games. Abandoned games hit the
-server's 120s turn clock, and three of them suspend the agent's queue joins for
-30 minutes. The SDK's own drain (--max-time) stops starting games, finishes the
-in-flight ones, and exits cleanly. Worst-case latency is one shift.
+Policy, family, LLM, and launch-duration changes apply at the agent's next SHIFT
+BOUNDARY.  ``stop`` keeps that boundary behavior for ordinary rotations and
+activity-defense shifts.  ``bank`` is the fast safe path: a code-loaded runner
+observes the atomic drain request during its normal poll, enters the SDK's own
+lossless drain, and stays down.  No path signals a busy agent: measured live, a
+healthy agent holds 6-9 games, and interrupting it abandons scored games.
 """
 
 from __future__ import annotations
@@ -25,11 +25,20 @@ import json
 import os
 import subprocess
 import sys
+from contextlib import contextmanager
+
+import fcntl
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARMS = os.path.join(REPO, "arms.json")
 CONTROL = os.path.join(REPO, "control.json")
+CONTROL_LOCK = os.path.join(REPO, "logs", "control.lock")
 STATE = os.path.join(REPO, "logs", "supervisor.json")
+FLEET_SLOTS = frozenset({"champion", "hardliner", "conceder", "randomized", "composite"})
+
+
+class ControlUpdateError(RuntimeError):
+    """Raised when a control mutation cannot preserve the existing document."""
 
 
 def _read(path: str, default):
@@ -48,11 +57,91 @@ def _write(path: str, data) -> None:
     os.replace(tmp, path)          # atomic: the supervisor never sees a half file
 
 
+def _read_control_for_update() -> dict:
+    try:
+        with open(CONTROL, encoding="utf-8") as handle:
+            control = json.load(handle)
+    except FileNotFoundError:
+        return {}
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ControlUpdateError(
+            f"cannot safely read existing {CONTROL}: {type(exc).__name__}: {exc}"
+        ) from exc
+    if not isinstance(control, dict):
+        raise ControlUpdateError(f"cannot safely update {CONTROL}: root is not an object")
+    return control
+
+
+@contextmanager
+def _edit_control():
+    """Serialize control.json read-modify-write transactions across operators."""
+    os.makedirs(os.path.dirname(CONTROL_LOCK), exist_ok=True)
+    with open(CONTROL_LOCK, "a+", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        control = _read_control_for_update()
+        try:
+            yield control
+        except Exception:
+            raise
+        else:
+            _write(CONTROL, control)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _status_label(
+    probe: str,
+    *,
+    alive: bool,
+    disabled: set[str],
+    drain_now: set[str],
+) -> str:
+    if probe in drain_now and alive:
+        return "BANKING"
+    if probe in drain_now and probe in disabled:
+        return "BANKED"
+    if probe in disabled and alive:
+        return "STOP-QUEUED"
+    if probe in disabled:
+        return "DISABLED"
+    return "up" if alive else "down"
+
+
+def _pid_alive(pid) -> bool:
+    if not pid:
+        return False
+    return subprocess.run(
+        ["ps", "-p", str(pid)], capture_output=True
+    ).returncode == 0
+
+
+def _live_banking_slots(control: dict, state: dict) -> list[str]:
+    agents = state.get("agents") or {}
+    return sorted(
+        probe for probe in set(control.get("drain_now") or [])
+        if _pid_alive(agents.get(probe))
+    )
+
+
+def _running_slot_command(probe: str) -> tuple[int | None, str]:
+    state = _read(STATE, {})
+    pid = (state.get("agents") or {}).get(probe)
+    if not _pid_alive(pid):
+        return None, ""
+    command = subprocess.run(
+        ["ps", "-o", "command=", "-p", str(pid)],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return int(pid), command
+
+
 def status() -> int:
     arms, control = _read(ARMS, {}), _read(CONTROL, {})
     state = _read(STATE, {})
     shift = control.get("shift_seconds", 900)
     disabled = set(control.get("disabled") or [])
+    drain_now = set(control.get("drain_now") or [])
     running = subprocess.run(["pgrep", "-f", "run_agent.py --probe"],
                              capture_output=True, text=True).stdout.split()
     print(f"shift {shift}s   supervisor {'up' if state.get('supervisor_pid') else 'down'}"
@@ -65,7 +154,9 @@ def status() -> int:
             out = subprocess.run(["ps", "-o", "etime=", "-p", str(pid)],
                                  capture_output=True, text=True).stdout.strip()
             age = out or "-"
-        label = "DISABLED" if probe in disabled else ("up" if alive else "down")
+        label = _status_label(
+            probe, alive=bool(alive), disabled=disabled, drain_now=drain_now
+        )
         flags = " ".join(f"{k}={v}" for k, v in sorted((arms.get(probe) or {}).items()))
         print(f"  {probe:12s} {label:10s} {age:>6s}  {flags or '<control>'}")
     for probe in sorted(set(arms) - set(state.get('agents') or {})):
@@ -99,23 +190,51 @@ def clear_flags(probe: str) -> int:
 
 
 def enable(probe: str, on: bool) -> int:
-    control = _read(CONTROL, {})
-    disabled = set(control.get("disabled") or [])
-    disabled.discard(probe) if on else disabled.add(probe)
-    control["disabled"] = sorted(disabled)
-    _write(CONTROL, control)
+    with _edit_control() as control:
+        disabled = set(control.get("disabled") or [])
+        disabled.discard(probe) if on else disabled.add(probe)
+        control["disabled"] = sorted(disabled)
+        if on:
+            drain_now = set(control.get("drain_now") or [])
+            drain_now.discard(probe)
+            control["drain_now"] = sorted(drain_now)
     if on:
-        print(f"{probe}: enabled — the supervisor relaunches it within ~30s")
+        print(f"{probe}: enabled and any bank latch cleared — the supervisor "
+              f"relaunches it within ~30s")
     else:
-        print(f"{probe}: will drain its current games and stay down "
-              f"(no games abandoned)")
+        print(f"{probe}: stop queued for its normal shift boundary; it will drain "
+              f"current games and stay down (no games abandoned)")
+    return 0
+
+
+def bank(probe: str) -> int:
+    """Request the runner's immediate SDK-native drain and disable relaunch."""
+    if probe not in FLEET_SLOTS:
+        print(f"REFUSED: unknown physical slot {probe!r}; expected one of "
+              f"{', '.join(sorted(FLEET_SLOTS))}.", file=sys.stderr)
+        return 1
+    pid, command = _running_slot_command(probe)
+    if pid and "--max-time" not in command:
+        print(f"REFUSED: {probe} pid {pid} is an unbounded legacy runner and "
+              f"cannot prove a safe fallback boundary. Leave it untouched until "
+              f"a bounded code-loaded process replaces it.", file=sys.stderr)
+        return 1
+    with _edit_control() as control:
+        disabled = set(control.get("disabled") or [])
+        drain_now = set(control.get("drain_now") or [])
+        disabled.add(probe)
+        drain_now.add(probe)
+        control["disabled"] = sorted(disabled)
+        control["drain_now"] = sorted(drain_now)
+    print(f"{probe}: bank requested — a code-loaded runner stops queueing on its "
+          f"next poll, completes every in-flight game, and stays down. An older "
+          f"runner safely falls back to its normal shift boundary.")
     return 0
 
 
 def shift(seconds: int) -> int:
-    control = _read(CONTROL, {})
-    control["shift_seconds"] = int(seconds)
-    _write(CONTROL, control)
+    with _edit_control() as control:
+        control["shift_seconds"] = int(seconds)
     print(f"shift set to {seconds}s — applies to each agent's NEXT launch.\n"
           f"  shorter = changes land sooner, but each rotation spends ~1-3 min\n"
           f"  draining in-flight games instead of starting new ones.")
@@ -130,16 +249,15 @@ def _slot_setting(key: str, probe: str, value: str | None, label: str) -> int:
     Flags in arms.json are the live half of the control surface; this is the half
     that needs a rotation.
     """
-    control = _read(CONTROL, {})
-    table = dict(control.get(key) or {})
-    if value is None or value == "-":
-        table.pop(probe, None)
-        print(f"{probe}: {label} override cleared — reverts to the default at next launch.")
-    else:
-        table[probe] = value
-        print(f"{probe}: {label} = {value} — applies at next launch.")
-    control[key] = table
-    _write(CONTROL, control)
+    with _edit_control() as control:
+        table = dict(control.get(key) or {})
+        if value is None or value == "-":
+            table.pop(probe, None)
+            print(f"{probe}: {label} override cleared — reverts to the default at next launch.")
+        else:
+            table[probe] = value
+            print(f"{probe}: {label} = {value} — applies at next launch.")
+        control[key] = table
     return 0
 
 
@@ -275,17 +393,24 @@ def safe_restart() -> int:
     """
     import signal
     import time
-    control = _read(CONTROL, {})
+    # A malformed control must not erase the very drain interlock that keeps a
+    # banked agent's in-flight games safe.
+    control = _read_control_for_update()
     pending = control.get("cycle_now") or []
     if pending:
         print(f"REFUSED: cycle_now pending for {pending} — wait for the boundary to clear it.")
+        return 1
+    state = _read(STATE, {})
+    live_banks = _live_banking_slots(control, state)
+    if live_banks:
+        print(f"REFUSED: active bank drain for {live_banks} — restarting the "
+              f"supervisor could interrupt scored in-flight games.")
         return 1
     drainers = subprocess.run(["pgrep", "-f", "fleet.py drain"],
                               capture_output=True, text=True).stdout.split()
     if len(drainers) > 1:            # our own pgrep matches once
         print("REFUSED: a drainer is running — a restart now would cut it mid-flight.")
         return 1
-    state = _read(STATE, {})
     for probe, pid in (state.get("agents") or {}).items():
         if not pid:
             continue
@@ -389,6 +514,8 @@ def main() -> int:
         return clear_flags(rest[0])
     if cmd == "stop" and rest:
         return enable(rest[0], False)
+    if cmd == "bank" and rest:
+        return bank(rest[0])
     if cmd == "start" and rest:
         return enable(rest[0], True)
     if cmd == "shift" and rest:
@@ -409,4 +536,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except ControlUpdateError as exc:
+        print(f"REFUSED: {exc}", file=sys.stderr)
+        raise SystemExit(1)

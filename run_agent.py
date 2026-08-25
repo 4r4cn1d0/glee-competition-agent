@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 import time
 
@@ -20,11 +21,11 @@ from glee_sdk import (
     CompetitionClosedError,
     CompetitionNotOpenError,
     GleeAPIError,
-    GleeClient,
 )
 
 from glee_agent import llm
 from glee_agent.config import Config
+from glee_agent.fleet_stop import CooperativeGleeClient, CooperativeStopLimit
 from glee_agent.gamelog import GameLog
 from glee_agent.probes import PROBES, make_probe
 
@@ -80,8 +81,17 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    client = (GleeClient(api_key=cfg.api_key, base_url=cfg.base_url)
-              if cfg.base_url else GleeClient(api_key=cfg.api_key))
+    stop_limit = CooperativeStopLimit(
+        cfg.max_time,
+        # GLEE_PROBE is the physical fleet slot.  args.probe is the policy and
+        # can be overridden (Agent 5's composite slot currently runs hardliner),
+        # so using args.probe could stop the wrong account or miss the right one.
+        physical_slot=os.environ.get("GLEE_PROBE"),
+    )
+    client = (CooperativeGleeClient(
+                  api_key=cfg.api_key, base_url=cfg.base_url, stop_limit=stop_limit)
+              if cfg.base_url else
+              CooperativeGleeClient(api_key=cfg.api_key, stop_limit=stop_limit))
 
     try:
         # /stats is not competition-gated, so this proves the key works even
@@ -99,11 +109,17 @@ def main() -> int:
 
     exit_code = 0
     try:
+        # run() joins every requested queue before its first limit comparison.
+        # Preflight the live bank bit so a draining slot launched during a
+        # supervisor/control race never joins even briefly.
+        if stop_limit.control_stop_requested():
+            logger.info("Bank was already requested before queueing; exiting cleanly.")
+            return 0
         client.run(strategy,
                    game_families=list(cfg.families),
                    poll_interval=cfg.poll_interval,
                    max_games=cfg.max_games,
-                   max_time=cfg.max_time,
+                   max_time=stop_limit,
                    concurrency=cfg.concurrency)
     except CompetitionNotOpenError as exc:
         logger.warning("Setup is fine — the competition opens at %s",
@@ -125,7 +141,15 @@ def main() -> int:
             logger.warning("Queue joins suspended (crash-loop cooldown). Waiting "
                            "in place and retrying every 60s: %s", exc)
             while True:
-                time.sleep(60)
+                # A disabled, queue-banned slot normally holds no games.  Check
+                # once per second during the old 60s sleep so fleet stop remains
+                # prompt and we never probe/rejoin after the operator stopped it.
+                for _ in range(60):
+                    if stop_limit.control_stop_requested():
+                        logger.info("Fleet stop requested during queue cooldown; "
+                                    "exiting without rejoining.")
+                        return 0
+                    time.sleep(1)
                 try:
                     client.queue(cfg.families[0])
                     client.leave_queue()
