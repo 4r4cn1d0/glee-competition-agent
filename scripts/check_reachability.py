@@ -96,6 +96,13 @@ def _p_complete_ultimatum(game, p):
             and state.get("max_rounds") == 1)
 
 
+def _p_deterministic_first_principles(game, p):
+    """Structural scope of the non-randomized negotiation component."""
+    from glee_agent import first_principles
+
+    return first_principles.deterministic_eligible(game)
+
+
 def _p_open_claim(game, p):
     from glee_agent.actions import (
         _complete_negotiation_zopa,
@@ -583,6 +590,9 @@ KNOWN = {
     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1": (
         "negotiation", ("complete_unknown_late_stasis_v1",),
         _p_complete_unknown_late_stasis),
+    "GLEE_NEGO_DETERMINISTIC_FP_V1": (
+        "negotiation", ("deterministic_first_principles_v1",),
+        _p_deterministic_first_principles),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),

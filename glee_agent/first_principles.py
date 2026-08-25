@@ -49,6 +49,12 @@ SCALES = (1.0, 100.0, 10000.0)
 #: acceptance guarantee; the full first-turn cohort is still inconclusive.
 EPS = 0.01
 
+# Deterministic promotion switch for the same coherent policy.  Unlike the
+# historical Test 4 measurement flags below, this flag never hashes a game id:
+# every structurally designed move is owned when it is enabled.  Default OFF.
+DETERMINISTIC_FLAG = "GLEE_NEGO_DETERMINISTIC_FP_V1"
+DETERMINISTIC_GATE = "deterministic_first_principles_v1"
+
 #: Share at which we take an early offer rather than wait for our own terminal
 #: turn.  Owns exactly one decision.  Set to 1 - 0.0057, the measured
 #: walk-away rate in cap-10 complete-information games.
@@ -79,6 +85,10 @@ def scale_of(value: float) -> float | None:
 
 def enabled() -> bool:
     return runtime_flags.enabled("GLEE_NEGO_FIRST_PRINCIPLES")
+
+
+def deterministic_enabled() -> bool:
+    return runtime_flags.enabled(DETERMINISTIC_FLAG)
 
 
 def treatment_assignment(game_id: object) -> bool | None:
@@ -154,9 +164,40 @@ DESIGNED = {
 }
 
 
+def _eligible(game: dict) -> bool:
+    """Whether ``game`` is in a designed cell, independent of arm selection."""
+    if game.get("game_family") != "negotiation":
+        return False
+    c = cell(game)
+    if c is None:
+        return False
+    horizon, complete, i_am_seller, my_value, _ = c
+    if (horizon, complete, i_am_seller) not in DESIGNED:
+        return False
+    return scale_of(my_value) is not None
+
+
+def deterministic_eligible(game: dict) -> bool:
+    """Public reachability predicate for the deterministic complete component."""
+    try:
+        return _eligible(game)
+    except Exception:
+        return False
+
+
+def deterministic_owns(game: dict) -> bool:
+    """True when the non-randomized promotion flag owns this designed move."""
+    try:
+        return deterministic_enabled() and _eligible(game)
+    except Exception:
+        return False
+
+
 def owns(game: dict) -> bool:
     """True when this module, and nothing downstream, sets the price."""
     try:
+        if deterministic_owns(game):
+            return True
         if game.get("game_family") != "negotiation":
             return False
         if not enabled() or not in_treatment(game):
@@ -280,7 +321,8 @@ def action(game: dict) -> dict | None:
         # Complete information: test taking the terminal zone while leaving one
         # cent.  Priced off the opponent's visible value directly -- never off a
         # share, a schedule or an estimate.  Full-cohort acceptance is not yet
-        # identified, which is why this path remains behind randomized flags.
+        # identified, which is why this path remains behind default-off
+        # ownership flags (randomized measurement or deterministic promotion).
         seller_v = my_value if i_am_seller else their_value
         buyer_v = their_value if i_am_seller else my_value
         if buyer_v - seller_v <= 2 * EPS:      # degenerate zone: split it

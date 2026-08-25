@@ -1894,16 +1894,33 @@ def decide(game: dict, cfg) -> dict:
     is deliberately bypassed so a complete policy cannot silently become a
     mixed treatment.  Flag-off behavior retains the original attachment path.
     """
-    selected = deterministic_negotiation.mode()
-    if selected is not None:
-        action = _deterministic_policy_decide(game, cfg, selected)
+    # The exact last-mover component must precede the broader deterministic
+    # buyer replicas.  Otherwise a selected replica returns before _decide()
+    # and silently shadows the cent-leaving terminal price.  This override is
+    # itself deterministic and owns only first_principles.DESIGNED cells.
+    if first_principles.deterministic_owns(game):
+        action = first_principles.action(game)
+        if action is not None:
+            plan = {
+                "source": first_principles.DETERMINISTIC_GATE,
+                "component": "first_principles",
+            }
+            if runtime_flags.enabled("GLEE_TRACE_GATES"):
+                plan["gates_fired"] = [first_principles.DETERMINISTIC_GATE]
+            action["_plan"] = plan
+        else:
+            action = _decide(game, cfg)
     else:
-        action = _decide(game, cfg)
-        try:
-            if nego_arms.enabled():
-                nego_arms.attach(game, action)
-        except Exception:
-            pass                  # a message is never worth risking the move
+        selected = deterministic_negotiation.mode()
+        if selected is not None:
+            action = _deterministic_policy_decide(game, cfg, selected)
+        else:
+            action = _decide(game, cfg)
+            try:
+                if nego_arms.enabled():
+                    nego_arms.attach(game, action)
+            except Exception:
+                pass              # a message is never worth risking the move
     return _maybe_complete_unknown_late_stasis(game, action)
 
 
