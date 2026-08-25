@@ -103,6 +103,12 @@ def _p_deterministic_first_principles(game, p):
     return first_principles.deterministic_eligible(game)
 
 
+def _p_agent5_default(game, p):
+    return (game.get("game_family") == "negotiation"
+            and (game.get("valid_actions") or {}).get("type")
+            in ("offer", "decision"))
+
+
 def _p_open_claim(game, p):
     from glee_agent.actions import (
         _complete_negotiation_zopa,
@@ -593,6 +599,8 @@ KNOWN = {
     "GLEE_NEGO_DETERMINISTIC_FP_V1": (
         "negotiation", ("deterministic_first_principles_v1",),
         _p_deterministic_first_principles),
+    "GLEE_NEGO_AGENT5_DEFAULT_V1": (
+        "negotiation", ("agent5_default_v1",), _p_agent5_default),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),

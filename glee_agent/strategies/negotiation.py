@@ -1926,9 +1926,9 @@ def decide(game: dict, cfg) -> dict:
 
 def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     """Execute one complete role/information/horizon policy matrix."""
-    buyer_action = deterministic_negotiation.buyer_action(game, selected)
-    if buyer_action is not None:
-        return deterministic_negotiation.trace_action(buyer_action, selected)
+    direct = deterministic_negotiation.direct_action(game, selected)
+    if direct is not None:
+        return direct
 
     # Sellers retain the measured winning decision/price stack.  The full
     # replica additionally applies the exact message-only seller table from
@@ -1938,9 +1938,18 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     action = _decide(game, cfg)
     if selected == deterministic_negotiation.LEADER_REPLICA:
         return top_seller_message_clone.apply_deterministic(game, action)
+    if selected == deterministic_negotiation.AGENT5_DEFAULT:
+        action = top_seller_message_clone.apply_deterministic(
+            game, action, arm=selected)
     plan = dict(action.get("_plan") or {})
     plan["deterministic_policy"] = selected
     plan["component"] = deterministic_negotiation.fallback_component(game)
+    if (selected == deterministic_negotiation.AGENT5_DEFAULT
+            and runtime_flags.enabled("GLEE_TRACE_GATES")):
+        gates = list(plan.get("gates_fired") or [])
+        if deterministic_negotiation.AGENT5_DEFAULT_GATE not in gates:
+            gates.append(deterministic_negotiation.AGENT5_DEFAULT_GATE)
+        plan["gates_fired"] = gates
     action = dict(action)
     action["_plan"] = plan
     return action

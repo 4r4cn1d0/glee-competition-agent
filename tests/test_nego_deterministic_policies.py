@@ -17,6 +17,7 @@ def _deterministic_flags_off(monkeypatch):
     monkeypatch.delenv("GLEE_PROBE", raising=False)
     monkeypatch.setenv(policies.RANK_HYBRID_FLAG, "0")
     monkeypatch.setenv(policies.LEADER_REPLICA_FLAG, "0")
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB", "0")
     monkeypatch.setenv("GLEE_NEGO_TOP_OPUS_BUYER_CLONE_AB", "0")
@@ -93,6 +94,23 @@ def _seller_game() -> dict:
         "from_player": "player_2",
         "round": 1,
     }
+    return game
+
+
+def _terminal_seller_game(*, complete: bool, own: float = 80.0,
+                          other: float = 120.0) -> dict:
+    game = _seller_game()
+    state = game["game_state"]
+    state["round"] = 1
+    state["max_rounds"] = 1
+    state["complete_information"] = complete
+    state["player_1_value"] = own
+    if complete:
+        state["player_2_value"] = other
+    else:
+        state.pop("player_2_value", None)
+    state.pop("last_offer", None)
+    game["valid_actions"] = {"type": "offer"}
     return game
 
 
@@ -228,3 +246,91 @@ def test_deterministic_policy_bypasses_legacy_random_message_bank(
     monkeypatch.setattr(negotiation.nego_arms, "attach", forbidden)
     action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
     assert action["_plan"]["source"] == policies.RANK_HYBRID
+
+
+def test_agent5_default_is_one_mutually_exclusive_whole_policy(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    assert policies.mode() == policies.AGENT5_DEFAULT
+
+    monkeypatch.setenv(policies.LEADER_REPLICA_FLAG, "1")
+    assert policies.mode() is None
+
+
+def test_agent5_default_hard_precedence_uses_hidden_terminal_rule(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    game = _terminal_seller_game(complete=False, own=80.0)
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["product_price"] == pytest.approx(119.99)
+    assert action["_plan"]["source"] == policies.AGENT5_DEFAULT
+    assert action["_plan"]["component"] == "first_principles"
+
+
+def test_agent5_default_hard_precedence_uses_cap10_buyer_cent(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    game = _buyer_game(
+        complete=True,
+        known=True,
+        cap=10,
+        own=150.0,
+        other=80.0,
+        round_no=10,
+    )
+    game["game_state"].pop("last_offer", None)
+    game["valid_actions"] = {"type": "offer"}
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["product_price"] == pytest.approx(80.01)
+    assert action["_plan"]["source"] == policies.AGENT5_DEFAULT
+    assert action["_plan"]["component"] == "first_principles"
+
+
+def test_agent5_default_uses_observed_leader_for_other_buyer_cells(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    game = _buyer_game(complete=False, known=True, cap=10)
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["_plan"]["source"] == policies.AGENT5_DEFAULT
+    assert action["_plan"]["component"] == "observed_leader_buyer"
+
+
+def test_agent5_owned_price_bypasses_every_downstream_guard(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    monkeypatch.setenv("GLEE_NEGO_HIDDEN_FLOOR", "1.99")
+    monkeypatch.setenv("GLEE_NEGO_OPEN_CLAIM_ALWAYS", "0.50")
+    monkeypatch.setenv("GLEE_NEGO_ULT_FLOOR", "0.50")
+    monkeypatch.setenv("GLEE_NEGO_ULT_CAP", "0.80")
+    monkeypatch.setenv("GLEE_NEGO_ZOPA_CLAMP", "1")
+    game = _terminal_seller_game(complete=False, own=80.0)
+
+    raw = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    wire = coerce(copy.deepcopy(raw), copy.deepcopy(game))
+
+    assert raw["product_price"] == pytest.approx(119.99)
+    assert wire["product_price"] == raw["product_price"]
+
+
+def test_agent5_default_names_unreplaced_seller_fallback(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    game = _seller_game()
+
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+
+    assert action["_plan"]["deterministic_policy"] == policies.AGENT5_DEFAULT
+    assert action["_plan"]["component"] == "current_seller"
+
+
+def test_agent5_default_bypasses_randomized_message_attachment(monkeypatch):
+    monkeypatch.setenv(policies.AGENT5_DEFAULT_FLAG, "1")
+    game = _buyer_game(complete=False, known=True, cap=10)
+    monkeypatch.setattr(negotiation.nego_arms, "enabled", lambda: True)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("legacy randomized message bank was called")
+
+    monkeypatch.setattr(negotiation.nego_arms, "attach", forbidden)
+    action = negotiation.decide(copy.deepcopy(game), Config(llm_mode="off"))
+    assert action["_plan"]["source"] == policies.AGENT5_DEFAULT

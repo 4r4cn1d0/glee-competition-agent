@@ -414,7 +414,12 @@ def _traced_copy(
     return result
 
 
-def apply_deterministic(game: dict, action: dict) -> dict:
+def apply_deterministic(
+    game: dict,
+    action: dict,
+    *,
+    arm: str = "leader_replica",
+) -> dict:
     """Attach the exact seller table after a whole-policy flag is selected.
 
     Unlike :func:`apply_clone`, this path has no runtime flag and no hash arm:
@@ -437,7 +442,7 @@ def apply_deterministic(game: dict, action: dict) -> dict:
             message,
             game,
             count,
-            arm="leader_replica",
+            arm=arm,
         )
         return changed if changed is not None else action
     except Exception:

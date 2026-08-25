@@ -32,30 +32,48 @@ preserving the exact live profile rather than deleting one of its components
 post hoc.  The older frozen buyer-only checkpoint was +1.116/game (n=44)
 versus +0.247/game (n=47), with an interval crossing zero.
 
-Both flags being on is a configuration error and deliberately selects neither
-policy.  Flag-off behavior is therefore the pre-existing negotiation stack.
+``agent5_default_v1`` is the single deterministic policy assembled for Agent 5.
+It gives the first-principles component hard precedence in its three designed
+cells, then uses the leader-replica buyer policy everywhere else it has public
+support, and names the current seller stack as its explicit fallback in seller
+cells where no replacement has been identified.  The dispatcher selects this
+mode before the legacy randomized message bank; direct first-principles and
+leader-buyer wires are also exempt from all downstream price postconditions.
+This makes the ownership boundary executable rather than relying on a launch
+configuration to keep conflicting rules quiet.
+
+More than one whole-policy flag being on is a configuration error and
+deliberately selects none. Flag-off behavior is the pre-existing negotiation
+stack.
 """
 
 from __future__ import annotations
 
 import math
 
-from . import runtime_flags, top_buyer_clone
+from . import first_principles, runtime_flags, top_buyer_clone
 
 
 RANK_HYBRID_FLAG = "GLEE_NEGO_RANK_HYBRID_V1"
 LEADER_REPLICA_FLAG = "GLEE_NEGO_LEADER_REPLICA_V1"
+AGENT5_DEFAULT_FLAG = "GLEE_NEGO_AGENT5_DEFAULT_V1"
 
 RANK_HYBRID = "rank_hybrid_v1"
 LEADER_REPLICA = "leader_replica_v1"
+AGENT5_DEFAULT = "agent5_default_v1"
+AGENT5_DEFAULT_GATE = "agent5_default_v1"
 
 __all__ = [
     "RANK_HYBRID_FLAG",
     "LEADER_REPLICA_FLAG",
+    "AGENT5_DEFAULT_FLAG",
     "RANK_HYBRID",
     "LEADER_REPLICA",
+    "AGENT5_DEFAULT",
+    "AGENT5_DEFAULT_GATE",
     "mode",
     "buyer_action",
+    "direct_action",
     "trace_action",
     "matches_wire",
     "fallback_component",
@@ -63,12 +81,19 @@ __all__ = [
 
 
 def mode() -> str | None:
-    """Return the one selected deterministic policy, or ``None`` on/off conflict."""
-    rank_hybrid = runtime_flags.enabled(RANK_HYBRID_FLAG)
-    leader_replica = runtime_flags.enabled(LEADER_REPLICA_FLAG)
-    if rank_hybrid == leader_replica:
+    """Return exactly one selected deterministic policy, else fail closed."""
+    selected = [
+        policy
+        for flag, policy in (
+            (RANK_HYBRID_FLAG, RANK_HYBRID),
+            (LEADER_REPLICA_FLAG, LEADER_REPLICA),
+            (AGENT5_DEFAULT_FLAG, AGENT5_DEFAULT),
+        )
+        if runtime_flags.enabled(flag)
+    ]
+    if len(selected) != 1:
         return None
-    return RANK_HYBRID if rank_hybrid else LEADER_REPLICA
+    return selected[0]
 
 
 def _finite_number(value) -> float | None:
@@ -106,7 +131,7 @@ def _uses_leader_buyer(game: dict, selected: str) -> bool:
     if parsed is None:
         return False
     _state, cell = parsed
-    if selected == LEADER_REPLICA:
+    if selected in (LEADER_REPLICA, AGENT5_DEFAULT):
         return True
     if selected != RANK_HYBRID:
         return False
@@ -122,7 +147,7 @@ def _uses_leader_buyer(game: dict, selected: str) -> bool:
 def buyer_action(game: dict, selected: str | None = None) -> dict | None:
     """Return the deterministic leader buyer move in cells owned by ``selected``."""
     selected = selected or mode()
-    if selected not in (RANK_HYBRID, LEADER_REPLICA):
+    if selected not in (RANK_HYBRID, LEADER_REPLICA, AGENT5_DEFAULT):
         return None
     if not _uses_leader_buyer(game, selected):
         return None
@@ -141,15 +166,48 @@ def trace_action(action: dict, selected: str) -> dict:
         plan["evidence_source"] = evidence_source
     plan["source"] = selected
     plan["component"] = "observed_leader_buyer"
+    if (selected == AGENT5_DEFAULT
+            and runtime_flags.enabled("GLEE_TRACE_GATES")):
+        gates = list(plan.get("gates_fired") or [])
+        if AGENT5_DEFAULT_GATE not in gates:
+            gates.append(AGENT5_DEFAULT_GATE)
+        plan["gates_fired"] = gates
     result["_plan"] = plan
     return result
+
+
+def direct_action(game: dict, selected: str | None = None) -> dict | None:
+    """Return a move owned outright by the selected whole policy.
+
+    Agent 5's first-principles cells are checked before the copied buyer policy;
+    this is the hard precedence guarantee requested by the operator.  A direct
+    action never enters the legacy planner or randomized message attachment.
+    """
+    selected = selected or mode()
+    if selected == AGENT5_DEFAULT and first_principles.deterministic_eligible(game):
+        action = first_principles.action(game)
+        if action is None:
+            return None
+        result = dict(action)
+        plan = dict(result.get("_plan") or {})
+        plan["source"] = AGENT5_DEFAULT
+        plan["component"] = "first_principles"
+        if runtime_flags.enabled("GLEE_TRACE_GATES"):
+            gates = list(plan.get("gates_fired") or [])
+            if AGENT5_DEFAULT_GATE not in gates:
+                gates.append(AGENT5_DEFAULT_GATE)
+            plan["gates_fired"] = gates
+        result["_plan"] = plan
+        return result
+    action = buyer_action(game, selected)
+    return trace_action(action, selected) if action is not None else None
 
 
 def matches_wire(game: dict, wire: dict) -> bool:
     """Whether a public wire is owned by the currently selected whole policy."""
     if not isinstance(wire, dict):
         return False
-    expected = buyer_action(game)
+    expected = direct_action(game)
     if not isinstance(expected, dict):
         return False
     return all(
