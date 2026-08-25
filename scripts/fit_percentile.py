@@ -24,6 +24,7 @@ Output: models/percentile_cdf_v3.json, consumed by sim.percentile.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -91,7 +92,16 @@ def pers_cell(mode, p, ratio, role, rounds):
         "persuasion", mode, round(p, 2), ratio, role, rounds))
 
 
-def main() -> int:
+def fit(output_path: str = OUT) -> int:
+    """Fit the model and atomically write it to ``output_path``.
+
+    ``--output`` exists so a large refit can be validated as a candidate before
+    replacing the checked-in artifact.  That boundary matters on the live fleet:
+    the previous direct refit retained only the top tail of saturated cells and
+    silently removed their zero atoms.  The strategy flags that consume this CDF
+    are currently off, but diagnostics must still never inspect an unvalidated
+    half-deployment.
+    """
     cells = defaultdict(list)
     games = 0
     for final in _iter_finals():
@@ -151,15 +161,27 @@ def main() -> int:
                          "method": "evenly_spaced_order_statistics"},
            "cells": {k: _cap_cell_distribution(v)
                      for k, v in cells.items() if len(v) >= 25}}
-    tmp = OUT + ".tmp"
+    output_path = os.path.abspath(output_path)
+    tmp = output_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(doc, fh)
-    os.replace(tmp, OUT)
+    os.replace(tmp, output_path)
     ns = [len(v) for v in doc["cells"].values()]
     print(f"fitted {games:,} games -> {len(doc['cells'])} cells "
           f"(median {sorted(ns)[len(ns)//2]} samples/cell) "
-          f"-> {os.path.relpath(OUT, REPO)}")
+          f"-> {os.path.relpath(output_path, REPO)}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output",
+        default=OUT,
+        help="candidate/output path (default: models/percentile_cdf_v3.json)",
+    )
+    args = parser.parse_args()
+    return fit(args.output)
 
 
 if __name__ == "__main__":
