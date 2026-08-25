@@ -3,6 +3,40 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 07:57 IST — V2 isolated to Test 2; Agent 5 retained on V1
+
+Operator narrowed deployment after observing Agent 5 rising quickly: Test 2 is
+the sole V2 challenger, and Agent 5 is the V1 comparison. Test 2 / slot
+`hardliner` completed a zero-loss cycle at 07:51:22 and replacement PID `75251`
+started at 07:51:32 from pushed commit `ddb26d2`, with `--probe champion`, LLM
+off, and all three families unchanged. At `Tcfg=1787624505`, fleet tooling set
+only the whole negotiation selectors: V1=0, V2=1, leader/rank/deterministic-FP
+=0. Runtime overlay inspection resolves `mode=agent5_default_v2`.
+
+Fresh post-boundary Test 2 traces immediately show V2 ownership on direct
+first-principles wires and `deterministic_policy=agent5_default_v2` on retained
+seller decisions. The first 33 negotiation turns comprised 26 current-seller,
+six first-principles, and one observed-leader-buyer turn, with zero strategy
+errors. Neither new rare support branch had appeared by this checkpoint, so no
+live-effect claim is made. Test 2's non-negotiation overlay SHA-256 remained
+exactly `b3dc118e29c9060fa05c3a3e8a336190c8872ffae7193dd3e36d7b28e3d973c4`.
+
+Agent 5 remains PID `72600` with V1=1, V2 absent/off, and runtime
+`mode=agent5_default_v1`; its non-negotiation overlay hash remains exactly
+`13014b3950e594e328d1020d89fee32ec27c65461101051cc83106fc50825e16`.
+Across every `GLEE_NEGO_*` key, the two overlays differ only on V1 (`1` versus
+`0`) and V2 (absent versus `1`). A previously requested safe Agent 5 code-load
+cycle was already resident in supervisor memory before the scope narrowed and
+cannot be cancelled through the control surface; if it reaches a zero-game
+boundary it may reload the same V1 configuration with zero games abandoned.
+No Agent 5 flag or behavior was changed.
+
+Compare future growth from the Test 2 boundary without conditioning on V2 gate
+fires or agreements. Retain every negotiation result, including no-deals,
+walks, exact zeros, invalid/timeouts, both roles, all information/horizon
+cells, and unresolved joins. Roll V2 to Agent 5 only on the operator's later
+decision after the all-outcome rate comparison.
+
 ## 2026-08-25 07:34 IST — Agent 5 negotiation V2 built default OFF
 
 `GLEE_NEGO_AGENT5_DEFAULT_V2` is a mutually exclusive, deterministic whole
