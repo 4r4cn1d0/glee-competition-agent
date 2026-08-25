@@ -246,7 +246,7 @@ def owns(game: dict) -> bool:
 _ASK_STEPS = {80.0: 2, 100.0: 1, 120.0: 1, 150.0: 1}
 
 
-def _grid_ask(my_value: float) -> float:
+def rank_grid_ask(my_value: float) -> float:
     """The rank-optimal ask: N grid points above our cost, minus a cent.
 
     Still not the money-optimal ask in general -- at cost 100 money says 150 and
@@ -289,14 +289,14 @@ def _reject_with_counter(state: dict, i_am_seller: bool, my_value: float,
         else:
             price = (my_value + their_value) / 2.0
     else:
-        price = _grid_ask(my_value) if i_am_seller else _grid_bid(my_value)
+        price = rank_grid_ask(my_value) if i_am_seller else rank_grid_bid(my_value)
     out["product_price"] = round(price, 2)
     return out
 
 
-def _grid_bid(my_value: float) -> float:
+def rank_grid_bid(my_value: float) -> float:
     """Highest grid point strictly below our value, plus a cent -- the buyer's
-    mirror of :func:`_grid_ask`. Rank-optimal for the same reason: it maximises
+    mirror of :func:`rank_grid_ask`. Rank-optimal for the same reason: it maximises
     P(close) subject to leaving us a positive payoff."""
     s = scale_of(my_value)
     base = my_value / s
@@ -317,7 +317,7 @@ def action(game: dict) -> dict | None:
 
     if phase == "offer":
         if not complete:
-            return {"product_price": round(_grid_ask(my_value), 2)}
+            return {"product_price": round(rank_grid_ask(my_value), 2)}
         # Complete information: test taking the terminal zone while leaving one
         # cent.  Priced off the opponent's visible value directly -- never off a
         # share, a schedule or an estimate.  Full-cohort acceptance is not yet

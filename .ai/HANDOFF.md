@@ -3,6 +3,55 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 07:34 IST — Agent 5 negotiation V2 built default OFF
+
+`GLEE_NEGO_AGENT5_DEFAULT_V2` is a mutually exclusive, deterministic whole
+negotiation policy. It preserves V1's first-principles cells, seller-offer cost
+inference, observed-leader buyer paths, seller messages, and labelled current
+fallbacks. It adds two support-exact branches and no game hash or randomized
+arm. The official hidden generator draws each value independently and uniformly
+from `{80,100,120,150}*scale`: 6/16 pairs are feasible and 10/16 are not.
+
+First, hidden unknown-horizon sellers with costs 80/100/120 now transmit fixed
+rank-grid asks 119.99/119.99/149.99 on the unit scale (absolute one-cent
+rounding at larger scales), replacing only the outgoing price. Seller cost 150
+is structurally dead and retains the existing dead-game harvester. The
+baseline Accept/Reject/WalkAway decision is preserved byte-for-byte. This
+constraint is essential: the previous hidden-unknown accept-all-profitable
+policy measured `-.06628` exact percentile over 375 exposed decisions (156
+changed) and `-.00614` cohort ITT over 4,050 games. The live diagnosis that
+motivated repricing is Test 2's latest-100 hidden-unknown slice at `-1.604`
+rating/game (`n=27`) and the concrete seller-100 trace that remained at 187.59
+while the hidden buyer climbed 55/63/71/78/86/98; 187.59 is above every legal
+buyer type. That trace is mechanism evidence, not a causal effect estimate.
+
+Second, a hidden cap-10 last-moving buyer still uses the strongest observed
+seller-ask bound first. If no ask identifies a bound, V2 bids one cent above
+the greatest supported seller type strictly below its own value:
+80.01/100.01/120.01 for buyer values 100/120/150. These bids cover every
+structurally feasible seller type under individual rationality. Buyer value 80
+has no feasible seller and retains the existing fallback. This support rule
+does not infer an unplayed offer's continuation value. Terminal-cent acceptance
+is still response evidence rather than a guarantee; a spiteful or malformed
+opponent can reject, and a low-payoff agreement can still rank poorly.
+
+Verification: 75 focused component/wire tests pass; all 638 negotiation and
+cross-family-isolation tests pass. Full suite is 1,965 passed with the same
+three unrelated live-machine failures: stale bargaining horizon-floor 450 vs
+468, bargaining live-grid drift, and negotiation max-round live-grid drift.
+Exact prospective reachability passes on Agent 5's `composite` slot with its
+actual `hardliner` wrapper at 9,847 eligible / 9,847 fired / 8,323 changed, and
+on Test 2's `hardliner` slot with its actual `champion` wrapper at
+9,429/9,429/7,483 (1,200 games each). These checks establish reachability and
+wire ownership, not percentile lift.
+
+At this checkpoint V2 is source-default OFF and not yet live. Promotion must
+set V1=0 and V2=1 atomically while leaving every bargaining and persuasion key
+unchanged, then cross a clean code-load boundary. Cohort every post-boundary
+negotiation game, including agreements, no-deals, walks, exact zeros,
+timeouts/invalids, both roles, all six public cells, and unresolved joins. Do
+not condition the read on either new component firing.
+
 ## 2026-08-25 02:31 IST — deterministic persuasion component, default OFF
 
 Persuasion source commit `e6ca9c6`, with evidence-comment correction `c085878`

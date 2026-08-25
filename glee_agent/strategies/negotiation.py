@@ -20,8 +20,9 @@ from __future__ import annotations
 
 import math
 
-from .. import (deterministic_negotiation, first_principles, nego_arms, pricing,
-                runtime_flags, top_buyer_clone, top_buyer_clone_hi_cap10,
+from .. import (deterministic_negotiation, first_principles, nego_arms,
+                nego_support_v2, pricing, runtime_flags, top_buyer_clone,
+                top_buyer_clone_hi_cap10,
                 top_opus_buyer_clone,
                 top_opus_buyer_clone_hi_unknown,
                 top_seller_message_clone)
@@ -1684,12 +1685,14 @@ def _complete_unknown_late_stasis_stack_ok() -> bool:
         actual = runtime_flags.as_float(name, math.nan)
         if not math.isfinite(actual) or abs(actual - expected) > 1e-12:
             return False
-    # ``deterministic_negotiation.mode`` deliberately maps both whole-policy
-    # selectors ON to the legacy stack.  That ambiguity is unacceptable for an
-    # evidence-pinned guard, though either one selector or neither is valid.
-    if (runtime_flags.enabled(deterministic_negotiation.RANK_HYBRID_FLAG)
-            and runtime_flags.enabled(
-                deterministic_negotiation.LEADER_REPLICA_FLAG)):
+    # ``deterministic_negotiation.mode`` deliberately maps conflicting whole-
+    # policy selectors to the legacy stack.  That ambiguity is unacceptable
+    # for an evidence-pinned guard, though one selected policy is supported.
+    enabled_selectors = sum(
+        runtime_flags.enabled(name)
+        for name in deterministic_negotiation.WHOLE_POLICY_FLAGS
+    )
+    if enabled_selectors > 1:
         return False
     return not any(_flag_is_nonzero(name)
                    for name in _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS)
@@ -1936,19 +1939,41 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     # games and 0.549 after 77).  The rank hybrid keeps current seller text and
     # current hidden-cap1/unknown buyer behavior.
     action = _decide(game, cfg)
+    if selected == deterministic_negotiation.AGENT5_DEFAULT_V2:
+        # The official hidden support identifies legal price bounds, but not a
+        # better accept/reject counterfactual.  Preserve the complete baseline
+        # decision and replace only an outgoing unknown-horizon seller price.
+        action = nego_support_v2.apply_hidden_unknown_seller(game, action)
     if selected == deterministic_negotiation.LEADER_REPLICA:
         return top_seller_message_clone.apply_deterministic(game, action)
-    if selected == deterministic_negotiation.AGENT5_DEFAULT:
+    if selected in (
+        deterministic_negotiation.AGENT5_DEFAULT,
+        deterministic_negotiation.AGENT5_DEFAULT_V2,
+    ):
         action = top_seller_message_clone.apply_deterministic(
             game, action, arm=selected)
     plan = dict(action.get("_plan") or {})
     plan["deterministic_policy"] = selected
-    plan["component"] = deterministic_negotiation.fallback_component(game)
-    if (selected == deterministic_negotiation.AGENT5_DEFAULT
-            and runtime_flags.enabled("GLEE_TRACE_GATES")):
+    support_owned = plan.get("component") == (
+        nego_support_v2.UNKNOWN_SELLER_COMPONENT
+    )
+    if support_owned:
+        previous_source = plan.get("source")
+        if previous_source is not None and previous_source != selected:
+            plan.setdefault("evidence_source", previous_source)
+        plan["source"] = selected
+    else:
+        plan["component"] = deterministic_negotiation.fallback_component(game)
+    if selected == deterministic_negotiation.AGENT5_DEFAULT:
+        agent5_gate = deterministic_negotiation.AGENT5_DEFAULT_GATE
+    elif selected == deterministic_negotiation.AGENT5_DEFAULT_V2:
+        agent5_gate = deterministic_negotiation.AGENT5_DEFAULT_V2_GATE
+    else:
+        agent5_gate = None
+    if agent5_gate is not None and runtime_flags.enabled("GLEE_TRACE_GATES"):
         gates = list(plan.get("gates_fired") or [])
-        if deterministic_negotiation.AGENT5_DEFAULT_GATE not in gates:
-            gates.append(deterministic_negotiation.AGENT5_DEFAULT_GATE)
+        if agent5_gate not in gates:
+            gates.append(agent5_gate)
         plan["gates_fired"] = gates
     action = dict(action)
     action["_plan"] = plan

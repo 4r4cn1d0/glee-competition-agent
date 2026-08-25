@@ -13,8 +13,9 @@ on cost.  Examples on the unit scale:
 The bid leaves at least one cent to every seller type consistent with its own
 offer.  It does not infer from accepted deals, outcomes, messages, or our own
 prices.  If no opponent offer below our value supplies a bound, the helper
-returns ``None`` and the complete Agent 5 policy keeps its observed-leader
-fallback.  The caller owns activation; this module has no runtime flag or hash.
+returns ``None``: Agent 5 V1 keeps its observed-leader fallback, while V2 may
+then use official-support terminal insurance.  The caller owns activation;
+this module has no runtime flag or hash.
 """
 
 from __future__ import annotations

@@ -625,6 +625,8 @@ KNOWN = {
         _p_deterministic_first_principles),
     "GLEE_NEGO_AGENT5_DEFAULT_V1": (
         "negotiation", ("agent5_default_v1",), _p_agent5_default),
+    "GLEE_NEGO_AGENT5_DEFAULT_V2": (
+        "negotiation", ("agent5_default_v2",), _p_agent5_default),
     "GLEE_NEGO_TABLE": ("negotiation", ("table", "table_accept"),
                         lambda g, p: p.get("their_value") is None),
     "GLEE_NEGO_PROBE_V1": ("negotiation", ("probe_hold", "time_driven"),
