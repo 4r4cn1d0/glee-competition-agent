@@ -359,6 +359,42 @@ def _p_p08_r125_prose(game, p):
             and p.get("recommend") is True)
 
 
+def _p_pers_p08_positive_prose_v1(game, p):
+    """Action-level scope of deterministic p=.8 positive seller prose."""
+    state = game.get("game_state") or {}
+    try:
+        prior = float(state.get("p"))
+    except (TypeError, ValueError):
+        return False
+    return ((game.get("valid_actions") or {}).get("type") == "seller_message"
+            and game.get("your_player") == "player_1"
+            and state.get("seller_message_type") == "text"
+            and abs(prior - 0.8) <= 1e-9
+            and p.get("recommend") is True)
+
+
+def _p_pers_zero_margin_truth_v1(game, p):
+    """Changed-action scope of deterministic exact-prior equality truth."""
+    state = game.get("game_state") or {}
+    try:
+        price = float(state.get("product_price"))
+        prior = float(state.get("p"))
+        high_value = float(state.get("v"))
+        low_value = float(state.get("u"))
+    except (TypeError, ValueError):
+        return False
+    prior_value = prior * high_value + (1.0 - prior) * low_value
+    scale = max(1.0, abs(price), abs(prior_value))
+    return ((game.get("valid_actions") or {}).get("type")
+            in ("seller_message", "seller_recommendation")
+            and game.get("your_player") == "player_1"
+            and str(state.get("current_quality") or "").lower() == "low"
+            and price > 0.0
+            and math.isfinite(prior_value)
+            and abs(prior_value - price) <= 1e-9 * scale
+            and p.get("recommend") is True)
+
+
 def _p_p08_r125_binary_truth(game, p):
     """Changed-action scope of the exact p=.8/r=1.25 binary truth gate."""
     state = game.get("game_state") or {}
@@ -712,6 +748,12 @@ KNOWN = {
     "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2": (
         "persuasion", ("buyer_explicit_decline_v2",),
         _p_buyer_explicit_decline_v2),
+    "GLEE_PERS_ZERO_MARGIN_TRUTH_V1": (
+        "persuasion", ("pers_zero_margin_truth_v1",),
+        _p_pers_zero_margin_truth_v1),
+    "GLEE_PERS_P08_POSITIVE_PROSE_V1": (
+        "persuasion", ("pers_p08_positive_prose_v1",),
+        _p_pers_p08_positive_prose_v1),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those

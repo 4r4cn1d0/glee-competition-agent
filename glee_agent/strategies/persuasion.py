@@ -51,6 +51,12 @@ PERS_BUYER_EXPLICIT_DECLINE_VETO_V1_FLAG = (
 # misses, and can only turn an existing buyer-v2 BUY into PASS.
 PERS_BUYER_EXPLICIT_DECLINE_V2_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"
 
+# Deterministic seller-side companions to the buyer decline veto.  Both are
+# default OFF and independent so a deployment can revert either mechanism
+# without changing the rest of the persuasion policy.
+PERS_ZERO_MARGIN_TRUTH_V1_FLAG = "GLEE_PERS_ZERO_MARGIN_TRUTH_V1"
+PERS_P08_POSITIVE_PROSE_V1_FLAG = "GLEE_PERS_P08_POSITIVE_PROSE_V1"
+
 
 _DECLINE_V2_CONTRAST = re.compile(
     r"\b(?:but|however|that\s+said|even\s+so|still|yet|though|although|"
@@ -224,6 +230,29 @@ def seller_plan(game: dict, cfg) -> dict:
     bought = [h for h in history if h.get("bought")]
     buy_rate = len(bought) / len(history) if history else None
 
+    # DETERMINISTIC STRICT ZERO-MARGIN TRUTH (default OFF).
+    #
+    # The ordinary all-push shortcut below uses ``prior_value >= price``.  At
+    # exact equality that gives the buyer no strict expected surplus and makes
+    # a positive recommendation uninformative.  In 170 completed comparable
+    # p=.8/v=1.25P all-yes games, 35 sold nothing; 123 exposed a bought low and
+    # 42 of those buyers then stopped completely, leaving a mean 12.38 later
+    # high-quality opportunities.  This switch changes only LOW seller turns
+    # whose known prior value equals price within a scale-safe tolerance.  It
+    # says no there; HIGH turns still return yes above, and strict-positive or
+    # strict-negative prior cells remain byte-identical.  The sample is
+    # strongest in one official cell and does not identify an official-rating
+    # effect in every equality cell, so the behavior remains separately gated.
+    prior_value = p * v + (1.0 - p) * u if knows_values else math.nan
+    value_scale = max(1.0, abs(price), abs(prior_value))
+    zero_margin_truth_v1 = (
+        runtime_flags.enabled(PERS_ZERO_MARGIN_TRUTH_V1_FLAG)
+        and knows_values
+        and price > 0.0
+        and math.isfinite(prior_value)
+        and abs(prior_value - price) <= 1e-9 * value_scale
+    )
+
     binary_truth_arm = _p08_r125_binary_truth_candidate(
         game, state, price, p, v, u, total)
 
@@ -237,6 +266,20 @@ def seller_plan(game: dict, cfg) -> dict:
             # trace for low rounds where the submitted action actually changes.
             plan["p08_r125_binary_truth_arm"] = "truth"
         return plan
+
+    if zero_margin_truth_v1:
+        return {
+            "recommend": False,
+            "reason": "strict zero-margin truth",
+            "round": round_no,
+            "total_rounds": total,
+            "buy_rate": buy_rate,
+            "knows_values": True,
+            "lie_rate": 0.0,
+            "quality_is_high": False,
+            "zero_margin_truth_v1": True,
+            "gates_fired": ["pers_zero_margin_truth_v1"],
+        }
 
     if binary_truth_arm:
         # Exact zero-margin credibility arm.  The live control recommends every
@@ -1011,6 +1054,30 @@ def _p08_r125_prose_message(game: dict, plan: dict) -> str | None:
     return message
 
 
+def _p08_positive_prose_v1_message(game: dict, plan: dict) -> str | None:
+    """Return fixed positive prose for deterministic high-prior text turns."""
+    if not runtime_flags.enabled(PERS_P08_POSITIVE_PROSE_V1_FLAG):
+        return None
+    state = game.get("game_state") or {}
+    if ((game.get("valid_actions") or {}).get("type") != "seller_message"
+            or state.get("seller_message_type") != "text"
+            or abs(_num(state.get("p"), -1.0) - 0.8) > 1e-9
+            or plan.get("recommend") is not True):
+        return None
+
+    # Within text mode, historical positive recommendations converted at 69.3%
+    # with prose versus 60.8% with literal ``yes`` at p=.8.  That contrast is
+    # observational, and the old exact-cell randomized prose arm did not reach
+    # its official decision boundary.  This deterministic challenger therefore
+    # uses one fixed, quality-neutral sentence, changes no recommendation
+    # decision, and leaves negative messages literal ``no``.  It never calls an
+    # LLM or reads game id/private quality, avoiding the measured 46.3% LLM-copy
+    # conversion versus 55.3% for templates.
+    plan["p08_positive_prose_v1"] = True
+    plan.setdefault("gates_fired", []).append("pers_p08_positive_prose_v1")
+    return "I recommend this one."
+
+
 def _cell_samples(state: dict, seat: str):
     """The buyer payoff sample vector for this exact configuration, or None.
 
@@ -1728,7 +1795,9 @@ def decide(game: dict, cfg) -> dict:
                        if p["recommend"]
                        else "No. Skip this one - I do not recommend it.")
         elif style == "token":
-            treatment_message = _p08_r125_prose_message(game, p)
+            treatment_message = _p08_positive_prose_v1_message(game, p)
+            if treatment_message is None:
+                treatment_message = _p08_r125_prose_message(game, p)
             message = (treatment_message if treatment_message is not None
                        else ("yes" if p["recommend"] else "no"))
         else:
