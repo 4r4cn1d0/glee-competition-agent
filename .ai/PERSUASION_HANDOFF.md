@@ -1,9 +1,27 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 18:29 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 18:50 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 18:50 Test 2 wait checkpoint — external non-persuasion stack advanced
+
+- Test 2 remains PID `6085`, launched at 18:11:51 IST, so it still predates the
+  final V3 code and V2/V3 remain absent/off. HEAD and origin are both
+  `115e02e`, which contains code commit `cef2621`. Do not activate on this PID.
+- A separate owner added the already-pushed Test-2 bargaining overlay
+  `GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1=1` plus explicit safety zeros
+  after the persuasion preflight. Persuasion did not make or revert that
+  change. The old non-persuasion hash `a1d1cfc...` is therefore superseded; the
+  current canonical non-persuasion overlay hash is
+  `2b7fd4338b4208994b70e7cf0ceea072e3ab8dc15c08780a8f2971d596824262`.
+  At the future persuasion T0, freeze whatever non-persuasion stack is then
+  current and require its hash to remain byte-identical across the V2/V3 fleet
+  write. Never restore the old hash or change those external keys.
+- Process command, all-family queue, LLM-off state, fleet-wide persuasion A/B
+  zeros, and Agent 5 persuasion stack remain valid. No persuasion flag, live
+  process, bargaining setting, or negotiation setting changed in this check.
 
 ## 18:29 Test 2 V1+V2+V3 challenger — code pushed, activation waiting
 
