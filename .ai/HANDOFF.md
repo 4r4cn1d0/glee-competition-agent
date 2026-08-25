@@ -3,6 +3,45 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 19:53 IST — Test 2 exact round-99 negotiation acceptance configured
+
+Commit `f7188ac` (pushed to `origin/main`) adds the deterministic default-OFF
+flag `GLEE_NEGO_TEST2_UNKNOWN_R99_ACCEPT_V1`. It is pinned to Test 2's selected
+`test2_support_v3` whole negotiation policy and can change only buyer/P2's
+decision on the seller/P1 offer at round 99 when the horizon is explicitly
+unknown, the standing offer is provenance-valid, and it leaves the buyer at
+least one cent. A V3 `RejectOffer` or `WalkAway` becomes `AcceptOffer`; rounds
+1--98, known horizons, seller behavior, other whole policies, bargaining, and
+persuasion are unchanged. Both complete and hidden information are covered
+because 1,225/1,225 observed games reaching this nominally unknown horizon
+terminated after the round-99 P1 offer, so there is no continuation to model.
+
+The two motivating all-outcome failures were a buyer worth 12,000 rejecting
+11,000 at round 99 and a buyer worth 100 rejecting 89 at round 99. They earned
+zero instead of pointwise-known payoffs 1,000 and 11. Committed-CDF diagnostics
+move from .0594 to .4196 and .0634 to .7254 respectively; those percentile
+magnitudes are descriptive, not causal estimates. The earlier broad hidden
+unknown-horizon accept-all-profitable policy remains excluded because it
+measured -.06628 exact percentile over 375 exposed decisions.
+
+Focused guard tests pass 32/32; deterministic/integration tests pass 151/151.
+The full suite is 2,386 passed with exactly the same three pre-existing
+failures: one stale bargaining horizon-floor expectation and the bargaining
+and negotiation live-grid drift alarms. Exact physical `hardliner` reachability
+at n=1,200 seed 2901 passes 4 eligible / 4 fired / 4 submitted-action changes,
+all at round 99. No replay, arena, or red-team job was run.
+
+The latest collector snapshot still identifies Test 2 / physical `hardliner`
+as the second-best complete agent (overall 2415.72, behind Agent 5's 2467.17)
+and our strongest negotiation component. Fleet tooling set only
+`GLEE_NEGO_TEST2_UNKNOWN_R99_ACCEPT_V1=1` on `hardliner`; Agent 5's flag is
+absent. This is configured but not yet behavior-live: PID 9695 launched before
+`f7188ac` and is already disabled/draining for a separate protected launch
+boundary. Do not interrupt or prematurely re-enable that process. The next
+hardliner launch must load `f7188ac` or later and retain all three families;
+verify the new PID and runtime flag before calling this live. This negotiation
+work did not alter any bargaining or persuasion value.
+
 ## 2026-08-25 08:45 IST — Test 2 support V3 built default OFF
 
 The human feedback contained two exact negotiation rules and several requests
