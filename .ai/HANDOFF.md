@@ -3,6 +3,63 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-25 20:52 IST — high-share bargaining flag is configured but unreachable
+
+Fresh exact-stack review found that `GLEE_BARG_HIGH_SHARE_DELAY_GUARD=1` on
+Agent 5 and Test 4 is behaviorally inert.  The guard is deliberately nested
+under `GLEE_BARG_DISCOUNT_NO_REGRESS=1`, but the 19:29 human scope correction
+requires that broad comparator to remain `0` because it is valid only for
+Bob/P2 with a disclosed twelve-round horizon.  Current Agent 5 reachability
+over 600 games was `eligible=0`, `fired=0`, `action_changed=0`, and current-PID
+traces likewise have zero fires.  It therefore cannot explain Agent 5's recent
+rating movement and must not be described as live protection.  No flag or
+process was changed: enabling the measured-negative broad parent merely to
+reach this child would violate the human correction and revive known harm.
+
+A falsifiable salvage test, not a deployment, is to retain every historical
+outcome and measure the intersection of the high-share predicate with the only
+permitted scope: P2, explicitly known H12, separately by message mode and
+discount cell.  Only if that exact all-outcome slice is adequately sampled and
+positive should a new default-OFF, conflict-free P2/H12-only flag be built and
+proved reachable on a non-leading challenger.  The existing P2 commitment
+dispatcher already owns part of this cell, so action-precedence and collision
+tests are mandatory.  Agent 5 remains unchanged and protected.
+
+## 2026-08-25 20:45 IST — Test 2 corrected P2/H12 bargaining stack launched at a clean boundary
+
+The protected Test 2 process `9695`, launched at 19:25:30 with
+`--max-time 3600`, completed its normal SDK drain and exited without being
+signalled or interrupted.  At 20:34:00 the supervisor observed the slot down
+and left it disabled; restart count remained zero.  This satisfied the clean
+boundary queued in the 19:29 handoff.
+
+Safe fleet tooling then made one atomic overlay update on physical slot
+`hardliner`: `GLEE_BARG_P2_H12_D095_SILENT_V1=1`, while retaining
+`GLEE_BARG_P2_H12_D095_MSG_COMMIT_V1=0`,
+`GLEE_BARG_P2_H12_D100_COMMIT_V1=0`,
+`GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1=0`, and
+`GLEE_BARG_DISCOUNT_NO_REGRESS=0`.  It also retained the already configured
+`GLEE_NEGO_TEST2_UNKNOWN_R99_ACCEPT_V1=1`; no persuasion key was changed.
+`fleet.py start hardliner` launched replacement PID `15302` at 20:45:08 from
+workspace HEAD `a49f1bd086f0` (which contains pushed round-99 commit
+`f7188ac`).  The exact command is `run_agent.py --probe champion --log-dir
+logs/hardliner --llm-mode off --concurrency 8 --poll-interval 2.0 --families
+bargaining,negotiation,persuasion --quiet --max-time 3600`.
+
+The 83-entry runtime overlay has canonical SHA-256
+`9e21cd564e6ffb7d12640e8c770dd6ccba71d87e1ed37a0eb25b0bf0dbef564a`.
+Process-environment comparison found zero expected-value differences and
+confirmed the five bargaining values above, round-99 acceptance `1`, Test 2
+support V3 `1`, and negotiation default V2 `1`.  All three families and LLM-off
+are present in the command.  The authenticated prelaunch T0 snapshot at
+20:42:59 was overall `2438.33`, bargaining `2305.09/15836`, negotiation
+`2658.83/15824`, and persuasion `2351.07/15798`.  The first 176 postlaunch turns
+covered 25 games and all three families (22 bargaining, 35 negotiation, 119
+persuasion turns), all heuristic with zero strategy-source errors; no terminal
+result had yet landed, so no performance claim is made.  Preserve every
+persuasion key until the persuasion workstream requests its own later clean
+boundary.  Agent 5 was not changed.
+
 ## 2026-08-25 19:53 IST — Test 2 exact round-99 negotiation acceptance configured
 
 Commit `f7188ac` (pushed to `origin/main`) adds the deterministic default-OFF
@@ -3161,6 +3218,36 @@ one clean non-leading natural boundary (prefer the weakest Test 3 slot), record
 the exact pre-change stack and T0, and treat the comparison as observational,
 not causal.
 
+### 2026-08-25 16:27 IST: operator requests Test 3 specialist restoration
+
+The operator explicitly selected Test 3 / physical slot `conceder` as the
+specialist challenger.  The last exact pre-clone specialist is independently
+recoverable from the identical 07:19:39 and 08:29:09 launch headers: policy
+`conceder`, all three families, LLM off, and a deterministic 69-entry overlay
+with every randomizer/A-B flag zero (canonical SHA-256
+`df914eabdd6a0224db5f06331bb9fa090ff0ab003fc2cbf09d350a8f69590f53`).
+
+Current PID `91069` launched at 16:19:14 as `hardliner` and held nine live games
+at the 16:25 preflight, so it must not be interrupted.  Restore behavior at a
+zero-game boundary by safely disabling the slot and letting this bounded shift
+drain, then use `scripts/fleet.py policy conceder conceder` and explicitly set
+`GLEE_BARG_DISCOUNT_NO_REGRESS=0`,
+`GLEE_BARG_HIGH_SHARE_DELAY_GUARD=0`,
+`GLEE_BARG_P2_H12_D095_SILENT_V1=0`, and
+`GLEE_NEGO_AGENT5_DEFAULT_V1=0` before re-enabling it.  The seven other
+clone-only keys are already explicit inert zeros.  Do not call
+`fleet.py clear conceder`: that would remove the 69 shared measured controls.
+
+Before calling the restoration live, require the old PID to be gone,
+`logs/supervisor.json` to show the slot down, and the supervisor log to record a
+clean drain.  Afterwards require a new PID whose command shows `--probe
+conceder`, `--llm-mode off`, and all three families; verify the latest launch
+header, the four explicit zeros above, and all A-B/router controls off, then
+record that replacement start as T0.  Leave Agent 5 and Test 2 untouched and
+treat the whole-process before/after comparison as observational.  Codex made
+no live configuration or process change; repository policy reserves fleet
+deployment to Claude.
+
 ### 2026-08-25 16:36 IST: deterministic strict-edge persuasion challenger for Test 4
 
 Commit `67b684b` (pushed to `origin/main`) adds two deterministic, default-OFF
@@ -3224,3 +3311,191 @@ the absent seller traces are expected non-eligibility rather than a reach
 failure. No strict buyer-V2 decline appeared either. Live behavior is not yet
 mechanism-verified; the exact-stack reachability above is the only action-change
 evidence at this checkpoint.
+
+### 2026-08-25 18:13 IST: Test 2 deterministic P1 unknown-horizon repair live
+
+The operator explicitly overrode the earlier preference to protect Test 2 and
+requested this candidate on physical slot `hardliner`. The old champion-policy
+PID `94369` was disabled through `scripts/fleet.py`, finished every in-flight
+game normally, and the supervisor recorded a clean drain at 17:58:11 IST. An
+authenticated prelaunch check showed `active_games=0`; no process was signalled
+and no game was abandoned. Its exact rollback overlay remains the 75-entry
+stack with canonical SHA-256
+`ad304a4510a456f7a0dda6e9802c84558dca568e24070c141470a86db0ee7ea6`.
+
+Commits `f458a9c` and `12069ea` are pushed to `origin/main`. The first repairs
+the corrupted percentile artifact: 131,413 games / 198 cells, all 12 saturated
+bargaining cells again retain zero atoms, artifact SHA-256
+`dd85dcde6ec5ce671786409c6458e469fe3a218558c09ff4ef00fcdef4ada55d`.
+No live path currently consumes it because negotiation rank-price and
+persuasion rank-gate remain explicit zero fleet-wide. The second adds
+`GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1`, deterministic and default OFF.
+
+The candidate changes only a remaining Reject when P1 has an unknown horizon,
+own delta exactly .95, round at least 10, a current high-water offer in
+[.45,.50), and at least three provenance-checked opponent offers, and the exact
+wire-coerced next counter discounted one round is strictly worse by more than
+1e-12. It is pinned to Test 2's .50/.05/SPE1/.57/.39/60/99 numeric stack and
+fails closed against every existing discount/no-regress/high-share/exact-floor
+guard, OBSERVED_GAIN, economic stall, stonewall, and opponent exploitation.
+It has no game hash, randomized arm, or cell assignment; P2 commitment dispatch
+is untouched.
+
+Evidence is deliberately limited. Across the clean Test 2 window
+`[1787616328,1787656904)`, all 1,177 terminal bargaining outcomes were retained
+(573 P1); the strict first-trigger subset was 8/8 retrospective wins, mean
++0.0328984 pot share, but is low-frequency and non-causal. One real example
+rejected 45.20% at round 34, then sent 47.32%; `.95*.4732=.44954`, and the
+eventual payoff was 230.73 versus 831.80 from immediate acceptance. Do not
+generalize this into a broad early-accept policy: Agent 5's wider hindsight
+miss set is not identified, and broad OBSERVED_GAIN already lost all three
+arena seeds.
+
+Focused tests passed 52/52; related bargaining interactions passed 296/296.
+The full suite was 2,285 passed with exactly three pre-existing failures: the
+stale bargaining horizon-floor assertion plus bargaining and negotiation live
+grid drift alarms. Exact physical `hardliner` / effective `champion`
+reachability at n=2,400 seed 2701 passed 1,653/1,653/1,653
+eligible/fired/action-changed. Ordinary cloned-field draws close too early for
+this rare late predicate, so the checker uses a documented reachability-only
+hold-open opponent; eight actual historical Test 2 games separately prove live
+state reach.
+
+Safe fleet tooling added the candidate `=1` and explicit zeros for every
+conflict while Test 2 was down. The resulting 79-entry treatment overlay hash
+is `fcb6335f3a58015eaf614dd44277a2eee5664537d0561c832cb35d2edd5101e1`.
+The supervisor launched replacement PID `6085` at 18:11:51 IST with policy
+`champion`, all three families, LLM off, and pushed HEAD `12069ea`. Process
+environment inspection confirms candidate=1, every conflict=0, both CDF
+consumers=0, and all three families. T0 scores/counts were bargaining
+2307.35/15,543, negotiation 2649.59/15,539, persuasion 2349.12/15,505. The
+first authenticated postlaunch check showed nine active games and counts
+15,545/15,541/15,505; bargaining was 2307.5. No candidate gate has fired yet,
+which is expected at this frequency. Treat post-T0 comparison as observational
+and roll back by setting the candidate to zero at a natural boundary if the
+all-outcome P1 unknown-H/d=.95 target cell deteriorates after adequate exposure.
+
+### 2026-08-25 19:29 IST: human scope correction; P1/broad comparator retired, correct Test 2 P2 ladder queued
+
+The human source explicitly corrected the rule `current offer > .95 * next
+counter`: it is intended only for Bob/P2 with a disclosed twelve-round horizon,
+not P1 or an unknown horizon. Fleet tooling therefore set
+`GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1=0` on Test 2 and set the broader
+`GLEE_BARG_DISCOUNT_NO_REGRESS=0` on Test 1, Agent 5, and Test 4. Test 2 and
+Test 3 already had the broad flag at zero. Runtime overlays resolved all five
+values to zero; no process was signalled and no game was abandoned by the
+rollback. The P2 commitment dispatcher takes precedence in its owned cell, so
+the broad flag had not contaminated Agent 5/Test 4's existing P2 ladder.
+
+This was a real, contained Test 2 exposure rather than an inert mistake. The
+P1 candidate appeared on 35 decision turns across three bargaining games,
+became eligible once, fired once, and changed one Reject to Accept. In game
+`7e5ee0a3-5df3-4bd2-aed1-ebb3e7ed8817`, P1 accepted 45.2% from gamma on round
+42 in an unknown-horizon `.95` game; the agreement paid discounted P1 payoff
+55,183.12 on a 1,000,000 pot. Gamma had offered the identical 45.2% since round
+6, where acceptance would have paid 349,748.98. This proves that waiting was
+nominal-payoff destructive in that game, but it does not identify the official
+same-cell percentile/Elo counterfactual.
+
+Do not silently replace the existing P2 acceptance floor with the newly worded
+comparator. The implemented human P2 component already follows the source's
+earlier explicit rule: accept when the current discounted payoff meets the
+round-12 `(M-.01)*.95**11` floor. On a 100 pot its odd-round thresholds are
+56.8743/63.0186/69.8267/77.3704/85.7289/94.9905, whereas `.95` times the next
+silent-ladder counter is 57.95/64.60/70.30/77.90/86.45/94.9905. Adding the
+new comparator as an OR is behaviorally dead; replacing/taking the max is a
+strictly tighter policy and contradicts the earlier formula until the human
+confirms that replacement. Keep the message-on component off: historical text
+closure is materially weaker, while the silent component's complete live
+sample retains 23 agreements and two no-deal zeros over 25 games.
+
+At 19:28 IST, safe fleet tooling requested `stop hardliner`. Current Test 2 PID
+`9695` had only started at 19:25:30 from workspace HEAD `0146c3f`, policy
+`champion`, all three families, and LLM off, so it will continue normally until
+its one-hour SDK boundary, drain all in-flight games, and stay down. Do not
+signal or accelerate it. Once the supervisor records the old PID gone and a
+zero-game clean drain, set only
+`GLEE_BARG_P2_H12_D095_SILENT_V1=1`, retain
+`GLEE_BARG_P2_H12_D095_MSG_COMMIT_V1=0`,
+`GLEE_BARG_P2_H12_D100_COMMIT_V1=0`,
+`GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1=0`, and
+`GLEE_BARG_DISCOUNT_NO_REGRESS=0`, then `fleet.py start hardliner`. Verify the
+replacement PID, `--probe champion`, all three families, LLM off, loaded code,
+and exact runtime values before calling the corrected Test 2 bargaining policy
+live. Fresh exact Test 2 reachability for the silent component is 191 eligible,
+191 fired, and 74 submitted actions changed over 1,200 games; focused P2 tests
+pass 53/53.
+
+### 2026-08-25 19:49 IST: Agent 5 overall-2505 peak lock armed
+
+The operator directed that the next authenticated Agent 5 / physical
+`composite` overall leaderboard snapshot at or above `2505.00` must latch a
+bank-and-defend peak lock. The latest snapshot when armed was `2469.97`, so the
+trigger has not fired. A 15-minute thread heartbeat now checks the authenticated
+overall row and must trigger on the first fresh `>=2505.00` observation, record
+the exact overall/family ratings and counts, PID, stack hash, and timestamp,
+then request `fleet.py stop composite`. This is a safe-drain request only: never
+signal, kill, crash, or abandon games. Because the current SDK process can stop
+queueing only at its natural shift boundary, the eventual banked value may
+differ from the trigger snapshot; report both.
+
+Once latched, Agent 5 is no longer an experimental host. Keep its exact stack
+unchanged and stopped except for activity-defense shifts. Use authenticated
+total-count differences to maintain buffers of at least 15 games per family in
+the trailing 24 hours and 115 per family in the trailing 48 hours. When any
+buffer is reached, start exactly one normal all-three-family, LLM-off shift,
+verify its PID and unchanged stack, and immediately queue a safe stop for its
+next natural boundary so it cannot roll into a second shift. Record every
+outcome and the pre/post ratings. Other agents continue improvement work. This
+minimizes exposure but cannot freeze the rating exactly because GLEE applies
+activity requirements and high-rating decay.
+
+### 2026-08-25 23:01 IST: fleet-wide minute bank shipped; Agent 5 latch reconciled
+
+The earlier 15-minute heartbeat was too slow for the requested peak lock. The
+authenticated ten-minute history later proved that Agent 5 crossed the trigger
+at 22:03 IST with overall `2506.72`; its family snapshot was bargaining
+`2493.33/14890`, negotiation `2604.62/14849`, and persuasion `2418.72/14848`.
+The next two overall observations were `2496.54` and `2490.75`, demonstrating
+why an hourly process boundary could not bank the exact peak. The operator's
+safe stop request left PID `23015` playing every in-flight game; the supervisor
+recorded it down at 22:25:28 with no signal or abandonment. Latest authenticated
+stopped state is overall `2490.75`, bargaining `2480.55/14916`, negotiation
+`2619.14/14874`, and persuasion `2372.56/14878`.
+
+Commits `457cc91` and `a530dd6` are pushed to `origin/main`. They add a distinct
+`fleet.py bank SLOT` path for every physical slot. A code-loaded runner observes
+the request in its normal roughly two-second poll, stops all queue top-ups,
+uses the SDK's native drain for every already-matched game, and remains disabled.
+Ordinary `stop` retains its natural-boundary semantics for one-shift activity
+defence. A singleton `peak_watch.py` samples one authenticated overall board on
+a monotonic 60-second cadence only while at least one unlatched threshold is
+eligible. Each slot has an independent target; no strategy, randomizer, family
+assignment, or gameplay flag was changed.
+
+Safe tooling armed physical `composite` at `2505.00`, latched it, and verified
+it BANKED/down with `drain_now`, `disabled`, and `bank_latched` all present.
+The retained Agent 5 overlay SHA-256 is
+`759831b1fffae74225d5a6acf1e88493ba6d0d9dfa22db4afbf66d21f3852a7a`.
+Peak watcher PID `63596` is live. The manual reconciliation observation is in
+control because the first minute watcher did not exist at the historical
+22:03 crossing; the authenticated peak and exact family data above come from
+the append-only rating history rather than being relabelled as a fresh trigger.
+Conservative trailing activity deltas are approximately 24h
+`B/N/P=2905/2872/2906` and 48h `5308/5279/5300`, far above the minimum buffers,
+so no defence shift is due.
+
+At this checkpoint champion replacement PID `62880` (22:50:39) has loaded the
+cooperative bank code. Hardliner PID `58430`, conceder PID `59614`, and
+randomized PID `60650` predate `457cc91`; do not force-cycle them. They gain the
+same capability at their next clean SDK boundary. Agent 5 is already stopped
+and will load it only when a future authorised defence shift starts. The old
+supervisor predates watcher supervision, but `fleet.py peak` launched and
+verified PID `63596`; a future safe supervisor replacement will adopt it.
+
+Safety-focused tests pass 35/35. The immediately preceding full suite had
+2,532 passes and exactly the same three documented pre-existing failures: the
+stale bargaining horizon-floor assertion and the bargaining/negotiation live
+grid drift alarms. Review found no remaining high-risk code issue. Exact rating
+freeze remains impossible: an observation stops new matchmaking promptly, but
+up to the slot's existing concurrency of already-matched games must settle.

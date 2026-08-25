@@ -795,3 +795,11 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-25 09:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-25 12:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-25 15:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
