@@ -1,9 +1,29 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 18:50 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 19:38 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 19:38 Test 2 wait checkpoint — concurrent bargaining drain owns the boundary
+
+- Test 2 naturally launched PID `9695` at 19:25:30 IST from pushed HEAD
+  `0146c3f`, which contains persuasion code commit `cef2621`. Its command is the
+  required complete-agent command: `--probe champion`, LLM off, all three
+  families, and a 3,600-second maximum shift. V1 is live; V2 and V3 remain
+  absent/off, and every persuasion `*_AB` value remains zero.
+- A separate bargaining owner used fleet tooling to disable Test 2 at 19:28 and
+  now owns its natural drain and replacement launch. PID `9695` is still
+  running normally with in-flight games; persuasion did not stop, signal,
+  restart, start, or mutate it. Do not arm V2/V3 during this drain and do not
+  override `control.json`.
+- The then-current Test 2 non-persuasion overlay hash is
+  `ff68acfa5609d37aec1ad3ad6efab687a851b2da3a9b73c094d72c6b8704a178`,
+  legitimately superseding earlier hashes through concurrent owned changes.
+  This is only a wait checkpoint: at the eventual persuasion Tcfg, freeze the
+  exact current non-persuasion stack again and require it to stay byte-identical
+  across the V2/V3-only fleet write. Agent 5 and all other slots remain outside
+  the authorized persuasion change.
 
 ## 18:50 Test 2 wait checkpoint — external non-persuasion stack advanced
 
