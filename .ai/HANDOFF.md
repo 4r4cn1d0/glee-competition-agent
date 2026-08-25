@@ -3121,3 +3121,63 @@ or Test 2's protected peak stack.  If Claude restores portfolio diversity, use
 one clean non-leading natural boundary (prefer the weakest Test 3 slot), record
 the exact pre-change stack and T0, and treat the comparison as observational,
 not causal.
+
+### 2026-08-25 16:36 IST: deterministic strict-edge persuasion challenger for Test 4
+
+Commit `67b684b` (pushed to `origin/main`) adds two deterministic, default-OFF
+seller switches and composes them with the already-inert deterministic buyer
+decline V2. No switch reads game ID, assigns an arm, or changes bargaining or
+negotiation behavior.
+
+- `GLEE_PERS_ZERO_MARGIN_TRUTH_V1=1` changes only known-value, low-quality
+  seller turns where `p*v+(1-p)*u == price` within scale-safe tolerance from
+  recommend to decline. High quality, strict-positive prior value, strict-
+  negative prior value, and seller-blind cells remain byte-identical. The
+  motivation retains all 170 comparable completed p=.8/r1.25 all-yes games:
+  35 sold nothing, 123 exposed a bought low, and 42 of those buyers stopped
+  completely while leaving a mean 12.38 later high-quality opportunities.
+  This is mechanism evidence concentrated in one official cell, not an
+  identified official-rating effect for every equality cell.
+- `GLEE_PERS_P08_POSITIVE_PROSE_V1=1` changes only a positive p=.8 seller/text
+  wire from literal `yes` to the fixed, quality-neutral sentence
+  `I recommend this one.` Negative messages stay literal `no`; recommendation
+  policy, binary mode, other priors, and buyers are unchanged. Historical
+  within-text conversion was 69.3% prose versus 60.8% token at p=.8, but that
+  contrast is observational and the earlier exact prose arm never reached its
+  official decision boundary. No LLM wording is used; measured LLM copy was
+  worse (46.3% versus 55.3% templates).
+- `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1` is the existing final BUY-to-PASS
+  guard from `6d3aec4`. Its frozen exact replay changed 51 purchases in 16
+  games and every one of the 51 observed purchased items was low quality;
+  seller adaptation and action selection still prevent a causal rating claim.
+
+Focused strict-edge/existing-component tests passed `116/116`. The full suite
+passed `2231` tests with only the three pre-existing unrelated failures: the
+stale 450-versus-468 bargaining horizon assertion and live bargaining/
+negotiation grid drift alarms. Exact Test 4 `randomized`-slot / actual
+`hardliner`-policy reachability over 1,200 paired persuasion games passed:
+truth `644/644/644`, prose `2109/2109/2109`, and buyer V2
+`1492/1492/1492` eligible/fired/action-changed.
+
+The requested candidate host is Test 4 only. Preserve its entire existing
+overlay and add exactly the three values above after a process has naturally
+loaded `67b684b`; keep every persuasion `*_AB` flag at explicit zero. Record
+the overlay timestamp and first post-activation turn as T0. Retain every
+post-T0 persuasion game, both roles, all cells, zero/negative outcomes,
+timeouts, and unresolved joins. This is a deterministic challenger comparison,
+not a causal A/B; the prose and cross-equality extensions are the weakest
+identified parts and should be first rollback candidates if adequately sampled
+all-outcome role/cell performance deteriorates.
+
+Deployment landed on Test 4 only. The old PID `86582` crossed its one-hour
+cutoff, drained cleanly with zero games abandoned at 16:38:43 IST, and the
+supervisor launched PID `92980` at 16:38:53 with policy `hardliner`, all three
+families, LLM off, and workspace commit `67b684b` already checked out. Fleet
+tooling atomically added the three deterministic values at
+`Tcfg=1787656144.0263646` (16:39:04 IST). Runtime lookup on the `randomized`
+slot resolves all three to `1`; the other four slots have none of them, and
+the three old p=.8 persuasion A/B flags remain explicit `0`. The first
+post-overlay persuasion action was at `1787656145.214844`. No new gate trace
+appeared during the first roughly six post-activation minutes, so live behavior
+is not yet mechanism-verified; the exact-stack reachability above is the only
+action-change evidence at this checkpoint.
