@@ -1,5 +1,149 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
+## BUILT DEFAULT OFF — complete-info unknown-horizon late stasis (25 Aug)
+
+- **Flag / state**: pushed commit `4a15244` contains
+  `GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1`, deterministic, default OFF, live
+  nowhere. There is no hash, randomizer, or cell allocation.
+- **All-outcome motivation**: 66 eligible clean games comprise 61 terminal
+  outcomes (44 agreements, 17 no-deals) and five unresolved. The post-hoc
+  round-75 / ten-completed-mutual-cycle fence reached 17/17 terminal no-deals,
+  0/44 agreements, and one unresolved game. Terminal diagnostic lift is
+  `+.03062` exact percentile; the maximally adverse unresolved bound is
+  `-.01553`. Repeat-3 and repeat-10 alternatives were negative and remain off.
+- **Mechanism**: only a baseline wire-coerced `RejectOffer` can become
+  `AcceptOffer`; the visible offer must be strictly profitable in a feasible
+  complete-information game with an explicitly unknown horizon, at round 75 or
+  later, following ten complete and consecutive P→Reject/C, C→Reject/P cycles.
+  The current provisional counter does not count as a cycle.
+- **Verification**: exact Test 4/composite and Test 3/conceder stacks each pass
+  reachability `4914/4914/4914` over 800 paired games. Focused 38/38 and all
+  negotiation 585/585 tests pass. Full suite is 1,861 passed with only the
+  three pre-existing live-machine failures.
+- **Decision rule**: do not deploy while any unresolved outcome can reverse the
+  sign. If those outcomes finalize and the complete all-outcome evidence stays
+  positive, freeze a prospective one-challenger deterministic design before a
+  natural boundary; retain every enrolled negotiation game, not only guard
+  fires. Any source/wire/parser error is an immediate explicit-zero revert. No
+  change is authorized for Test 2.
+
+## RUNNING — deterministic bargaining high-share delay guard (25 Aug)
+
+- **Flag / allocation**: `GLEE_BARG_HIGH_SHARE_DELAY_GUARD`, deterministic and
+  default OFF in source. It is live on Agent 5 / slot `composite` only, stacked on
+  `GLEE_BARG_DISCOUNT_NO_REGRESS=1`. Test 1, Test 2, Test 3, and Test 4 are
+  explicit zero. There is no game-id hash, A/B arm, or configuration-cell
+  assignment. Test 2 remains the exact 2586 high-water stack.
+- **Action**: after every earlier policy still says Reject, accept only a
+  positive standing offer in `[.45,.50)` when our delta is below one, more than
+  two rounds remain, three finite provenance-checked opponent offers include
+  the standing offer, it has not retreated from their prior high-water, the
+  trail concession rate is below the pinned `.05` prior, and both the measured
+  observed-gain floor and ordinary discounted continuation clear the offer.
+  The gate is pinned to `ACCEPT_FLOOR=.50/FLOOR_GAIN=.05` and fails closed if
+  legacy observed gain, a hash/nominal reject guard, stonewall, econ-stall, or
+  opponent exploitation is armed.
+- **Evidence / caveat**: frozen first-trigger replay is `35/0` exact wins plus
+  four unresolved; mean exact payoff-share alternative `+.10547`, maximally
+  adverse all-missing bound `+.05857` with 95% CI `[+.00746,+.10968]`.
+  The broad parent treatment remains three-seed arena-negative and its
+  sub-`.35` live subset is negative. The cutoff is post-hoc, so this is a
+  deterministic single-profile challenger, not a proven promotion.
+- **Verification**: pushed commit `aa6485a`; focused guard/no-regress tests
+  `69/69`; bargaining suite `216` passes plus only the declared stale
+  450-vs-468 assertion; full suite `1,837` passes with exactly the two declared
+  bargaining failures. Agent 5 exact-stack reachability is
+  `130 eligible / 130 fired / 130 action_changed` over 2,400 paired games. A
+  fresh pre-deployment replay on the actual 04:06 Agent 5 overlay and hardliner
+  wrapper passed `38/38/38` over 800 paired games on current HEAD `8a028dd`.
+- **Deployment boundary**: the supervisor recorded `composite cycled with zero
+  games abandoned` at 04:06:28 IST and launched replacement PID `48295` at
+  04:06:38 with `--probe hardliner`, all three families, LLM off, and code newer
+  than `aa6485a`. Fleet tooling then set the single deterministic overlay at
+  `Tcfg=1787611031` (04:07:11); runtime lookup resolves the flag to `1` and all
+  overlapping release/exploit flags to zero. The other four slots remain
+  explicit zero. The last official snapshot before activation was
+  `1787610964`: Agent 5 overall `2220.76`, bargaining `2122.69`, negotiation
+  `2060.42`, and persuasion `2471.17`.
+- **Cohort / falsifiable safety rule**: include only Agent 5 games whose first
+  logged turn is at or after `1787611035`, so games opened during the 33-second
+  launch-to-overlay interval cannot leak into the read. Three observed
+  cross-boundary game IDs (one bargaining, two persuasion) are therefore
+  excluded even though they completed after Tcfg. Retain every enrolled game,
+  including non-triggers, both roles, all configuration cells, zeros, no-deals,
+  and unresolved outcomes; defer the formal read while any cohort outcome is
+  unresolved. At 200 fully joined post-boundary bargaining games, compare the
+  all-outcome same-cell/role percentile with the immediately preceding 200
+  Agent 5 games. Revert on any strategy/wire/parser failure. Otherwise this is
+  an observational profile safety read, not causal evidence: do not copy it to
+  another agent or alter protected Test 2 unless the overall point estimate is
+  nonnegative and no role/cell with at least 20 games falls by `.05` percentile
+  or more.
+- **05:17 checkpoint — no decision**: 142 bargaining games are enrolled, with
+  137 locally joined outcomes and five retained unresolved.  The joined set has
+  zero no-deals, exact zeros, or strategy/wire/parser failures, and covers both
+  roles and every coarse role x horizon x message cell.  Eleven eligible
+  game-turns fired, all eleven changed to exact accept wires, and no malformed
+  source/action record appeared.  Official bargaining moved
+  `2122.69/12619 -> 2204.31/12760` after activation, but that movement is an
+  observational safety signal, not the frozen comparison.  Do not read the
+  preceding-200 control or make a live change before 200 joined outcomes and
+  zero unresolved enrolled games.
+- **05:39 checkpoint — still blocked**: 195 bargaining games are enrolled,
+  with 155 locally joined outcomes and 40 retained unresolved.  The joined set
+  remains all agreements with zero exact zeros, no-deals, or mechanism errors;
+  the full enrolled cohort is Alice/Bob `98/97` and covers every coarse role x
+  horizon x message cell.  Fifteen eligible game-turns all fired and submitted
+  exact accept wires.  Official bargaining is `+99.65` after activation, but
+  this is still observational and the frozen 200-joined/zero-unresolved gate is
+  not met.  The preceding-200 comparison was deliberately not inspected.
+
+## WATCH — deterministic negotiation leader replica on Test 4 (25 Aug)
+
+- **Completed clean shift**: PID `37202`, `T0=1787607037` through natural drain
+  `T1=1787610923`, had 155/155 negotiation games terminal and zero unresolved,
+  strategy, or wire failures. Every outcome is retained: 74 agreements, 53
+  no-deals, 28 walks, and 81 exact zeros; buyer/seller are 79/76 and all six
+  information x horizon cells are represented.
+- **Movement / mechanism**: raw official negotiation rating/count moved
+  `2115.13/6709 -> 2049.57/6858` (`-65.56`). The replica stamped all 586 buyer
+  turns across all 79 buyer games; its seller-message gate fired 159 turns in
+  36 seller games, with no source miss. All-outcome fitted same-cell percentile
+  was `.49710`, 95% CI `[.45704,.53715]`; complete-information unknown horizon
+  was the weakest observed cell at `.3755` on only 14 games.
+- **Why no rollback yet**: the immediately preceding same-size aggregate window
+  gained `+62.11` while running essentially the same intended behavior, and 93
+  of its 155 local outcomes remain unresolved. That sign flip plus the current
+  cohort interval spanning `.50` makes an explicit-zero revert observationally
+  underidentified. Test 4 remains a non-leading deterministic challenger and
+  keeps the portfolio diverse.
+- **Frozen next-shift rule**: join every next-shift negotiation game and its
+  authenticated official delta by game ID, retaining zeros, no-deals, walks,
+  both roles, all cells, and unresolved records. Revert immediately on any
+  source/wire/strategy failure. Otherwise revert only if zero outcomes remain
+  unresolved and either official per-game mean 95% CI is wholly negative, or a
+  second full shift loses at least 40 displayed negotiation rating while its
+  all-outcome fitted-percentile upper 95% bound is below `.50`. Do not select
+  agreements or gate-fired games.
+- **Second-shift verdict — KEEP (05:10 drain)**: PID `48235` completed 132/132
+  negotiation games with zero unresolved or source/wire/strategy failures: 63
+  agreements, 44 no-deals, 24 walks, one opponent-side invalid-moves result,
+  and 69 exact zeros.  All-outcome fitted same-cell percentile was `.49568`,
+  95% CI `[.44904,.54233]`, and authenticated displayed negotiation moved
+  `2049.57/6858 -> 2081.00/6987` (`+31.43`) over the 129 posted games.  Neither
+  frozen rollback clause fires.  The weakest descriptive slice is
+  complete-information / unknown-horizon seller at `.23391`, `n=5`; preserve
+  it as a hypothesis target rather than changing policy from a thin slice.
+- **Current-shift watch (05:44)**: PID `55554` has 82 negotiation enrollments,
+  only 28 local finals, and 54 retained unresolved.  The 28 finals include 13
+  agreements, eight no-deals, seven walks, and 15 exact zeros; buyer/seller are
+  both represented.  All 2,563 post-boundary action turns use the intended
+  heuristic source with zero source/strategy errors or malformed wires.
+  Displayed negotiation moved `2081.00/6987 -> 2058.36/7045` (`-22.64`), so it
+  has not reached the frozen `-40` threshold.  Do not use the resolved-only
+  `.44982` fitted percentile while 54 outcomes are unresolved; no rollback
+  clause currently fires.
+
 ## RUNNING
 
 ### First-principles terminal cells (negotiation, Test 4)
@@ -1372,18 +1516,69 @@ activation, assignment, or outcome.
   named zero-game cycle to load that commit. Test 1, Test 2, Test 3, and Agent 5
   remain unarmed for this bargaining experiment.
 
-## STOPPED — fleet-wide deterministic specialist cutover (25 Aug)
+## DEPLOYING — deterministic discounted-counter guard (25 Aug)
 
-- **Operator decision / stop boundary**: every randomized and cell-specific
-  experiment was explicitly set to zero fleet-wide at
-  `T1=1787600396` (2026-08-25 01:09:56 IST). All prospective readers must cap
-  their cohorts at this T1; games spanning it remain in their original ITT but
-  no later game may enter. No stopped experiment may be interpreted as promoted.
-- **Deterministic topology**: Test 2 and Test 3 are bargaining specialists under
-  `hardliner`; Agent 5 is a negotiation specialist under `hardliner`; Test 1 is
-  a negotiation specialist under `champion`; Test 4 is a persuasion specialist
-  under `conceder`. LLM mode is off. Every arm overlay is byte-identical, with
-  every `*_AB`, probe router, and observed-gain trial explicitly zero.
+- **Operator constraint / design**: no per-game hash, cell assignment, or
+  randomized arm is active. `GLEE_BARG_DISCOUNT_NO_REGRESS=1` deterministically
+  changes every reachable bargaining decision on its enrolled profile. The
+  legacy `GLEE_BARG_DISCOUNT_NO_REGRESS_AB` and broad
+  `GLEE_BARG_NO_REGRESS` flags are explicitly `0`; the deterministic guard
+  fails closed if either is armed, preventing accidental overlap.
+- **Behavior**: only after the baseline policy has chosen `Reject`, accept a
+  strictly positive standing offer when a round remains, our discount is
+  strictly below one, and the exact next wire-coerced counter multiplied by our
+  one-round discount is no larger than the standing offer. Patient
+  `delta_me=1` games are excluded.
+- **Retrospective basis, not a prospective causal result**: in the complete
+  latest-12h first-trigger cohort on the two bargaining leaders, the discounted
+  subset had `49/49` realised finals below immediate acceptance, mean
+  `+0.03326` pot-share alternative (95% CI `[+0.02722,+0.03930]`) and
+  `+0.02005` diagnostic percentile. The excluded patient subset was harmful:
+  `-0.0505` pot share over 16 games. This motivates deployment but does not
+  prove its future field effect.
+- **Deterministic profile allocation**: candidate on Test 1 (`champion`), Agent
+  5 (`hardliner`), and Test 4 (`composite`); protected controls on Test 2
+  (`champion`) and Test 3 (`conceder`). All five still queue all three families.
+  The cross-profile comparison is observational and noisier than a randomized
+  experiment, but preserves the operator's no-randomizer rule and the
+  max-of-five selection objective.
+- **Verification**: commit `cc608f5` is pushed. Focused tests passed `32/32`;
+  the bargaining-focused suite passed `165` with only the predeclared stale
+  horizon-floor failure. Full suite: `1,738 passed`, with exactly the two
+  predeclared failures (468 versus stale 450 horizon expectation, and live
+  bargaining grid drift). Exact-stack reachability passed Test 1
+  `11/11/11`, Agent 5 hardliner `14/14/14`, and Test 4 `31/31/31`
+  eligible/fired/action-changed.
+- **Clean evaluation boundary**: overlays were written at `Tcfg=1787604088`
+  (02:11:28 IST), and safe cycles were requested at 02:11:35 for the three
+  candidate slots. The old processes predate commit `cc608f5`, so the flag is
+  inert until each replacement PID launches after the commit. Measure all
+  bargaining games beginning at each verified replacement start; retain zeros,
+  no-deals, both roles, and every discount/horizon cell. Compare realised
+  same-cell percentiles and rating movement against both protected controls;
+  do not condition on a deal or a guard firing. No efficacy claim exists before
+  those post-boundary outcomes arrive.
+
+## STOPPED — fleet-wide deterministic full-stack portfolio cutover (25 Aug)
+
+- **Operator decision / stop boundaries**: every randomized and cell-specific
+  experiment was first explicitly set to zero fleet-wide at
+  `T1=1787600396` (2026-08-25 01:09:56 IST). Three narrow arms were subsequently
+  restored on four slots, contrary to the later full-stack portfolio decision,
+  and were explicitly disabled again at `T2=1787601952` (2026-08-25 01:35:52
+  IST). Prospective readers must exclude new assignments after T1 and may not
+  treat the brief restored interval as a promoted deployment. No stopped
+  experiment may be interpreted as promoted.
+- **Deterministic topology**: because competition placement selects the best
+  complete agent, all five slots continue to queue bargaining, negotiation, and
+  persuasion. The configured profiles are Test 1=`champion`, Agent 5=`hardliner`,
+  Test 2=`champion`, Test 3=`conceder`, and Test 4=`composite`. The historical
+  `randomized` name for Test 4 is only a slot/log label. LLM mode is off. Every
+  arm overlay is byte-identical, with every `*_AB`, probe router, and
+  observed-gain trial explicitly zero. Test 2 retains the winner stack because
+  the hardliner transform would only replace its honest persuasion component
+  with the historically weaker lie-heavy component under the canonical overlay;
+  the hardliner challenger was moved to lower-rated Agent 5 before rotation.
 - **Deployment safety**: all five named cycles were requested. Existing
   processes continue their pre-cutover launch shape until a zero-game/natural
   shift boundary; each replacement must be verified from its actual process

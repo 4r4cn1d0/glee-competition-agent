@@ -3,6 +3,48 @@
 Each line is something measured, with its sample. Hypotheses do NOT belong here;
 they go in EXPERIMENTS.md until they have evidence.
 
+## Complete-information unknown-horizon late stasis audit (25 Aug)
+
+- Among 724 clean negotiation first-action games, 66 were in this cell: 61
+  terminal (44 agreements, 17 no-deals) and five unresolved. All outcomes,
+  roles, and configurations were retained; unresolved games were not imputed.
+- All 17 terminal no-deals repeatedly rejected a strictly profitable visible
+  offer. A repeat-3 accept fence was negative (`-.28173` diagnostic exact
+  percentile), as was repeat-10 (`-.04804`); broad repeated-offer acceptance is
+  not supported.
+- A post-hoc round-75 / ten-completed-mutual-cycle fence separated the terminal
+  sample (17/17 no-deals, 0/44 agreements) with `+.03062` diagnostic exact
+  percentile, but one of five unresolved games reaches and yields a maximally
+  adverse `-.01553` bound. This supports only a default-off falsifiable
+  hypothesis, not deployment.
+
+## Bargaining delay guards, frozen Test 2 replay (25 Aug)
+- The broad `GLEE_BARG_OBSERVED_GAIN` floor release remains **NEGATIVE** and
+  must stay off: its original controlled arena screen lost on all three seeds
+  (`-0.0012/-0.0013/-0.0006` estimated percentile). Clamping its observed gain
+  at the old `.05` prior does not rescue it because zero of 895 measured trails
+  exceeded that prior; the clamp retains the damaging floor collapses.
+- In the reproducible frozen window
+  `[1787560053.110389,1787603253.110389)`, exact replay reproduced all
+  `4,265/4,265` Test 2 bargaining wires. The deterministic discounted-counter
+  guard first changed 33 games. Adding the old observed-gain logic after it
+  exposed 180 additional first decisions, none after an earlier discount-guard
+  divergence.
+- Outcome direction reverses by standing-offer share. Among exact terminals,
+  `<.30` was `13/22` wins/losses with `-.02945` pot-share difference (n=35),
+  `.30-.35` was `8/8` and `-.01624` (n=16), while `.45-.50` was `35/0` and
+  `+.10547` (n=35), with diagnostic percentile `+.09539`. There were no
+  triggers at or above `.50`; maximum was `.499`. All recovered terminals were
+  agreements; no zero/no-deal was dropped.
+- Four of 39 high-share outcomes remain locally ambiguous. A maximally adverse
+  bound awarding all four baselines the full pot at the earliest next round
+  still leaves `+.05857` pot share, 95% CI `[+.00746,+.10968]`. Fitted
+  percentile becomes inconclusive under that deliberately impossible bound.
+  All 39 standing offers matched the prior genuine-opponent high-water within
+  `1e-11` of pot. This supports a one-challenger hypothesis, not a causal or
+  fleet-wide promotion; the `.45` cutoff was selected post hoc and opponent
+  adaptation is unobserved.
+
 ## Structure of the games
 - Negotiation config mix (810 games, Test 1, 21 Aug): hidden 76% / complete 24%;
   seat 50/50; horizon 35% one-round, 31% ten-round, 33% uncapped; messages 50%.
@@ -444,8 +486,36 @@ instrument is worth more than any single flag. Bargaining results are unaffected
   `-0.0505` pot share over 16 games because waiting is free and later field
   concessions can dominate. Any discount-aware arm must exclude that cell.
 - The bargaining CDF v3 pools discount factors, so its percentile magnitude is
-  diagnostic. The payoff direction is exact for these played games; promotion
-  still requires a prospective hash arm and authenticated official deltas.
+  diagnostic. The payoff direction is exact for these played games. The
+  operator subsequently prohibited per-game randomization, so this was
+  deployed deterministically on three challenger profiles while Test 2 and
+  Test 3 remain protected controls. Any cross-profile post-deployment estimate
+  is observational, not causal, and must start at each clean replacement-PID
+  boundary without conditioning on an agreement or gate firing.
+- The deterministic implementation in pushed commit `cc608f5` is reachable on
+  every candidate policy: Test 1 champion `11/11/11`, Agent 5 hardliner
+  `14/14/14`, and Test 4 composite `31/31/31`
+  eligible/fired/action-changed. It fails closed if either the old hash arm or
+  broad nominal no-regress flag is armed, and explicitly excludes `delta=1`.
+
+## Test 2 bargaining high-water audit (25 Aug)
+- Test 2's recorded maximum was `2586.20` at 07:26:56 IST on 24 Aug. The peak
+  process and current process both use policy `champion` and the same ten
+  behavior-relevant bargaining overlay values. Later bargaining additions are
+  all behind Test 2 flags explicitly set to zero. Restoring the peak
+  configuration is therefore a behavioral no-op; the current stack already is
+  that configuration.
+- Under the unchanged stack, Test 2 moved from `.5668` fitted same-cell
+  percentile / `.4703` payoff per pot in the preceding six-hour cohort (n=471)
+  to `.5038` / `.4365` in the latest six-hour cohort (n=498). Agreement remained
+  99.6%, so the fall is deal-term/field performance rather than widespread
+  no-deal loss.
+- Deterioration concentrates in own `delta=.9` (`.4917 -> .3758` percentile),
+  unknown horizon (`.5678 -> .4833`), Alice (`.5395 -> .4837`), and anonymous
+  hidden opponents (`.573 -> .504`). These are descriptive concurrent-window
+  comparisons, not causal estimates. The 2586 peak is not evidence for an old
+  strategy because no bargaining behavior changed across the rise, fall,
+  partial recovery, and second fall.
 
 ## Fleet randomization audit (25 Aug)
 - `control.json` overrides all five slot labels to effective policy `champion`,
@@ -462,7 +532,10 @@ instrument is worth more than any single flag. Bargaining results are unaffected
 
 ### Operator supersession
 - At `1787600396`, the operator ended the research-host allocation: all enabled
-  A/B arms were explicitly zeroed. The subsequent deployment target is a
-  deterministic specialist fleet, not five identical champion processes:
-  bargaining receives two hardliner slots, negotiation receives champion and
-  hardliner slots, and persuasion receives one conceder slot.
+  A/B arms were explicitly zeroed. After a brief conflicting restoration, every
+  randomizer was zeroed again at `1787601952`. Because only the best complete
+  agent determines placement, the deployment target is a deterministic
+  full-stack portfolio, not single-family queues and not five identical
+  champion processes. All five queue all three families. The protected-leader
+  allocation is champion on Test 1 and Test 2, composite on Test 4, hardliner
+  on Agent 5, and conceder on Test 3.

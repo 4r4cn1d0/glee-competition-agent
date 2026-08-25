@@ -3,11 +3,11 @@
   "disabled": [],
   "cycle_now": [],
   "policy": {
-    "randomized": "champion",
-    "conceder": "champion",
+    "randomized": "hardliner",
+    "conceder": "hardliner",
     "champion": "champion",
     "hardliner": "champion",
-    "composite": "champion"
+    "composite": "hardliner"
   },
   "families": {
     "conceder": "bargaining,negotiation,persuasion",

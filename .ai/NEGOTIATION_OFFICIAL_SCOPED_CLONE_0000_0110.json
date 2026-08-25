@@ -1,0 +1,563 @@
+{
+  "_schema": "glee.official-rating-join/v1",
+  "games": [
+    {
+      "slot": "champion",
+      "game_id": "e0d495b1-7653-4305-9aa6-0a308854e30a",
+      "rating_delta": 0.5,
+      "join_audit": {
+        "dashboard_row": 0,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:10 AM",
+        "dashboard_minute_utc": 29793340,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600437.7312489,
+        "local_completion_ts": 1787600455.767339,
+        "fingerprint_sha256": "570f25e2146072dea335013b947b92992fb2020a28ee93a6b2db2106e069c4f9",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "fa72f123-aae3-426c-a9ff-63180432f85d",
+      "rating_delta": 3.5,
+      "join_audit": {
+        "dashboard_row": 1,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:09 AM",
+        "dashboard_minute_utc": 29793339,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600320.909813,
+        "local_completion_ts": 1787600341.411294,
+        "fingerprint_sha256": "a09be25b7a27000e2adbf2d49ce71faf567d0b5426c4d5d0c4ac1ba51fc44144",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "ffe352f3-e2fd-463b-93f7-a8c584dbc10c",
+      "rating_delta": -0.3,
+      "join_audit": {
+        "dashboard_row": 2,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:07 AM",
+        "dashboard_minute_utc": 29793337,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600255.501887,
+        "local_completion_ts": 1787600272.7283618,
+        "fingerprint_sha256": "c901fb2354174ace511af2bb5fac5b1289fe85c44da20f1e77a7379d80194e79",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "93e38610-6554-4cdc-82f9-3c0d9fe44897",
+      "rating_delta": 3.4,
+      "join_audit": {
+        "dashboard_row": 3,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:03 AM",
+        "dashboard_minute_utc": 29793333,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600008.275556,
+        "local_completion_ts": 1787600026.0415528,
+        "fingerprint_sha256": "0344ae756607d0fbb275f6ebb97a65aab5bb14ed92459fa6ac682d8b7871b79b",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "dde9997e-d78b-4ab8-b1da-4255feadaa34",
+      "rating_delta": -6.5,
+      "join_audit": {
+        "dashboard_row": 4,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:00 AM",
+        "dashboard_minute_utc": 29793330,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599795.062067,
+        "local_completion_ts": 1787599797.8272588,
+        "fingerprint_sha256": "5dac2b99aff52f239351967fba36664e7c68bdf3ab9e6f737478211796667637",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "98de3cdd-a75d-4691-93b8-082ffae558d5",
+      "rating_delta": -3.9,
+      "join_audit": {
+        "dashboard_row": 5,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:59 AM",
+        "dashboard_minute_utc": 29793329,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599728.268129,
+        "local_completion_ts": 1787599745.664163,
+        "fingerprint_sha256": "eff7ce73f9a0edd01b8de44f9447a655ada2ae3f4828185ada2320892d33a018",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "e2223346-aa24-404a-8cbf-bb3eb295b54e",
+      "rating_delta": 3.3,
+      "join_audit": {
+        "dashboard_row": 6,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:57 AM",
+        "dashboard_minute_utc": 29793327,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599645.9596758,
+        "local_completion_ts": 1787599654.4586892,
+        "fingerprint_sha256": "98883b6df14fe97dfea7ffc10390ad2bf2d87e00d1d778a6f7014ee29eb04c55",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "82f5e0f2-0a93-4239-88aa-0b6b0f6deb39",
+      "rating_delta": 0.8,
+      "join_audit": {
+        "dashboard_row": 7,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:56 AM",
+        "dashboard_minute_utc": 29793326,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599538.308419,
+        "local_completion_ts": 1787599593.179096,
+        "fingerprint_sha256": "acf6b4daac0247e09be75134d8ed043922535fcc2b6ad986829ed210e9b4cb15",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "554e9d4d-3b79-49d7-9fbe-7121e665df0c",
+      "rating_delta": 0,
+      "join_audit": {
+        "dashboard_row": 8,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:56 AM",
+        "dashboard_minute_utc": 29793326,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599561.153209,
+        "local_completion_ts": 1787599583.171015,
+        "fingerprint_sha256": "205cffcef336a3ce64d1306fee534fb14013760e39d1c352e267feb90ce29f7f",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "3470fd95-2b46-4ba3-a454-59278070e11a",
+      "rating_delta": 1.1,
+      "join_audit": {
+        "dashboard_row": 9,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:54 AM",
+        "dashboard_minute_utc": 29793324,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599484.086404,
+        "local_completion_ts": 1787599487.119204,
+        "fingerprint_sha256": "339ea62f08ac6831a206f33500c790a0958556412cfe462ac1f9bc987202bf67",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "ab74ef67-d906-4d73-8ac5-80ffffca2f07",
+      "rating_delta": 1.1,
+      "join_audit": {
+        "dashboard_row": 10,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:53 AM",
+        "dashboard_minute_utc": 29793323,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599386.623727,
+        "local_completion_ts": 1787599386.623727,
+        "fingerprint_sha256": "f417655069f0921a4e0866a8eeac560fc8e7bd2944e3842b4872b36f86439822",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "42b74179-be75-48cc-b5e4-99ab0b015c9d",
+      "rating_delta": 0.6,
+      "join_audit": {
+        "dashboard_row": 11,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:39 AM",
+        "dashboard_minute_utc": 29793309,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787598532.620854,
+        "local_completion_ts": 1787598551.4218102,
+        "fingerprint_sha256": "5bb69085438ca5b2c65851874d6e8e8258587030e54f3b466925575398b55d8c",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "fa0b3bf0-de41-4070-a455-073c7808a888",
+      "rating_delta": -3.9,
+      "join_audit": {
+        "dashboard_row": 12,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:34 AM",
+        "dashboard_minute_utc": 29793304,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787598235.970252,
+        "local_completion_ts": 1787598256.9734082,
+        "fingerprint_sha256": "41dd0f0deb0bc49207edfb0e6113e4d49c65cddf7b6e12c7b1afaa1126c10d11",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "10386143-0fd6-47a7-a8f5-7467674edb98",
+      "rating_delta": 1.7,
+      "join_audit": {
+        "dashboard_row": 13,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:31 AM",
+        "dashboard_minute_utc": 29793301,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787598107.921087,
+        "local_completion_ts": 1787598108.752087,
+        "fingerprint_sha256": "2365766c4e6d2c95c3c32b439134aa689249ee6f8bee7a142a4673463cc7d9bb",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "ca529e7b-5757-4e00-a7ea-4617c8b9af7e",
+      "rating_delta": -4.3,
+      "join_audit": {
+        "dashboard_row": 14,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:27 AM",
+        "dashboard_minute_utc": 29793297,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787597845.297462,
+        "local_completion_ts": 1787597860.8011038,
+        "fingerprint_sha256": "06b218ef024f707279eb158f23cd7626ad31ea7ef19a0289ca28b2030c649ed6",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "f08238da-b848-4ff2-aae3-84e3061d0064",
+      "rating_delta": -6,
+      "join_audit": {
+        "dashboard_row": 15,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:26 AM",
+        "dashboard_minute_utc": 29793296,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787597763.101213,
+        "local_completion_ts": 1787597777.6156259,
+        "fingerprint_sha256": "13b3fdb37413378d71462ed7effc2e73fbde0ed9295bb1e7dcc29d9ef6d23952",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "0b73d37c-bf16-4ae6-b8b8-344b46f6770e",
+      "rating_delta": 1.1,
+      "join_audit": {
+        "dashboard_row": 16,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:04 AM",
+        "dashboard_minute_utc": 29793274,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787596472.804066,
+        "local_completion_ts": 1787596474.028066,
+        "fingerprint_sha256": "97d5eeb7f692f3f95d8b691f9b53b5b37ef1cbb67911a1dfe3e6acd21ca5c4d0",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "champion",
+      "game_id": "d4cab3c8-78b0-4abf-a546-c5b00bea1725",
+      "rating_delta": 1.1,
+      "join_audit": {
+        "dashboard_row": 17,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:03 AM",
+        "dashboard_minute_utc": 29793273,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787596407.433281,
+        "local_completion_ts": 1787596410.774437,
+        "fingerprint_sha256": "2b0033d00a8ffe6ddfe49eb005e3c7f262ee8b779d89dc38863af439b06726f4",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "1c58161d-349f-46a3-b480-b4660ac3b7ae",
+      "rating_delta": 1.6,
+      "join_audit": {
+        "dashboard_row": 18,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:06 AM",
+        "dashboard_minute_utc": 29793336,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600186.0556421,
+        "local_completion_ts": 1787600212.731263,
+        "fingerprint_sha256": "a094c0108e4867091e48b05b7b4dda57783a51ba407963fa31bbeb8bcad80fa8",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "cbe6447c-2b1e-4196-84f0-bbee9fcc55c0",
+      "rating_delta": 1.4,
+      "join_audit": {
+        "dashboard_row": 19,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:06 AM",
+        "dashboard_minute_utc": 29793336,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600158.71135,
+        "local_completion_ts": 1787600158.71135,
+        "fingerprint_sha256": "ac513415e52ff52c49d4a60264bd641f48047bc984ae41aa1b4bc7c3698fd02b",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "51504a58-df99-4091-96c7-51060c9956ab",
+      "rating_delta": 0.3,
+      "join_audit": {
+        "dashboard_row": 20,
+        "dashboard_timestamp_raw": "Aug 25, 2026 1:05 AM",
+        "dashboard_minute_utc": 29793335,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787600127.518944,
+        "local_completion_ts": 1787600140.339072,
+        "fingerprint_sha256": "9e5581aee0e261b519a0d47115e2018c2ef88aff93724a9a5c11b3146c305d8d",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "b6100800-b085-4e66-a255-5f6f74399ced",
+      "rating_delta": -0.2,
+      "join_audit": {
+        "dashboard_row": 21,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:59 AM",
+        "dashboard_minute_utc": 29793329,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599759.409497,
+        "local_completion_ts": 1787599776.681613,
+        "fingerprint_sha256": "ac7fa298072a14e864e805f60076b56249ccf4a17de04ab6ede3a7f95269ae40",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "ca9a0773-2943-4159-baff-90bfaca16ac0",
+      "rating_delta": -0.7,
+      "join_audit": {
+        "dashboard_row": 24,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:58 AM",
+        "dashboard_minute_utc": 29793328,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599682.482625,
+        "local_completion_ts": 1787599682.997625,
+        "fingerprint_sha256": "2d0d0aa6a1342fd940f83ddeaa63b3ddc10ce6afaa7330bc5b22f8f91f1a5ebe",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "a2d44151-3e21-41b3-b51f-71eee886201b",
+      "rating_delta": -1.3,
+      "join_audit": {
+        "dashboard_row": 25,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:55 AM",
+        "dashboard_minute_utc": 29793325,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599516.061514,
+        "local_completion_ts": 1787599535.252391,
+        "fingerprint_sha256": "1c53e6f4d859163aa93685ff71499a4e5594497f3941a077534d1737513b1ca2",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "d8a1059b-4fe7-4c1e-8c69-12e87dd79035",
+      "rating_delta": 0.8,
+      "join_audit": {
+        "dashboard_row": 26,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:52 AM",
+        "dashboard_minute_utc": 29793322,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599352.7397199,
+        "local_completion_ts": 1787599365.4220312,
+        "fingerprint_sha256": "ef66e78117f7f9ac296cdd801f6c4aa43762dfefa488f5d60ec127cf2f4bff24",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "bd2963ae-aa6e-4f8b-9296-6518828a4887",
+      "rating_delta": 4.5,
+      "join_audit": {
+        "dashboard_row": 27,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:50 AM",
+        "dashboard_minute_utc": 29793320,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787599208.620883,
+        "local_completion_ts": 1787599211.3321831,
+        "fingerprint_sha256": "453866f6a8203fe2c77058b95cb01dc26e84d9cb91f01f51ff0bac76f3e24fdd",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-turn-prefix+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "a294bfcc-a5c3-47ca-b2e5-0f0a8669fd7f",
+      "rating_delta": 5.9,
+      "join_audit": {
+        "dashboard_row": 28,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:25 AM",
+        "dashboard_minute_utc": 29793295,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787597715.9169211,
+        "local_completion_ts": 1787597718.0999212,
+        "fingerprint_sha256": "a68a0302b5b619b4344f1126bac35af48fdc9c0f34257bd9545bfd6ea831048c",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "832b7cbf-5f8b-4c47-aa17-d78f542e1620",
+      "rating_delta": -1,
+      "join_audit": {
+        "dashboard_row": 29,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:24 AM",
+        "dashboard_minute_utc": 29793294,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787597650.0374022,
+        "local_completion_ts": 1787597670.802187,
+        "fingerprint_sha256": "f2c8c3820419bfc745c24e8f9f3a0475ec2053c185dacfc222a8850e15060a54",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "e9fe99ce-efd7-4b4e-9f01-cb531b5f89d8",
+      "rating_delta": -7.8,
+      "join_audit": {
+        "dashboard_row": 30,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:13 AM",
+        "dashboard_minute_utc": 29793283,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787596984.2875671,
+        "local_completion_ts": 1787596988.902117,
+        "fingerprint_sha256": "6e32166ff8d45ae6ad86e9ee37e4abf6e3e55a392d12c389e0cfc99391c1dba1",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "2cf01da3-f361-487a-8dba-a9864adb4f06",
+      "rating_delta": 1.1,
+      "join_audit": {
+        "dashboard_row": 31,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:10 AM",
+        "dashboard_minute_utc": 29793280,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787596773.5774488,
+        "local_completion_ts": 1787596815.2542112,
+        "fingerprint_sha256": "6a41eeec448cc409b3bf16ae7fc10e6985de45c6984ca98cb898511b947a6bc5",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    },
+    {
+      "slot": "composite",
+      "game_id": "6a3360da-17a3-4c58-9732-55f49ab800a2",
+      "rating_delta": -2.7,
+      "join_audit": {
+        "dashboard_row": 32,
+        "dashboard_timestamp_raw": "Aug 25, 2026 12:07 AM",
+        "dashboard_minute_utc": 29793277,
+        "timestamp_mode": "dual",
+        "timestamp_mode_source": "explicit",
+        "minute_tolerance": 1,
+        "local_first_ts": 1787596641.200235,
+        "local_completion_ts": 1787596661.470518,
+        "fingerprint_sha256": "e50d7290400e20c1adf086996975c8d3732e18a27cd88417af88cf946eb37cee",
+        "candidate_count": 1,
+        "match_rule": "exact-modal-fingerprint+dual-minute/v1"
+      }
+    }
+  ]
+}

@@ -127,6 +127,364 @@ negotiation game, including agreements, no-deals, walks, exact zeros,
 timeouts/invalids, both roles, all six public cells, and unresolved joins. Do
 not condition the read on either new component firing.
 
+## 2026-08-25 05:45 IST — bargaining rises; incomplete negotiation evidence blocks changes
+
+Fleet topology and health remain clean.  Supervisor PID `93675` has zero
+restart counts; all five current children started after pushed HEAD `4a15244`,
+queue bargaining, negotiation, and persuasion, and produced fresh error-free
+turns in all three families.  Every A/B, randomizer, router, allocator, and
+cell-assignment flag is zero.  Test 2's exact bargaining stack is unchanged,
+and the default-off late-stasis code is loaded but absent/off on every overlay.
+
+The exact official snapshot at `1787616400` keeps Test 2 first overall at
+`2278.66`, with Test 4 second at `2271.58`.  Movement since snapshot
+`1787615191` was Test 1 `+5.52`, Test 2 `+15.55`, Test 3 `-4.10`, Test 4
+`+19.04`, and Agent 5 `-17.74`.  Every slot gained bargaining over that same
+interval; Agent 5 bargaining rose `+18.03`, while its negotiation fell
+`-56.47` and persuasion `-33.05`.  Do not attribute its overall decline to the
+bargaining guard.  Negotiation remains the fleet's weakest family: best ours
+is `2062.40` versus field-third `2667.93`.
+
+Agent 5's frozen high-share cohort now enrolls 195 bargaining games: 155
+locally joined outcomes and 40 retained unresolved.  All joined outcomes are
+agreements, with zero exact zeros, no-deals, parser, strategy, source, or wire
+failures.  The full enrolled cohort is Alice/Bob `98/97` and covers every
+coarse role x horizon x message cell.  Fifteen eligible game-turns all fired
+and submitted exact deterministic accept wires.  Official bargaining moved
+`2122.69/12619 -> 2222.34/12809` (`+99.65`) after activation, but fewer than
+200 joined outcomes and 40 unresolved records block the frozen comparison.
+The preceding-200 comparison was not inspected.
+
+Test 4 PID `55554` has 82 current-shift negotiation games: 28 local finals and
+54 unresolved.  The 28 finals retain 13 agreements, eight no-deals, seven
+walks, 15 exact zeros, and both roles; all 2,563 post-boundary action turns are
+heuristic with zero source/strategy errors or malformed wires.  Displayed
+negotiation moved `2081.00/6987 -> 2058.36/7045` (`-22.64`), below the frozen
+`-40` loss threshold.  A resolved-only percentile is selection-biased while
+54 games are missing, so no rollback clause fires.  The last complete-shift
+weakness remains complete-information / unknown-horizon seller at `.2339`,
+`n=5`, too thin for a policy change.
+
+All five frozen Agent 5 late-stasis outcomes remain unresolved and unimputed;
+the sole predicate-reaching case still makes the maximally adverse evidence
+bound negative.  No code, live flag, process, or deployment changed.  Continue
+the Agent 5 cohort to 200 joined with zero unresolved, and finish Test 4's
+natural shift before another decision.
+
+## 2026-08-25 05:18 IST — Test 4 kept; Agent 5 high-share still below boundary
+
+The fleet is healthy and unchanged in topology: all five agents still queue all
+three families, supervisor restart counters are zero, every per-game A/B,
+randomizer, router, and cell allocator remains off, and Test 2's bargaining
+peak stack is untouched.  Test 3, Test 4, and Agent 5 completed natural drains
+with zero abandoned games and relaunched as PIDs `55548`, `55554`, and `56033`.
+The new Agent 5 process loaded pushed HEAD `4a15244`; the late-stasis flag is
+absent/off and its bargaining high-share guard remains its sole unique live
+bargaining overlay.
+
+At exact official snapshot `1787615191`, Test 2 remains the overall leader at
+`2263.11`; Agent 5 is second at `2260.38`, only `2.73` behind.  Since the prior
+heartbeat snapshot, overall movement was Test 1 `+16.31`, Test 2 `-8.84`, Test
+3 `+3.07`, Test 4 `+32.77`, and Agent 5 `+38.80`.  These cross-profile changes
+are observational.  Negotiation remains the fleet's weakest family: the best
+current internal mark is about `2077`, versus field-third `2675.62`.
+
+Agent 5's frozen high-share cohort now has 142 enrolled bargaining games: 137
+locally joined outcomes and five retained unresolved records.  The 137 joined
+outcomes are agreements, with zero exact-zero, no-deal, strategy, wire, or
+parser failures; both roles and every coarse role x horizon x message cell are
+represented.  Eleven eligible game-turns fired and all eleven submitted exact
+accept wires.  Official Agent 5 bargaining moved `2122.69/12619 ->
+2204.31/12760` (`+81.62`) after activation, but this is not the frozen
+same-cell/role comparison.  Do not inspect or act on that formal comparison
+until 200 outcomes are joined and none in the enrolled cohort is unresolved.
+
+Test 4's second clean leader-replica shift completed 132/132 negotiation games:
+63 agreements, 44 no-deals, 24 walks, one opponent-side invalid-moves result,
+and 69 exact zeros, retaining both roles and every cell.  There were no source,
+wire, parser, fallback, or strategy failures.  All-outcome fitted same-cell
+percentile was `.49568`, 95% CI `[.44904,.54233]`, while official negotiation
+moved `2049.57/6858 -> 2081.00/6987` (`+31.43`).  The frozen rollback rule is
+not met, so keep the profile.  Complete-information / unknown-horizon seller is
+the weakest descriptive cell at `.23391`, but only `n=5`; named-opponent slices
+are likewise too thin to justify policy.
+
+All five frozen Agent 5 late-stasis outcomes remain unresolved, including the
+sole observed game reaching the proposed predicate.  Its maximally adverse
+bound remains negative, so `GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1` stays
+OFF.  No code, flag, or deployment changed in this check.
+
+## 2026-08-25 04:52 IST — late complete/unknown stasis guard built inert, not deployed
+
+An all-outcome audit of 724 clean negotiation first-action games found 66 in
+the complete-information / explicitly unknown-horizon cell.  Of the 61
+terminal games, 44 agreed and 17 ended no-deal; five Agent 5 outcomes remain
+unresolved and were not imputed or dropped.  Every one of the 17 terminal
+no-deals repeatedly rejected a strictly profitable offer.  Broad repeat fences
+remain prohibited: repeat-3 was `-.28173` diagnostic exact percentile and
+repeat-10 was `-.04804`, reproducing the measured-negative accept-all failure.
+
+The only post-hoc separator was much narrower: round at least 75 plus ten fully
+completed, wire-exact mutual offer/counter/rejection cycles reached 17/17
+terminal no-deals and 0/44 agreements.  On all 61 terminal outcomes its
+diagnostic exact-percentile alternative was `+.03062`; one of the five
+unresolved games also reaches, so the maximally adverse unresolved bound is
+`-.01553`.  This is hypothesis evidence, not a promotion result.
+
+Pushed commit `4a15244` implements
+`GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1` default OFF and live nowhere.  It
+is pinned to the current deterministic negotiation
+stack, fails closed against randomized/overlapping flags or mixed policy
+selectors, projects the baseline Reject through `actions.coerce`, and compares
+the final submitted counter against ten completed two-row cycles.  It accepts
+both the live scalar and simulator dict counter schemas, requiring provenance
+when present.  Exact Test 4 and Test 3 stack reachability each passed
+`4914/4914/4914` eligible/fired/action-changed over 800 games.  Focused tests
+passed 38/38, all negotiation tests 585/585, and the full suite passed 1,861
+with only the three already-observed live-machine failures (stale bargaining
+horizon-floor expectation plus bargaining and negotiation grid drift).
+
+Do not activate while the adverse unresolved bound is negative.  Once all five
+outcomes finalize, any prospective test must be precommitted on one non-leading
+deterministic challenger at a natural boundary and retain the whole enrolled
+negotiation cohort, including non-fires, agreements, no-deals, zeros, both
+roles, every cell, and unresolved joins.  Test 2 remains protected.
+
+## 2026-08-25 04:17 IST — Test 4 negotiation drop is watch-grade, not rollback-grade
+
+The exact clean PID 37202 leader-replica shift (`1787607037..1787610923`) is
+fully joined: 155/155 negotiation games terminal, zero unresolved, 74
+agreements, 53 no-deals, 28 walks, and 81 exact zeros, retaining buyer/seller
+79/76 and all six information x horizon cells. Raw official negotiation moved
+`2115.13/6709 -> 2049.57/6858`, a `-65.56` displayed-rating loss. Mechanism
+reach was complete on the copied buyer path (586/586 turns across 79/79 buyer
+games) and the seller-message gate fired 159 turns across 36 games; there were
+zero source, wire, or strategy failures. All-outcome fitted same-cell
+percentile was `.49710`, 95% CI `[.45704,.53715]`.
+
+Do not roll back from that interval alone. The immediately preceding same-size
+aggregate window gained `+62.11` under essentially the same intended replica,
+93/155 of its local outcomes are unresolved, and the completed-shift interval
+still spans `.50`. This is sign-flipping observational evidence, not an
+identified fallback comparison. The precommitted next-shift rule is now: keep
+every negotiation game and authenticated official delta; revert immediately on
+any source/wire/strategy failure, otherwise only after zero unresolved outcomes
+if official per-game mean 95% CI is wholly negative, or a second full shift
+loses at least 40 rating and its all-outcome fitted-percentile upper 95% bound
+is below `.50`. Test 2 remains untouched.
+
+## 2026-08-25 04:08 IST — high-share bargaining challenger live on Agent 5 only
+
+The staged guard crossed a verified code boundary without abandoning a game.
+The supervisor recorded `composite cycled with zero games abandoned` at
+04:06:28 and launched PID 48295 at 04:06:38 from current pushed HEAD `8a028dd`,
+which contains implementation commit `aa6485a`. Its actual command is
+`--probe hardliner`, LLM off, and
+`--families bargaining,negotiation,persuasion`; no family eligibility changed.
+
+Immediately before activation, the actual Agent 5 stack re-passed reachability
+at `38 eligible / 38 fired / 38 action_changed` over 800 paired bargaining
+games. Fleet tooling set only slot `composite` to
+`GLEE_BARG_HIGH_SHARE_DELAY_GUARD=1` at arms mtime
+`Tcfg=1787611031` (04:07:11). Runtime overlay lookup independently resolves the
+candidate and required deterministic discount guard to true, while the hash
+and nominal guards, legacy observed gain, econ-stall, stonewall, and opponent
+exploit resolve false/zero. The other four slots remain explicit zero, every
+`*_AB` remains zero, and Test 2's exact bargaining peak stack was not touched.
+
+The last official snapshot before activation (`1787610964`) put Agent 5 at
+`2220.76` overall and `2122.69` bargaining. The clean analysis cohort includes
+only Agent 5 games whose first logged turn is at or after `1787611035`,
+excluding three games opened in the 33 seconds between launch and the hot
+overlay even though they completed later. Keep every enrolled non-trigger,
+role, cell, zero, no-deal, and unresolved game. At 200 fully joined games, compare all-outcome same-cell and
+role percentile with the immediately preceding 200; defer while any outcome is
+unresolved. Any strategy, parser, or wire failure is an immediate explicit-zero
+revert. Because allocation is deterministic by profile, rating and cross-agent
+movement are observational, not causal; do not promote this to Test 2 or copy it
+fleet-wide from a favourable selected-trigger read.
+
+Live mechanism evidence arrived without waiting for a selected outcome. By
+04:10:30, the all-turn post-cohort stream contained 302 turns / 35 game IDs
+across all three families, with zero strategy-error sources. Five bargaining
+states carried guard diagnostics and two changed Reject to Accept at standing
+shares `.473700` and `.473684`; both had exactly three provenance-checked offers,
+no retreat, and emitted `gates_fired=[accept_floor,high_share_delay_guard]`.
+This proves the loaded production gate moves real wires; it says nothing yet
+about payoff efficacy, and neither triggered game is being selected for the
+outcome read.
+
+## 2026-08-25 03:13 IST — high-share bargaining challenger pushed, staged at zero
+
+The broad `GLEE_BARG_OBSERVED_GAIN` proposal was stopped before deployment. It
+repeats a treatment already negative on all three arena seeds and its legacy
+parser can misclassify own offers when proposer provenance lives at history-row
+level. A frozen, all-first-trigger Test 2 replay instead isolated a materially
+narrower band: among 39 standing offers from `.45` through `.499`, 35 recovered
+finals were 35/0 immediate-accept wins (`+.10547` pot share and `+.09539`
+diagnostic percentile), with four unresolved. Even giving every unresolved
+baseline the full pot next round left `+.05857` pot share, 95% CI
+`[+.00746,+.10968]`. The exact sub-`.35` rows were negative (combined n=51,
+`-.02531` pot share), so a broad release remains prohibited.
+
+Pushed commit `aa6485a` adds default-OFF deterministic
+`GLEE_BARG_HIGH_SHARE_DELAY_GUARD`. It changes only a remaining Reject in the
+`.45-.50` band, after three finite, genuine opponent offers including a
+non-withdrawn current high-water, and only when both observed floor economics
+and discounted continuation clear the offer. It is pinned to the exact peak
+`.50/.05` stack, requires the deterministic discount guard, has no game hash,
+and fails closed against every legacy/overlapping release or exploit flag.
+
+Verification: 69 focused passes; 216 bargaining passes with only the declared
+stale horizon assertion; full suite 1,837 passes with exactly the two declared
+bargaining failures; Agent 5 exact-stack reachability `130/130/130` over 2,400
+paired games. Independent review verdict: PASS for Agent 5 only, not Test 2 or
+fleet-wide.
+
+Deployment is deliberately two-stage. The new flag is explicit `0` on all five
+slots. Agent 5 additionally has legacy observed gain, hash/nominal guards,
+econ-stall, stonewall, and opponent exploit explicit zero. Its PID 37885 began
+before the final source existed, so a safe named `composite` cycle was queued at
+03:12; do not arm until its replacement starts from `aa6485a` or later. The
+earlier `cc608f5` deterministic discounted guard did complete clean zero-loss
+rotations and is live on Test 4 from 03:00:37 and Test 1/Agent 5 from
+03:05:14/15; Test 2 and Test 3 remain protected at zero.
+
+## 2026-08-25 03:01 IST — deterministic negotiation leader replica live on Test 4
+
+Operator explicitly transferred deployment authority for this promotion.  The
+default-OFF negotiation portfolio was pushed through commit `d615ac8` (the
+behavioral implementation is `49b5901` plus the exact seller-message correction
+`6942311`).  Only Test 4 / slot `randomized` was promoted, through fleet tooling,
+with `GLEE_NEGO_LEADER_REPLICA_V1=1` and
+`GLEE_NEGO_RANK_HYBRID_V1=0`.  Test 4 remains policy `composite`, LLM off, and
+eligible for bargaining, negotiation, and persuasion.  Every negotiation
+`*_AB` value on the slot was independently checked as zero.  No bargaining or
+persuasion key was changed by this deployment, and the rank-hybrid backup was
+not deployed.
+
+The required exact-stack preflight used Test 4's actual overlay and composite
+wrapper over 800 negotiation games.  It banked 6,253 decision points and
+reported `eligible=6253`, `fired=2075`, `action_changed=3793`; focused clone and
+deterministic-policy tests passed `72/72`.  The already-recorded full-suite run
+on this source had 1,798 passes and only the two declared bargaining failures.
+The implementation therefore changed real negotiation wires and did not rely
+on a flag-presence claim.
+
+The safe cycle was requested at 02:45:07 IST.  The supervisor retained old PID
+17609 while its games drained from three to two to one, then recorded
+`randomized cycled with zero games abandoned` at 03:00:26.  Replacement PID
+37202 launched at the clean boundary `T0=1787607037` (03:00:37 IST) with
+`--probe composite`, all three families, and `--max-time 3600`.  Post-boundary
+wire evidence immediately confirmed both role paths: game
+`3a88f17a-96b6-4aad-9660-2f68a2d96b6e` stamped buyer decisions with
+`plan.source=leader_replica_v1` beginning at `1787607045.89682`, and game
+`773cea3a-e53f-4f90-baf1-7067acb2d7b2` stamped its first seller offer with
+`top_seller_message_clone.arm=leader_replica` at `1787607060.735022`.
+The first post-launch official stats snapshot at `1787607173.801223`
+(03:02:53 IST), before any observed post-boundary negotiation completion,
+recorded negotiation rating `2115.13` after 6,709 games; use this as the first
+available aggregate baseline while retaining the process launch as cohort T0.
+
+This promotion preserves the whole Test 4 behavior whose preceding clean
+77-game rating window implied opponent-adjusted percentile `.54881`; it does
+not turn that observational estimate into a causal result.  Score all Test 4
+negotiation games from `T0` without conditioning on agreements or local result
+availability.  The sustained `.55-.56` target and third-place objective remain
+unproven, and no other deterministic negotiation component currently has a
+stronger deployment case.
+
+## 2026-08-25 02:42 IST — Test 2's 2586 bargaining peak was the current stack
+
+Operator asked to restore Test 2's approximately 2600 bargaining strategy after
+its displayed rating fell to roughly 2283. The recorded maximum was `2586.20`
+at `1787536616` (2026-08-24 07:26:56 IST, 11,325 bargaining games). The process
+covering that peak launched at 07:03:32 after commit `7321de5`. At that commit,
+`control.json` mapped slot `hardliner` / Test 2 to policy `champion`, all three
+families, LLM off. Its bargaining overlay was exactly the current active stack:
+accept floor `.50`, Bob offer on, econ stall off, floor gain `.05`, message arm
+off, nominal no-regress off, offer floor `.57`, opponent floor `.39`, SPE weight
+`1.0`, uncapped horizon `60`. Current Test 2 is still `champion` with those exact
+values. New discount/no-regress, observed-gain, and hash flags are explicit
+zero. Its current PID also predates commit `cc608f5`, so that deterministic
+challenger cannot explain the decline.
+
+There was no behavior-changing bargaining commit between the peak and Test 2's
+current loaded process. The only bargaining diff adds default-off Test 4/hash
+machinery; its Test 2 flags are zero. A git/config rollback would therefore be a
+placebo and risks unrelated negotiation/persuasion work without changing a
+Test 2 bargaining action. No flag, control map, process, or code was changed.
+
+The decline is real outcome drift under the same strategy. Test 2's latest six
+hours were `.5038` fitted same-cell percentile over 498 bargaining finals versus
+`.5668` over 471 in the preceding six; payoff/pot fell `.4703 -> .4365`.
+Agreement stayed `100.0% -> 99.6%`, so broad closing failure is not the cause.
+The largest deterioration was own `delta=.9` (`.4917 -> .3758` percentile,
+`.4291 -> .3644` payoff/pot), unknown horizon (`.5678 -> .4833`), Alice
+(`.5395 -> .4837`), and hidden opponents (`.573 -> .504`). The same rating
+also fell about 200 points by 13:29, recovered about 143 points by 20:12, then
+fell again, all without a bargaining-policy change. Treat 2586 as a transient
+high-water mark, not an archived superior policy. Next improvement should
+target the identified impatient/unknown/Alice weakness on challenger profiles;
+keep Test 2 frozen as the exact peak-stack control.
+
+## 2026-08-25 02:32 IST — live whole replica is near target; exact flag preserved
+
+This supersedes the recommendation ordering in the 02:13 entry below. Test 4's
+actual deterministic whole negotiation profile from commit `93a449f` is now the
+recommended component to preserve while evidence accumulates. It consists of
+the full observed 7aidara buyer policy, the current seller decision/price
+policy, and the exact message-only seller table. The rank hybrid remains the
+distinct backup; do not replace the live Test 4 profile with that post-hoc
+hybrid before obtaining a longer all-game read.
+
+Clean rating-window accounting begins after the first stats snapshot following
+Test 4's zero-game launch boundary `T0=1787602730`. At
+`1787603104.747`, Test 4 negotiation was `2051.22` after 6,564 games;
+at `1787604918.233`, it was `2098.84` after 6,641. Thus the 77-game
+all-outcome interval gained `+47.62` displayed rating. Undoing the documented
+`g/(g+30)` volume shrink and applying the mature `eta=0.002` update gives a
+weighted mean game rating of `2390.47`, or opponent-adjusted percentile
+`0.54881`. Concurrent champion was `0.54843` over 53 games. The first 52-game
+subwindow had reached `0.56820`, but the following 25 games implied `0.51146`;
+the required sustained `0.55-0.56` is therefore not yet established. Test 4 is
+currently our negotiation leader at `2098.84`, displayed negotiation rank 13;
+the third-place rating is `2675.62`. This comparison is observational, not a
+causal policy estimate, and the Test 4/champion difference is noise-sized.
+
+The complete post-`T0` local turn cohort now has 110 unique negotiation games.
+Only 28 have locally recovered terminal files: 12 agreements, eight no-deals,
+seven walk-aways, and one `invalid_moves_exceeded`; 82 remain local-missing and
+must not be imputed. Within the copied-buyer path, the recovered accounting is
+four agreements, three no-deals, five walks, and 39 local-missing. The seller
+message path has three agreements, two walks, one invalid terminal, and 17
+local-missing; baseline seller cells have five agreements, five no-deals, and
+26 local-missing. The invalid terminal occurred in an always-feasible complete
+cell, but the server artifact does not identify which side emitted the invalid
+move; our recorded opening price/message is legal, so attribution is unresolved.
+
+Commit `6942311` (local only, on top of `49b5901`) corrects
+`GLEE_NEGO_LEADER_REPLICA_V1=1` so it reproduces the exact currently running
+whole profile, including the seller message-only table. The default-OFF
+`GLEE_NEGO_RANK_HYBRID_V1=1` remains the distinct alternative: copied buyer in
+complete information and hidden cap-10, current buyer in hidden cap-1/unknown,
+and current seller text. Both flags off preserve baseline; both on fail closed
+to baseline. Deployment chat should preserve the current Test 4 behavior at
+its next natural rotation by promoting only `GLEE_NEGO_LEADER_REPLICA_V1=1`
+there, with every negotiation `*_AB` flag zero. If portfolio diversity is
+desired, rank hybrid belongs on a separate challenger, not as an overwrite of
+Test 4.
+
+Verification: 72 focused deterministic/clone tests passed. The
+negotiation-selected suite had 745 policy passes plus one live-data horizon-mix
+drift failure (`n=29,846`, `p=7.86e-4`). Full suite: 1,797 passed and three
+failures: the pre-existing bargaining continuation assertion, bargaining live
+grid drift, and negotiation live horizon-grid drift. No deterministic policy
+test failed. No bargaining or persuasion source/behavior was changed. No
+`arms.json`, `control.json`, `.env`, log, process, supervisor, or deployment
+configuration was edited; no agent was cycled or deployed, and neither local
+commit was pushed.
+
 ## 2026-08-25 02:31 IST — deterministic persuasion component, default OFF
 
 Persuasion source commit `e6ca9c6`, with evidence-comment correction `c085878`
@@ -228,6 +586,151 @@ reachability support, tests, and this handoff.  It did not edit `arms.json`,
 negotiation behavior.  It did not cycle, deploy, arm, randomize, or push an
 agent.  The main deployment chat owns any activation and must keep all five
 agents eligible for all three families.
+
+## 2026-08-25 02:13 IST — deterministic negotiation components, default OFF
+
+This entry supersedes the automatic `composite -> leader_replica` source route
+recorded below. The operator's newer boundary requires every new negotiation
+behavior to land behind a default-OFF flag and reserves fleet configuration and
+deployment for the main deployment chat. The automatic profile selector and
+`Config.nego_policy` field were therefore removed; with both new flags off,
+every named profile executes the pre-`93a449f` negotiation stack.
+
+Two mutually exclusive, non-randomized complete components are implemented in
+source commit `49b5901` (local only; not pushed or deployed).
+
+- Recommended `GLEE_NEGO_RANK_HYBRID_V1=1`: current seller policy in every
+  cell; observed 7aidara buyer policy in every complete-information cell and
+  hidden cap-10; current buyer in hidden cap-1 and hidden unknown horizon. The
+  cap-1 receiver already uses the measured any-positive terminal rule. The
+  unknown-horizon exclusion removes the full clone's eight-price walk, its only
+  coherent negative horizon slice.
+- Backup `GLEE_NEGO_LEADER_REPLICA_V1=1`: current seller policy plus the full
+  observed 7aidara buyer policy in every supported information/horizon cell.
+  This is the deterministic equivalent of the frozen broad buyer treatment,
+  without adding the unmeasured seller-message overlay.
+
+If both flags are `1`, neither owns the game and the existing stack runs. A
+deterministic buyer wire owns the final numeric output, so legacy price guards
+cannot create an unlabelled hybrid. The legacy randomized negotiation message
+bank is bypassed while either complete component is selected. Deployment must
+still keep every negotiation `*_AB` flag at zero; the existing fallback stack
+contains historical gates outside these two selectors.
+
+Evidence and all-outcome accounting:
+
+- Frozen broad official buyer checkpoint, 91/91 scored: candidate 44, `+49.1`
+  total / `+1.116` per game, with 18 agreements, 13 no-deals, and 13 walks;
+  control 47, `+11.6` / `+0.247`, with 31 agreements, 11 no-deals, and five
+  walks. Point lift `+0.869/game`; the approximate 95% interval crosses zero
+  (`[-0.78,+2.52]`), candidate no-deals are +6.14pp, and composite is
+  `-0.648/game`. This supports the backup's identity but does not prove it.
+- Within that checkpoint, hidden unknown was candidate `-0.227` (n=11, ten
+  walks and one agreement) versus control `+0.093` (n=15, nine agreements,
+  five walks, one no-deal). Hidden cap-10 was candidate `+1.573` (n=15) versus
+  control `-0.236` (n=11). The latter was selected post hoc and cannot identify
+  the recommended hybrid's counterfactual.
+- The clean first prospective hidden-cap10 checkpoint was candidate
+  `+2.467/game` (n=9) versus control `+1.100` (n=16), lift `+1.367`, exact
+  one-sided host-stratified `p=.1056`. Across all three official scoped files,
+  54 deduplicated scored games are candidate `+0.713` (n=24; 9 agreements,
+  10 no-deals, 5 walks) versus control `+0.523` (n=30; 7 agreements, 16
+  no-deals, 7 walks), lift `+0.189` with approximate interval
+  `[-1.55,+1.93]`. The expanded read is descriptive only: its pooled mechanism
+  audit spans disabled/old-code traces and previously reported 15 wire
+  mismatches plus four missing traces.
+- Fixed-boundary recent five-slot census from `1787559935`: 5,267 negotiation
+  finals, including every status: 2,564 agreements, 1,872 no-deals, 814 walks,
+  seven active snapshots, seven timeouts, and three invalid-move terminals.
+  Complete information was 1,424 games (1,340 agreements, 80 no-deals, two
+  active, two timeouts); hidden was 3,843 (1,224 agreements, 1,792 no-deals,
+  814 walks, five active, five timeouts, three invalid). This is descriptive
+  fleet context, not a candidate-control estimate. Complete cells are always
+  feasible; hidden cells are only 37.5% feasible.
+- The already-live Test 4 auto-profile exposure from the superseded commit had
+  nine unique supported buyer games at the audit boundary, all nine locally
+  unresolved. It supplies mechanism proof only and no score claim.
+
+Identification objections remain explicit: the recommended hybrid is a
+mechanism-driven post-hoc repair, not a prospectively identified winner; the
+full backup failed its frozen promotion gates; hidden private types are not
+recoverable in no-deals; no accepted-deal statistic is used to value an
+unplayed offer; and seller-message imitation has direct wire support but no
+policy-effect estimate, so it is excluded from both components.
+
+Verification: 72 deterministic/clone policy tests passed; 706 negotiation-wide
+tests passed; full suite finished with 1,751 passed and only the two declared
+bargaining failures (`realistic_continuation` 468 versus stale 450 expectation,
+and the live bargaining-grid drift alarm). No bargaining or persuasion source
+was changed by this work. No `arms.json`, `control.json`, `.env`, log,
+supervisor, agent process, or deployment configuration was edited; no agent was
+cycled or deployed.
+
+## 2026-08-25 02:11 IST — deterministic bargaining guard pushed and queued
+
+Operator requested bargaining improvement across the max-of-five full-stack
+portfolio while prohibiting per-game randomizers and rejecting five identical
+agents. Pushed commit `cc608f5` adds default-off
+`GLEE_BARG_DISCOUNT_NO_REGRESS`. After the baseline chooses Reject, it accepts
+only a positive standing offer when our own discount is below one and the exact
+next wire-coerced counter, discounted one round, is no better. It excludes the
+harmful `delta_me=1` cell and fails closed if the old hash arm or broad nominal
+no-regress flag is armed.
+
+The evidence is retrospective: complete first triggers on the two bargaining
+leaders were 49/49 favorable in discounted games, `+0.03326` mean pot share
+(95% CI `[+0.02722,+0.03930]`) and `+0.02005` diagnostic percentile; the
+excluded patient row lost `0.0505` pot share over 16 games. This is a
+deterministic deployment under operator direction, not a prospective causal
+claim. Exact-stack reachability passed Test 1 `11/11/11`, Agent 5 hardliner
+`14/14/14`, and Test 4 `31/31/31` eligible/fired/action-changed. Focused tests
+passed 32/32; the full suite passed 1,738 with exactly the two predeclared
+bargaining failures.
+
+At `Tcfg=1787604088`, the guard was set to `1` on Test 1, Agent 5, and Test 4,
+and explicitly `0` on protected controls Test 2 and Test 3. Fleet-wide
+`GLEE_BARG_DISCOUNT_NO_REGRESS_AB=0` and `GLEE_BARG_NO_REGRESS=0`; no game hash
+or cell-specific assignment remains. Safe cycles were requested for the three
+candidates at 02:11:35, without signalling a process. Their then-current PIDs
+all predated the commit, so do not call the guard live until replacement PIDs
+start after `cc608f5`. Evaluate from each clean PID boundary, keep every zero
+and no-deal, and treat candidate-versus-control profile differences as
+observational because the operator intentionally rejected randomization.
+
+## 2026-08-25 01:44 IST — whole deterministic leader-replica policy pushed
+
+Operator superseded every cell/A/B rollout with full three-family named
+profiles and set all randomized/cell flags to zero.  Commit `93a449f` therefore
+implements the negotiation change as the complete deterministic `composite`
+profile, selected by `Config.nego_policy="leader_replica"`, not by a game hash
+or runtime flag.  Every supported buyer turn executes the frozen full 7aidara
+price/accept/walk/message policy; every seller turn retains the current seller
+price/acceptance stack (the winning half in the motivating window) and adds the
+57/57 exact observed seller-message table where supported.  Unsupported or
+malformed states fall through to the total current policy.  The semantic buyer
+wire owns downstream price repair, preventing a legacy postcondition from
+silently creating a hybrid.
+
+`composite` remains unchanged for bargaining and keeps its existing persuasion
+configuration.  `champion`, `hardliner`, and `conceder` retain their existing
+whole negotiation policies.  The operator's launch map sends both Agent 5 and
+Test 4 to `composite`; no process was restarted or signalled, and no
+`arms.json`, `control.json`, bargaining flag, or bargaining source was changed
+by this commit.  Focused policy/invariance checks passed 59/59.  The broad
+buyer-policy evidence motivating this whole-policy promotion was candidate
+`+1.116/game` (n=44) versus control `+.247/game` (n=47), a `+.869/game` point
+lift with an inconclusive interval and a negative historical Agent 5 stratum;
+this is an urgent deterministic deployment under operator direction, not a
+claim that the old randomized promotion gates passed.  Measure the clean
+post-launch profile window without conditioning on deals.
+
+Live follow-up: Test 4 / slot `randomized` drained with zero games abandoned and
+started `--probe composite` at `T0=1787602730` (01:48:50 IST).  Its first
+supported buyer action at `1787602751.936849` carried
+`plan.source=leader_replica`: hidden unknown-horizon buyer type `1.0`, exact
+7aidara rejection/counter `83.0`, and the exact buyer sentence.  This proves
+whole-profile routing and wire ownership, not outcome value.  Agent 5 remained
+on its pre-boundary process at this checkpoint.
 
 ## 2026-08-24 — direct-leader opening copy activated on research slots
 
@@ -1910,3 +2413,711 @@ The checkpoint artifacts are
 `.ai/NEGOTIATION_OFFICIAL_{RAW_,}SCOPED_CLONE_2352_0005.json`; deduplicate the
 single overlapping dashboard capture by exact joined game id. Bargaining and
 Test 2 remain untouched.
+
+### 2026-08-25 00:16 IST: do not wire the exact Athena transcript table
+
+The untracked Athena sidecar is evidence-bounded but operationally inert. A
+reachability scan over the latest 20 MB of each of the five live turn streams
+(`1787591775..1787597181`, 22:46–00:16) contained 5,248 unique negotiation
+decision states and 2,638 player-2 buyer states. Its 21 exact complete-history
+counters plus four exact one-round accepts matched `0/2,638`. Wiring or arming
+it would therefore create a zero-reach placebo A/B, not copy Athena at useful
+coverage. Keep it untracked and undeployed. The next leader imitation must
+copy a reachable state-conditioned rule/trajectory with `eligible>0`,
+`fired>0`, and `action_changed>0`; do not weaken point observations merely to
+make this table fire. No bargaining state or process changed.
+
+### 2026-08-25 00:24 IST: discount-aware bargaining arm implemented, default OFF
+
+Test 2 and Test 3 remain the best bargaining agents and are indistinguishable in
+the complete latest-12h first-exposure cohort (`.5259`, n=980 vs `.5258`,
+n=1,038 fitted percentile; both 99.7% agreements). The actionable defect is
+narrower: after a baseline Reject, compare the standing share with the exact
+wire-coerced counter the policy will send next, discounted one round by our own
+delta. In 49/49 complete leader-log first triggers with `delta_me<1`, immediate
+acceptance beat the realised final; mean identified lift was +.03326 pot share
+and +.02005 diagnostic percentile. The `delta_me=1` row lost .0505 pot share on
+average (n=16), so it is explicitly excluded.
+
+`GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1` now hash-assigns each game with
+`barg_discount_no_regress_v1|<game_id>`. At the first eligible state both arms
+have followed identical behavior and log the same pre-action signal; control
+keeps Reject, candidate changes only that decision to Accept. The implementation
+fails closed if the older nominal `GLEE_BARG_NO_REGRESS` is armed. Default OFF
+does not add plan metadata or change an action. The production helper exposes
+the pure assignment, and the live reader cohorts on the first trigger, retains
+unresolved/no-deal/zero outcomes, removes cross-fleet duplicates, independently
+recovers the hash, audits wires/traces, and optionally joins authenticated
+official deltas:
+
+`.venv/bin/python scripts/live_percentile.py --ab barg-discount-no-regress --since T0 --slots hardliner,conceder --official-json FILE`
+
+Exact-stack reachability passes: hardliner 31 eligible / 22 fired / 22 changed
+over 1,200 paired games; conceder 28 / 15 / 15. Focused tests pass 21/21,
+including a zero-offer regression that proves the arm never accepts $0. The
+precommitted harm/final rules are in `.ai/EXPERIMENTS.md`. Do not arm Test 4:
+its custom randomized strategy bypasses `bargaining.decide`, which is also why
+its current `BARG_OBSERVED_GAIN=1` display is inert. No live flag, fleet process,
+`arms.json`, `control.json`, `.env`, or log was changed.
+
+Final full suite after the zero-offer fence: 1,658 passed. Only the two
+AGENTS.md-predeclared failures remain (`test_bargaining_horizon_floor`, current
+468 vs expected 450, and `test_sim_grid[bargaining]`, live grid drift).
+
+### 2026-08-25: Test 4 bargaining host prepared at operator direction
+
+The earlier “do not arm Test 4” objection was a routing fact, not a permanent
+host decision: its `randomized` custom policy intercepted bargaining before
+`bargaining.decide`. `GLEE_PROBE_RANDOMIZED_BARG_BASE=1` now provides the
+missing default-off route. It sends only Test 4 bargaining through normal
+dispatch; its negotiation and persuasion policies remain byte-for-byte the
+same seeded randomized policies. On Test 4's exact current stack, the route is
+not a placebo: 4,465 eligible / 3,263 fired / 3,263 changed over 2,400 paired
+games. With the route present in both arms, the nested
+`GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1` check passes 50 / 16 / 16 over 2,400 paired
+games with the required OBSERVED_GAIN zero. Focused tests pass 26/26, including candidate/control decisions through
+the actual `make_probe("randomized")` wrapper and isolation of both other
+families.
+
+Claude-only live action after this code has reached Test 4: at one clean Test 4
+boundary set `GLEE_PROBE_RANDOMIZED_BARG_BASE=1`,
+`GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`, and `GLEE_BARG_OBSERVED_GAIN=0`, then
+record T0. The explicit zero matters: OBSERVED_GAIN is currently 1 but inert
+under the random probe; opening the route would otherwise activate it as an
+unplanned second bargaining treatment. Keep `GLEE_BARG_NO_REGRESS=0`. Read only
+Test 4 with `scripts/live_percentile.py --ab barg-discount-no-regress --since
+T0 --slots randomized --official-json FILE`. This prospectively replaces the
+earlier Test 2/Test 3 host plan before any arm activation or outcome inspection.
+No live flag, process, `arms.json`, `control.json`, `.env`, or log was changed by
+Codex. Final allowed suite: 1,663 passed; only the two predeclared failures
+remain (`test_bargaining_horizon_floor`, 468 versus stale 450 expectation, and
+`test_sim_grid[bargaining]`, live grid drift).
+
+### 2026-08-25: correction — Test 4's slot name is not its live policy
+
+The preceding Test 4 entry reasoned from the slot name and is superseded here.
+`control.json` maps every slot, including `randomized`, to policy `champion`;
+Test 4's current process command and every recent launch marker confirm
+`run_agent.py --probe champion`. Thus zero whole-policy randomizers are live,
+not one. All five agents already play the champion family dispatch; before this
+cleanup all five nevertheless carried at least one narrow hash-randomized A/B.
+
+Operator transferred deployment authority to Codex. Commit `8a8c5c9` is pushed.
+The Test 4 overlay now has `GLEE_BARG_DISCOUNT_NO_REGRESS_AB=1`,
+`GLEE_BARG_OBSERVED_GAIN=0`, and
+`GLEE_PROBE_RANDOMIZED_BARG_BASE=0`; a named zero-game cycle is queued so the
+new bargaining code loads without abandoning a game. Exact actual-policy
+preflight is 50 eligible / 16 fired / 16 changed over 2,400 paired bargaining
+games. Test 2's sole active treatment,
+`GLEE_NEGO_HI_UNCAPPED_EXTREME_OPEN_AB`, was explicitly set to zero so the
+current overall/bargaining leader is a deterministic champion control. Four
+non-leading slots retain scoped experiments because only the account's best
+agent determines placement.
+
+### 2026-08-25: operator selected deterministic family specialists
+
+The operator rejected both the research-host layout and a five-way identical
+clone. At `T1=1787600396`, every `*_AB` flag was explicitly zero on all five
+slots; the arm objects are byte-identical and contain no enabled randomizer,
+cell-specific experiment, observed-gain trial, or randomized-probe router.
+
+The configured launch topology is now Test 2 + Test 3 = `hardliner` bargaining,
+Agent 5 = `hardliner` negotiation, Test 1 = `champion` negotiation, and Test 4 =
+`conceder` persuasion. All use LLM off. Five named safe cycles are queued; do
+not call a specialist live until its actual PID command and launch marker show
+the configured policy/family. Pre-cutover processes remain on their earlier
+all-family champion commands until they naturally drain. No game was abandoned.
+
+### 2026-08-25 01:24 IST: negotiation trials restored after accidental disarm
+
+The deterministic-specialist cutover above set every `*_AB` flag to zero and
+therefore silently stopped both active negotiation experiments even though
+`CURRENT_STATE.md` still described them as armed. At operator direction to
+implement and keep testing negotiation, Codex restored only
+`GLEE_NEGO_TOP_BUYER_CLONE_HI_CAP10_AB=1` and
+`GLEE_NEGO_TOP_OPUS_BUYER_CLONE_HI_UNKNOWN_AB=1` on champion, composite,
+conceder, and randomized at arms-file `T1=1787601236`. Runtime overlays expose
+those values within three seconds; no process was interrupted and no bargaining
+flag or policy was changed. After the queued specialist cutover, only Test 1
+and Agent 5 will continue to queue negotiation, so Test 3/Test 4's negotiation
+flags become inert rather than changing their assigned family.
+
+The newest exact authenticated cap-10 join added 31 matches. Combined with the
+earlier exact files and deduplicated by game ID, the observed arm read is
+candidate official rating `+0.9053` (n=19) versus control `+0.3652` (n=23), an
+ITT lift of `+0.5400` rating/game; local diagnostic percentile is `.5729`
+versus `.5053` (`+.0676`) and close rate is 48.0% versus 25.7% (`+22.3pp`).
+The intervals remain wide and this is one candidate short of the frozen 20-arm
+harm read, so it is evidence to continue, not a promotion claim. The pooled
+mechanism audit rejects because the earlier read spans disabled/old-code games
+(15 candidate wire mismatches plus four missing traces); freeze a clean second
+cohort from `T1=1787601236` and require exact scoped-source wires before using
+it causally. The Opus unknown-horizon arm has only two exact official candidate
+outcomes so far (`-4.5`, `+3.5`) and remains far below its harm-read sample.
+
+### 2026-08-25 01:35 IST: max-of-five full-stack portfolio supersedes single-family map
+
+The operator clarified the actual selection objective: competition placement
+uses the single best complete agent. Restricting slots to one family therefore
+throws away selection opportunities and cannot identify the best complete
+agent. The pending single-family launch map was superseded before any queued
+cycle landed.
+
+All five configured launches now queue `bargaining,negotiation,persuasion` with
+LLM off. Deterministic profiles are Test 1=`champion`, Agent 5=`composite`, Test
+2=`hardliner`, Test 3=`conceder`, and Test 4=`composite`; Test 4's historical
+slot/log name remains `randomized` but no randomized policy is configured.
+Profile specialization supplies max-of-five diversity without making agents
+family-ineligible.
+
+Three narrow A/B flags had been restored on four slots at 01:24. They conflicted
+with the operator's no-randomizer instruction and were explicitly set to zero
+again at `T2=1787601952`. Every arm object is now byte-identical and every
+`*_AB`, `GLEE_BARG_OBSERVED_GAIN`, and
+`GLEE_PROBE_RANDOMIZED_BARG_BASE` value is zero. Five safe named cycles were
+requested; verify actual replacement PID commands before calling the portfolio
+live, and never signal a process holding competition games.
+
+### 2026-08-25 01:55 IST: protect Test 2 during deterministic diversification
+
+At the operator's request, the actual live/configured split and leader risk were
+rechecked. Test 2 led at 2244 overall while still running `champion`; its pending
+`hardliner` launch would leave bargaining and negotiation effectively unchanged
+under the canonical overlay but replace honest persuasion with the historically
+weaker lie-heavy transform. Before Test 2 or Agent 5 rotated, their configured
+profiles were swapped: Test 2 stays `champion`, while lower-rated Agent 5 becomes
+the deterministic `hardliner` challenger. Both continue to queue all three
+families. Safe cycles were re-requested and no process was signalled.
+
+Test 3 and Test 4 completed clean zero-abandonment cycles at 01:48:37/01:48:39
+and launched at 01:48:50 as all-family `conceder` and `composite`, respectively.
+Test 1, Agent 5, and Test 2 were still running all-family `champion` at the time
+of this entry. Every randomized/cell-specific flag remained explicitly zero.
+
+### 2026-08-25 05:54 IST: deterministic first-principles negotiation component implemented, default OFF
+
+At operator direction, the existing first-principles negotiation policy now has
+a non-randomized promotion path: `GLEE_NEGO_DETERMINISTIC_FP_V1=1`. It never
+hashes a game ID. It owns all eligible games and precedes the broader
+`rank_hybrid_v1` / `leader_replica_v1` buyer dispatch so a selected full policy
+cannot shadow its terminal prices. All other negotiation cells retain the
+selected complete policy.
+
+Owned cells and exact behavior:
+
+- complete-information, known one-round seller: ask visible buyer value minus
+  `$0.01`;
+- complete-information, known ten-round buyer: reject ordinary earlier offers,
+  counter at visible seller value plus `$0.01`, accept an offer only at the
+  existing 0.994-of-zone boundary, and bid seller value plus `$0.01` on the
+  terminal buyer turn;
+- hidden-information, known one-round seller: use the official four-point grid
+  and per-configuration scoring ask already implemented by Test 4 (`80 ->
+  119.99`, `100 -> 119.99`, `120 -> 149.99` at scale 1). A top-ranked human
+  independently reported the exact `80 -> 119.99` move on 2026-08-25.
+
+Evidence is mechanism-level, not a claimed live treatment effect. Across all
+locally retained complete-information terminal offers, positive opponent gain
+was accepted 1,489/1,493, exact `$0.01` was accepted 39/40, and non-positive
+gain was accepted 0/159. Those records do not identify unplayed offers or the
+full first-turn ITT because the historical outcome collector left many games
+unresolved; arbitrary bots can also walk away or spite-reject a positive cent.
+The hidden `119.99` rule uses the public support and the official
+per-configuration score model, not an exact prediction of a hidden opponent
+value and not an accepted-deal-only value sample. The human's claim that own
+value reveals only the feasible opponent values remains selection-biased until
+no-deals and unresolved games can be included, so no such point predictor was
+added.
+
+Exact champion-stack reachability over 800 sampled negotiation games / 6,188
+banked decision states: 259 eligible, 259 fired, 255 wire actions changed. The
+four unchanged actions already matched the component. Focused policy, wire,
+precedence, flag-off, and family-isolation tests pass 49/49. The full suite is
+1,879 passed / 3 failed; all three are state-data failures unrelated to this
+diff: the predeclared bargaining horizon-floor expectation (468 live versus
+450 stale), bargaining grid drift, and a newly tripped negotiation horizon-grid
+drift alarm from accumulated logs. No live flag, fleet process, `arms.json`,
+`control.json`, `.env`, bargaining behavior, or persuasion behavior was changed
+for this negotiation implementation. Code-only commit `9a23ed8` is pushed to
+`origin/main`; the deployment flag remains OFF.
+
+### 2026-08-25 06:08 IST: Agent 5 whole negotiation replacement ready for deployment
+
+Operator clarified that the new policy must replace Agent 5's negotiation
+dispatcher rather than act as a layered three-cell flag. The new single
+default-off selector is `GLEE_NEGO_AGENT5_DEFAULT_V1=1`. It is mutually
+exclusive with `GLEE_NEGO_LEADER_REPLICA_V1` and
+`GLEE_NEGO_RANK_HYBRID_V1`; more than one selected whole policy fails closed.
+
+The complete deterministic matrix is:
+
+- first-principles hard precedence in complete cap-1 sellers, complete cap-10
+  buyers, and hidden cap-1 sellers;
+- observed-leader buyer decisions/prices in every other supported buyer cell;
+- the measured current seller stack as an explicitly labelled fallback only in
+  seller cells where no replacement rule is identified, plus the 57/57 observed
+  deterministic seller-message table where supported.
+
+Direct first-principles and observed-leader moves return before the legacy
+planner and randomized message attachment. `actions.coerce()` independently
+recomputes the selected whole-policy wire and returns before every hidden floor,
+opening claim, ultimatum cap/floor, TABLE, or ZOPA postcondition, so a legacy
+guard cannot rewrite an owned price. Every negotiation A/B remains OFF.
+
+Exact Agent 5 `hardliner`/`composite` reachability over 800 negotiation games
+and 6,188 banked states: 6,188 eligible, 6,188 fired, 3,274 submitted actions
+changed. Focused ownership and isolation tests pass 56/56. Full suite: 1,886
+passed / the same three unrelated state-data failures (stale bargaining 450 vs
+468 expectation and the bargaining/negotiation live-grid drift alarms). This
+entry changes negotiation only; no bargaining or persuasion implementation is
+part of the policy.
+
+### 2026-08-25 06:21 IST: hidden-value terminal inference added and Agent 5 activated
+
+The top-human clarification supplied an identified use of hidden seller asks in
+known ten-round games where our buyer is player 2. Under the official discrete
+value support, the lowest price the seller has offered is an upper bound on the
+seller's reservation value. Agent 5 now uses that bound on its terminal buyer
+turn: an observed seller ask at or below `97` implies a terminal `80.01`; at or
+below `119` implies `100.01`; and at or below `149` implies `120.01`, with the
+same mapping scaled for the larger currency grids. The inference uses only the
+opponent seller's own asks, takes the minimum across their history, never treats
+our own rejected bids as evidence, and falls back to the complete deterministic
+buyer policy when the support does not identify a safe bound. This is commit
+`b29f7a5`, pushed to `origin/main`.
+
+Focused negotiation tests pass 63/63. The full suite reports 1,893 passed and
+the same three unrelated live-data/stale-expectation failures: bargaining
+horizon floor (468 actual versus 450 expected), bargaining grid drift, and
+negotiation max-round grid drift. Exact Agent 5 reachability remains 6,188 /
+6,188 eligible states fired, with 3,274 submitted actions changed over 800
+sampled games. This evidence establishes wiring and mechanism behavior, not a
+live percentile lift; the latter requires post-activation completed-game data
+including no-deals, zeros, timeouts, and unresolved outcomes.
+
+Agent 5 (`composite` slot, `hardliner` launch profile) was clean-cycled before
+activation. The old process drained with zero games abandoned and PID `65057`
+started at 06:21:01 with all three families still eligible. At configuration
+boundary `Tcfg=1787619084`, only the negotiation whole-policy selectors were
+updated: `GLEE_NEGO_AGENT5_DEFAULT_V1=1`, while
+`GLEE_NEGO_LEADER_REPLICA_V1=0`, `GLEE_NEGO_RANK_HYBRID_V1=0`, and
+`GLEE_NEGO_DETERMINISTIC_FP_V1=0`. The runtime overlay resolves the selected
+mode as `agent5_default_v1`. Post-boundary turn traces show
+`source=agent5_default_v1` / `component=observed_leader_buyer` on buyer turns
+and `deterministic_policy=agent5_default_v1` / `component=current_seller` on
+the deliberately retained seller fallback.
+
+This is a whole negotiation dispatcher, not a tactic layered beneath the old
+stack. First-principles, hidden-terminal-inference, and observed-leader buyer
+moves return before the legacy planner; the wire coercion path recomputes and
+protects those owned actions from downstream legacy price guards. The only old
+negotiation behavior retained is the explicitly labelled seller fallback in
+cells for which no evidence-backed replacement has been identified. Test 2 was
+not changed. Bargaining and persuasion flags and behavior were not changed.
+
+### 2026-08-25 06:34 IST: human Bob/H12 terminal-commitment policies implemented, default OFF
+
+The reported Bob last-mover tactic exposed a real bargaining hole. In a
+disclosed twelve-round game Bob proposes on every even round and owns round 12,
+but the current generic stack sends a modal 61% Bob share at every even round,
+including the terminal one. `GLEE_BARG_BOB_OFFER=1` is only an ask-raising
+fitted floor and excludes the last two rounds; the generic opponent floor also
+rewrites the nominal 75% ultimatum back to 61%. Integer-pot coercion rounded
+away cents, so the old stack could not leave the opponent exactly `$0.01`.
+
+Three independent, deterministic, default-OFF components now own their exact
+Bob/H12 cells end to end:
+
+- `GLEE_BARG_P2_H12_D095_SILENT_V1`: message-off, `delta_2=.95`, literal Bob
+  shares `.61/.68/.74/.82/.91/(M-.01)` on rounds 2/4/6/8/10/12;
+- `GLEE_BARG_P2_H12_D095_MSG_COMMIT_V1`: message-on, `delta_2=.95`, with
+  `V=(M-.01)*.95**11`, Bob asking `V/.95**r-.01` on even round `r<12`, and a
+  concise truthful explanation that Alice receives one cent more now than she
+  can keep in her next offer while meeting Bob's coded discounted floor;
+- `GLEE_BARG_P2_H12_D100_COMMIT_V1`: `delta_2=1`, Bob asks `M-.01` on every
+  even round and discloses the unchanged floor only when messages are allowed.
+
+All variants accept an odd-round Alice offer exactly when its discounted Bob
+payoff meets the same terminal floor. More than one component flag fails
+closed. A message-bearing component also fails closed if the old randomized
+`GLEE_BARG_MSG` bank is armed. Exact-cent coercion is bypassed only after the
+enabled component independently reproduces both submitted gains in the full
+structural cell; generic integer-pot offers still round exactly as before.
+
+The `.95` silent ladder's realised Bob shares are
+`.57950/.58302/.57260/.57264/.57353/.56874`. This is a payoff floor only if an
+agreement is accepted; it is not an outcome or rating guarantee because an
+opponent can reject, walk, time out, or spite-reject the terminal cent. In the
+complete-log audit, our positive terminal bargaining offers were accepted
+150/154, but none left exactly one cent, so field cent acceptance remains
+unmeasured. The message-on target has 1,848 enrolled games, 977 joined and 871
+unresolved; observationally, text-bearing offers closed 25/107 versus
+363/1,235 silent. The message policy changes 3,289/3,289 target offers and
+861/4,159 decisions. `delta=1` is a separate, still more aggressive policy.
+Only the silent `.95` component is a defensible first challenger; keep the
+message and patient flags OFF until separately justified.
+
+Exact Test 4 `randomized`-slot / `composite`-probe reachability over 1,200
+sampled bargaining games passed for every flag:
+
+- `.95` silent: 162 eligible / 162 fired / 53 submitted actions changed;
+- `.95` message: 240 / 240 / 126;
+- `delta=1`: 451 / 451 / 240.
+
+Focused tests pass 53/53. Full suite: 1,946 passed / the same three unrelated
+state-data failures (stale bargaining horizon-floor expectation plus
+bargaining and negotiation live-grid drift). No live flag, process,
+`arms.json`, `control.json`, `.env`, log, negotiation behavior, or persuasion
+behavior was changed by this implementation.
+
+Negotiation review objection retained for the deployment lane: complete-info
+cap-10 buyer `seller_value+$0.01` has a strong terminal-only case (14/14 exact
+cent responses; Wilson-lower expected lift still `+0.1449` across the
+all-enrolled audit), but that does not identify a broader hold-out trajectory.
+The hidden one-round seller `.8B -> 1.1999B` move is not supported over the
+current `1.15B`: five of six exact score cells are tied, the sixth gains only
+`.00219`, and exact-cent response uncertainty makes the conservative expected
+lift negative. Hidden values remain independent over the four-point support;
+agreement-only reconstruction is survivorship-selected and must not become a
+point predictor.
+
+### 2026-08-25 07:04 IST: Agent 5 negotiation policy mirrored to Test 2
+
+At direct operator request, Test 2 / slot `hardliner` received the exact Agent
+5 negotiation overlay at `Tcfg=1787621680`: `GLEE_NEGO_AGENT5_DEFAULT_V1=1`,
+with `GLEE_NEGO_LEADER_REPLICA_V1=0`, `GLEE_NEGO_RANK_HYBRID_V1=0`, and
+`GLEE_NEGO_DETERMINISTIC_FP_V1=0`. All `GLEE_NEGO_*` values now match Agent 5;
+no bargaining or persuasion flag was copied or changed.
+
+Test 2 PID `68625` began at 06:49:13 after commit `b29f7a5` was already in
+HEAD, so no process cycle was required. Its exact live `champion` stack passed
+prospective reachability over 800 games / 6,188 decision states: 6,188
+eligible, 6,188 fired, and 3,274 submitted actions changed. Runtime overlay
+inspection resolves `mode=agent5_default_v1`, and post-boundary live traces
+show both `observed_leader_buyer` and `current_seller` branches labelled with
+that policy. Test 2 remains eligible for all three families and retains its
+existing bargaining and persuasion behavior.
+
+### 2026-08-25 07:29 IST: Agent 5 Bob/H12/.95 silent policy live
+
+At direct operator request, only
+`GLEE_BARG_P2_H12_D095_SILENT_V1=1` was armed on Agent 5 / `composite`;
+`GLEE_BARG_P2_H12_D095_MSG_COMMIT_V1=0` and
+`GLEE_BARG_P2_H12_D100_COMMIT_V1=0` remain OFF. The process still launches
+the `hardliner` profile with LLM OFF and all three families eligible. The
+safe supervisor cycle drained PID `65057`, explicitly recorded zero games
+abandoned at 07:28:04, and launched replacement PID `72600` at 07:28:15 from
+commit `ca79aa7`. The launch header contains the exact 1/0/0 flag stack, and
+fresh turns from all three families show no import or runtime error.
+
+The deterministic runtime flag was already visible to the old process before
+its natural shift boundary, so the first fully target-scoped game began at
+07:14:50 on PID `65057`; it did not switch policy mid-game. Gate traces own
+all twelve decisions/offers and show the exact Bob ladder
+`61/68/74/82/91/99.99` on a `$100` pot. The hidden opponent rejected through
+round 10, offered Bob `87` on round 11 (below the coded nominal requirement
+`94.9905`), then accepted the round-12 `Alice=.01, Bob=99.99` split. The
+complete game record reports agreement, Bob payoff `56.87`, Alice payoff
+`.01`, and twelve rounds played. This proves live reachability and supplies
+one successful terminal-cent observation; it does not establish a rating lift
+or reliable field acceptance. Continue counting every enrolled target game,
+including rejections, timeouts, walkaways, unresolved games, and zeros.
+
+### 2026-08-25 09:58 IST: Test 3 and Test 4 cloned from Agent 5
+
+At the operator's explicit one-time request, the complete deterministic Agent 5
+strategy surface was copied to Test 3 / `conceder` and Test 4 / `randomized`
+through `scripts/fleet.py`. The control writes landed at
+`1787629249.9922638` and the live-overlay writes at `1787629250.0146475`.
+Both targets now map to Agent 5's `hardliner` policy, retain LLM OFF, and remain
+eligible for `bargaining,negotiation,persuasion`. Their 78-entry overlay maps
+are byte-equivalent after canonicalisation to Agent 5 / `composite`, with
+SHA-256 `f5781a1a2d8141294f808216a61bb6d3c889677d3f509772acbffd92e8a2b46c`.
+All persuasion `*_AB` flags remain zero.
+
+No slot was stopped, signalled, force-cycled, or disabled. The supervisor
+allowed each old process to finish its held games and recorded clean natural
+drains: Test 3 PID `79488` completed a 4,096-second shift at 09:37:25 and PID
+`86555` launched at 09:37:36; Agent 5 PID `79678` completed a 4,179-second
+shift at 09:44:37 and PID `87209` launched at 09:44:47; Test 4 PID `81396`
+completed a 4,124-second shift at 09:57:54 and PID `88096` launched at
+09:58:04. All three replacement processes run commit `e735ada`, `--probe
+hardliner`, `--llm-mode off`, and the full three-family queue. The 10-11 second
+handoffs show no boundary error or timeout.
+
+Only behavioral configuration was copied. Test 3 and Test 4 retain their own
+API identities, physical `GLEE_PROBE` overlay selectors, log directories,
+ratings, histories, and dashboard attribution. No strategy code was changed,
+and no test run was required for this configuration-only operation. Do not
+infer a causal effect from the transition-era games: runtime overlays became
+visible before the launch-fixed profiles changed, so use the clean PID/start
+boundaries above for like-for-like evidence.
+
+### 2026-08-25 11:31 IST: clone observation complete; restore diversity next
+
+The exact common hardliner boundary `T0=1787632084` is now fully joined:
+`1,028/1,028` terminal games and zero unresolved across Test 3 (`228`), Agent 5
+(`307`), and Test 4 (`493`). Every outcome was retained. Bargaining contains
+342 agreements and zero exact zeros; negotiation contains 156 agreements, 112
+no-deals, 75 walks, and 187 exact zeros over 343 games; persuasion contains 77
+zeros, 261 CDF-scoreable outcomes, and 82 retained CDF-unscoreable outcomes
+over 343 games. Fitted all-outcome percentiles are bargaining `.32513`,
+negotiation `.54655`, and persuasion `.54141`. The weakest bargaining cells
+with at least ten observations are P1/public/unknown/message-on/delta-.8
+`.14708` (`n=10`) and P1/hidden/H12/message-off/delta-.95 `.17975` (`n=11`).
+Agent 5's next complete exact-stack shift rebounded from bargaining `.24840` to
+`.36909`, so the clone does not identify its high-share or silent ladder as the
+cause of the weak pooled bargaining result. Host and pre/post differences remain
+observational.
+
+Test 2's exact V3 process window `[1787632548,1787636699)` also finished
+`391/391` terminal with zero unresolved: bargaining `130`, negotiation `131`,
+and persuasion `130`. All 984 negotiation actions carried
+`test2_support_v3`, proving live mechanism reachability. Negotiation's
+all-outcome percentile was `.51773`, retaining 56 agreements, 34 no-deals, 41
+walks, and 75 exact zeros. Its clearest sufficiently sampled misses were
+seller/hidden/cap-10/message-on `.42196` (`n=11`) and
+buyer/hidden/unknown/message-on `.42484` (`n=17`). Bargaining remained the
+window's weakest family at `.34807`, but V3 cannot cause bargaining behavior.
+The preceding exact-V2 process still has unresolved joins, so this is not a
+V3-versus-V2 causal promotion result.
+
+The completed clone cohort exposed only two rejected offers that the default-
+off `GLEE_BARG_ACCEPT_FLOOR_EXACT_V1` would change. One immediate acceptance
+beat the realised continuation by 6.12 pot points and one lost by 5.67, for a
+mean alternative of only `+.225` pot points (`n=2`); neither was the
+delta-.8/share-.20 atom. This new complete evidence does not invalidate the
+separate historical six-win motivation, but it is too sparse to arm the flag.
+Keep `e735ada` inert and OFF.
+
+The one-time clone observation has therefore reached its natural stopping
+point. The next falsifiable portfolio action is to restore Test 3's documented
+conceder/control stack and Test 4's documented composite/leader-replica stack
+at separate clean natural boundaries, leaving Agent 5 and Test 2 untouched.
+Verify the actual replacement commands and exact overlays, then evaluate each
+whole-process cohort with every outcome, role, and cell retained. Only after
+restoration should the exact-floor flag receive fresh restored-stack
+reachability and a new one-challenger decision rule; do not infer a treatment
+effect from cross-host rating movement.
+
+### 2026-08-25 12:48 IST: correct the saturated-CDF false regression before tuning
+
+The dirty `models/percentile_cdf_v3.json` is not a valid scoring instrument.
+Its 106,802-game refit hit `MAX_PER_CELL=2000`, while the fitter wrote
+`sorted(values)[-2000:]`. That retained only each saturated cell's highest
+payoffs, removed every zero from several bargaining cells, and moved their
+minimum to `.47`. The same complete 636-game bargaining cohort scores `.53502`
+against the checked-in 32,223-game CDF but only `.31171` against the dirty
+top-tail CDF. The supposed P2/hidden/unknown/silent/delta-.95 weakness reverses
+from `.35566` to `.61530` in the common clone cohort and is `.55308` across all
+14 available games. All 636 bargaining outcomes were agreements, with zero
+exact zeros or unresolved games; no parser, wire, or reachability defect was
+found. Therefore the prior fitted-percentile values in this handoff are
+invalidated wherever they used the dirty model; their raw enrollment and
+outcome counts remain valid.
+
+Commit `d0a9ada` fixes the fitter without rewriting the live model: saturated
+cells now use deterministic evenly spaced order statistics, retaining the
+whole distribution rather than its top tail. Focused tests pass 3/3; the full
+suite is 2,102 passed with only the stale bargaining horizon-floor assertion
+and the bargaining/negotiation live-grid drift alarms. No strategy, flag,
+control, process, or model artifact was changed.
+
+The two newest clean cohorts were rescored entirely in memory against the
+committed model. Test 4 PID `91902` bargaining is `.59109` (`n=167`, all
+agreements), `+.06780` versus its preceding exact hardliner cohort; P1/P2 are
+`.60090/.58364`. Test 2 PID `92288` bargaining is `.51144` (`n=147`, all
+agreements), only `-.03468` versus its preceding exact V3 cohort; P1/P2 are
+`.48469/.53208`. The dirty-model `.360/.295` values must be discarded.
+Negotiation is essentially stable on Test 2 (`-.00319`) and down `.03292` on
+Test 4, localized to its seller role; persuasion is flat on both. These remain
+observational whole-profile comparisons, not treatment estimates.
+
+Before making another behavioral proposal, refit into a separate candidate
+artifact, verify zero atoms and both tails against the uncapped source for every
+saturated cell, then rerun every recent frozen cohort from its clean process
+boundary. Also fit a research-only bargaining diagnostic stratified by seat and
+own delta and calibrate it against official rating deltas; the current CDF pools
+both, so its `.38339` reading for the 16 delta-.8 games does not identify a bad
+accept rule. Those 16 games all accepted profitable incoming offers on round 1,
+and raising their floor repeats a previously measured-harm direction. No
+bargaining behavior change is justified; preserve Test 2, Agent 5, and the
+known-12 P2 ladder.
+
+### 2026-08-25 13:55 IST: pointwise copied-buyer walk repair landed inert
+
+Four initial complete hardliner-profile buyer games selected the copied round-17
+`WalkAway` while holding a canonical standing offer that left `.03B` or `.045B`
+of strictly positive buyer payoff.  The played walk itself terminates at zero,
+so accepting that same offer is pointwise identified rather than a fitted
+continuation claim.  Against the committed pooled hidden-cell CDF, the four
+diagnostic lifts over zero are `+.22917`, `+.33607`, `+.38889`, and `+.22917`;
+they are not official-cell estimates.  Four subsequent clean cohorts added
+eight matching cases, including both message modes and Test 2 V3, for twelve
+complete identified examples in total.  This is not a
+renamed version of the measured-negative broad hidden/unknown accept-all policy:
+it cannot touch an earlier `RejectOffer`, counteroffer, or any non-walk action.
+
+Local commit `42f21cb` adds default-OFF deterministic flag
+`GLEE_NEGO_HI_UNKNOWN_BUYER_WALK_ACCEPT_V1`.  It is scoped to the measured Agent
+5 V1 and Test 2 V3 `observed_leader_buyer` component in hidden-information,
+explicitly unknown-horizon buyer decisions with an explicit boolean message
+mode; it requires exact role/turn/standing-offer provenance and at least one
+cent of finite positive buyer gain.  V2, sellers, capped horizons, malformed
+states, and all earlier decisions are unchanged.  The flag is consulted only
+after the exact structural predicate holds.
+
+Focused tests pass `92/92`.  Exact Agent 5 V1 composite-stack and Test 2 V3
+support-stack reachability each report `eligible=16`, `fired=16`,
+`action_changed=16`, all at round 17 with `WalkAway -> AcceptOffer`.  The
+reachability-only opponent holds the observed
+`1.455B` ask and restores the live API's recorded-history echo shape that the
+local engine omits; no payoff is synthesized.  The full suite is `2216 passed`
+with only the three pre-existing failures: the stale bargaining horizon-floor
+assertion and bargaining/negotiation live-grid drift alarms.
+
+The commit is local and unpushed.  The flag is absent from every live slot, no
+control or arms file was edited by this change, and no process was cycled or
+signaled.  Claude should independently review, push if accepted, and only then
+consider an OFF-by-default one-challenger activation at a clean natural
+boundary.  Agent 5 (overall leader), Test 1's bargaining leader/peak stack, and
+Test 2 remain protected.
+
+### 2026-08-25 14:35 IST: fresh hardliner shifts isolate bargaining extraction, not closure
+
+The completed Test 3 PID `97575`, Test 4 PID `99621`, and Agent 5 PID `99522`
+cohorts retain all 1,353 games and have zero unresolved outcomes or local
+errors.  Their bargaining means against the committed distribution are
+`.49597` (`n=151`), `.46807` (`n=156`), and `.50830` (`n=144`), respectively,
+down `.03778`, `.11594`, and `.04361` from each slot's preceding exact
+hardliner shift.  Yet 450/451 bargaining games closed, so the repeated weakness
+is rank/extraction rather than deal formation.  The clearest recurring slice is
+complete-information P1: Test 4 known-12/message `.1999` (`n=7`),
+unknown/message `.2091` (`n=8`), and known-12/silent `.2441` (`n=10`); Agent 5
+known-12/message `.2226` (`n=12`); Test 3 known-12/silent `.3269` (`n=10`).
+These are observational shift comparisons, not a causal estimate, and do not
+justify changing the live offer or acceptance schedule.
+
+The same Test 3 shift added a thirteenth point-identified profitable walk for
+the existing negotiation repair: hidden/unknown/silent buyer game
+`46c602a0-098d-44f9-89a7-f60917beaaa1` walked on round 17 while facing a
+canonical ask `148.57` against value `150`.  Accepting yields `1.43` instead of
+the played zero and moves the committed-CDF diagnostic from `.18182` to
+`.38182`.  This independently reinforces `42f21cb`; it does not support any
+earlier or broader profitable-offer acceptance rule.
+
+The falsifiable next bargaining question is whether the current P1
+complete-information outgoing path concedes rank too cheaply while already
+closing almost every game.  Before building anything, enumerate the exact
+round/discount/offer atoms in those weak cells, compare every game (not only
+agreements) with the preceding exact-profile shifts, and verify the effect is
+not an opponent or CDF-composition change.  Any candidate must be a narrow
+default-OFF deterministic flag, leave P2's known-12 peak ladder and Test 2's
+exact peak stack untouched, and prove exact-stack reachability before a single
+non-leading challenger is considered.  Do not deploy a higher acceptance floor:
+that repeats the already measured-harm direction.
+
+Operationally, remote `main` is still `6d3aec4`; local `42f21cb` remains one
+commit ahead and the profitable-walk flag is absent from all overlays.  Test 4
+and Agent 5 naturally loaded final inert code, while current Test 3 loaded an
+intermediate amend and must not be armed until a reviewed push and a verified
+replacement PID.  All randomizer/A-B controls remain zero.  Agent 5 is still
+overall #1 and Test 1 bargaining #1; neither should be touched.
+
+### 2026-08-25 15:06 IST: leader cohorts clean; apparent P1 decline is mostly composition
+
+The newly completed Test 2 PID `431` and Test 1 PID `1642` cohorts retain all
+`899/899` terminal games, both roles, every outcome, and every configuration;
+there are zero unresolved joins.  Across `9,864` turns, schema validation found
+zero parser, source, wire, or action errors.  Test 2's family percentiles are
+bargaining `.53875` (`n=149`, all agreements), negotiation `.51300` (`n=149`,
+`80` zeros retained), and persuasion `.55223` (`111/149` scoreable, `34` zeros
+retained).  Test 1's are `.52206` (`n=150`, all agreements), `.49715`
+(`151/152` scoreable, `80` zeros retained), and `.61932` (`115/150` scoreable,
+`27` zeros retained).  This leaves no crash/parser explanation for the current
+cards.
+
+The sharpest adequately sampled cells are Test 1 hidden/unknown/silent seller
+negotiation `.37984` (`n=12`, `9` zeros) and P1 hidden/unknown/message
+bargaining `.35132` (`n=9`, all agreements); Test 2 hidden/H10/silent seller
+negotiation `.40224` (`n=10`, `7` zeros) and P1 hidden/H12/message bargaining
+`.35743` (`n=8`, all agreements).  Every inspected Test 1 negotiation zero
+lacked a strictly profitable incoming offer.  The bargaining misses therefore
+remain extraction problems, while the negotiation misses need action-path
+comparison rather than a blanket acceptance change.
+
+Across the three newest hardliner shifts and their preceding exact-profile
+shifts, all `236` complete-information P1 bargaining games agreed.  Raw pooled
+percentile fell `.47022 -> .38496`, but opponent `delta=1` exposure rose
+`28.1% -> 38.3%`; reweighting the `44` shared exact horizon x message x delta
+pair strata leaves only `-.01509` within-stratum movement versus the raw
+`-.08525`.  All `301` target rejected incoming offers had a next counter whose
+discounted own value exceeded the standing offer, with zero pointwise-dominated
+rejections.  Do not change the `.57/.61` P1 schedule from this observational
+draw.  Pre-register the exact four-way strata and require two more clean shifts
+plus official per-game deltas; reject the weakness hypothesis if the
+within-stratum move remains within `+/- .02`.
+
+The state generator itself had been stamping a fresh header over a preserved,
+stale `Current experiments` tail, including obsolete policies, flags, and PIDs.
+`scripts/refresh_state.py` is locally corrected to label the checkout as
+`workspace HEAD`, regenerate only invariant deploy mechanics, and point dated
+experiment claims to `EXPERIMENTS.md`; it now captures Test 1 replacement PID
+`27573`.  This monitoring-only edit touches no strategy, overlay, log, or
+process.  Full validation remains `2216 passed` plus the same three known
+failures (one stale bargaining expectation and the two live-grid drift alarms).
+
+### 2026-08-25 15:52 IST: clean-shift rebound; ladder guarantee disproved without a removal case
+
+The completed Test 3 PID `23565`, Test 4 PID `24560`, and Agent 5 PID `25133`
+cohorts retain all `1,404/1,404` terminal games and both roles, with zero
+unresolved joins.  Their `14,358` turns are all heuristic and contain zero
+schema, parser, wire, duplicate, or action errors.  Test 3's unchanged
+hardliner stack rebounded across every family versus its preceding exact shift:
+bargaining `.49597 -> .51924` (`n=165`), negotiation `.46166 -> .53967`
+(`n=165`), and persuasion `.55701 -> .61110` (`159/165` scoreable).  Agent 5
+also improved bargaining `.50830 -> .53655` (`n=141`) and persuasion
+`.57490 -> .58582` (`106/140` scoreable), while negotiation moved
+`.52617 -> .49563` (`n=131`).  This same-code reversal is direct evidence that
+the recent card movement is too composition-sensitive to identify a policy
+regression.
+
+The exact live P2/known-12/own-discount-.95/silent ladder now has `25` complete
+games across clean Test 3, Test 4, and Agent 5 cohorts, with every outcome
+retained: `23` agreements and `2` no-deals/zeros.  All `153` eligible turns
+fired and changed the wire action with no errors.  Of `10` games reaching the
+terminal one-cent demand, opponents accepted `8` and rejected `2`; both rejects
+were complete-information games against an undiscounted (`delta_opp=1`)
+opponent.  The pooled committed-CDF mean is still strong at `.76508`, and every
+successful terminal-cent agreement beat its game's earlier rejected offer.
+Therefore the human claim that the cent demand is guaranteed is false, but a
+broad ladder revert is not supported.  The two failures are a post-hoc thin
+slice and do not justify changing Agent 5 or Test 2.  The falsifiable next
+question is whether complete-information, `delta_opp=1` games that actually
+reach the late ladder should accept a sufficiently strong round-11 standing
+offer.  Accumulate a prospective all-outcome denominator before choosing any
+threshold; if a guard is built, it must be default OFF, deterministic, and
+decision-theoretically derived rather than fitted to these two losses.
+
+Agent 5's weakest sampled negotiation cell was hidden-information,
+unknown-horizon, message-on seller (`.36079`, `n=11`): `2` agreements,
+`5` no-deals, `3` walks, `1` timeout, and `9` zeros.  None of those nine zeros
+ever exposed a strictly profitable incoming bid.  The path instead opens
+extremely high and then emits `235` `stall_park` actions around `.9B` or `1.4B`;
+Clod was `0/3` while always bidding at or below reservation, and Opus variants
+produced one tiny-margin agreement, one opponent walk, and one timeout.  This is
+price-path compatibility/prolonged stasis, not an accept-parser miss.  A narrow
+Clod/Opus convergence hypothesis would first need a legal profitable ZOPA in
+the observed state; the current zeros do not establish one.
+
+Operationally, all five agents are healthy with supervisor restart counts zero.
+Test 2, Test 4, and Agent 5 rotated naturally to replacement PIDs `87826`,
+`86582`, and `87495`; no agent was signalled or interrupted.  Every `_AB` and
+router/randomizer control remains zero or absent.  There are only three unique
+exact live stacks because Test 3, Test 4, and Agent 5 are byte-identical
+hardliner overlays.  That violates the intended specialist diversity even
+though it is not a per-game randomizer.  Do not touch overall-leading Agent 5
+or Test 2's protected peak stack.  If Claude restores portfolio diversity, use
+one clean non-leading natural boundary (prefer the weakest Test 3 slot), record
+the exact pre-change stack and T0, and treat the comparison as observational,
+not causal.
