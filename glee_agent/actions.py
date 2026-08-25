@@ -14,7 +14,8 @@ import hashlib
 import logging
 import math
 
-from . import (deterministic_negotiation, first_principles, pricing,
+from . import (bargaining_p2_commitment, deterministic_negotiation,
+               first_principles, pricing,
                runtime_flags, top_buyer_clone, top_buyer_clone_hi_cap10,
                top_opus_buyer_clone, top_opus_buyer_clone_hi_unknown)
 
@@ -1029,6 +1030,21 @@ def _coerce_bargaining_offer(action: dict, game: dict) -> dict:
         alice = money - _num(bob)
     if bob is None:
         bob = money - _num(alice)
+
+    # Integer-pot bargaining normally rounds to whole dollars.  The only
+    # exception is an exact offer independently reproduced by the enabled,
+    # unconflicted player-2 commitment component.  The proof checks both gains,
+    # the full structural scope and the active flag, so a generic model offer
+    # that merely contains cents cannot widen this exception.
+    exact = bargaining_p2_commitment.exact_owned_offer(game, {
+        "alice_gain": alice,
+        "bob_gain": bob,
+    })
+    if exact is not None:
+        out = {"alice_gain": exact[0], "bob_gain": exact[1]}
+        if "message" in action:
+            out["message"] = action["message"]
+        return out
 
     my_gain = _num(alice) if me_is_alice else _num(bob)
     mine, theirs = _split_exactly(my_gain, money)

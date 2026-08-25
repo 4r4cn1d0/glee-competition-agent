@@ -109,6 +109,30 @@ def _p_agent5_default(game, p):
             in ("offer", "decision"))
 
 
+def _p_barg_p2_h12_d095_silent(game, p):
+    """Exact structural scope of Bob's disclosed-H12 silent ladder."""
+    from glee_agent import bargaining_p2_commitment
+
+    return bargaining_p2_commitment.eligible_for_flag(
+        game, bargaining_p2_commitment.D095_SILENT_FLAG)
+
+
+def _p_barg_p2_h12_d095_message(game, p):
+    """Exact structural scope of Bob's truthful message commitment."""
+    from glee_agent import bargaining_p2_commitment
+
+    return bargaining_p2_commitment.eligible_for_flag(
+        game, bargaining_p2_commitment.D095_MSG_FLAG)
+
+
+def _p_barg_p2_h12_d100(game, p):
+    """Exact structural scope of Bob's patient all-but-one-cent policy."""
+    from glee_agent import bargaining_p2_commitment
+
+    return bargaining_p2_commitment.eligible_for_flag(
+        game, bargaining_p2_commitment.D100_FLAG)
+
+
 def _p_open_claim(game, p):
     from glee_agent.actions import (
         _complete_negotiation_zopa,
@@ -627,6 +651,15 @@ KNOWN = {
     "GLEE_BARG_HIGH_SHARE_DELAY_GUARD": (
         "bargaining", ("high_share_delay_guard",),
         _p_barg_high_share_delay),
+    "GLEE_BARG_P2_H12_D095_SILENT_V1": (
+        "bargaining", ("barg_p2_h12_d095_silent_v1",),
+        _p_barg_p2_h12_d095_silent),
+    "GLEE_BARG_P2_H12_D095_MSG_COMMIT_V1": (
+        "bargaining", ("barg_p2_h12_d095_msg_commit_v1",),
+        _p_barg_p2_h12_d095_message),
+    "GLEE_BARG_P2_H12_D100_COMMIT_V1": (
+        "bargaining", ("barg_p2_h12_d100_commit_v1",),
+        _p_barg_p2_h12_d100),
     # Test 4's custom randomized probe bypasses STRATEGIES.  This default-off
     # router is the prerequisite that makes bargaining gates reachable there.
     "GLEE_PROBE_RANDOMIZED_BARG_BASE": (

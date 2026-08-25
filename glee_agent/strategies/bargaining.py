@@ -44,6 +44,7 @@ import copy
 import math
 
 from .. import barg_offer
+from .. import bargaining_p2_commitment
 from .. import messages
 from .. import opponents
 from .. import runtime_flags
@@ -1162,6 +1163,13 @@ def _decide(game: dict, cfg) -> dict:
 
 def decide(game: dict, cfg) -> dict:
     """Choose numeric bargaining behaviour, then attach the assigned text arm."""
+    # A flagged player-2 commitment component owns its deliberately tiny cell
+    # end to end.  It must precede the generic opponent floor, terminal cap and
+    # message arm: layering any of those would silently destroy the committed
+    # floor whose accept/reject threshold the component uses.
+    committed = bargaining_p2_commitment.action(game)
+    if committed is not None:
+        return committed
     action = _decide(game, cfg)
     try:
         record = messages.attach_bargaining_arm(game, action)
