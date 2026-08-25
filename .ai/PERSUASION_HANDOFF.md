@@ -1,9 +1,30 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 19:38 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 20:46 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 20:46 Test 2 replacement loaded — activation still waiting for zero persuasion games
+
+- The concurrent bargaining owner completed the clean drain of PID `9695`,
+  finalized its owned non-persuasion overlay, and re-enabled Test 2. The
+  supervisor naturally launched replacement PID `15302` at 20:45:08 IST from
+  pushed HEAD `a49f1bd`, which contains `cef2621`. The command is correct:
+  `--probe champion`, LLM off, all three families, and a 3,600-second maximum
+  shift. Persuasion did not start, stop, signal, restart, or configure it.
+- This was not a safe persuasion Tcfg: within its first minute PID `15302`
+  resumed at least six already-active persuasion games at rounds 9, 6, 4, 14,
+  1, and later. V2/V3 therefore remain absent/off. V1 remains `1`, every
+  persuasion `*_AB` key remains zero, and Agent 5 is unchanged.
+- The 20:45 post-bargaining Test 2 non-persuasion overlay hash is
+  `04ab6b129a47c5c2efb3a0504cf92114aa0afd3953721735319fd72752a10eb7`.
+  This is a load checkpoint only. At the eventual persuasion Tcfg, refreeze the
+  exact then-current stack and require that hash, `control.json`, and every
+  other slot to remain byte-identical across the V2/V3-only fleet write. A safe
+  opportunity is the natural post-max drain after PID `15302` stops acquiring
+  games and every persuasion game it touched has a terminal record; never
+  force or accelerate that boundary.
 
 ## 19:38 Test 2 wait checkpoint — concurrent bargaining drain owns the boundary
 
