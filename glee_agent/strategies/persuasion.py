@@ -56,11 +56,30 @@ PERS_BUYER_EXPLICIT_DECLINE_V2_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"
 # it to one challenger cannot silently widen Test 4's already-live V2 policy.
 PERS_BUYER_EXPLICIT_DECLINE_V3_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3"
 
-# Deterministic seller-side companions to the buyer decline veto.  Both are
-# default OFF and independent so a deployment can revert either mechanism
+# Deterministic buyer-side complement to the decline vetoes.  The live tight-
+# prior fence can keep returning PASS even after this seller has emitted a
+# strict decline and the existing buyer-v2 posterior values a later strict
+# recommendation above price.  This default-OFF switch removes only that stale
+# prior veto; it does not change the posterior, parser, seller path, or any BUY
+# the control already makes.
+PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_FLAG = (
+    "GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1"
+)
+
+# Deterministic strict-edge seller companions to the buyer decline veto.  Both
+# are default OFF and independent so a deployment can revert either mechanism
 # without changing the rest of the persuasion policy.
 PERS_ZERO_MARGIN_TRUTH_V1_FLAG = "GLEE_PERS_ZERO_MARGIN_TRUTH_V1"
 PERS_P08_POSITIVE_PROSE_V1_FLAG = "GLEE_PERS_P08_POSITIVE_PROSE_V1"
+
+# Known-value all-push currently ignores observed demand after entering its
+# prior-EV shortcut.  This deterministic, default-OFF trust-repair switch uses
+# the same cumulative 50% response threshold already used by the unknown-value
+# seller: once demand has collapsed, LOW turns decline while HIGH turns retain
+# their unconditional recommendation.
+PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG = (
+    "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1"
+)
 
 
 _DECLINE_V2_CONTRAST = re.compile(
@@ -499,6 +518,43 @@ def seller_plan(game: dict, cfg) -> dict:
                 plan["prior_margin"] = round(margin, 4)
                 return plan
 
+    # DETERMINISTIC DEMAND-COLLAPSE TRUTH REPAIR (default OFF).
+    #
+    # The prior-EV shortcut below otherwise recommends every LOW item forever,
+    # even when the observed buyer has stopped responding.  In the complete
+    # recent Agent 5 seller cohort, this strict pre-action state reached 150 LOW
+    # turns across 21 games; 149 next outcomes are observed, only 2/149 control
+    # recommendations sold, and one outcome remains unresolved.  The rule gives
+    # up only those already-collapsed low-quality pushes and uses the same
+    # cumulative <50% response test as the existing unknown-value branch.  HIGH
+    # units returned above remain unconditionally recommended.  The evidence is
+    # action-selected and does not identify the official rating effect, so the
+    # behavior is isolated behind a default-OFF Test 2 challenger flag.
+    if (runtime_flags.enabled(PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG)
+            and (game.get("valid_actions") or {}).get("type")
+                in ("seller_message", "seller_recommendation")
+            and game.get("your_player") == "player_1"
+            and state.get("current_player") in (None, "player_1")
+            and state.get("player_1_role") in (None, "seller")
+            and quality == "low"
+            and knows_values
+            and history
+            and buy_rate is not None
+            and buy_rate < 0.5
+            and prior_value >= price):
+        return {
+            "recommend": False,
+            "reason": "repair trust after demand collapse",
+            "round": round_no,
+            "total_rounds": total,
+            "buy_rate": buy_rate,
+            "knows_values": True,
+            "lie_rate": 0.0,
+            "quality_is_high": False,
+            "seller_demand_collapse_truth_v1": True,
+            "gates_fired": ["pers_seller_demand_collapse_truth_v1"],
+        }
+
     if p * v + (1.0 - p) * u >= price:
         # BACKLOADING ARM. The claim below -- "a buyer purchases every round
         # regardless" -- is refuted by a live transcript: at p=1/3, v/price=3
@@ -918,6 +974,127 @@ def _p05_r12_conflict_flag_is_armed(name: str) -> bool:
         return not math.isfinite(float(value)) or abs(float(value)) > 1e-15
     except ValueError:
         return True
+
+
+_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_CONFLICT_FLAGS = (
+    # This deterministic policy is evaluated against the complete current
+    # buyer-v2 stack.  Fail closed if an older experimental buyer path can
+    # change that control PASS or reinterpret its evidence.  V1/V2/V3 explicit
+    # decline vetoes are intentionally compatible: their current signal is
+    # negative while this unlock requires a strict current positive.
+    *_P05_R12_SELECTIVITY_UNLOCK_CONFLICT_FLAGS,
+    "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB",
+)
+
+
+def _buyer_selective_signal_unlock_v1_trigger(
+    game: dict, plan: dict,
+) -> dict | None:
+    """Return an audit trace only for a real posterior-proved PASS-to-BUY.
+
+    In the frozen 1,167-assignment Agent 5 buyer stream, this state reached
+    1,120 turns in 216 games: the seller had already declined at least once,
+    its current signal was strictly positive, and buyer-v2's expected value
+    cleared price, but the static .65 tight-prior fence still forced PASS.  All
+    188 joined eligible games ended at zero; the other 28 remain join-unresolved
+    even though their complete local traces contain 20/20 passes.  Retaining
+    those 28 prevents a completed-only claim.  The observations identify a
+    broad reachable logic conflict, not the prospective rating effect, so the
+    behavior remains default OFF for a Test 2 challenger.
+
+    The helper never reads game id, seller knowledge, private quality, or a
+    configuration-cell allowlist.  It can only remove the tight-prior block
+    after observable selectivity and the existing posterior both agree.
+    """
+    if not runtime_flags.enabled(PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_FLAG):
+        return None
+    state = game.get("game_state") or {}
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"):
+        return None
+    if (state.get("player_2_role") is not None
+            and state.get("player_2_role") != "buyer"):
+        return None
+    if (state.get("current_player") is not None
+            and state.get("current_player") != "player_2"):
+        return None
+    if state.get("seller_message_type") not in ("text", "binary"):
+        return None
+
+    # The only eligible control is a buyer-v2 PASS caused by the tight-prior
+    # block.  With every conflicting optional path absent, ``blocked`` can only
+    # come from p < GLEE_PERS_BUYER_TIGHT_PRIOR; guard margins alone do not set
+    # it.  Rechecking the configured prior threshold makes that dependency
+    # explicit and prevents a future second block reason from being overridden.
+    if (plan.get("buy") is not False
+            or plan.get("buyer_v2") is not True
+            or plan.get("tight") is not True
+            or plan.get("blocked") is not True):
+        return None
+    if any(_p05_r12_conflict_flag_is_armed(name)
+           for name in _BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_CONFLICT_FLAGS):
+        return None
+    conflict_prefixes = ("rank_", "buyer_selectivity_", "lcb_", "parser_")
+    if (plan.get("gates_fired")
+            or plan.get("uninformed_veto")
+            or any(str(key).startswith(conflict_prefixes) for key in plan)):
+        return None
+
+    prior = _num(state.get("p"), math.nan)
+    tight_prior = runtime_flags.as_float("GLEE_PERS_BUYER_TIGHT_PRIOR", 0.0)
+    if (not math.isfinite(prior)
+            or not math.isfinite(tight_prior)
+            or tight_prior <= 0.0
+            or prior >= tight_prior):
+        return None
+
+    current_message = state.get("seller_message")
+    if state.get("seller_message_type") == "binary":
+        current_signal = _strict_binary_signal(
+            {"seller_message": current_message})
+    else:
+        # Use the measured expanded table as a pure current-message reader.  A
+        # V2/V3 semantic warning can never become the positive evidence that
+        # revives a purchase, even if an older positive token appears inside it.
+        if (_explicit_current_text_decline_v2(current_message)
+                or _explicit_current_text_decline_v3(current_message)):
+            return None
+        current_signal = reads_as_recommendation_expanded(current_message)
+    if current_signal is not True:
+        return None
+
+    history = [entry for entry in (state.get("history") or [])
+               if isinstance(entry, dict)]
+    prior_declines = 0
+    for entry in history:
+        message = entry.get("seller_message")
+        if state.get("seller_message_type") == "binary":
+            signal = _strict_binary_signal({"seller_message": message})
+        else:
+            signal = reads_as_recommendation_expanded(message)
+        prior_declines += signal is False
+    if prior_declines < 1:
+        return None
+
+    expected = _num(plan.get("expected_value"), math.nan)
+    plan_price = _num(plan.get("price"), math.nan)
+    state_price = _num(state.get("product_price"), math.nan)
+    if not all(math.isfinite(value)
+               for value in (expected, plan_price, state_price)):
+        return None
+    price_scale = max(1.0, abs(plan_price), abs(state_price))
+    if (state_price <= 0.0
+            or abs(plan_price - state_price) > 1e-9 * price_scale):
+        return None
+    edge_scale = max(1.0, abs(expected), abs(plan_price))
+    if expected <= plan_price + 1e-9 * edge_scale:
+        return None
+
+    return {
+        "prior_declines": prior_declines,
+        "expected_value": expected,
+        "posterior_edge": expected - plan_price,
+    }
 
 
 def _p05_r12_selectivity_unlock_trigger(game: dict, plan: dict) -> int | None:
@@ -2047,6 +2224,23 @@ def decide(game: dict, cfg) -> dict:
             p[f"p033_r4_binary_postdecline_pulse_{key}"] = value
         p.setdefault("gates_fired", []).append(
             "p033_r4_binary_postdecline_pulse")
+
+    # DETERMINISTIC SELECTIVE-SIGNAL UNLOCK (default OFF).
+    #
+    # The complete control plan is retained above.  When its only blocker is
+    # the static tight-prior fence, a seller's observable prior decline plus a
+    # strict current recommendation may provide enough evidence for buyer-v2's
+    # own posterior EV to clear price.  In that one state, and only there, this
+    # removes PASS in favor of BUY.  The rule is configuration-general and
+    # deterministic; it never reads a game id, seller knowledge, or quality.
+    selective_unlock = _buyer_selective_signal_unlock_v1_trigger(game, p)
+    if selective_unlock is not None:
+        p["buy"] = True
+        p["buyer_selective_signal_unlock_v1"] = True
+        for key, value in selective_unlock.items():
+            p[f"buyer_selective_signal_unlock_v1_{key}"] = value
+        p.setdefault("gates_fired", []).append(
+            "buyer_selective_signal_unlock_v1")
 
     # DETERMINISTIC EXPLICIT-DECLINE VETO (default OFF).
     #

@@ -401,6 +401,39 @@ def _p_pers_zero_margin_truth_v1(game, p):
             and p.get("recommend") is True)
 
 
+def _p_pers_seller_demand_collapse_truth_v1(game, plan):
+    """Changed-action scope of the deterministic known-low trust repair."""
+    state = game.get("game_state") or {}
+    history = [entry for entry in (state.get("history") or [])
+               if isinstance(entry, dict)]
+    if not history:
+        return False
+    try:
+        price = float(state.get("product_price"))
+        prior = float(state.get("p"))
+        high_value = float(state.get("v"))
+        low_value = float(state.get("u"))
+    except (TypeError, ValueError):
+        return False
+    prior_value = prior * high_value + (1.0 - prior) * low_value
+    buy_rate = (
+        sum(entry.get("bought") is True for entry in history) / len(history)
+    )
+    return ((game.get("valid_actions") or {}).get("type")
+            in ("seller_message", "seller_recommendation")
+            and game.get("your_player") == "player_1"
+            and (state.get("current_player") is None
+                 or state.get("current_player") == "player_1")
+            and (state.get("player_1_role") is None
+                 or state.get("player_1_role") == "seller")
+            and str(state.get("current_quality") or "").lower() == "low"
+            and all(math.isfinite(value) for value in (
+                price, prior, high_value, low_value, prior_value, buy_rate))
+            and prior_value >= price
+            and buy_rate < 0.5
+            and plan.get("recommend") is True)
+
+
 def _p_p08_r125_binary_truth(game, p):
     """Changed-action scope of the exact p=.8/r=1.25 binary truth gate."""
     state = game.get("game_state") or {}
@@ -465,6 +498,66 @@ def _p_p05_r12_selectivity_unlock(game, p):
             and abs(ratio - 1.2) <= 1e-9
             and abs(low_value) <= 1e-9 * max(1.0, abs(price))
             and abs(rounds - 20.0) <= 20e-9)
+
+
+def _p_buyer_selective_signal_unlock_v1(game, plan):
+    """Pre-action scope of the deterministic posterior-proof unlock."""
+    from glee_agent import runtime_flags
+    from glee_agent.strategies import persuasion
+
+    state = game.get("game_state") or {}
+    mode = state.get("seller_message_type")
+    if ((game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"
+            or mode not in ("text", "binary")
+            or plan.get("buy") is not False
+            or plan.get("buyer_v2") is not True
+            or plan.get("tight") is not True
+            or plan.get("blocked") is not True):
+        return False
+    current = state.get("seller_message")
+    if mode == "binary":
+        positive = persuasion._strict_binary_signal(
+            {"seller_message": current}) is True
+    else:
+        positive = (
+            not persuasion._explicit_current_text_decline_v2(current)
+            and not persuasion._explicit_current_text_decline_v3(current)
+            and persuasion.reads_as_recommendation_expanded(current) is True
+        )
+    if not positive:
+        return False
+    declines = 0
+    for entry in state.get("history") or []:
+        if not isinstance(entry, dict):
+            continue
+        message = entry.get("seller_message")
+        if mode == "binary":
+            signal = persuasion._strict_binary_signal(
+                {"seller_message": message})
+        else:
+            signal = persuasion.reads_as_recommendation_expanded(message)
+        declines += signal is False
+    if declines < 1:
+        return False
+    try:
+        expected = float(plan.get("expected_value"))
+        price = float(plan.get("price"))
+        state_price = float(state.get("product_price"))
+        prior = float(state.get("p"))
+        tight_prior = runtime_flags.as_float(
+            "GLEE_PERS_BUYER_TIGHT_PRIOR", 0.0)
+    except (TypeError, ValueError):
+        return False
+    scale = max(1.0, abs(expected), abs(price), abs(state_price))
+    return (all(math.isfinite(value)
+                for value in (
+                    expected, price, state_price, prior, tight_prior))
+            and state_price > 0.0
+            and abs(price - state_price) <= 1e-9 * scale
+            and tight_prior > 0.0
+            and prior < tight_prior
+            and expected > price + 1e-9 * scale)
 
 
 def _p_p033_r4_binary_postdecline_pulse(game, p):
@@ -763,6 +856,9 @@ KNOWN = {
     "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB": (
         "persuasion", ("p05_r12_selectivity_unlock",),
         _p_p05_r12_selectivity_unlock),
+    "GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1": (
+        "persuasion", ("buyer_selective_signal_unlock_v1",),
+        _p_buyer_selective_signal_unlock_v1),
     "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB": (
         "persuasion", ("p033_r4_binary_postdecline_pulse",),
         _p_p033_r4_binary_postdecline_pulse),
@@ -778,6 +874,9 @@ KNOWN = {
     "GLEE_PERS_ZERO_MARGIN_TRUTH_V1": (
         "persuasion", ("pers_zero_margin_truth_v1",),
         _p_pers_zero_margin_truth_v1),
+    "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1": (
+        "persuasion", ("pers_seller_demand_collapse_truth_v1",),
+        _p_pers_seller_demand_collapse_truth_v1),
     "GLEE_PERS_P08_POSITIVE_PROSE_V1": (
         "persuasion", ("pers_p08_positive_prose_v1",),
         _p_pers_p08_positive_prose_v1),
