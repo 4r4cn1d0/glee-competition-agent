@@ -1,9 +1,56 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 16:36 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 17:00 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 17:00 Test 4 strict-edge challenger — first live firings verified
+
+- The main deployment owner authorized and deployed commit `67b684b` on Test 4
+  only. PID `92980` launched cleanly at 16:38:53 IST with deterministic
+  `hardliner`, LLM off, and all three families. Its immutable persuasion
+  boundary is `Tcfg=1787656144.0263646` (16:39:04 IST), with the first
+  post-overlay action at `1787656145.214844`. Test 4 alone has
+  `GLEE_PERS_ZERO_MARGIN_TRUTH_V1=1`,
+  `GLEE_PERS_P08_POSITIVE_PROSE_V1=1`, and
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1`; the other four slots lack all three.
+  Fleet-wide V1 remains `1`, and all ten persuasion `*_AB` keys remain explicit
+  `0` everywhere. These Test-4-only values are the authorized deterministic
+  challenger, not configuration drift.
+- Exact replay covered all `966/966` post-boundary persuasion turns from 50
+  observed game IDs (`419` seller, `547` buyer), with all actions sourced from
+  the heuristic. The truth switch is live-verified at
+  `eligible/fired/action_changed=1/1/1`. The prose switch had 39 isolated
+  eligible turns and changed 38 live turns; the remaining eligible low-quality
+  equality turn was correctly preempted by the truth switch. Buyer V2 remains
+  `0/0/0` because no strict missed-decline state has appeared yet.
+- All 39 emitted changes occurred in two games and passed scope, wire, gate,
+  marker, legality, overlap, and full-plan replay checks. The 38 prose changes
+  were seller/player-1, text, p=.8 positive recommendations and changed literal
+  `yes` only to exact `I recommend this one.` The one truth change was a
+  seller/player-1, known-value, low-quality, p=.8/v=1.25P/u=0 equality turn and
+  changed the control recommendation `yes` to decline `no`. There was no V1 or
+  legacy A/B overlap, multi-gate wire, illegal action, error, timeout, traceback,
+  fatal line, or process incident. The 927 nonfiring turns were byte-identical.
+- This is mechanism evidence only. The local results collector has not flushed
+  a single post-boundary persuasion final, so all 50 assignments remain
+  unresolved for outcome analysis even though 47 had visibly reached round 20;
+  the other three were at rounds 19, 12, and 6. One game opened 4.33 seconds
+  before `Tcfg` and had no challenger firing; 49 are clean-start assignments.
+  Do not condition on the two firing games or impute any unresolved final.
+- The latest authenticated snapshot at `1787656881.8295639` keeps the account at
+  persuasion rank `4`: Agent 5 is best at `2395.58`, `51.42` below the unchanged
+  third-place threshold `2447.00`. The gap improved from `67.42`, while Test 4's
+  early rating movement occurred before any strict-edge action change and cannot
+  identify challenger harm or benefit.
+- Decision: keep the authorized Test 4 challenger unchanged, with no promotion
+  or rollback. Continue the first-20 exact audit for truth and buyer V2, retain
+  every post-`Tcfg` assignment and nonfiring, and wait for complete local plus
+  authenticated official joins before any performance decision. Codex made no
+  live fleet/configuration/process change in this monitoring pass; the recurring
+  monitor was updated to recognize the authorized boundary and these mechanism
+  invariants.
 
 ## 16:36 elevated follow-up — decline did not persist; result joins stalled
 
