@@ -6,6 +6,8 @@
     python scripts/fleet.py clear conceder
     python scripts/fleet.py stop randomized
     python scripts/fleet.py bank composite
+    python scripts/fleet.py peak composite 2505
+    python scripts/fleet.py peak-off composite
     python scripts/fleet.py start randomized
     python scripts/fleet.py llm composite off
     python scripts/fleet.py shift 600
@@ -22,9 +24,11 @@ healthy agent holds 6-9 games, and interrupting it abandons scored games.
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
 import sys
+import time
 from contextlib import contextmanager
 
 import fcntl
@@ -41,6 +45,46 @@ class ControlUpdateError(RuntimeError):
     """Raised when a control mutation cannot preserve the existing document."""
 
 
+def _finite_positive(value) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) and number > 0 else None
+
+
+def _validate_bank_control_schema(control: dict) -> None:
+    """Reject valid-JSON type corruption before any bank read or rewrite."""
+    for field in ("disabled", "drain_now", "bank_latched", "cycle_now"):
+        if field not in control:
+            continue
+        value = control[field]
+        if not isinstance(value, list) or any(
+            not isinstance(slot, str) or slot not in FLEET_SLOTS for slot in value
+        ):
+            raise ControlUpdateError(
+                f"cannot safely use {CONTROL}: {field} must be a list of physical slots"
+            )
+    thresholds = control.get("bank_thresholds", {})
+    if not isinstance(thresholds, dict) or any(
+        slot not in FLEET_SLOTS or _finite_positive(value) is None
+        for slot, value in thresholds.items()
+    ):
+        raise ControlUpdateError(
+            f"cannot safely use {CONTROL}: bank_thresholds must map physical slots "
+            "to finite positive ratings"
+        )
+    observations = control.get("bank_observations", {})
+    if not isinstance(observations, dict) or any(
+        slot not in FLEET_SLOTS or not isinstance(value, dict)
+        for slot, value in observations.items()
+    ):
+        raise ControlUpdateError(
+            f"cannot safely use {CONTROL}: bank_observations must map physical "
+            "slots to objects"
+        )
+
+
 def _read(path: str, default):
     try:
         with open(path, encoding="utf-8") as handle:
@@ -52,7 +96,10 @@ def _read(path: str, default):
 def _write(path: str, data) -> None:
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2)
+        # JSON's NaN/Infinity spellings are not part of the JSON standard.  A
+        # non-finite bank threshold also compares in surprising ways (NaN made
+        # ``rating < threshold`` false and therefore banked immediately).
+        json.dump(data, handle, indent=2, allow_nan=False)
         handle.write("\n")
     os.replace(tmp, path)          # atomic: the supervisor never sees a half file
 
@@ -60,7 +107,12 @@ def _write(path: str, data) -> None:
 def _read_control_for_update() -> dict:
     try:
         with open(CONTROL, encoding="utf-8") as handle:
-            control = json.load(handle)
+            control = json.load(
+                handle,
+                parse_constant=lambda token: (_ for _ in ()).throw(
+                    ValueError(f"non-finite JSON constant {token}")
+                ),
+            )
     except FileNotFoundError:
         return {}
     except (OSError, UnicodeError, ValueError) as exc:
@@ -69,6 +121,7 @@ def _read_control_for_update() -> dict:
         ) from exc
     if not isinstance(control, dict):
         raise ControlUpdateError(f"cannot safely update {CONTROL}: root is not an object")
+    _validate_bank_control_schema(control)
     return control
 
 
@@ -116,14 +169,45 @@ def _pid_alive(pid) -> bool:
 
 
 def _live_banking_slots(control: dict, state: dict) -> list[str]:
-    agents = state.get("agents") or {}
+    # supervisor.json is written once per loop and has a launch-sized blind
+    # spot. Resolve the actual process table first so start/safe-restart cannot
+    # cancel or interrupt a banked runner born between state writes.
     return sorted(
         probe for probe in set(control.get("drain_now") or [])
-        if _pid_alive(agents.get(probe))
+        if _running_slot_command(probe)[0]
     )
 
 
+def _slot_processes_from_ps(output: str) -> dict[str, tuple[int, str]]:
+    found = {}
+    for raw in output.splitlines():
+        line = raw.strip()
+        if "run_agent.py" not in line or "--log-dir" not in line:
+            continue
+        parts = line.split()
+        if len(parts) < 3 or not os.path.basename(parts[1]).lower().startswith("python"):
+            continue
+        try:
+            pid = int(parts[0])
+            log_dir = parts[parts.index("--log-dir") + 1]
+        except (ValueError, IndexError):
+            continue
+        slot = os.path.basename(log_dir.rstrip("/"))
+        if slot in FLEET_SLOTS:
+            found.setdefault(slot, (pid, " ".join(parts[1:])))
+    return found
+
+
 def _running_slot_command(probe: str) -> tuple[int | None, str]:
+    output = subprocess.run(
+        ["ps", "-axo", "pid=,command="], capture_output=True, text=True
+    ).stdout
+    actual = _slot_processes_from_ps(output).get(probe)
+    if actual:
+        return actual
+    # Fallback for a platform whose ps format differs. State is not sufficient
+    # for the safety decision when ps works, but it is still better than assuming
+    # a recorded, live PID is absent.
     state = _read(STATE, {})
     pid = (state.get("agents") or {}).get(probe)
     if not _pid_alive(pid):
@@ -136,16 +220,104 @@ def _running_slot_command(probe: str) -> tuple[int | None, str]:
     return int(pid), command
 
 
+def _running_peak_watch_pid() -> int | None:
+    """Return the Python peak watcher PID, ignoring launch wrappers."""
+    output = subprocess.run(
+        ["ps", "-axo", "pid=,command="], capture_output=True, text=True
+    ).stdout
+    for raw in output.splitlines():
+        line = raw.strip()
+        if "scripts/peak_watch.py" not in line:
+            continue
+        parts = line.split()
+        if len(parts) < 3 or not os.path.basename(parts[1]).lower().startswith("python"):
+            continue
+        try:
+            return int(parts[0])
+        except (ValueError, IndexError):
+            continue
+    return None
+
+
+def _ensure_peak_watcher() -> int | None:
+    """Start the durable minute watcher when arming the first threshold."""
+    existing = _running_peak_watch_pid()
+    if existing:
+        return existing
+    python = os.path.join(REPO, ".venv", "bin", "python")
+    if not os.path.exists(python):
+        python = sys.executable
+    log_path = os.path.join(REPO, "logs", "peak_watch.out")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    try:
+        with open(log_path, "a", encoding="utf-8") as output:
+            proc = subprocess.Popen(
+                [python, "scripts/peak_watch.py"],
+                cwd=REPO,
+                stdin=subprocess.DEVNULL,
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                close_fds=True,
+            )
+    except OSError as exc:
+        print(f"REFUSED: cannot start peak watcher: {exc}", file=sys.stderr)
+        return None
+    # Catch import/singleton failures before claiming the threshold is protected.
+    for _ in range(8):
+        time.sleep(0.25)
+        running = _running_peak_watch_pid()
+        if running:
+            return running
+        if proc.poll() is not None:
+            break
+    print(
+        f"REFUSED: peak watcher exited during startup; inspect {log_path}.",
+        file=sys.stderr,
+    )
+    return None
+
+
+def _validate_bank_target(probe: str) -> bool:
+    if probe not in FLEET_SLOTS:
+        print(f"REFUSED: unknown physical slot {probe!r}; expected one of "
+              f"{', '.join(sorted(FLEET_SLOTS))}.", file=sys.stderr)
+        return False
+    pid, command = _running_slot_command(probe)
+    if pid and "--max-time" not in command:
+        print(f"REFUSED: {probe} pid {pid} is an unbounded legacy runner and "
+              f"cannot prove a safe fallback boundary. Leave it untouched until "
+              f"a bounded code-loaded process replaces it.", file=sys.stderr)
+        return False
+    return True
+
+
+def _mark_banked(control: dict, probe: str) -> None:
+    disabled = set(control.get("disabled") or [])
+    drain_now = set(control.get("drain_now") or [])
+    latched = set(control.get("bank_latched") or [])
+    disabled.add(probe)
+    drain_now.add(probe)
+    latched.add(probe)
+    control["disabled"] = sorted(disabled)
+    control["drain_now"] = sorted(drain_now)
+    control["bank_latched"] = sorted(latched)
+
+
 def status() -> int:
     arms, control = _read(ARMS, {}), _read(CONTROL, {})
     state = _read(STATE, {})
     shift = control.get("shift_seconds", 900)
     disabled = set(control.get("disabled") or [])
     drain_now = set(control.get("drain_now") or [])
+    latched = set(control.get("bank_latched") or [])
+    thresholds = control.get("bank_thresholds") or {}
     running = subprocess.run(["pgrep", "-f", "run_agent.py --probe"],
                              capture_output=True, text=True).stdout.split()
+    watcher = _running_peak_watch_pid()
     print(f"shift {shift}s   supervisor {'up' if state.get('supervisor_pid') else 'down'}"
-          f"   {len(running)} agent processes\n")
+          f"   {len(running)} agent processes   peak-watch "
+          f"{'up pid=' + str(watcher) if watcher else 'down'}\n")
     print(f"  {'agent':12s} {'state':10s} {'age':>6s}  flags")
     for probe, pid in (state.get("agents") or {}).items():
         alive = pid and str(pid) in running
@@ -158,6 +330,14 @@ def status() -> int:
             probe, alive=bool(alive), disabled=disabled, drain_now=drain_now
         )
         flags = " ".join(f"{k}={v}" for k, v in sorted((arms.get(probe) or {}).items()))
+        peak = _finite_positive(thresholds.get(probe))
+        peak_state = []
+        if peak is not None:
+            peak_state.append(f"peak>={peak:.2f}")
+        if probe in latched:
+            peak_state.append("bank-latched")
+        if peak_state:
+            flags = " ".join(part for part in (flags, f"[{' '.join(peak_state)}]") if part)
         print(f"  {probe:12s} {label:10s} {age:>6s}  {flags or '<control>'}")
     for probe in sorted(set(arms) - set(state.get('agents') or {})):
         print(f"  {probe:12s} {'not in fleet':10s} {'-':>6s}")
@@ -190,7 +370,22 @@ def clear_flags(probe: str) -> int:
 
 
 def enable(probe: str, on: bool) -> int:
+    if probe not in FLEET_SLOTS:
+        print(f"REFUSED: unknown physical slot {probe!r}.", file=sys.stderr)
+        return 1
+    # Never let ``start`` erase a fast-bank request before the still-live runner
+    # has observed it.  Once the process is down, clearing drain_now is safe;
+    # retain the one-shot latch so a planned activity-defense shift cannot bank
+    # itself again immediately at the same already-observed peak.
+    live_pid, _command = _running_slot_command(probe) if on else (None, "")
     with _edit_control() as control:
+        if on and probe in set(control.get("drain_now") or []) and live_pid:
+            print(
+                f"REFUSED: {probe} is still banking as pid {live_pid}; wait until "
+                "it is fully down before starting a defense shift.",
+                file=sys.stderr,
+            )
+            return 1
         disabled = set(control.get("disabled") or [])
         disabled.discard(probe) if on else disabled.add(probe)
         control["disabled"] = sorted(disabled)
@@ -199,8 +394,8 @@ def enable(probe: str, on: bool) -> int:
             drain_now.discard(probe)
             control["drain_now"] = sorted(drain_now)
     if on:
-        print(f"{probe}: enabled and any bank latch cleared — the supervisor "
-              f"relaunches it within ~30s")
+        print(f"{probe}: enabled; the one-shot bank latch is retained and the "
+              f"supervisor relaunches it within ~30s")
     else:
         print(f"{probe}: stop queued for its normal shift boundary; it will drain "
               f"current games and stay down (no games abandoned)")
@@ -209,26 +404,101 @@ def enable(probe: str, on: bool) -> int:
 
 def bank(probe: str) -> int:
     """Request the runner's immediate SDK-native drain and disable relaunch."""
-    if probe not in FLEET_SLOTS:
-        print(f"REFUSED: unknown physical slot {probe!r}; expected one of "
-              f"{', '.join(sorted(FLEET_SLOTS))}.", file=sys.stderr)
-        return 1
-    pid, command = _running_slot_command(probe)
-    if pid and "--max-time" not in command:
-        print(f"REFUSED: {probe} pid {pid} is an unbounded legacy runner and "
-              f"cannot prove a safe fallback boundary. Leave it untouched until "
-              f"a bounded code-loaded process replaces it.", file=sys.stderr)
+    if not _validate_bank_target(probe):
         return 1
     with _edit_control() as control:
-        disabled = set(control.get("disabled") or [])
-        drain_now = set(control.get("drain_now") or [])
-        disabled.add(probe)
-        drain_now.add(probe)
-        control["disabled"] = sorted(disabled)
-        control["drain_now"] = sorted(drain_now)
+        _mark_banked(control, probe)
+        observations = dict(control.get("bank_observations") or {})
+        observations[probe] = {
+            "kind": "manual",
+            "ts": time.time(),
+            "pid": _running_slot_command(probe)[0],
+        }
+        control["bank_observations"] = observations
     print(f"{probe}: bank requested — a code-loaded runner stops queueing on its "
           f"next poll, completes every in-flight game, and stays down. An older "
           f"runner safely falls back to its normal shift boundary.")
+    return 0
+
+
+def bank_observed_peak(
+    probe: str, rating: float, observation: dict | None = None
+) -> bool:
+    """Atomically bank an armed, unlatched slot at an observed threshold."""
+    if not _validate_bank_target(probe):
+        return False
+    clean_rating = _finite_positive(rating)
+    if clean_rating is None:
+        return False
+    with _edit_control() as control:
+        thresholds = control.get("bank_thresholds") or {}
+        latched = set(control.get("bank_latched") or [])
+        disabled = set(control.get("disabled") or [])
+        threshold = _finite_positive(thresholds.get(probe))
+        if threshold is None:
+            return False
+        if probe in latched or probe in disabled or clean_rating < threshold:
+            return False
+        _mark_banked(control, probe)
+        event = {
+            "kind": "authenticated-overall-peak",
+            "ts": time.time(),
+            "threshold": threshold,
+            "observed_rating": clean_rating,
+        }
+        if observation:
+            event.update(observation)
+            # The authoritative values are those checked under this lock.
+            event.update({"threshold": threshold, "observed_rating": clean_rating})
+        # Validate before replacing control.json, so a bad enrichment can never
+        # turn an observed peak into an unaudited or malformed control write.
+        json.dumps(event, allow_nan=False)
+        observations = dict(control.get("bank_observations") or {})
+        observations[probe] = event
+        control["bank_observations"] = observations
+    print(f"{probe}: authenticated overall {clean_rating:.2f} reached armed bank "
+          f"threshold {threshold:.2f}; immediate lossless drain requested.")
+    return True
+
+
+def set_peak(probe: str, value: str | None) -> int:
+    """Arm/rearm or remove a one-shot authenticated overall-rating bank."""
+    if probe not in FLEET_SLOTS:
+        print(f"REFUSED: unknown physical slot {probe!r}.", file=sys.stderr)
+        return 1
+    threshold = None
+    watcher_pid = None
+    if value is not None:
+        threshold = _finite_positive(value)
+        if threshold is None:
+            print(
+                f"REFUSED: threshold must be a finite positive rating, got {value!r}.",
+                file=sys.stderr,
+            )
+            return 1
+        watcher_pid = _ensure_peak_watcher()
+        if watcher_pid is None:
+            return 1
+    with _edit_control() as control:
+        thresholds = dict(control.get("bank_thresholds") or {})
+        latched = set(control.get("bank_latched") or [])
+        observations = dict(control.get("bank_observations") or {})
+        if value is None:
+            thresholds.pop(probe, None)
+            latched.discard(probe)
+            observations.pop(probe, None)
+            message = f"{probe}: automatic peak banking removed"
+        else:
+            assert threshold is not None
+            thresholds[probe] = threshold
+            latched.discard(probe)
+            observations.pop(probe, None)
+            message = (f"{probe}: automatic one-shot bank armed at authenticated "
+                       f"overall rating >= {threshold:.2f} (watcher pid {watcher_pid})")
+        control["bank_thresholds"] = thresholds
+        control["bank_latched"] = sorted(latched)
+        control["bank_observations"] = observations
+    print(message)
     return 0
 
 
@@ -516,6 +786,10 @@ def main() -> int:
         return enable(rest[0], False)
     if cmd == "bank" and rest:
         return bank(rest[0])
+    if cmd == "peak" and len(rest) >= 2:
+        return set_peak(rest[0], rest[1])
+    if cmd == "peak-off" and rest:
+        return set_peak(rest[0], None)
     if cmd == "start" and rest:
         return enable(rest[0], True)
     if cmd == "shift" and rest:
