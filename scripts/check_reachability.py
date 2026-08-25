@@ -584,6 +584,21 @@ def _p_buyer_explicit_decline_v2(game, p):
                 state.get("seller_message")))
 
 
+def _p_buyer_explicit_decline_v3(game, p):
+    """Pre-action scope where strict current-warning V3 can change BUY."""
+    from glee_agent.strategies import persuasion
+
+    state = game.get("game_state") or {}
+    return ((game.get("valid_actions") or {}).get("type") == "buyer_decision"
+            and game.get("your_player") == "player_2"
+            and state.get("current_player") in (None, "player_2")
+            and state.get("seller_message_type") == "text"
+            and p.get("buyer_v2") is True
+            and p.get("buy") is True
+            and persuasion._explicit_current_text_decline_v3(
+                state.get("seller_message")))
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -757,6 +772,9 @@ KNOWN = {
     "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2": (
         "persuasion", ("buyer_explicit_decline_v2",),
         _p_buyer_explicit_decline_v2),
+    "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3": (
+        "persuasion", ("buyer_explicit_decline_v3",),
+        _p_buyer_explicit_decline_v3),
     "GLEE_PERS_ZERO_MARGIN_TRUTH_V1": (
         "persuasion", ("pers_zero_margin_truth_v1",),
         _p_pers_zero_margin_truth_v1),
@@ -911,14 +929,18 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     if action_type == "seller_message":
                         if quality == "high":
                             message = "Recommended."
-                        elif (target_flag ==
-                              "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"):
+                        elif target_flag in (
+                                "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2",
+                                "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3"):
                             # The ordinary exact-decline fixture is owned by
                             # V1.  V2 needs a real direct-current decline whose
                             # future-positive wording cancels to parser-neutral
                             # under the exact live control stack.
-                            message = ("Sit this round out; the next product "
-                                       "may be worth it.")
+                            message = (
+                                "Sit this round out; the next product may be "
+                                "worth it." if target_flag.endswith("V2") else
+                                "Honestly? Skip this one. I'd rather keep your "
+                                "trust for genuinely good units.")
                         else:
                             message = "Not recommended."
                         return {"message": message}

@@ -51,6 +51,11 @@ PERS_BUYER_EXPLICIT_DECLINE_VETO_V1_FLAG = (
 # misses, and can only turn an existing buyer-v2 BUY into PASS.
 PERS_BUYER_EXPLICIT_DECLINE_V2_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"
 
+# Strict semantic tail for direct current-round warnings that remain neutral to
+# both the live expanded parser and V2.  It is separately default OFF so adding
+# it to one challenger cannot silently widen Test 4's already-live V2 policy.
+PERS_BUYER_EXPLICIT_DECLINE_V3_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3"
+
 # Deterministic seller-side companions to the buyer decline veto.  Both are
 # default OFF and independent so a deployment can revert either mechanism
 # without changing the rest of the persuasion policy.
@@ -182,6 +187,166 @@ def _explicit_current_text_decline_v2(message) -> bool:
             scoped = _DECLINE_V2_DIRECT.sub(" ", scoped)
             if _DECLINE_V2_CURRENT_MARKER.search(scoped) is None:
                 continue
+        return False
+    return True
+
+
+_DECLINE_V3_STRICT = re.compile(
+    r"(?:"
+    # A current-item imperative stays a decline even when later copy praises
+    # future or generic good units.  V2 was deliberately too conservative here.
+    r"\bskip\s+(?:this|it|the\s+(?:current\s+)?"
+    r"(?:round|item|one|product|unit))\b|"
+    r"\b(?:do\s+not|don['’]?t)\s+even\s+think\s+about\s+"
+    r"(?:buying|purchasing|taking|it|this)\b|"
+    r"\b(?:do\s+not|don['’]?t)\s+bother(?:\s+(?:with\s+)?"
+    r"(?:this|it|buying|purchasing))?(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:do\s+not|don['’]?t)\s+waste\s+(?:your\s+)?"
+    r"(?:(?:hard[- ]earned|precious)\s+)?"
+    r"(?:money|credits?|coins?|cash|gold|funds?|currency)"
+    r"(?:\s+on\s+(?:this(?:\s+(?:item|one|product|unit))?|it|"
+    r"the\s+(?:item|one|product|unit)))?"
+    r"(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:save|keep)\s+(?:your\s+)?"
+    r"(?:(?:hard[- ]earned|precious)\s+)?"
+    r"(?:money|credits?|coins?|cash|gold|funds?|currency)"
+    r"(?:\s+for\s+(?:later|the\s+next\s+(?:round|item|one|product|unit)))?"
+    r"(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:avoid|steer\s+clear\s+of|stay\s+away\s+from)\s+"
+    r"(?:this|it|the\s+(?:current\s+)?(?:item|one|product|unit|deal))\b|"
+    r"(?:^|[.!?;:\u2014-])\s*avoid\s*[.!?]*\s*$|"
+    # Regretting the purchase is negative; regretting a pass is positive and is
+    # rejected separately below.
+    r"\byou(?:['’]?ll|\s+will)\s+regret\s+"
+    r"(?:this\s+(?:purchase|buy|deal|item|one)|"
+    r"(?:buying|purchasing|taking)\s+(?:this|it))\b|"
+    # Unambiguous current-loss labels.  Bare labels are accepted only as their
+    # own clause; otherwise the current item must be named.
+    r"\b(?:this|it|the\s+(?:current\s+)?(?:item|one|product|unit|deal))"
+    r"\b.{0,24}\b(?:an?\s+)?(?:absolute\s+)?"
+    r"(?:trap|money\s+pit|guaranteed\s+loss|(?:terrible|awful|horrible)\s+"
+    r"(?:deal|investment)|bad\s+buy|total\s+bust)\b|"
+    r"(?:^|[.!?;:\u2014-])\s*(?:an?\s+)?(?:absolute\s+)?"
+    r"(?:trap|money\s+pit|guaranteed\s+loss|(?:terrible|awful|horrible)\s+"
+    r"(?:deal|investment)|bad\s+buy|total\s+bust)"
+    r"\s*[.!?]*\s*$|"
+    r"\bterrible\s+(?:time|moment)\s+to\s+(?:buy|purchase)\b|"
+    r"\b(?:you(?:['’]?ll|\s+will)\s+)?lose\s+your\s+shirt\b|"
+    r"\bhold\s+off\s+(?:this\s+)?(?:time|round|one)\b|"
+    r"\b(?:this|the\s+current|this\s+round['’]?s)\s+"
+    r"(?:product|unit|item|one)\s+(?:is|looks?|seems?)\s+low[- ]quality\b"
+    r".{0,256}\b(?:recommend\s+(?:(?:that\s+)?you\s+)?"
+    r"(?:not\s+(?:buying|purchasing)|pass(?:ing)?)|"
+    r"(?:do\s+not|don['’]?t|will\s+not|won['’]?t)\s+recommend\s+"
+    r"(?:buying|purchasing)|understand\s+(?:if\s+you\s+pass|"
+    r"you\s+might\s+not\s+want\s+it))\b|"
+    r"\b(?:i|we)\s+(?:recommend|advise)\s+"
+    r"(?:(?:that\s+)?you\s+)?(?:do\s+not|don['’]?t|against)\s+"
+    r"(?:buy|buying|purchase|purchasing|taking)\b"
+    r")",
+)
+_DECLINE_V3_POSITIVE_REGRET = re.compile(
+    r"\b(?:won['’]?t|will\s+not|wouldn['’]?t|would\s+not|never)\s+"
+    r"regret\b|"
+    r"\bregret(?:\s+it)?\s+(?:if|when)\s+(?:you\s+)?"
+    r"(?:miss|pass|skip|wait|walk)|"
+    r"\bregret\s+(?:missing|passing|skipping|waiting|walking\s+away|"
+    r"not\s+(?:buying|purchasing|taking))\b",
+)
+_DECLINE_V3_NEGATED_LOSS = re.compile(
+    r"\b(?:not|never|hardly|anything\s+but|far\s+from)\s+(?:an?\s+)?"
+    r"(?:absolute\s+)?(?:trap|money\s+pit|guaranteed\s+loss|"
+    r"(?:terrible|awful|horrible)\s+(?:deal|investment)|bad\s+buy|"
+    r"total\s+bust)\b|"
+    r"\b(?:won['’]?t|will\s+not|can['’]?t|cannot|shouldn['’]?t)\s+"
+    r"lose\s+your\s+shirt\b",
+)
+_DECLINE_V3_CURRENT_BUY = re.compile(
+    r"\b(?:buy|purchase|take|get|grab|snap)\s+(?:this|it|now)\b",
+)
+_DECLINE_V3_CURRENT_RECOMMEND = re.compile(
+    r"\b(?:recommend|stand\s+behind)\s+(?:this|it)\b",
+)
+_DECLINE_V3_CURRENT_QUALITY = re.compile(
+    r"\b(?:this|it|the\s+(?:current\s+)?(?:item|one|product|unit|deal))\s+"
+    r"(?:is|['’]s|looks?|seems?)\s+(?:still\s+)?"
+    r"(?:high\s+quality|excellent|great\s+deal|good\s+buy|strong\s+pick|"
+    r"worth\s+(?:buying|purchasing|the\s+price|it))\b",
+)
+_DECLINE_V3_NEGATED_ACTION = re.compile(
+    r"\b(?:not\s+to|do\s+not|don['’]?t|never|won['’]?t|wouldn['’]?t)\s*$",
+)
+_DECLINE_V3_CONDITIONAL_ACTION = re.compile(
+    r"\b(?:only\s+when|when|if|unless)\b[^.!?;:\u2014-]{0,56}$",
+)
+
+
+def _has_explicit_current_positive_reversal(text: str, start: int) -> bool:
+    """Return whether text after a decline explicitly flips the current action.
+
+    Grammar is deliberately tighter than proximity sentiment.  In particular,
+    historical statements ("it proved high quality"), negated actions ("not to
+    purchase this"), and future conditionals ("buy only when I recommend it")
+    are not current-round reversals.
+    """
+    suffix = text[start:]
+    for pattern in (_DECLINE_V3_CURRENT_BUY,
+                    _DECLINE_V3_CURRENT_RECOMMEND):
+        for positive in pattern.finditer(suffix):
+            prefix = suffix[max(0, positive.start() - 72):positive.start()]
+            if _DECLINE_V3_NEGATED_ACTION.search(prefix):
+                continue
+            if _DECLINE_V3_CONDITIONAL_ACTION.search(prefix):
+                continue
+            return True
+    return _DECLINE_V3_CURRENT_QUALITY.search(suffix) is not None
+
+
+def _explicit_current_text_decline_v3(message) -> bool:
+    """Recognize only unequivocal current-round warnings missed by V1 and V2.
+
+    This is intentionally a final-action classifier, not sentiment analysis and
+    not a history rewrite.  In 49,802 buyer/text turns from 2,498 all-assigned
+    games in the frozen five-slot stream since 1787607608, the conservative
+    disjoint selector reached 232 turns in 59 games.  Exact Test-2-stack replay
+    above live V1+V2 changed 66 recorded purchases in 39 games; all 66 were LOW
+    and zero were HIGH.  V2+V3 together changed 128 turns in 62 games versus
+    V1-only: 127 LOW, zero HIGH, and one unresolved quality.  These qualities
+    are action-selected mechanism evidence, so the flag remains default OFF and
+    may only move an existing buyer-v2 BUY to PASS.
+    """
+    if not isinstance(message, str):
+        return False
+    text = " ".join(message.strip().lower().replace(
+        "\u2018", "'").replace("\u2019", "'").split())
+    if not text:
+        return False
+
+    # Keep traces disjoint from the two earlier deterministic vetoes.
+    if reads_as_recommendation_expanded(message) is False:
+        return False
+    if _explicit_current_text_decline_v2(message):
+        return False
+    match = _DECLINE_V3_STRICT.search(text)
+    if match is None:
+        return False
+
+    # A history marker before the warning can turn it into a quote ("earlier I
+    # said: skip this one"), so fail closed.  A later history comparison does
+    # not erase an already-explicit current imperative ("skip this one; unlike
+    # the prior unit ...").  The old global veto discarded both and missed 23
+    # observed-low control purchases in the frozen corpus.
+    history = _DECLINE_V2_HISTORY.search(text)
+    if history is not None and history.start() < match.start():
+        return False
+    if _DECLINE_V3_POSITIVE_REGRET.search(text):
+        return False
+    if _DECLINE_V3_NEGATED_LOSS.search(text):
+        return False
+
+    # A later explicit current-item buy instruction owns the final position.
+    # Generic/future praise ("good units later") does not reverse "skip this".
+    if _has_explicit_current_positive_reversal(text, match.end()):
         return False
     return True
 
@@ -1971,6 +2136,29 @@ def decide(game: dict, cfg) -> dict:
             p["buyer_explicit_decline_v2"] = True
             p.setdefault("gates_fired", []).append(
                 "buyer_explicit_decline_v2")
+
+    # DETERMINISTIC STRICT CURRENT-WARNING V3 (default OFF).
+    #
+    # This final overlay is deliberately one-directional and history-blind.  It
+    # first preserves the complete live buyer-v2/V1/V2 plan, then lets the pure
+    # V3 classifier turn only an existing text BUY into PASS.  V1/V2 messages,
+    # binary wires, seller actions, positive/ambiguous text, and existing passes
+    # remain byte-identical; no game id or configuration cell is consulted.
+    if (runtime_flags.enabled(PERS_BUYER_EXPLICIT_DECLINE_V3_FLAG)
+            and action_type == "buyer_decision"
+            and game.get("your_player") == "player_2"
+            and ((game.get("game_state") or {}).get("current_player")
+                 in (None, "player_2"))
+            and p.get("buyer_v2") is True
+            and p.get("buy") is True):
+        state = game.get("game_state") or {}
+        if (state.get("seller_message_type") == "text"
+                and _explicit_current_text_decline_v3(
+                    state.get("seller_message"))):
+            p["buy"] = False
+            p["buyer_explicit_decline_v3"] = True
+            p.setdefault("gates_fired", []).append(
+                "buyer_explicit_decline_v3")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
