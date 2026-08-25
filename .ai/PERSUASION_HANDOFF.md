@@ -1,9 +1,47 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 21:15 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 21:58 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 21:58 Test 2 adaptive-credibility profile — code pushed, live boundary pending
+
+- Pushed commit `96671bb` adds two broad deterministic, default-OFF persuasion
+  repairs. `GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1` removes only a
+  tight-prior PASS after an observable prior strict decline, strict current
+  positive, and buyer-v2 posterior EV strictly above price. The gate is
+  `buyer_selective_signal_unlock_v1`. `GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1`
+  changes only a known-low all-push YES to NO after nonempty cumulative buy rate
+  falls below `.5`; its gate is `pers_seller_demand_collapse_truth_v1`. Neither
+  reads game ID, opponent, or a configuration allowlist. Both preserve the
+  complete current behavior while OFF.
+- The named Test 2 profile `adaptive-credibility-v1` is existing V1 plus pending
+  V2/V3, the buyer unlock, and seller repair. Test 2 alone is authorized for the
+  future challenger. Agent 5 is protected and unchanged; no Test 4 truth/prose
+  flag is copied, and all persuasion `*_AB` keys remain zero. The full
+  all-assignment harm/final rule and per-gate replay contracts are frozen at the
+  top of `.ai/EXPERIMENTS.md`.
+- Buyer evidence retains all 1,167 Agent 5 assignments. The unlock reaches 216
+  assigned games: all 188 result-joined eligible games ended at zero; 28 remain
+  join-unresolved despite complete all-pass traces. Exact target quality is
+  unobserved and neighboring bought states show posterior optimism, so this is
+  a material prospective hypothesis, not an Agent 5 recommendation. Seller
+  evidence retains 287 assignments: 150 low turns / 21 games meet the repair;
+  149 next outcomes are observed, only 2 sold, and one remains unresolved.
+- Focused new-mechanism tests pass `112/112`; all persuasion tests pass
+  `533/533`. Exact live Test 2 paired reachability over 800 games is buyer
+  `272/272/272` and seller `346/346/346`. Full suite is `2498 passed, 3 failed`,
+  with only the declared bargaining assertion and bargaining/negotiation
+  live-grid drift alarms.
+- No fleet configuration, process, queue, `.env`, `arms.json`, or `control.json`
+  was changed by this implementation. Test 2 naturally replaced PID `15302`
+  with PID `58430` at 21:54:23 IST, about two minutes before commit `96671bb`, so
+  the new process cannot contain these repairs and remains ineligible. Wait for
+  a later natural successor containing `96671bb`, then require zero in-flight
+  persuasion games and freeze the exact live boundary before any Test 2-only
+  fleet write. Never restart, signal, stop, drain, start, or accelerate a
+  process.
 
 ## 21:15 Test 4 strict-edge audit — mechanism clean, effect decision blocked
 
