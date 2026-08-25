@@ -1,9 +1,43 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 13:30 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 16:18 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 16:18 monitoring alert — podium lost, no reversible mechanism fault
+
+- The authenticated 16:10 snapshot moved our account-best persuasion marker
+  from rank `3` to rank `4`. Test 2/hardliner is now best at `2389.64`; the
+  displayed third-place threshold remained exactly `2447.00`, leaving a `57.36`
+  gap. The podium loss came from our ratings falling, not a rising threshold.
+- Frozen cohort `[1787653255.820292, 1787654464.868853]` retained all 220
+  assigned persuasion games, exactly matching the aggregate official game-count
+  advance. Every slot fell: Test 1 `-62.43`, Test 2 `-39.43`, Test 3 `-46.34`,
+  Test 4 `-3.92`, and Agent 5 `-42.78`. Mean movement was `-38.98`, with a
+  descriptive cross-slot 95% interval `[-57.82, -20.14]`. Shared-field
+  correlation prevents a causal policy claim, but this clears the fleet-level
+  deterioration alert and warrants continued elevated monitoring.
+- The available local finals are buyer-weak but incomplete: 82/220 joined
+  completed outcomes, with sellers showing three zeros and zero negatives,
+  versus buyers showing 22 zeros and all eight negatives. The eight losses span
+  four slots, both message modes, every prior, several value ratios, and several
+  opponents. Buyer `p=.5` is the broadest weak diagnostic slice, but 138/220
+  outcomes remain unresolved and there are zero current authenticated per-game
+  rating joins, so no cell or opponent supports a deterministic patch.
+- No reversible mechanism or operational cause was found. All five agents are
+  complete all-family/LLM-off processes on post-`6d3aec4` code; every persuasion
+  `*_AB` flag is zero, V1 is `1`, and V2 is absent. There were zero strategy
+  errors, timeouts, API incidents, crashes, forced cycles, or abandoned games.
+  V1 fired only nine turns in five of the 220 games, too rarely to explain the
+  synchronized decline; incremental exact OFF/ON replay and scope checks remain
+  clean. V2 emitted zero live markers.
+- Decision: do not reactivate measured-negative selectivity and do not deploy
+  V2 on this non-identified batch. Preserve the deterministic live stack while
+  recovering authenticated per-game deltas and terminal joins. Four newly
+  cycled slot collectors have not yet emitted local final rows despite many
+  round-20 games; only conceder is current. This is an evidence-pipeline gap,
+  not a confirmed competition-game failure.
 
 ## 13:30 inert candidate — deterministic direct-decline V2
 
