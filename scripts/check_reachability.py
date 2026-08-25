@@ -337,6 +337,11 @@ def _p_barg_high_share_delay(game, p):
     return bool(signal.get("eligible"))
 
 
+def _p_barg_accept_floor_exact(game, p):
+    signal = p.get("accept_floor_exact_v1") or {}
+    return bool(signal.get("eligible"))
+
+
 def _p_p08_r125_prose(game, p):
     """Action-level scope of the exact p=.8/r=1.25 seller wording gate."""
     state = game.get("game_state") or {}
@@ -653,6 +658,9 @@ KNOWN = {
     "GLEE_BARG_HIGH_SHARE_DELAY_GUARD": (
         "bargaining", ("high_share_delay_guard",),
         _p_barg_high_share_delay),
+    "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1": (
+        "bargaining", ("accept_floor_exact_v1",),
+        _p_barg_accept_floor_exact),
     "GLEE_BARG_P2_H12_D095_SILENT_V1": (
         "bargaining", ("barg_p2_h12_d095_silent_v1",),
         _p_barg_p2_h12_d095_silent),
@@ -817,6 +825,56 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     opponent = exact_decline_seller
         else:
             opponent = field.sample_opponent(random.Random(game_seed + 1))
+            if (target_flag == "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1"
+                    and family == "bargaining"):
+                # Ordinary field draws need not land exactly on the decimal
+                # 20%/45% wire atoms. This reachability-only opponent repeats
+                # the exact economic boundary and rejects our counters, giving
+                # the real local engine enough turns to expose the production
+                # float comparison. It changes neither the arena field nor any
+                # production opponent implementation.
+                field_opponent = opponent
+
+                def exact_floor_opponent(game):
+                    state = game.get("game_state") or {}
+                    action_type = (game.get("valid_actions") or {}).get("type")
+                    if action_type == "decision":
+                        return {"decision": "reject"}
+                    if action_type != "offer":
+                        return field_opponent(game)
+                    mover = game.get("your_player") or state.get("current_player")
+                    receiver = "player_2" if mover == "player_1" else "player_1"
+                    delta_key = "delta_1" if receiver == "player_1" else "delta_2"
+                    try:
+                        money = float(state.get("money_to_divide"))
+                    except (TypeError, ValueError):
+                        return field_opponent(game)
+                    try:
+                        delta = float(state.get(delta_key))
+                    except (TypeError, ValueError):
+                        delta = None
+                    if delta in (0.8, 0.9):
+                        share = 0.20 if delta == 0.8 else 0.45
+                    else:
+                        # Hidden information correctly omits the receiver's
+                        # discount from this opponent's observation. Alternate
+                        # the two public wire atoms rather than smuggling that
+                        # hidden value into the fixture; every d=.8/.9 receiver
+                        # is offered its own exact boundary on alternating turns.
+                        round_no = int(float(state.get("round") or 1))
+                        offer_index = (round_no + 1) // 2
+                        share = 0.20 if offer_index % 2 else 0.45
+                    if share is None or not math.isfinite(money) or money <= 0.0:
+                        return field_opponent(game)
+                    receiver_gain = share * money
+                    if receiver == "player_1":
+                        return {"alice_gain": receiver_gain,
+                                "bob_gain": money - receiver_gain}
+                    return {"alice_gain": money - receiver_gain,
+                            "bob_gain": receiver_gain}
+
+                exact_floor_opponent.name = "exact_floor_opponent"
+                opponent = exact_floor_opponent
             if (target_flag ==
                     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1"
                     and family == "negotiation"
@@ -1055,7 +1113,8 @@ def main() -> int:
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
-                                  "GLEE_BARG_HIGH_SHARE_DELAY_GUARD")
+                                  "GLEE_BARG_HIGH_SHARE_DELAY_GUARD",
+                                  "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:

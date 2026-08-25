@@ -660,6 +660,10 @@ def _decide(game: dict, cfg) -> dict:
     # --- decision phase: current_player is always the offer's receiver ---
     offer = state.get("last_offer") or {}
     my_gain = _num(offer.get(f"{state.get('current_player')}_gain"), 0.0)
+    pre_floor_threshold = None
+    floor_gain = None
+    accept_floor = 0.0
+    gain = 0.0
 
     if p["rounds_left"] <= 1:
         # Final round. Rejecting pays $0, so anything above nothing beats it.
@@ -673,6 +677,8 @@ def _decide(game: dict, cfg) -> dict:
         # would be worth against an equilibrium opponent. Holding out for the
         # latter against someone who never concedes pays zero.
         threshold = p["realistic_continuation"] * 0.98
+        pre_floor_threshold = threshold
+        floor_gain = None
         # Share-floor acceptance: the fleet's agreed share averages 0.476-0.494
         # in every config cell, and the percentile pays the 0.500 focal atom --
         # a 0.48 close ranks below the entire even-split pile, so discounted
@@ -1156,6 +1162,78 @@ def _decide(game: dict, cfg) -> dict:
                     _gate(p, "no_regress")
         except Exception:
             p["no_regress"] = {"status": "projection_failed"}
+
+    # Exact discount-floor equality repair, deliberately narrower than a
+    # general acceptance epsilon. With the pinned .50/.05 stack, binary
+    # arithmetic makes the intended d=.8 and d=.9 floors respectively
+    # 0.2000000000000001 and 0.4500000000000002. The wire offers are exact
+    # 20%/45%. Since 1787611035, six unique Agent 5 games were exposed and all
+    # six are now final agreements. Every game earned less than immediate
+    # acceptance (-5.04/-3.36/-9.21 at d=.8 and -17.745/-6.97/-6.93 at d=.9,
+    # in $100-normalised discounted payoff; mean loss 8.209 pot-points).
+    #
+    # This runs after every existing accept guard and changes only a remaining
+    # Reject whose pre-floor continuation already clears the offer and whose
+    # computed floor misses its exact grid atom by 2-3 ULPs. Four ULPs cover
+    # those measured errors without treating even a cent-below offer as equal.
+    # The high-share guard runs first and owns any offer it accepts; this repair
+    # therefore sees only its remaining Rejects (and d=.8/.20 lies outside the
+    # high-share band entirely). Randomized/legacy floor interactions and every
+    # other stack fail closed. OFF by default, so merging this code cannot
+    # change a running fleet process.
+    exact_floor_on = runtime_flags.enabled("GLEE_BARG_ACCEPT_FLOOR_EXACT_V1")
+    if exact_floor_on:
+        valid_money = math.isfinite(money) and money > 0.0
+        dme_exact = p.get("delta_me")
+        exact_share = 0.20 if dme_exact == 0.8 else (
+            0.45 if dme_exact == 0.9 else None)
+        exact_target = (exact_share * money
+                        if exact_share is not None and valid_money else None)
+        ulp_tolerance = (
+            4.0 * max(math.ulp(my_gain), math.ulp(floor_gain),
+                      math.ulp(exact_target))
+            if floor_gain is not None and exact_target is not None else 0.0)
+        pinned_stack = (
+            valid_money
+            and abs(accept_floor - 0.50) <= 1e-12
+            and abs(gain - 0.05) <= 1e-12
+            and deterministic_discount_guard_on
+            and not discount_arm_on
+            and not nominal_guard_on
+            and not legacy_observed_gain_on
+            and not conflicting_floor_release_on
+        )
+        eligible_exact = (
+            decision == "reject"
+            and p["rounds_left"] > 2
+            and floor_gain is not None
+            and exact_target is not None
+            and pre_floor_threshold is not None
+            and pinned_stack
+            and pre_floor_threshold <= my_gain
+            and floor_gain > my_gain
+            # Exact wire atom only. The tolerance repairs the computed floor,
+            # never a below-boundary incoming offer.
+            and my_gain == exact_target
+            and floor_gain - my_gain <= ulp_tolerance
+        )
+        p["accept_floor_exact_v1"] = {
+            "eligible": eligible_exact,
+            "offered_share": (round(my_gain / money, 6)
+                              if valid_money else None),
+            "exact_share": exact_share,
+            "computed_floor_share": (
+                round(floor_gain / money, 16)
+                if floor_gain is not None and valid_money else None),
+            "pre_floor_threshold_share": (
+                round(pre_floor_threshold / money, 16)
+                if pre_floor_threshold is not None and valid_money else None),
+            "tolerance": ulp_tolerance,
+            "mode": "deterministic",
+        }
+        if eligible_exact:
+            decision = "accept"
+            _gate(p, "accept_floor_exact_v1")
 
     p["offered_to_me"] = my_gain
     return {"decision": decision, "_plan": p}
