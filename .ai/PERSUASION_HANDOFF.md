@@ -1,9 +1,33 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 16:18 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 16:36 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 16:36 elevated follow-up — decline did not persist; result joins stalled
+
+- Rank remains `4`. Test 2 is best at `2379.58`; the third-place threshold is
+  still `2447.00`, so the current podium gap is `67.42`.
+- The follow-up cohort `[1787654464.868853, 1787655673.768141]` retained 212
+  assigned games. Rating movement split three down/two up with mean `+0.70`
+  and descriptive 95% interval `[-19.27, +20.66]`. The preceding synchronized
+  drop therefore did not persist; this window reverted to ordinary
+  identical-policy noise. No stable buyer cell or opponent cluster repeated.
+- Mechanism and live-state checks remain clean. Thirteen new V1 turns in four
+  games passed exact OFF/ON replay, scope, action, source, marker, and sole-gate
+  checks. Every persuasion `*_AB` flag is zero, V1 is `1`, V2 is absent, and
+  there are no errors, timeouts, crashes, or abandoned games.
+- The material evidence-pipeline issue has broadened: none of the five current
+  processes has emitted a post-boundary local final-result row. In the latest
+  incremental audit, 198/214 games reached round 20 but 0/214 joined a result.
+  Authenticated per-game rating joins also remain zero. This does not explain
+  official rating movement—the server aggregate counts continue to advance—but
+  it prevents reliable outcome/cell diagnosis.
+- Decision remains no deployment or rollback. Preserve V1, keep V2 OFF, and do
+  not revive measured-negative selectivity or prose. Continue fixed
+  all-assignment monitoring while the result and authenticated join pipelines
+  recover.
 
 ## 16:18 monitoring alert — podium lost, no reversible mechanism fault
 
