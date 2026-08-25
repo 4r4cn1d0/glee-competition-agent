@@ -26,7 +26,7 @@ commit=subprocess.run(["git","rev-parse","--short","HEAD"],capture_output=True,t
 now=datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%MZ")
 head=open(".ai/CURRENT_STATE.md").read().split("## Fleet")[0] if os.path.exists(".ai/CURRENT_STATE.md") else ""
 import re
-head=re.sub(r"_Snapshot .*?_", f"_Snapshot {now} · repo commit `{commit}`_", head)
+head=re.sub(r"_Snapshot .*?_", f"_Snapshot {now} · workspace HEAD `{commit}`_", head)
 rows=[]
 for slot in ("champion","composite","hardliner","conceder","randomized"):
     f=a.get(slot) or {}
@@ -49,6 +49,29 @@ for slot in ("champion","composite","hardliner","conceder","randomized"):
                 f"- **configured next launch**: policy `{policy}` | families `{families}` | llm `{llm}`\n"
                 f"- **live rating**: {live(keys[slot])}\n- **flags ({len(f)})**: "
                 +(" ".join(f"`{k.replace('GLEE_','')}={v}`" for k,v in sorted(f.items())) or "_none_"))
-tail=open(".ai/CURRENT_STATE.md").read().split("## Deploy mechanics")[1] if os.path.exists(".ai/CURRENT_STATE.md") else ""
-open(".ai/CURRENT_STATE.md","w").write(head+"## Fleet\n\n"+"\n".join(rows)+"\n\n## Deploy mechanics"+tail)
+# Do not preserve an old "Current experiments" narrative under a fresh
+# timestamp.  That previously made the generated file claim stale policies,
+# flags, and PIDs even while the fleet table above was current.  Keep only
+# invariant mechanics here; EXPERIMENTS.md owns dated experiment history and
+# the generated flag table above reports the present overlays.
+tail="""## Deploy mechanics that bite
+
+- `arms.json` is an OVERLAY read live (~3s). Setting a flag reaches a running
+  agent immediately; **clearing a key does NOT** — `runtime_flags` falls back to
+  the launch environment, so a revert needs an explicit disabling value
+  (`FLAG=0`) or a rotation.
+- Code changes reach an agent only at its next shift boundary (3600s).
+- `check_reachability.py` must PASS (eligible>0, fired>0, action_changed>0)
+  before any arena run on a new flag.
+
+## Experiment-status source
+
+- The fleet table and flag lists above are regenerated from current supervisor
+  metadata, process commands, API ratings, `control.json`, and `arms.json`.
+- This snapshot does **not** prove which commit a process loaded. Verify the PID,
+  process start boundary, and deployment record before calling code live.
+- See `.ai/EXPERIMENTS.md` for dated hypotheses and decision rules. This file
+  intentionally does not carry experiment prose forward between refreshes.
+"""
+open(".ai/CURRENT_STATE.md","w").write(head+"## Fleet\n\n"+"\n".join(rows)+"\n\n"+tail)
 print(f"refreshed .ai/CURRENT_STATE.md @ {now}")
