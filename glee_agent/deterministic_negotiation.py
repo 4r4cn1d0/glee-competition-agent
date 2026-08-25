@@ -51,7 +51,8 @@ from __future__ import annotations
 
 import math
 
-from . import first_principles, runtime_flags, top_buyer_clone
+from . import (first_principles, nego_hidden_terminal_inference, runtime_flags,
+               top_buyer_clone)
 
 
 RANK_HYBRID_FLAG = "GLEE_NEGO_RANK_HYBRID_V1"
@@ -199,6 +200,20 @@ def direct_action(game: dict, selected: str | None = None) -> dict | None:
             plan["gates_fired"] = gates
         result["_plan"] = plan
         return result
+    if selected == AGENT5_DEFAULT:
+        action = nego_hidden_terminal_inference.action(game)
+        if action is not None:
+            result = dict(action)
+            plan = dict(result.get("_plan") or {})
+            plan["source"] = AGENT5_DEFAULT
+            plan["component"] = nego_hidden_terminal_inference.COMPONENT
+            if runtime_flags.enabled("GLEE_TRACE_GATES"):
+                gates = list(plan.get("gates_fired") or [])
+                if AGENT5_DEFAULT_GATE not in gates:
+                    gates.append(AGENT5_DEFAULT_GATE)
+                plan["gates_fired"] = gates
+            result["_plan"] = plan
+            return result
     action = buyer_action(game, selected)
     return trace_action(action, selected) if action is not None else None
 
