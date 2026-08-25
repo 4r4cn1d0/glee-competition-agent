@@ -778,9 +778,35 @@ def _collect_states(field, draws, flags, families, target_flag=None,
     wanted = set(families)
 
     def recorder(game: dict) -> dict:
+        strategy_game = game
         if game.get("game_family") in wanted:
-            banked.append(copy.deepcopy(game))
-        return strategy(game)
+            banked_game = copy.deepcopy(game)
+            if (target_flag ==
+                    "GLEE_NEGO_HI_UNKNOWN_BUYER_WALK_ACCEPT_V1"):
+                # Live negotiation history echoes the enclosing round inside
+                # each ``offer`` object.  The local engine currently omits that
+                # redundant field, which prevents the copied production policy
+                # from counting repeated price utterances and reaching its
+                # observed round-17 walk. Restore the live wire shape only in
+                # this reachability bank; engine play itself is unchanged.
+                history = (banked_game.get("game_state") or {}).get("history")
+                for entry in history if isinstance(history, list) else ():
+                    if not isinstance(entry, dict):
+                        continue
+                    offer = entry.get("offer")
+                    if (isinstance(offer, dict) and "round" not in offer
+                            and entry.get("round") is not None):
+                        offer["round"] = entry["round"]
+                    counter = entry.get("counteroffer")
+                    if (isinstance(counter, dict)
+                            and isinstance(counter.get("price"), (int, float))):
+                        # The live API emits this echo as the bare numeric
+                        # counter price; leaving the simulator's wrapper dict
+                        # would count every buyer utterance twice.
+                        entry["counteroffer"] = counter["price"]
+                strategy_game = banked_game
+            banked.append(banked_game)
+        return strategy(strategy_game)
 
     for family, params, seat, game_seed in draws:
         grng = random.Random(game_seed)
@@ -942,6 +968,47 @@ def _collect_states(field, draws, flags, families, target_flag=None,
 
                 exact_mutual_stasis_opponent.name = "exact_mutual_stasis"
                 opponent = exact_mutual_stasis_opponent
+            if (target_flag ==
+                    "GLEE_NEGO_HI_UNKNOWN_BUYER_WALK_ACCEPT_V1"
+                    and family == "negotiation"
+                    and params.get("complete_information") is False
+                    and params.get("horizon_known") is False
+                    and isinstance(params.get("messages_allowed"), bool)):
+                # Ordinary field clones closed every one of 12,000 sampled
+                # games before exposing the copied policy's eight-price walk.
+                # Hold the same 1.455B ask seen in two complete live examples
+                # and reject counters so the local engine supplies canonical
+                # history/offer echoes through round 17.  The seller derives B
+                # from only its own visible value; no hidden buyer value leaks
+                # into the fixture.  For buyer=1.5B and seller<=1.2B the offer
+                # is profitable for both parties, exactly the repaired state.
+                field_opponent = opponent
+
+                def exact_profitable_walk_opponent(game):
+                    from glee_agent.pricing import infer_base
+
+                    state = game.get("game_state") or {}
+                    action_type = (game.get("valid_actions") or {}).get("type")
+                    me = state.get("current_player") or game.get("your_player")
+                    if state.get(f"{me}_role") != "seller":
+                        return field_opponent(game)
+                    try:
+                        own_value = float(state.get(f"{me}_value"))
+                    except (TypeError, ValueError):
+                        return field_opponent(game)
+                    base = infer_base(own_value)
+                    if base is None:
+                        return field_opponent(game)
+                    price = max(own_value + 0.01, 1.455 * base)
+                    if action_type == "offer":
+                        return {"product_price": price}
+                    if action_type == "decision":
+                        return {"decision": "RejectOffer",
+                                "product_price": price}
+                    return field_opponent(game)
+
+                exact_profitable_walk_opponent.name = "exact_profitable_walk"
+                opponent = exact_profitable_walk_opponent
         params = dict(params)
         if opponent.name != "__field__":
             params["opponent_name"] = opponent.name

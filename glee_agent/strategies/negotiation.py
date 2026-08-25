@@ -43,6 +43,17 @@ COMPLETE_UNKNOWN_LATE_STASIS_FLAG = (
 COMPLETE_UNKNOWN_LATE_STASIS_MIN_ROUND = 75
 COMPLETE_UNKNOWN_LATE_STASIS_CYCLES = 10
 
+# Default-off deterministic repair for one pointwise-dominated terminal action
+# in the copied buyer component used by Agent 5 V1 and Test 2 V3.  The flag is
+# deliberately separate from the measured-negative broad hidden/unknown
+# accept-all-profitable policy.
+HI_UNKNOWN_BUYER_WALK_ACCEPT_FLAG = (
+    "GLEE_NEGO_HI_UNKNOWN_BUYER_WALK_ACCEPT_V1"
+)
+HI_UNKNOWN_BUYER_WALK_ACCEPT_GATE = (
+    "hi_unknown_buyer_walk_accept_v1"
+)
+
 # The measured cohort used the exact current stack.  Refuse a mixed/randomized
 # policy so a future activation cannot silently become a renamed version of an
 # older arm or an unanalysed factorial treatment.
@@ -1642,6 +1653,17 @@ def _finite_wire_number(value) -> float | None:
     return parsed if math.isfinite(parsed) else None
 
 
+def _strict_finite_scalar(value) -> float | None:
+    """Accept a real JSON numeric scalar, never a nested price wrapper."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        parsed = float(value)
+    except OverflowError:
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
 def _flag_is_nonzero(name: str) -> bool:
     """Treat numeric arms as active even when their value is not literal 1."""
     raw = runtime_flags.get(name)
@@ -1889,6 +1911,124 @@ def _maybe_complete_unknown_late_stasis(game: dict, action: dict) -> dict:
     return result
 
 
+def _maybe_hi_unknown_buyer_walk_accept(
+    game: dict, action: dict,
+) -> dict:
+    """Replace one exact copied-buyer walk with its standing profitable offer.
+
+    This is not the measured-negative hidden unknown-horizon
+    accept-all-profitable policy (-.06628 exact percentile over 375 exposed
+    decisions).  It cannot touch a RejectOffer or an earlier counter.  It runs
+    only after the copied component has already selected WalkAway, whose
+    continuation is exactly zero.  Four initial complete cases (Agent 5 PID
+    91087 x3, Test 4 PID 91902 x1) instead had finite standing buyer gains of
+    .03B/.045B; accepting lifts their committed pooled-hidden-cell CDF
+    diagnostics by +.22917, +.33607, +.38889, and +.22917.  Eight additional
+    complete cases reproduced the dominated action across both message modes
+    and both supported policy sources.  Those magnitudes are not official-cell
+    estimates; the played walk makes only the positive-payoff direction
+    pointwise rather than continuation-model dependent.
+
+    Subsequent complete cohorts reproduced the same dominated walk in Agent 5
+    V1 and Test 2 V3, with messaging both off and on; no matching profitable
+    walk appeared under complete information or a known horizon.  Agent 5 V2
+    remains byte-identical.  The currently selected whole policy must match the
+    preserved plan source, and canonical role, phase, information, horizon,
+    message-mode, round, and offer provenance are all required so malformed or
+    merely similar states fail closed.
+    """
+    public_action_keys = {
+        key for key in action if not str(key).startswith("_")
+    } if isinstance(action, dict) else set()
+    selected = deterministic_negotiation.mode()
+    if (not isinstance(action, dict)
+            or action.get("decision") != "WalkAway"
+            or public_action_keys != {"decision"}
+            or selected not in (
+                deterministic_negotiation.AGENT5_DEFAULT,
+                deterministic_negotiation.TEST2_SUPPORT_V3,
+            )):
+        return action
+
+    plan_data = action.get("_plan")
+    if (not isinstance(plan_data, dict)
+            or plan_data.get("source") != selected
+            or plan_data.get("component") != "observed_leader_buyer"):
+        return action
+
+    state = game.get("game_state")
+    valid_actions = game.get("valid_actions")
+    if (not isinstance(state, dict)
+            or not isinstance(valid_actions, dict)
+            or game.get("game_family") != "negotiation"
+            # The live API currently echoes the family inside game_state, while
+            # the canonical local engine does not.  Treat omission as valid but
+            # reject a contradictory nested family if one is supplied.
+            or state.get("game_family") not in (None, "negotiation")
+            or valid_actions.get("type") != "decision"
+            or game.get("phase") not in (None, "decision")
+            or state.get("phase") not in (None, "decision")
+            or state.get("complete_information") is not False
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None
+            or not isinstance(state.get("messages_allowed"), bool)):
+        return action
+
+    me = state.get("current_player")
+    if me not in ("player_1", "player_2") or game.get("your_player") != me:
+        return action
+    other = other_player(me)
+    if (state.get(f"{me}_role") != "buyer"
+            or state.get(f"{other}_role") != "seller"):
+        return action
+
+    round_number = _strict_finite_scalar(state.get("round"))
+    own_value = _strict_finite_scalar(state.get(f"{me}_value"))
+    standing = state.get("last_offer")
+    if (round_number is None or not round_number.is_integer()
+            or round_number < 1.0
+            or own_value is None or own_value <= 0.0
+            or not isinstance(standing, dict)
+            or standing.get("from_player") != other):
+        return action
+    offer_round = _strict_finite_scalar(standing.get("round"))
+    offer_price = _strict_finite_scalar(standing.get("price"))
+    buyer_gain = own_value - offer_price if offer_price is not None else None
+    if (offer_round != round_number or offer_price is None
+            or offer_price <= 0.0
+            # Currency wires are binary floats.  At 150.00 - 149.99 Python
+            # yields 0.00999999999999, so a nanodollar representation tolerance
+            # preserves the literal one-cent boundary without admitting a
+            # materially sub-cent gain.
+            or buyer_gain is None or buyer_gain < 0.01 - 1e-9):
+        return action
+
+    # Consult the flag only after the complete structural predicate holds.
+    # Besides keeping the default-off branch inert, this makes the generic
+    # reachability spy's ``eligible_count`` equal the exact treatment scope.
+    # The complete-information late-stasis repair is structurally disjoint, so
+    # this hidden-information flag is intentionally not one of its conflicts.
+    if not runtime_flags.enabled(HI_UNKNOWN_BUYER_WALK_ACCEPT_FLAG):
+        return action
+
+    result_plan = dict(plan_data)
+    result_plan[HI_UNKNOWN_BUYER_WALK_ACCEPT_GATE] = {
+        "eligible": True,
+        "mode": "deterministic",
+        "baseline_decision": "WalkAway",
+        "round": int(round_number),
+        "offer_price": offer_price,
+        "own_value": own_value,
+        "buyer_gain": buyer_gain,
+    }
+    if _trace_enabled():
+        result_plan["gates_fired"] = list(
+            result_plan.get("gates_fired") or []
+        )
+        _gate(result_plan, HI_UNKNOWN_BUYER_WALK_ACCEPT_GATE)
+    return {"decision": "AcceptOffer", "_plan": result_plan}
+
+
 def decide(game: dict, cfg) -> dict:
     """Choose a default-off deterministic component or the existing stack.
 
@@ -1924,7 +2064,8 @@ def decide(game: dict, cfg) -> dict:
                     nego_arms.attach(game, action)
             except Exception:
                 pass              # a message is never worth risking the move
-    return _maybe_complete_unknown_late_stasis(game, action)
+    action = _maybe_complete_unknown_late_stasis(game, action)
+    return _maybe_hi_unknown_buyer_walk_accept(game, action)
 
 
 def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
