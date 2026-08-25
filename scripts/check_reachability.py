@@ -527,6 +527,21 @@ def _p_buyer_explicit_decline_veto_v1(game, p):
     return False
 
 
+def _p_buyer_explicit_decline_v2(game, p):
+    """Pre-action scope where strict current-text V2 can change BUY."""
+    from glee_agent.strategies import persuasion
+
+    state = game.get("game_state") or {}
+    return ((game.get("valid_actions") or {}).get("type") == "buyer_decision"
+            and game.get("your_player") == "player_2"
+            and state.get("current_player") in (None, "player_2")
+            and state.get("seller_message_type") == "text"
+            and p.get("buyer_v2") is True
+            and p.get("buy") is True
+            and persuasion._explicit_current_text_decline_v2(
+                state.get("seller_message")))
+
+
 def _p_stall_current_break(game, p):
     """Pre-action scope of the current-offer stale-stall treatment."""
     if game.get("game_family") != "negotiation":
@@ -694,6 +709,9 @@ KNOWN = {
     "GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1": (
         "persuasion", ("buyer_explicit_decline_veto_v1",),
         _p_buyer_explicit_decline_veto_v1),
+    "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2": (
+        "persuasion", ("buyer_explicit_decline_v2",),
+        _p_buyer_explicit_decline_v2),
     # Pure value knobs read through Config.from_env — no gate of their own.
     # NOTE: the composite probe transform (glee_agent/probes.py) OVERWRITES
     # barg_spe_weight, barg_uncapped_horizon and both nego anchors, so those
@@ -814,8 +832,19 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     quality = str(state.get("current_quality") or "").lower()
                     action_type = (game.get("valid_actions") or {}).get("type")
                     if action_type == "seller_message":
-                        return {"message": ("Recommended." if quality == "high"
-                                            else "Not recommended.")}
+                        if quality == "high":
+                            message = "Recommended."
+                        elif (target_flag ==
+                              "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"):
+                            # The ordinary exact-decline fixture is owned by
+                            # V1.  V2 needs a real direct-current decline whose
+                            # future-positive wording cancels to parser-neutral
+                            # under the exact live control stack.
+                            message = ("Sit this round out; the next product "
+                                       "may be worth it.")
+                        else:
+                            message = "Not recommended."
+                        return {"message": message}
                     if action_type == "seller_recommendation":
                         return {"decision": "yes" if quality == "high" else "no"}
                     return honest(game)

@@ -1,9 +1,121 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 04:40 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 13:30 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 13:30 inert candidate — deterministic direct-decline V2
+
+- The authenticated 13:29 snapshot still has our account-best Test 1/champion
+  at official persuasion rank `3`, rating `2449.40`. This retains the podium;
+  no live policy change was made while V2 was developed and validated.
+- `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2` is implemented as a broad deterministic
+  buyer parser-safety extension and is default OFF. It is not a hash arm, an A/B
+  policy, or a grid-cell probe. It applies across persuasion configurations but
+  can only turn an existing buyer-v2 BUY into PASS when the current text directly
+  instructs the buyer not to buy and the live V1 expanded parser missed it.
+  Binary messages, seller actions, existing passes, history/reporting language,
+  current positive claims, ambiguous contrast, and all flag-OFF responses remain
+  unchanged. The new marker/gate is emitted only on an actual BUY-to-PASS change.
+- Frozen all-outcome diagnostic cohort: 5,334 completed persuasion games,
+  including 1,382 buyer/text games and 27,640 turns, from
+  `[1787607608, 1787642008]`. The conservative selector found 181 direct current
+  declines across 29 games. Exact recorded-state OFF/ON replay produced
+  `eligible=fired=action_changed=51` in 16 games; every one of the 51 observed
+  purchases revealed LOW and none HIGH. Coverage spans 14 configuration cells,
+  every prior, ratios 1.25/2/3/4, both seller-knowledge states, all three scales,
+  rounds 1-17, and visible plus hidden opponents. The selector reproduced the
+  frozen 181-message set exactly: 181/181 recall, zero outside-set matches, zero
+  current-positive/history/contrast ambiguities. OFF reproduced all 27,640
+  recorded actions byte-identically, and non-firing ON states were also
+  byte-identical.
+- This is mechanism and corpus-precision evidence, not an identified official
+  rating lift. The 51 qualities are action-selected and seller adaptation is
+  unobserved. Therefore the live V1 stack remains the recommendation until a
+  deterministic, prospective official-rating validation is authorized.
+- Frozen prospective boundary for the deployment owner: enable V2 for every
+  persuasion game on exactly one nonleading complete-agent challenger at a clean
+  timestamp, leaving the other four complete agents byte-identical and every
+  persuasion `*_AB` flag zero. Retain all assigned outcomes, including refusals,
+  zeros, losses, timeouts, unresolved games, and immediate terminals. Any scope,
+  parser, legality, source, wire, marker, or process-integrity failure is an
+  immediate mechanism rejection. Review harm only after 500 authenticated joined
+  games and at least five would-change events; reject only if the official
+  challenger-minus-unchanged trend interval is wholly negative. The fixed final
+  boundary is 2,000 authenticated joined games, at least 20 would-change events,
+  zero unresolved/missing joins, positive official trend interval, positive
+  buyer/text point estimate, and no official cell with `n>=100` losing at least
+  0.5 rating/game. Crossing without those conditions remains challenger-only.
+- Verification after the final parser fixes: focused V1/V2 tests `131 passed`;
+  persuasion audit `390 passed`; full allowed suite `2182 passed, 3 failed`.
+  The failures are pre-existing/non-persuasion: the bargaining horizon-floor
+  assertion plus live-grid drift alarms for bargaining and negotiation. Python
+  compilation and `git diff --check` passed. No replay_eval, arena, or redteam
+  command was run.
+- No live process was restarted, signalled, cycled, stopped, or drained. No live
+  fleet configuration, `arms.json`, `control.json`, `.env`, bargaining behavior,
+  or negotiation behavior was edited by this work. V2 remains OFF everywhere.
+
+## 12:01 monitoring checkpoint — podium and deterministic stack stable
+
+- The authenticated persuasion board reports account-best Test 2 at official
+  rank `3`, rating `2447.19`, 110.56 behind rank-2 HAWK (`2557.75`) and 113.82
+  behind rank-1 gill bates (`2561.01`). The account-best slot has rotated among
+  byte-identical persuasion policies and remains inside the measured roughly
+  `+/-125` dispersion, so this is monitoring evidence rather than a profile
+  comparison or identified veto effect.
+- The current clean-process streams now contain 64 post-boundary veto firings
+  in 26 games. Scope, role, expanded-decline parsing, action, source and
+  sole-gate checks pass `64/64`; exact recorded-state OFF/ON replay also passes
+  `64/64`, with only BUY/yes changing to PASS/no plus marker/gate metadata.
+  No post-boundary process error, traceback, fatal or timeout line was found.
+- Every persuasion `*_AB` overlay remains zero and the deterministic veto
+  remains `1` on all five complete agents. No live change is justified.
+
+## 10:56 monitoring checkpoint — podium retained, mechanism clean
+
+- The authenticated persuasion board reports account-best Agent 5 at official
+  rank `3`, rating `2432.81`, 114.75 behind rank-2 HAWK (`2547.56`) and 128.20
+  behind rank-1 gill bates (`2561.01`). The `-27.60` movement from the 10:18
+  snapshot remains small relative to the measured roughly `+/-125` dispersion
+  across identical persuasion policies; it is not evidence for a policy change.
+- The five current clean-process streams now contain 32 post-boundary
+  explicit-decline veto firings in 15 games. Fourteen firings in four games were
+  new since the previous audit. Scope, role, parser, source, action and sole-gate
+  checks passed for all 32, and exact recorded-state replay again showed only
+  BUY/yes with the veto OFF versus PASS/no live and ON, plus the marker/gate
+  metadata. No new process error, traceback, fatal or timeout line was found.
+- Every persuasion `*_AB` overlay remains zero on all five slots and the
+  deterministic veto remains `1`. No live persuasion change is justified.
+
+## 10:18 monitoring checkpoint — rank 3 sustained after portfolio clone
+
+- The authenticated persuasion board reports account-best Agent 5 at official
+  rank `3`, rating `2460.41`, 65.18 behind rank-2 HAWK (`2525.59`) and 100.60
+  behind rank-1 gill bates (`2561.01`). This sustains the podium objective but
+  remains a time-stamped monitoring result inside the measured cross-agent
+  noise range, not a causal estimate of the deterministic veto.
+- At the operator's explicit one-time direction, the whole-agent deployment
+  owner copied Agent 5's complete stack to Test 3 and Test 4 at epoch
+  `1787629250`. No persuasion flag changed: all five still have the deterministic
+  explicit-decline veto `1`, the same persuasion policy, and every persuasion
+  `*_AB` flag `0`. Clean current boundaries are Test 3 PID `86555` at
+  `1787630856`, Agent 5 PID `87209` at `1787631287`, and Test 4 PID `88096` at
+  `1787632084`, all deterministic `hardliner`, LLM off, and queued for all three
+  families. The clean boundary and identity-preservation details are in
+  `.ai/HANDOFF.md`.
+- Across the five current clean processes, the post-boundary turn streams
+  contain 6,509 persuasion actions from 338 assigned games: 169 buyer and 169
+  seller. Ten additional vetoes fired in six games. Scope/source/parser/gate
+  checks passed `10/10`, and exact recorded-state OFF/ON replay passed `10/10`:
+  OFF was BUY/yes, ON and live were PASS/no, and only `plan.buy`, the marker,
+  and its sole appended gate changed. All five process outputs have zero new
+  error, traceback, fatal, or timeout lines.
+- The local results collector has not yet emitted terminal records for this
+  newest 338-game cohort. They remain unresolved/backlog in local accounting;
+  do not impute them as timeouts or condition a result on the six affected
+  games. No policy change is justified at this checkpoint.
 
 ## 04:39 monitoring checkpoint — top-three sustained
 

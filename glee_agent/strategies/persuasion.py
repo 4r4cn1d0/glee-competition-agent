@@ -25,11 +25,13 @@ early purchases carry information value on top of their payoff.
 from __future__ import annotations
 
 import math
+import re
 
 from .. import runtime_flags
 
 from ..actions import _num
 from ..text import (
+    _POSITIVE as _TEXT_POSITIVE_PHRASE_TABLE,
     reads_as_recommendation,
     reads_as_recommendation_expanded,
 )
@@ -42,6 +44,140 @@ from ..text import (
 PERS_BUYER_EXPLICIT_DECLINE_VETO_V1_FLAG = (
     "GLEE_PERS_BUYER_EXPLICIT_DECLINE_VETO_V1"
 )
+
+# Conservative extension of V1's literal current-message contract.  This is a
+# separate default-OFF whole-policy switch, not an arm: it catches only direct
+# text instructions about the current action that the expanded V1 parser still
+# misses, and can only turn an existing buyer-v2 BUY into PASS.
+PERS_BUYER_EXPLICIT_DECLINE_V2_FLAG = "GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2"
+
+
+_DECLINE_V2_CONTRAST = re.compile(
+    r"\b(?:but|however|that\s+said|even\s+so|still|yet|though|although|"
+    r"nevertheless|on\s+the\s+other\s+hand|except(?:\s+that)?|unless)"
+    r"\b[:,]?|(?:^|[.!?;:\u2014-])\s*(?:just\s+kidding|actually|"
+    r"on\s+second\s+thought)\b[:,]?",
+)
+_DECLINE_V2_HISTORY = re.compile(
+    r"\b(?:last|previous|earlier|prior)\s+"
+    r"(?:round|time|item|one|product|unit|message)\b|"
+    r"\b(?:before|in\s+the\s+past|used\s+to|yesterday|formerly|"
+    r"historically)\b|"
+    r"\b(?:(?:on|in|at|during)\s+)?(?:round|turn)\s*#?\s*\d+\b|"
+    r"\b(?:someone|somebody|they|he|she|you|the\s+(?:buyer|seller|agent)|"
+    r"the\s+message)\s+(?:said|told|wrote|claimed|quoted|reported)\b|"
+    r"\b(?:said|told|advised|warned)\b.{0,32}\b"
+    r"(?:last|previous|earlier|before)\b",
+)
+_DECLINE_V2_FUTURE = re.compile(
+    r"\b(?:next|future|later|upcoming|subsequent|another)\s+"
+    r"(?:item|one|product|unit|round|opportunity|offer)\b|"
+    r"\b(?:next|future|later|upcoming|subsequent)\s+time\b|"
+    r"\bthe\s+next(?=\s*(?:--|\u2014|[-:;,.!?]|$))|"
+    r"\b(?:other|better)\s+"
+    r"(?:rounds|items|products|units|opportunities|offers)\b|"
+    r"\b(?:rounds|items|products|units|opportunities|offers)\s+"
+    r"(?:that|which)\b",
+)
+_DECLINE_V2_DIRECT = re.compile(
+    r"(?:"
+    r"\b(?:i|we|you)\s+(?:would|should|will|do)\s+not\s+"
+    r"(?:buy|purchase|take)(?:\s+(?:(?:this|the)\s+"
+    r"(?:item|one|product|unit)|this|it))?(?:\s+"
+    r"(?:myself|ourselves|yourself))?\b"
+    r"(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:i|we|you)\s+(?:wouldn['’]?t|shouldn['’]?t|won['’]?t|"
+    r"don['’]?t)\s+(?:buy|purchase|take)(?:\s+(?:(?:this|the)\s+"
+    r"(?:item|one|product|unit)|this|it))?(?:\s+"
+    r"(?:myself|ourselves|yourself))?\b"
+    r"(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:do\s+not|don['’]?t|never)\s+"
+    r"(?:buy|purchase|take|touch)(?:\s+(?:(?:this|the)\s+"
+    r"(?:item|one|product|unit)|this|it))?\b"
+    r"(?=\s*(?:[.!?,;:\u2014-]|$))|"
+    r"\b(?:this|it|the\s+(?:item|one|product|unit))\s+"
+    r"(?:is\s+|['’]s\s+)?not\s+worth\s+(?:buying|purchasing)\b|"
+    r"\bnot\s+worth\s+(?:buying|purchasing)\b|"
+    r"\b(?:there\s+(?:is|['’]s)\s+)?no\s+"
+    r"(?:strong|clear|confident|positive)\s+recommendation\b|"
+    r"\bsit\s+(?:this|the)\s+(?:round|one)\s+out\b|"
+    r"\b(?:pass|skip)\s+(?:this|it|the\s+"
+    r"(?:round|item|one|product|unit))\b|"
+    r"\b(?:ordinary|mediocre|unremarkable)\b.{0,48}\b"
+    r"(?:wait|pass|skip|sit\s+(?:this|the)\s+(?:round|one)\s+out)\b"
+    r")",
+)
+_DECLINE_V2_CURRENT_POSITIVE = re.compile("|".join(
+    rf"\b{re.escape(phrase)}\b"
+    for phrase in sorted(
+        {phrase for _, phrases in _TEXT_POSITIVE_PHRASE_TABLE
+         for phrase in phrases},
+        key=len,
+        reverse=True,
+    )
+))
+_DECLINE_V2_CURRENT_MARKER = re.compile(
+    r"\b(?:this|current|today|now|the\s+item|the\s+product|the\s+unit)\b",
+)
+
+
+def _explicit_current_text_decline_v2(message) -> bool:
+    """Recognize only conservative direct current-action declines missed by V1.
+
+    This intentionally is not a general sentiment parser.  History references,
+    mixed current-positive descriptions, and a later contrastive position fail
+    closed.  Future-positive copy is ignored because it describes another
+    product rather than reversing an instruction to pass on the current one.
+    """
+    if not isinstance(message, str):
+        return False
+    text = " ".join(message.strip().lower().replace(
+        "\u2018", "'").replace("\u2019", "'").split())
+    if not text:
+        return False
+
+    # V2 is an extension of the live V1 guard, not a second label for messages
+    # V1 already handles.  Keeping the scopes disjoint also makes gate traces
+    # unambiguous when both deterministic switches are enabled.
+    if reads_as_recommendation_expanded(message) is False:
+        return False
+    if _DECLINE_V2_HISTORY.search(text):
+        return False
+    if re.search(r"\binclud(?:e|es|ed|ing)\b.{0,20}\blow[- ]quality\b", text):
+        return False
+
+    # The final contrastive clause owns the speaker's current position.  This
+    # rejects "I would not buy it, but this one is a clear buy" while retaining
+    # "it might look tempting, but I would not buy this one".
+    active = _DECLINE_V2_CONTRAST.split(text)[-1]
+    match = _DECLINE_V2_DIRECT.search(active)
+    if match is None:
+        return False
+
+    # Do not let praise about a *future* unit cancel a direct current decline.
+    # Conversely, any positive description still attached to the current unit
+    # makes the message mixed/ambiguous and therefore outside this strict veto.
+    direct_spans = [match.span() for match in _DECLINE_V2_DIRECT.finditer(text)]
+    for positive in _DECLINE_V2_CURRENT_POSITIVE.finditer(text):
+        # "not worth buying" and "no strong recommendation" contain lexical
+        # positives inside the direct negative construction itself.
+        if any(positive.start() < end and positive.end() > start
+               for start, end in direct_spans):
+            continue
+        prior_future = [future for future in _DECLINE_V2_FUTURE.finditer(
+            text, 0, positive.start())]
+        if prior_future:
+            scoped = text[prior_future[-1].end():positive.start()]
+            if _DECLINE_V2_CURRENT_MARKER.search(scoped) is None:
+                continue
+        later_future = _DECLINE_V2_FUTURE.search(text, positive.end())
+        if later_future is not None and later_future.start() - positive.end() <= 40:
+            scoped = text[max(0, positive.start() - 48):positive.start()]
+            scoped = _DECLINE_V2_DIRECT.sub(" ", scoped)
+            if _DECLINE_V2_CURRENT_MARKER.search(scoped) is None:
+                continue
+        return False
+    return True
 
 # Weight of the prior in the buyer's honesty estimate, in pseudo-observations.
 # Keeps a single unlucky round from swinging the posterior to an extreme.
@@ -1725,6 +1861,47 @@ def decide(game: dict, cfg) -> dict:
             p["buyer_explicit_decline_veto_v1"] = True
             p.setdefault("gates_fired", []).append(
                 "buyer_explicit_decline_veto_v1")
+
+    # DETERMINISTIC STRICT CURRENT-ACTION DECLINE V2 (default OFF).
+    #
+    # V1 deliberately delegates to the weighted expanded parser.  The clean
+    # deterministic-era audit [1787607608, 1787642008] retained all 5,334
+    # completed persuasion games, including 1,382 buyer/text games, and found
+    # 181 conservative direct-action messages that the weighted parser missed.
+    # The live buyer purchased 51 of those turns in 16 games; all 51 revealed
+    # LOW, spanning three slots and five visible opponents plus hidden.  The
+    # full 181-message classifier cohort spans all five slots and seven visible
+    # opponents plus hidden.
+    # Families included "I would not buy", "sit this round out", "not worth
+    # buying", ordinary+wait/pass/skip, "no strong recommendation", and
+    # "don't touch".  Positive words about a future item can cancel the current
+    # negative in V1's bag-of-phrases score, after which the legacy string
+    # fallback treats abstention as a recommendation.
+    #
+    # The 51 bought qualities are action-selected, seller adaptation is
+    # unobserved, and hidden template diversity remains, so this comment does
+    # not claim an identified official-rating lift.  The broader soft family
+    # (90 buys in 23 games, 89 low / one high) is intentionally excluded.  This
+    # strict classifier fails closed on history-only language, current positive
+    # or high-quality claims, and non-final contrast clauses.  Like V1, it is a
+    # final one-directional veto: only buyer-v2 BUY->PASS changes receive marker
+    # and gate metadata; binary, seller, unknown, and existing PASS states are
+    # byte-identical.
+    if (runtime_flags.enabled(PERS_BUYER_EXPLICIT_DECLINE_V2_FLAG)
+            and action_type == "buyer_decision"
+            and game.get("your_player") == "player_2"
+            and ((game.get("game_state") or {}).get("current_player")
+                 in (None, "player_2"))
+            and p.get("buyer_v2") is True
+            and p.get("buy") is True):
+        state = game.get("game_state") or {}
+        if (state.get("seller_message_type") == "text"
+                and _explicit_current_text_decline_v2(
+                    state.get("seller_message"))):
+            p["buy"] = False
+            p["buyer_explicit_decline_v2"] = True
+            p.setdefault("gates_fired", []).append(
+                "buyer_explicit_decline_v2")
 
     return {"decision": "yes" if p["buy"] else "no", "_plan": p}
 
