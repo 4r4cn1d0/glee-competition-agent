@@ -3178,6 +3178,10 @@ tooling atomically added the three deterministic values at
 slot resolves all three to `1`; the other four slots have none of them, and
 the three old p=.8 persuasion A/B flags remain explicit `0`. The first
 post-overlay persuasion action was at `1787656145.214844`. No new gate trace
-appeared during the first roughly six post-activation minutes, so live behavior
-is not yet mechanism-verified; the exact-stack reachability above is the only
-action-change evidence at this checkpoint.
+appeared during the first roughly six post-activation minutes. That window
+contained 354 persuasion turns across 19 games (174 seller, 180 buyer), but
+zero p=.8 seller/text turns and zero known-value low-quality equality turns, so
+the absent seller traces are expected non-eligibility rather than a reach
+failure. No strict buyer-V2 decline appeared either. Live behavior is not yet
+mechanism-verified; the exact-stack reachability above is the only action-change
+evidence at this checkpoint.
