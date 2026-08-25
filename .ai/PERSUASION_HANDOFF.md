@@ -1,9 +1,41 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 17:00 IST. This file is the deployment boundary for
+Last updated: 2026-08-25 18:29 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 18:29 Test 2 V1+V2+V3 challenger — code pushed, activation waiting
+
+- Commit `cef2621` is pushed and adds default-OFF deterministic
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3`, its reachability registration, and
+  dedicated invariants. It is a final buyer-action semantic tail: buyer-v2,
+  player 2, text only, control BUY only, and BUY-to-PASS only. It has no game-ID
+  hash, random arm, cell targeting, history/posterior mutation, seller change,
+  or non-persuasion path.
+- Frozen all-assigned evidence is 49,802 buyer/text turns / 2,498 games. On the
+  exact Test 2 stack, V2 adds 62 changed turns / 25 games (61 LOW, zero HIGH,
+  one unresolved quality); V3 above V1+V2 adds exact
+  `eligible=fired=action_changed=66/66/66` / 39 games, all 66 LOW and zero HIGH.
+  Combined V2+V3 versus V1-only is 128 changes / 62 games: 127 LOW, zero HIGH,
+  one unresolved. V3 had zero V1/V2 overlap, 66/66 exact sole-gate plan diffs,
+  and no semantic positive false positive in the frozen corpus. This remains
+  action-selected mechanism evidence, not causal official-rating proof.
+- Verification: focused `164 passed`; exact Test 2 V2 and incremental V3
+  reachability each pass `1142/1142/1142`; full suite is `2354 passed, 3 failed`
+  with only the declared bargaining assertion and bargaining/negotiation grid
+  drift alarms. No replay_eval, arena, or redteam command was run.
+- User-authorized deployment boundary is physical slot `hardliner` / Test 2
+  only, with V1=1, V2=1, V3=1 and every persuasion `*_AB` key zero. Agent 5 is
+  protected and must remain byte-identical; Test 1, Test 3, and Test 4 also get
+  no flag change. Do not copy Test 4's unproved seller truth/prose switches.
+- Test 2 PID `6085` launched at 18:11:51 IST before the final code commit and
+  cannot safely load the final V3 implementation. V2/V3 remain unarmed. Wait for
+  a later natural launch on `cef2621`; never restart, signal, stop, drain, or
+  force-cycle it. Freeze the exact pre-arm overlay and authenticated
+  rating/game-count at that future T0, then use fleet tooling to set only V2=1
+  and V3=1. The prospective sample, harm/final rules, full-cohort inclusion, and
+  first-20 exact replay contract are frozen in `.ai/EXPERIMENTS.md`.
 
 ## 17:00 Test 4 strict-edge challenger — first live firings verified
 

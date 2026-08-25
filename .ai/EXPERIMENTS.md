@@ -1,5 +1,70 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
+## READY / AWAITING CLEAN LOAD — Test 2 deterministic buyer decline tail (25 Aug)
+
+- **Falsifiable hypothesis**: on Test 2's complete-agent `champion` stack, the
+  broad deterministic buyer text safety stack V1+V2+V3 will improve official
+  same-configuration, same-role persuasion rating deltas by refusing
+  unequivocal current-round seller warnings that the live weighted parser
+  currently treats as BUY. It must do so without a negative buyer/text trend or
+  a material losing role/configuration subgroup. This is a one-profile
+  observational challenger, not a randomized causal A/B test.
+- **Exact policy and allocation**: pushed commit `cef2621` adds default-OFF
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3`. V2 and V3 are deterministic, consult no
+  game ID or configuration cell, apply only to buyer/player-2 text decisions
+  under buyer-v2, and can only change an existing BUY to PASS. V3 is disjoint
+  from live V1 and V2. The planned live stack is V1=1, V2=1, V3=1 on physical
+  slot `hardliner` / Test 2 only. Agent 5 is protected and receives no change;
+  Test 1, Test 3, and Test 4 also receive no change. Every persuasion `*_AB`
+  key remains explicit zero.
+- **Frozen pre-treatment evidence**: the all-assigned window
+  `[1787607608,1787661128.8]` contains 49,802 buyer/text turns in 2,498 games.
+  On exact Test 2 control, V2 adds 62 BUY-to-PASS changes in 25 games (61 LOW,
+  zero HIGH, one unresolved quality). Incremental V3 has classifier scope
+  232/59 games and `eligible=fired=action_changed=66/66/66` in 39 games; all 66
+  observed outcomes were LOW and zero HIGH. Combined V2+V3 versus V1-only is
+  128 changes in 62 games: 127 LOW, zero HIGH, one unresolved. All 66 V3 plan
+  diffs were exact BUY-to-PASS plus the sole V3 marker/gate, with zero V1/V2
+  overlap and no positive-message false positive found. These outcomes are
+  action-selected mechanism evidence, not an official-rating effect estimate.
+- **Prospective cohort**: freeze Test 2's authenticated persuasion rating/game
+  count, the immediately preceding 2,000 authenticated Test 2 persuasion games,
+  and the full pre-arm overlay immediately before the future clean T0. Enroll
+  every Test 2 persuasion assignment whose first local turn is at or after T0,
+  including seller games, buyer games, buys, passes, zero/negative outcomes,
+  timeouts, unresolved games, immediate terminals, and all nonfirings. Compare
+  the complete post cohort with that fixed Test 2 pre-period and with the
+  contemporaneous unchanged V1-only Test 1/Test 3/Agent 5 streams. Do not use
+  Test 4's distinct seller challenger as a control.
+- **Mechanism audit / immediate stop**: for the first 20 combined V2/V3 fires,
+  replay the exact recorded state on the frozen control and live stacks. Require
+  buyer/player-2, text, buyer-v2, control yes/BUY, live no/PASS, heuristic
+  source, exactly one adjacent V2 or V3 gate, legal wire, and no other plan
+  delta. Any scope/hash/game-ID dependence, V1/V2/V3 overlap, history-only or
+  positive-message veto, PASS-to-BUY, illegal wire, unexplained delta, strategy
+  error, or attributable timeout is an immediate mechanism rejection: set only
+  V2=0 and V3=0 on Test 2 with fleet tooling. Never clear, restart, signal, or
+  force-cycle a process.
+- **Precommitted reads**: the harm look is 500 fully authenticated post-T0 games
+  with at least five combined V2/V3 fires and no missing/unresolved official
+  joins. Reject for a wholly negative official Test2-minus-pre trend interval,
+  any mechanism failure, or a buyer/text point estimate below zero together
+  with at least a 0.5-rating/game loss. The final read is 2,000 authenticated
+  games with at least 20 fires, at least 100 games per reported role/config cell,
+  zero missing/unresolved joins, a positive official overall trend interval, a
+  positive buyer/text point estimate, and no `n>=100` role/config cell losing
+  0.5 rating/game or more. Anything short remains Test-2-only; promotion to the
+  protected agent requires the official final rule, not corpus payoff or local
+  percentile diagnostics.
+- **Verification / load boundary**: focused V1/V2/V3 and strict-edge tests pass
+  `164/164`; exact Test 2 reachability passes V2 `1142/1142/1142` and incremental
+  V3 `1142/1142/1142`; full suite is `2354 passed, 3 failed`. The three failures
+  are the pre-existing bargaining horizon assertion and bargaining/negotiation
+  live-grid drift alarms. Test 2 PID `6085` launched at 18:11:51 IST before the
+  final code was committed and therefore is not eligible for activation. Wait
+  for a later natural launch on `cef2621`; do not force or accelerate it. V2/V3
+  remain unarmed while waiting.
+
 ## BUILT DEFAULT OFF — complete-info unknown-horizon late stasis (25 Aug)
 
 - **Flag / state**: pushed commit `4a15244` contains
