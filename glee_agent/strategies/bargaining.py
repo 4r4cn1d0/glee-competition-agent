@@ -1130,6 +1130,122 @@ def _decide(game: dict, cfg) -> dict:
                 decision = "accept"
                 _gate(p, "high_share_delay_guard")
 
+    # P1 UNKNOWN-HORIZON STRICT NEXT-COUNTER REPAIR.  This is not a claim that
+    # accepting is globally dominant in the incomplete dynamic game: a later
+    # opponent response is not identified from our own realised trajectory.
+    # It repairs a narrower policy inconsistency.  If rejecting makes the exact
+    # production policy send a counter next round whose discounted value is
+    # STRICTLY below the standing offer, that immediate next action cannot
+    # justify the rejection.  Equality is excluded rather than hidden in a
+    # float tolerance.
+    #
+    # The post-hoc clean Test 2/champion window [1787616328,1787656904) retained
+    # all 1,177 terminal bargaining games (573 in P1).  This strict condition
+    # occurred in 8/8 P1 games, all at delta=.95; immediate acceptance beat the
+    # realised path in all eight by +0.0328984 pot share on average (min
+    # +0.0007442, max +0.0601067).  The excluded delta=.9 equality case gained
+    # only +0.0000392.  Those observations motivate one deterministic challenger
+    # test; they are not a causal estimate and cannot explain a large rating
+    # swing.  The broad OBSERVED_GAIN treatment remains OFF after losing all
+    # three arena seeds (-0.0012/-0.0013/-0.0006).
+    #
+    # The exact measured Test 2 numeric stack is pinned, the offer must be the
+    # current high-water mark in at least three provenance-checked opponent
+    # offers, and every overlapping accept/floor experiment must be OFF.  The
+    # flag is OFF by default and has no hash, arm, or cell assignment.
+    p1_unknown_discount_on = runtime_flags.enabled(
+        "GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1")
+    exact_floor_on = runtime_flags.enabled("GLEE_BARG_ACCEPT_FLOOR_EXACT_V1")
+    if (decision == "reject" and p1_unknown_discount_on
+            and mine and game.get("your_player") == "player_1"
+            and state.get("current_player") == "player_1"
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and not p["horizon_known"] and p["delta_me"] == 0.95
+            and int(_num(state.get("round"), 0)) >= 10
+            and money > 0.0 and my_gain > 0.0 and p["rounds_left"] > 1):
+        offered_share = my_gain / money
+        current_round = int(_num(state.get("round"), 0))
+        exact_test2_stack = (
+            math.isfinite(accept_floor)
+            and abs(accept_floor - 0.50) <= 1e-12
+            and math.isfinite(gain) and abs(gain - 0.05) <= 1e-12
+            and abs(cfg.barg_spe_weight - 1.0) <= 1e-12
+            and abs(cfg.barg_offer_floor - 0.57) <= 1e-12
+            and abs(cfg.barg_opponent_floor - 0.39) <= 1e-12
+            and cfg.barg_uncapped_horizon == 60
+            and cfg.barg_undisclosed_horizon == 99
+        )
+        conflicts = (
+            deterministic_discount_guard_on or discount_arm_on
+            or nominal_guard_on or high_share_delay_on
+            or legacy_observed_gain_on or conflicting_floor_release_on
+            or exact_floor_on
+        )
+        signal = {
+            "eligible": False,
+            "offered_share": round(offered_share, 6),
+            "delta_me": p["delta_me"],
+            "projected_round": current_round + 1,
+            "mode": "deterministic",
+        }
+        if conflicts:
+            signal["status"] = "conflicting_guard"
+        elif not exact_test2_stack:
+            signal["status"] = "stack_mismatch"
+        elif not 0.45 <= offered_share < 0.50:
+            signal["status"] = "outside_share_band"
+        else:
+            me = "player_1"
+            evidence = _genuine_opponent_gain(state, me, money)
+            if evidence is None:
+                signal["status"] = "insufficient_evidence"
+            else:
+                signal.update(
+                    observations=evidence["offers"],
+                    prior_best_share=round(
+                        evidence["prior_best_gain"] / money, 6),
+                )
+                current_is_observed = (
+                    evidence["last_round"] == current_round
+                    and abs(evidence["last_gain"] - my_gain) <= 1e-9
+                )
+                no_retreat = (
+                    my_gain + 1e-9 * money >= evidence["prior_best_gain"]
+                )
+                if not current_is_observed:
+                    signal["status"] = "standing_offer_not_observed"
+                elif not no_retreat:
+                    signal["status"] = "offer_retreat"
+                else:
+                    try:
+                        counter = _post_reject_offer(game, cfg)
+                        counter_gain = _num(counter.get("alice_gain"), -1.0)
+                        if not 0.0 <= counter_gain <= money:
+                            raise ValueError("projected counter outside pot")
+                        counter_share = counter_gain / money
+                        discounted_counter_share = counter_share * p["delta_me"]
+                        strict_margin = offered_share - discounted_counter_share
+                        eligible = strict_margin > 1e-12
+                        signal.update(
+                            eligible=eligible,
+                            planned_counter_share=round(counter_share, 6),
+                            discounted_counter_share=round(
+                                discounted_counter_share, 6),
+                            strict_margin=round(strict_margin, 12),
+                        )
+                        if not eligible:
+                            signal["status"] = "next_counter_not_worse"
+                        else:
+                            decision = "accept"
+                            _gate(p, "p1_unknown_discount_dominance_v1")
+                    except Exception:
+                        signal.update(
+                            eligible=False,
+                            status="projection_failed",
+                        )
+        p["p1_unknown_discount_dominance_v1"] = signal
+
     # NO-REGRESSION GUARD. In nine measured games the old decision path rejected
     # a live offer and the next outgoing policy kept no more of the pot; the
     # avoidable delay forfeited 17.36 pot-points and -44.9 rating in aggregate.
@@ -1181,7 +1297,6 @@ def _decide(game: dict, cfg) -> dict:
     # high-share band entirely). Randomized/legacy floor interactions and every
     # other stack fail closed. OFF by default, so merging this code cannot
     # change a running fleet process.
-    exact_floor_on = runtime_flags.enabled("GLEE_BARG_ACCEPT_FLOOR_EXACT_V1")
     if exact_floor_on:
         valid_money = math.isfinite(money) and money > 0.0
         dme_exact = p.get("delta_me")

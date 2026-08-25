@@ -342,6 +342,12 @@ def _p_barg_accept_floor_exact(game, p):
     return bool(signal.get("eligible"))
 
 
+def _p_barg_p1_unknown_discount_dominance(game, p):
+    """Candidate-plan scope of the deterministic P1 late-delay repair."""
+    signal = p.get("p1_unknown_discount_dominance_v1") or {}
+    return bool(signal.get("eligible"))
+
+
 def _p_p08_r125_prose(game, p):
     """Action-level scope of the exact p=.8/r=1.25 seller wording gate."""
     state = game.get("game_state") or {}
@@ -712,6 +718,9 @@ KNOWN = {
     "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1": (
         "bargaining", ("accept_floor_exact_v1",),
         _p_barg_accept_floor_exact),
+    "GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1": (
+        "bargaining", ("p1_unknown_discount_dominance_v1",),
+        _p_barg_p1_unknown_discount_dominance),
     "GLEE_BARG_P2_H12_D095_SILENT_V1": (
         "bargaining", ("barg_p2_h12_d095_silent_v1",),
         _p_barg_p2_h12_d095_silent),
@@ -972,6 +981,44 @@ def _collect_states(field, draws, flags, families, target_flag=None,
 
                 exact_floor_opponent.name = "exact_floor_opponent"
                 opponent = exact_floor_opponent
+            if (target_flag ==
+                    "GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1"
+                    and family == "bargaining"
+                    and seat == "player_1"
+                    and params.get("horizon_known") is False
+                    and params.get("max_rounds") is None
+                    and params.get("delta_1") == 0.95):
+                # In 800 ordinary exact-stack draws the cloned field closed or
+                # changed course before this deliberately late P1 predicate was
+                # exposed (0/3,603 banked turns).  Hold open the same unknown-H
+                # d=.95 cell and move P1's standing share monotonically from
+                # .45 at round 2 to .47 at round 42.  The real engine supplies
+                # every rejection echo and turn transition; the candidate must
+                # still project its real next wire counter and prove the strict
+                # discounted loss.  This fixture changes neither arena nor live
+                # opponent behavior and reads no hidden value.
+                field_opponent = opponent
+
+                def exact_p1_delay_opponent(game):
+                    state = game.get("game_state") or {}
+                    action_type = (game.get("valid_actions") or {}).get("type")
+                    if action_type == "decision":
+                        return {"decision": "reject"}
+                    if action_type != "offer":
+                        return field_opponent(game)
+                    try:
+                        money = float(state.get("money_to_divide"))
+                        round_no = int(float(state.get("round") or 1))
+                    except (TypeError, ValueError):
+                        return field_opponent(game)
+                    if not math.isfinite(money) or money <= 0.0:
+                        return field_opponent(game)
+                    p1_share = min(0.47, 0.45 + 0.0005 * max(round_no - 2, 0))
+                    alice = p1_share * money
+                    return {"alice_gain": alice, "bob_gain": money - alice}
+
+                exact_p1_delay_opponent.name = "exact_p1_delay_opponent"
+                opponent = exact_p1_delay_opponent
             if (target_flag ==
                     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1"
                     and family == "negotiation"
@@ -1252,7 +1299,8 @@ def main() -> int:
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
                                   "GLEE_BARG_HIGH_SHARE_DELAY_GUARD",
-                                  "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1")
+                                  "GLEE_BARG_ACCEPT_FLOOR_EXACT_V1",
+                                  "GLEE_BARG_P1_UNKNOWN_DISCOUNT_DOMINANCE_V1")
                                   else p_ctl)
                 ok = bool(known[2](game, predicate_plan))
             except Exception:
