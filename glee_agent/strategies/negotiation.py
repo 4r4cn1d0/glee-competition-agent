@@ -43,6 +43,20 @@ COMPLETE_UNKNOWN_LATE_STASIS_FLAG = (
 COMPLETE_UNKNOWN_LATE_STASIS_MIN_ROUND = 75
 COMPLETE_UNKNOWN_LATE_STASIS_CYCLES = 10
 
+# Default-off deterministic repair for the buyer/P2 decision that creates its
+# round-98 counter in complete-information unknown-horizon games.  The server's
+# history labels the standing seller offer as round 97; rejecting it creates
+# the buyer offer on round 98 and gives the seller the last response on 99.
+COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG = (
+    "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1"
+)
+COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_GATE = (
+    "complete_unknown_r97_low_share_accept_v1"
+)
+COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND = 97
+COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES = 10
+COMPLETE_UNKNOWN_R97_LOW_SHARE_MAX_ZOPA_SHARE = 0.20
+
 # Default-off deterministic repair for one pointwise-dominated terminal action
 # in the copied buyer component used by Agent 5 V1 and Test 2 V3.  The flag is
 # deliberately separate from the measured-negative broad hidden/unknown
@@ -73,6 +87,7 @@ UNKNOWN_HORIZON_TERMINAL_ROUND = 99
 # policy so a future activation cannot silently become a renamed version of an
 # older arm or an unanalysed factorial treatment.
 _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS = (
+    COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG,
     "GLEE_NEGO_CLOSE_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
     "GLEE_NEGO_FP_ALWAYS",
@@ -1757,8 +1772,10 @@ def _optional_record_round_matches(record: dict, expected: int) -> bool:
     return _finite_wire_number(record.get("round")) == float(expected)
 
 
-def _exact_mutual_stasis_cycles(state: dict, action: dict,
-                                me: str) -> tuple[int, float | None, float | None]:
+def _exact_mutual_stasis_cycles(
+    state: dict, action: dict, me: str,
+    cycles_required: int = COMPLETE_UNKNOWN_LATE_STASIS_CYCLES,
+) -> tuple[int, float | None, float | None]:
     """Count fully completed, consecutive two-way cycles before this turn.
 
     Each cycle must contain both record rows: opponent offers P, we reject and
@@ -1793,7 +1810,7 @@ def _exact_mutual_stasis_cycles(state: dict, action: dict,
         by_round[parsed_round] = entry
 
     cycles = 0
-    for offset in range(1, COMPLETE_UNKNOWN_LATE_STASIS_CYCLES + 1):
+    for offset in range(1, cycles_required + 1):
         own_round = current_round - 2 * offset
         bridge_round = own_round + 1
         entry = by_round.get(own_round)
@@ -1825,6 +1842,139 @@ def _exact_mutual_stasis_cycles(state: dict, action: dict,
             break
         cycles += 1
     return cycles, offer_price, current_counter
+
+
+def _maybe_complete_unknown_r97_low_share_accept(
+    game: dict, action: dict,
+) -> dict:
+    """Accept one narrow, observed-to-fail buyer/P2 round-97 state.
+
+    The wire protocol calls the standing seller offer round 97.  Rejecting it
+    emits our buyer counter on round 98, after which seller/P1 owns the last
+    response on round 99.  Across 1,607 historical buyer/P2 games reaching that
+    point, sellers rejected the round-98 counter 1,555 times (96.8%); even when
+    the complete-information counter was strictly profitable, they rejected
+    136/186 (73.1%).  In the stricter post-hoc cohort with ten exact mutual
+    stasis cycles and a standing offer giving the buyer no more than 20% of the
+    visible ZOPA, accepting was better than the observed continuation in 86/88
+    games, worse in 1, and tied in 1.  The diagnostic exact-percentile delta was
+    +.06709 (normal 95% CI [.04738, .08679]).
+
+    Those are retrospective action comparisons, not a randomized causal
+    estimate, so this behavior is default OFF.  When armed it changes only a
+    canonical complete-information buyer/P2 RejectOffer at exactly round 97,
+    after ten fully recorded static cycles, where the standing offer leaves at
+    least one cent but at most 20% of the visible ZOPA.  Hidden games, sellers,
+    earlier rounds, changing trajectories, walks, accepts, and malformed wires
+    are returned byte-for-byte unchanged.
+    """
+    if (not runtime_flags.enabled(
+            COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG)
+            or not isinstance(action, dict)
+            or action.get("decision") != "RejectOffer"):
+        return action
+    public_keys = {
+        key for key in action if not str(key).startswith("_")
+    }
+    if (not public_keys.issubset({"decision", "product_price", "message"})
+            or not {"decision", "product_price"}.issubset(public_keys)):
+        return action
+    if action.get("_plan") is not None \
+            and not isinstance(action.get("_plan"), dict):
+        return action
+
+    state = game.get("game_state")
+    valid_actions = game.get("valid_actions")
+    if (not isinstance(state, dict)
+            or not isinstance(valid_actions, dict)
+            or game.get("game_family") != "negotiation"
+            or state.get("game_family") not in (None, "negotiation")
+            or valid_actions.get("type") != "decision"
+            or game.get("phase") not in (None, "decision")
+            or state.get("phase") not in (None, "decision")
+            or state.get("complete_information") is not True
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None
+            or not isinstance(state.get("messages_allowed"), bool)
+            or state.get("current_player") != "player_2"
+            or game.get("your_player") != "player_2"
+            or state.get("player_1_role") != "seller"
+            or state.get("player_2_role") != "buyer"):
+        return action
+
+    round_number = _strict_finite_scalar(state.get("round"))
+    seller_value = _strict_finite_scalar(state.get("player_1_value"))
+    buyer_value = _strict_finite_scalar(state.get("player_2_value"))
+    standing = state.get("last_offer")
+    if (round_number != float(COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND)
+            or seller_value is None or seller_value <= 0.0
+            or buyer_value is None or buyer_value <= seller_value
+            or not isinstance(standing, dict)
+            or standing.get("from_player") != "player_1"):
+        return action
+    offer_round = _strict_finite_scalar(standing.get("round"))
+    offer_price = _strict_finite_scalar(standing.get("price"))
+    if (offer_round != round_number or offer_price is None
+            or offer_price <= 0.0):
+        return action
+
+    buyer_gain = buyer_value - offer_price
+    zopa = buyer_value - seller_value
+    if (buyer_gain < 0.01 - 1e-9
+            or buyer_gain > COMPLETE_UNKNOWN_R97_LOW_SHARE_MAX_ZOPA_SHARE
+            * zopa + 1e-9):
+        return action
+
+    # The strategy action is not necessarily the submitted counter: coercion
+    # can apply enabled postconditions.  Compare history with the final public
+    # wire so ten-cycle stasis is proved for what the opponent actually saw.
+    public_baseline = {
+        key: value for key, value in action.items()
+        if not str(key).startswith("_")
+    }
+    try:
+        projected = coerce(public_baseline, game)
+    except Exception:
+        return action
+    if projected.get("decision") != "RejectOffer":
+        return action
+    cycles, historical_offer, counter_price = _exact_mutual_stasis_cycles(
+        state, projected, "player_2",
+        cycles_required=COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES)
+    if (cycles < COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES
+            or historical_offer != offer_price
+            or counter_price is None):
+        return action
+
+    # The older broad round>=75 guard overlaps this node.  If both flags are
+    # armed, fail closed rather than silently composing two retrospective
+    # policies.  Its reciprocal conflict list enforces the same rule.
+    if _flag_is_nonzero(COMPLETE_UNKNOWN_LATE_STASIS_FLAG):
+        return action
+
+    plan_data = dict(action.get("_plan") or {})
+    buyer_zopa_share = buyer_gain / zopa
+    plan_data[COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_GATE] = {
+        "eligible": True,
+        "mode": "deterministic",
+        "baseline_decision": "RejectOffer",
+        "round": COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND,
+        "cycles": cycles,
+        "offer_price": offer_price,
+        "counter_price": counter_price,
+        "seller_value": seller_value,
+        "buyer_value": buyer_value,
+        "buyer_gain": buyer_gain,
+        "zopa": zopa,
+        "buyer_zopa_share": buyer_zopa_share,
+        "max_buyer_zopa_share": (
+            COMPLETE_UNKNOWN_R97_LOW_SHARE_MAX_ZOPA_SHARE
+        ),
+    }
+    if _trace_enabled():
+        plan_data["gates_fired"] = list(plan_data.get("gates_fired") or [])
+        _gate(plan_data, COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_GATE)
+    return {"decision": "AcceptOffer", "_plan": plan_data}
 
 
 def _maybe_complete_unknown_late_stasis(game: dict, action: dict) -> dict:
@@ -2180,6 +2330,7 @@ def decide(game: dict, cfg) -> dict:
                     nego_arms.attach(game, action)
             except Exception:
                 pass              # a message is never worth risking the move
+    action = _maybe_complete_unknown_r97_low_share_accept(game, action)
     action = _maybe_complete_unknown_late_stasis(game, action)
     action = _maybe_test2_unknown_r99_accept(game, action)
     return _maybe_hi_unknown_buyer_walk_accept(game, action)

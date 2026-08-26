@@ -748,6 +748,24 @@ def _p_complete_unknown_late_stasis(game, p):
             and metadata.get("cycles", 0) >= 10)
 
 
+def _p_complete_unknown_r97_low_share_accept(game, p):
+    """Exact candidate scope of the buyer/P2 round-97 stasis guard."""
+    if game.get("game_family") != "negotiation":
+        return False
+    state = game.get("game_state") or {}
+    metadata = p.get("complete_unknown_r97_low_share_accept_v1") or {}
+    return (state.get("complete_information") is True
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and state.get("current_player") == "player_2"
+            and state.get("player_2_role") == "buyer"
+            and (game.get("valid_actions") or {}).get("type") == "decision"
+            and metadata.get("eligible") is True
+            and metadata.get("round") == 97
+            and metadata.get("cycles", 0) >= 10
+            and metadata.get("buyer_zopa_share", math.inf) <= 0.20 + 1e-9)
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -790,6 +808,9 @@ KNOWN = {
     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1": (
         "negotiation", ("complete_unknown_late_stasis_v1",),
         _p_complete_unknown_late_stasis),
+    "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1": (
+        "negotiation", ("complete_unknown_r97_low_share_accept_v1",),
+        _p_complete_unknown_r97_low_share_accept),
     "GLEE_NEGO_DETERMINISTIC_FP_V1": (
         "negotiation", ("deterministic_first_principles_v1",),
         _p_deterministic_first_principles),
@@ -1140,8 +1161,10 @@ def _collect_states(field, draws, flags, families, target_flag=None,
 
                 exact_p1_delay_opponent.name = "exact_p1_delay_opponent"
                 opponent = exact_p1_delay_opponent
-            if (target_flag ==
-                    "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1"
+            if (target_flag in (
+                    "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
+                    "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
+                    )
                     and family == "negotiation"
                     and params.get("complete_information") is True
                     and params.get("horizon_known") is False):
@@ -1152,6 +1175,8 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                 # real synthetic unknown-horizon clock). It changes neither the
                 # arena opponent pool nor production behavior.
                 field_opponent = opponent
+                low_share_r97 = target_flag.endswith(
+                    "R97_LOW_SHARE_ACCEPT_V1")
 
                 def exact_mutual_stasis_opponent(game):
                     state = game.get("game_state") or {}
@@ -1166,9 +1191,19 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     span = buyer - seller
                     if not math.isfinite(span) or span <= 0.0:
                         return field_opponent(game)
-                    # Give the recorder 25% of the visible span, below its live
-                    # .48 accept fence, in either role.
-                    price = seller + (0.75 if role == "seller" else 0.25) * span
+                    if low_share_r97:
+                        # The candidate owns buyer/P2 only.  Hold a seller ask
+                        # that gives the recorder 10% of visible ZOPA, safely
+                        # inside its <=20% treatment fence.
+                        if role != "seller":
+                            return field_opponent(game)
+                        price = buyer - 0.10 * span
+                    else:
+                        # Give the recorder 25% of the visible span, below its
+                        # live .48 accept fence, in either role.
+                        price = seller + (
+                            0.75 if role == "seller" else 0.25
+                        ) * span
                     if action_type == "offer":
                         return {"product_price": price}
                     if action_type == "decision":
@@ -1417,6 +1452,7 @@ def main() -> int:
                                   "GLEE_NEGO_HIDDEN_MIN_SHARE_VETO_AB",
                                   "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
+                                  "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
                                   "GLEE_BARG_HIGH_SHARE_DELAY_GUARD",
