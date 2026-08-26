@@ -3,6 +3,65 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-26 16:39 IST — Test 4 round-97 low-share negotiation guard live
+
+Commit `9dab12127dab33e3eeca6c38826901cd11a187b2` is pushed to
+`origin/main`. It adds default-OFF deterministic flag
+`GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1`. The server labels the
+seller/P1 offer as round 97; rejecting it emits buyer/P2's round-98 counter and
+leaves seller/P1 the final response on round 99. When armed, the guard changes
+only a canonical complete-information, explicitly unknown-horizon buyer/P2
+`RejectOffer` at exactly round 97 to `AcceptOffer`. It requires ten fully
+completed exact mutual-stasis cycles, a provenance-valid standing seller offer,
+a buyer gain of at least $0.01, and a buyer gain no greater than 20% of the
+visible ZOPA. Hidden games, known horizons, sellers, other rounds, changing
+prices, accepts, walks, malformed actions, and the older broad stasis flag are
+fail-closed. Its cycle constant is independent from the older guard's constant.
+
+The all-outcome audit covered 3,572 unknown-horizon negotiations reaching round
+98/99. Seller opponents rejected our buyer/P2 round-98 counter in 1,555/1,607
+games (96.8%); under complete information with a strictly profitable counter,
+they still rejected 136/186 (73.1%). In the post-hoc ten-cycle subset where the
+standing offer gave the buyer at most 20% of visible ZOPA, accepting at the
+round-97 decision beat observed continuation in 86/88 games, lost in 1, and tied
+in 1. The diagnostic exact-percentile delta was `+.06709`, normal 95% CI
+`[.04738, .08679]`. This is a retrospective reached-state comparison across
+policy eras, not a randomized causal estimate; no official rating lift should
+be claimed until live fires and terminal outcomes accumulate. The supplied
+631-game value matrix mixes complete and hidden information and must not be used
+as a hidden-value prior; the official hidden generator remains independent
+uniform support over `{.8, 1.0, 1.2, 1.5}`.
+
+Focused guard tests pass 42/42; the four adjacent endgame-guard files pass
+133/133. Exact Test 4 hardliner-stack reachability at n=256, seed 97020 is
+10 eligible / 10 fired / 10 submitted actions changed, all at round 97. The
+final full suite is 2,595 passed with exactly the same three pre-existing
+failures: the stale bargaining horizon-floor assertion and the bargaining and
+negotiation live-log grid drift alarms. Compilation and `git diff --check`
+pass. No replay-eval, arena, or red-team job ran.
+
+The operator explicitly unfroze Test 4 negotiation for this rollout while
+retaining the bargaining freeze. Test 4's predeployment state was bargaining
+`2684.18/10186`, negotiation `2724.71/9738`, and persuasion `2347.04/10740`.
+Codex used `fleet.py bank randomized`; old persuasion-only PID `10380` stopped
+queue acquisition, drained authenticated active games `6 -> 0`, and exited
+without a signal or abandonment. Only at the zero-process boundary did fleet
+tooling set the new flag to `1` and set next-launch families to
+`negotiation,persuasion`. The prior Agent-5 V1 negotiation component and live
+persuasion V2+V3 flags were preserved; the older broad complete-unknown stasis
+flag remains absent. The resulting 83-key Test 4 overlay SHA-256 is
+`f1073619a8c00a304fc26b6721459f4f22c9d9064cb18bcbff4c184a6a402f77`.
+
+Replacement PID `12959` launched at 16:37:06 IST from the pushed workspace as
+`--probe hardliner --families negotiation,persuasion --llm-mode off`, concurrency
+8, max time 3,600 seconds. Runtime inspection confirms the new flag `1`, Agent
+5 V1 `1`, persuasion V2/V3 `1`, and no old broad stasis flag. The first 31 live
+turns include six negotiation turns across three games, all `source=heuristic`,
+with zero malformed actions or strategy errors. The rare round-97 gate has not
+yet fired. Bargaining remained exactly frozen at 10,186 games while negotiation
+advanced to 9,740. No other slot, agent, bargaining behavior, or persuasion
+flag was changed by this negotiation rollout.
+
 ## 2026-08-25 20:52 IST — high-share bargaining flag is configured but unreachable
 
 Fresh exact-stack review found that `GLEE_BARG_HIGH_SHARE_DELAY_GUARD=1` on
