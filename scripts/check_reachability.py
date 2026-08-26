@@ -677,6 +677,14 @@ def _p_buyer_explicit_decline_v2(game, p):
                 state.get("seller_message")))
 
 
+def _p_buyer_tight_credibility_reset_v1(game, p):
+    """Pre-action scope where the deterministic credibility state moves wire."""
+    from glee_agent.strategies import persuasion
+
+    return persuasion._buyer_tight_credibility_reset_v1_candidate(
+        game, p) is not None
+
+
 def _p_buyer_explicit_decline_v3(game, p):
     """Pre-action scope where strict current-warning V3 can change BUY."""
     from glee_agent.strategies import persuasion
@@ -880,6 +888,9 @@ KNOWN = {
     "GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1": (
         "persuasion", ("buyer_selective_signal_unlock_v1",),
         _p_buyer_selective_signal_unlock_v1),
+    "GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1": (
+        "persuasion", ("buyer_tight_credibility_reset_v1",),
+        _p_buyer_tight_credibility_reset_v1),
     "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB": (
         "persuasion", ("p033_r4_binary_postdecline_pulse",),
         _p_p033_r4_binary_postdecline_pulse),

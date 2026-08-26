@@ -66,6 +66,18 @@ PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_FLAG = (
     "GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1"
 )
 
+# Deterministic tight-cell credibility controller.  This is deliberately a new
+# default-OFF policy rather than a revival of the measured-negative permanent
+# strike or the canceled broad selective-signal unlock.  It preserves the full
+# buyer-v2 posterior and changes only a final tight-cell action: the seller's
+# most recent strict decline licenses a posterior-profitable recommendation,
+# while a later purchased recommended LOW revokes that license until a newer
+# strict decline appears.  It never reads game id, opponent, seller knowledge,
+# or private current quality.
+PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1_FLAG = (
+    "GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1"
+)
+
 # Deterministic strict-edge seller companions to the buyer decline veto.  Both
 # are default OFF and independent so a deployment can revert either mechanism
 # without changing the rest of the persuasion policy.
@@ -1095,6 +1107,235 @@ def _buyer_selective_signal_unlock_v1_trigger(
         "expected_value": expected,
         "posterior_edge": expected - plan_price,
     }
+
+
+_BUYER_TIGHT_CREDIBILITY_RESET_V1_CONFLICT_FLAGS = (
+    # The controller must compare against the complete ordinary buyer-v2 plan,
+    # never reinterpret an action produced by an older buyer experiment.  The
+    # deterministic V1/V2/V3 current-decline vetoes are intentionally absent:
+    # this controller requires a strict current positive, so those final vetoes
+    # are disjoint and retain precedence below.
+    *_P05_R12_SELECTIVITY_UNLOCK_CONFLICT_FLAGS,
+    "GLEE_PERS_BUYER_AUDIT",
+    "GLEE_PERS_P08_R125_TEXT_DECLINE_VETO_AB",
+    "GLEE_PERS_P05_R12_SELECTIVITY_UNLOCK_AB",
+    "GLEE_PERS_P033_R4_BINARY_POSTDECLINE_PULSE_AB",
+    PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1_FLAG,
+)
+
+
+_TIGHT_CREDIBILITY_DIRECT_POSITIVE = re.compile(
+    # The text is punctuation-normalized before this full-string match.  Full
+    # anchoring is the scope guarantee: words such as "yes" or "recommended"
+    # inside a history/future anecdote cannot license the current item.
+    r"^(?:"
+    r"yes|y|buy|yes\s+on\s+this\s+round|"
+    r"i\s+(?:strongly\s+)?recommend\s+"
+    r"(?:this(?:\s+(?:one|item|product|unit))?|it)|"
+    r"(?:this|it)\s+is\s+(?:a\s+)?(?:clear|strong|good|solid)\s+"
+    r"(?:buy|purchase|pick)|"
+    r"(?:strongly\s+)?recommended|"
+    r"worth\s+(?:buying|purchasing|taking)|"
+    r"(?:i(?:'d|\s+would)|you\s+should)\s+"
+    r"(?:buy|purchase|take)\s+(?:this(?:\s+one)?|it)|"
+    r"yes\s+buy\s+this\s+one\s+great\s+product\s+i\s+recommend\s+it"
+    r")$",
+)
+_TIGHT_CREDIBILITY_DIRECT_DECLINE = re.compile(
+    r"^(?:"
+    r"no|n|pass|not\s+recommended|"
+    r"i\s+(?:would|will|do)\s+not\s+recommend\s+"
+    r"(?:this(?:\s+(?:one|item|product|unit))?|it)|"
+    r"i\s+would\s+hold\s+off\s+on\s+"
+    r"(?:this(?:\s+(?:one|item|product|unit))?|it)|"
+    r"(?:do\s+not|don't|never)\s+(?:buy|purchase|take)\s+"
+    r"(?:this(?:\s+(?:one|item|product|unit))?|it)|"
+    r"(?:pass|skip)\s+(?:on\s+)?"
+    r"(?:this(?:\s+(?:one|item|product|unit|round))?|it)|"
+    r"(?:this|it)\s+is\s+not\s+(?:a\s+)?(?:buy|purchase)|"
+    r"i\s+recommend\s+(?:waiting|passing|skipping)"
+    r")$",
+)
+
+
+def _tight_credibility_signal(mode: str, entry: dict) -> bool | None:
+    """Read only a strict current/history persuasion signal for this policy."""
+    if mode == "binary":
+        return _strict_binary_signal(entry)
+    if mode != "text":
+        return None
+    message = entry.get("seller_message")
+    if not isinstance(message, str):
+        return None
+    # Restrict both polarities to a complete current-action utterance.  The
+    # broader V1/V2/V3 readers remain final safety vetoes below, but history- or
+    # future-only prose must neither earn credibility nor unlock a purchase.
+    text = re.sub(
+        r"[^a-z0-9']+", " ", message.strip().lower().replace("’", "'")
+    ).strip()
+    if _TIGHT_CREDIBILITY_DIRECT_DECLINE.fullmatch(text):
+        return False
+    if _TIGHT_CREDIBILITY_DIRECT_POSITIVE.fullmatch(text):
+        return True
+    return None
+
+
+def _buyer_tight_credibility_reset_v1_candidate(
+    game: dict, plan: dict,
+) -> dict | None:
+    """Return the adjacent trace when credibility would change the wire action.
+
+    Two authenticated failure shapes motivate this broad state rule.  In the
+    p=.8/v=1.25P transcript, buyer-v2 still assigned p_high=.8241 after four
+    purchased recommended lows and bought 18 units for -.5P; a purchased low
+    after the last decline must therefore revoke trust.  In the p=1/3,v=1.2P
+    transcript, later selective positives reached p_high=.8438/.8527 above the
+    .8333 breakeven but the static .65 prior fence forced 20/20 passes; a newer
+    decline may therefore restore trust when the unchanged posterior strictly
+    clears price.  These fixed-stream examples establish reach and failure
+    direction, not an identified official-rating effect, so the switch remains
+    default OFF and isolated to one prospective Test 2 deployment.
+
+    The rule is intentionally reversible rather than a permanent strike:
+    ``last_decline > last_caught_low`` licenses the current strict positive.
+    Only tight cells whose prior money value does not beat price are eligible,
+    preserving the profitable broad buyer strategy unchanged.
+    """
+    state = game.get("game_state") or {}
+    if (game.get("game_family") != "persuasion"
+            or (game.get("valid_actions") or {}).get("type") != "buyer_decision"
+            or game.get("your_player") != "player_2"):
+        return None
+    if (state.get("player_2_role") is not None
+            and state.get("player_2_role") != "buyer"):
+        return None
+    if (state.get("current_player") is not None
+            and state.get("current_player") != "player_2"):
+        return None
+    mode = state.get("seller_message_type")
+    if mode not in ("text", "binary"):
+        return None
+    if (plan.get("buyer_v2") is not True
+            or plan.get("tight") is not True
+            or not isinstance(plan.get("buy"), bool)):
+        return None
+    if any(_p05_r12_conflict_flag_is_armed(name)
+           for name in _BUYER_TIGHT_CREDIBILITY_RESET_V1_CONFLICT_FLAGS):
+        return None
+    conflict_prefixes = ("rank_", "buyer_selectivity_", "lcb_", "parser_")
+    if (plan.get("gates_fired")
+            or plan.get("uninformed_veto")
+            or any(str(key).startswith(conflict_prefixes) for key in plan)):
+        return None
+
+    price = _num(state.get("product_price"), math.nan)
+    prior = _num(state.get("p"), math.nan)
+    high_value = _num(state.get("v"), math.nan)
+    low_value = _num(state.get("u"), math.nan)
+    plan_price = _num(plan.get("price"), math.nan)
+    expected = _num(plan.get("expected_value"), math.nan)
+    plan_breakeven = _num(plan.get("breakeven"), math.nan)
+    if not all(math.isfinite(value) for value in (
+            price, prior, high_value, low_value, plan_price,
+            expected, plan_breakeven)):
+        return None
+    numeric_scale = max(
+        1.0, abs(price), abs(high_value), abs(low_value), abs(plan_price))
+    if (price <= 0.0
+            or high_value <= low_value
+            or not 0.0 <= prior <= 1.0
+            or abs(plan_price - price) > 1e-9 * numeric_scale):
+        return None
+    breakeven = (price - low_value) / (high_value - low_value)
+    if (not math.isfinite(breakeven)
+            or breakeven < 0.75
+            or abs(plan_breakeven - breakeven) > 1e-9 * max(
+                1.0, abs(plan_breakeven), abs(breakeven))):
+        return None
+    prior_value = prior * high_value + (1.0 - prior) * low_value
+    if prior_value > price + 1e-9 * numeric_scale:
+        return None
+
+    current_signal = _tight_credibility_signal(mode, {
+        "seller_message": state.get("seller_message"),
+        "recommended": state.get("recommended"),
+    })
+    if current_signal is not True:
+        return None
+    edge_scale = max(1.0, abs(expected), abs(plan_price))
+    if expected <= plan_price + 1e-9 * edge_scale:
+        return None
+
+    history = state.get("history") or []
+    if not isinstance(history, list):
+        return None
+    last_decline_index = -1
+    last_caught_low_index = -1
+    for index, entry in enumerate(history):
+        if not isinstance(entry, dict):
+            return None
+        signal = _tight_credibility_signal(mode, entry)
+        if signal is False:
+            last_decline_index = index
+        bought = entry.get("bought")
+        if not isinstance(bought, bool):
+            return None
+        if bought:
+            quality = str(entry.get("quality") or "").strip().lower()
+            if quality == "low":
+                # Buyer-v2 historically coerces unreadable text into a positive
+                # and can even buy a misparsed decline.  Any revealed bought LOW
+                # therefore revokes credibility; requiring this policy's strict
+                # positive reader here would fail open on exactly those errors.
+                last_caught_low_index = index
+            elif quality != "high":
+                # Bought recommended rounds reveal quality on the live wire.
+                # Missing/malformed quality could hide a credibility reset, so
+                # fail closed rather than granting or revoking trust speculatively.
+                return None
+
+    credit_valid = last_decline_index > last_caught_low_index
+    control_buy = plan["buy"]
+    target_buy = control_buy
+    direction = None
+    if control_buy and not credit_valid:
+        target_buy = False
+        direction = "buy_to_pass"
+    elif not control_buy and credit_valid:
+        # Prove this PASS is specifically the static tight-prior fence.  Never
+        # revive a guard/strike/parser refusal merely because ``blocked`` is true.
+        tight_prior = runtime_flags.as_float(
+            "GLEE_PERS_BUYER_TIGHT_PRIOR", 0.0)
+        if (plan.get("blocked") is not True
+                or not math.isfinite(tight_prior)
+                or tight_prior <= 0.0
+                or prior >= tight_prior):
+            return None
+        target_buy = True
+        direction = "pass_to_buy"
+    if target_buy == control_buy or direction is None:
+        return None
+
+    return {
+        "target_buy": target_buy,
+        "direction": direction,
+        "credit_valid": credit_valid,
+        "last_decline_index": last_decline_index,
+        "last_caught_low_index": last_caught_low_index,
+        "prior_value": prior_value,
+        "expected_value": expected,
+        "posterior_edge": expected - plan_price,
+    }
+
+
+def _buyer_tight_credibility_reset_v1_trigger(
+    game: dict, plan: dict,
+) -> dict | None:
+    """Return the candidate trace only when the default-OFF policy is armed."""
+    if not runtime_flags.enabled(
+            PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1_FLAG):
+        return None
+    return _buyer_tight_credibility_reset_v1_candidate(game, plan)
 
 
 def _p05_r12_selectivity_unlock_trigger(game: dict, plan: dict) -> int | None:
@@ -2241,6 +2482,23 @@ def decide(game: dict, cfg) -> dict:
             p[f"buyer_selective_signal_unlock_v1_{key}"] = value
         p.setdefault("gates_fired", []).append(
             "buyer_selective_signal_unlock_v1")
+
+    # DETERMINISTIC TIGHT-CELL CREDIBILITY RESET (default OFF).
+    #
+    # Preserve the complete buyer-v2 control above.  In tight cells whose prior
+    # value does not beat price, the last observable credibility event decides
+    # whether a strictly posterior-profitable positive may be bought: a decline
+    # licenses it; a later purchased recommended LOW revokes it.  Only an actual
+    # BUY<->PASS wire change receives adjacent metadata, and the final explicit-
+    # decline vetoes below retain absolute precedence.
+    credibility_reset = _buyer_tight_credibility_reset_v1_trigger(game, p)
+    if credibility_reset is not None:
+        p["buy"] = credibility_reset.pop("target_buy")
+        p["buyer_tight_credibility_reset_v1"] = True
+        for key, value in credibility_reset.items():
+            p[f"buyer_tight_credibility_reset_v1_{key}"] = value
+        p.setdefault("gates_fired", []).append(
+            "buyer_tight_credibility_reset_v1")
 
     # DETERMINISTIC EXPLICIT-DECLINE VETO (default OFF).
     #
