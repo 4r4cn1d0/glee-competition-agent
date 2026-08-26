@@ -434,6 +434,33 @@ def _p_pers_seller_demand_collapse_truth_v1(game, plan):
             and plan.get("recommend") is True)
 
 
+def _p_pers_seller_terminal_push_v1(game, plan):
+    """Exact pre-action scope of the round-20 LOW seller push."""
+    state = game.get("game_state") or {}
+    raw_round = state.get("round")
+    raw_total = state.get("total_rounds")
+    exact_round_20 = (
+        isinstance(raw_round, (int, float))
+        and not isinstance(raw_round, bool)
+        and math.isfinite(float(raw_round))
+        and float(raw_round) == 20.0
+        and isinstance(raw_total, (int, float))
+        and not isinstance(raw_total, bool)
+        and math.isfinite(float(raw_total))
+        and float(raw_total) == 20.0
+    )
+    return (game.get("game_family") == "persuasion"
+            and (game.get("valid_actions") or {}).get("type")
+            in ("seller_message", "seller_recommendation")
+            and game.get("your_player") == "player_1"
+            and state.get("current_player") == "player_1"
+            and state.get("player_1_role") in (None, "seller")
+            and str(state.get("current_quality") or "").lower() == "low"
+            and exact_round_20
+            and plan.get("recommend") is False
+            and not plan.get("gates_fired"))
+
+
 def _p_p08_r125_binary_truth(game, p):
     """Changed-action scope of the exact p=.8/r=1.25 binary truth gate."""
     state = game.get("game_state") or {}
@@ -911,6 +938,9 @@ KNOWN = {
     "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1": (
         "persuasion", ("pers_seller_demand_collapse_truth_v1",),
         _p_pers_seller_demand_collapse_truth_v1),
+    "GLEE_PERS_SELLER_TERMINAL_PUSH_V1": (
+        "persuasion", ("pers_seller_terminal_push_v1",),
+        _p_pers_seller_terminal_push_v1),
     "GLEE_PERS_P08_POSITIVE_PROSE_V1": (
         "persuasion", ("pers_p08_positive_prose_v1",),
         _p_pers_p08_positive_prose_v1),

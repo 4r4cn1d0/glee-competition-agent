@@ -93,6 +93,13 @@ PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG = (
     "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1"
 )
 
+# Deterministic last-round seller override.  It is deliberately independent of
+# the older backload arm: backload changed earlier recommendations in cells
+# where all-push was already profitable and lost 10.7 percentage points of
+# sales live.  This default-OFF rule can only turn the baseline's final LOW
+# decline into a recommendation, after every baseline seller rule has run.
+PERS_SELLER_TERMINAL_PUSH_V1_FLAG = "GLEE_PERS_SELLER_TERMINAL_PUSH_V1"
+
 
 _DECLINE_V2_CONTRAST = re.compile(
     r"\b(?:but|however|that\s+said|even\s+so|still|yet|though|although|"
@@ -410,7 +417,7 @@ def _seller_history(state: dict, me: str) -> list[dict]:
     return [h for h in (state.get("history") or []) if isinstance(h, dict)]
 
 
-def seller_plan(game: dict, cfg) -> dict:
+def _seller_plan_baseline(game: dict, cfg) -> dict:
     state = game["game_state"]
     price = _num(state.get("product_price"), 0.0)
     p = _num(state.get("p"), 0.5)
@@ -683,6 +690,87 @@ def seller_plan(game: dict, cfg) -> dict:
             "round": round_no, "total_rounds": total, "buy_rate": buy_rate,
             "knows_values": True, "lie_rate": q_star, "lies_so_far": lies_so_far,
             "quality_is_high": False}
+
+
+def _seller_terminal_push_has_conflict(plan: dict) -> bool:
+    """Fail closed when another optional seller mechanism may own the turn."""
+    # Check live switches as well as plan markers.  Several optional mechanisms
+    # only mark a plan in their narrow target cell, so marker-only isolation
+    # would allow two armed seller policies to silently share other cells.
+    if any((
+        runtime_flags.enabled(PERS_ZERO_MARGIN_TRUTH_V1_FLAG),
+        runtime_flags.enabled(PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG),
+        runtime_flags.enabled("GLEE_PERS_DP"),
+        runtime_flags.enabled("GLEE_PERS_DP_V3"),
+        runtime_flags.enabled("GLEE_PERS_P08_R125_BINARY_TRUTH_AB"),
+        runtime_flags.enabled("GLEE_PERS_P08_R125_PROSE_AB"),
+        runtime_flags.enabled(PERS_P08_POSITIVE_PROSE_V1_FLAG),
+    )):
+        return True
+
+    backload = runtime_flags.as_float("GLEE_PERS_BACKLOAD_AB", 0.0)
+    if not math.isfinite(backload) or backload != 0.0:
+        return True
+
+    conflict_markers = {
+        "backload_arm",
+        "dp",
+        "dp_v3",
+        "zero_margin_truth_v1",
+        "seller_demand_collapse_truth_v1",
+        "p08_r125_binary_truth_arm",
+        "p08_r125_prose_arm",
+        "p08_positive_prose_v1",
+    }
+    return bool(plan.get("gates_fired")) or any(
+        marker in plan for marker in conflict_markers)
+
+
+def seller_plan(game: dict, cfg) -> dict:
+    """Return the complete baseline seller plan plus isolated terminal repair."""
+    plan = _seller_plan_baseline(game, cfg)
+    if not runtime_flags.enabled(PERS_SELLER_TERMINAL_PUSH_V1_FLAG):
+        return plan
+
+    state = game.get("game_state") or {}
+    raw_round = state.get("round")
+    raw_total = state.get("total_rounds")
+    exact_round_20 = (
+        isinstance(raw_round, (int, float))
+        and not isinstance(raw_round, bool)
+        and math.isfinite(float(raw_round))
+        and float(raw_round) == 20.0
+        and isinstance(raw_total, (int, float))
+        and not isinstance(raw_total, bool)
+        and math.isfinite(float(raw_total))
+        and float(raw_total) == 20.0
+    )
+    if (game.get("game_family") != "persuasion"
+            or (game.get("valid_actions") or {}).get("type")
+            not in ("seller_message", "seller_recommendation")
+            or game.get("your_player") != "player_1"
+            or state.get("current_player") != "player_1"
+            # The official persuasion state structurally fixes player_1 as
+            # seller but can omit the redundant role key (the local engine
+            # does).  Reject a contradictory role without making omission
+            # render the flag unreachable.
+            or state.get("player_1_role") not in (None, "seller")
+            or str(state.get("current_quality", "")).lower() != "low"
+            or not exact_round_20
+            or plan.get("recommend") is not False
+            or _seller_terminal_push_has_conflict(plan)):
+        return plan
+
+    # Current-era p=1/3 seller logs had 543/543 HIGH terminal units already say
+    # YES, while LOW units said YES 382/1,061 times and NO 679 times.  A resolved
+    # terminal NO sold 0/625 times.  That evidence is observational, not causal:
+    # this switch therefore remains default OFF and records one isolated gate.
+    # Unlike measured-negative backload, it changes no recommendation before
+    # the final round and never touches a baseline YES or a HIGH-quality unit.
+    plan["recommend"] = True
+    plan["seller_terminal_push_v1"] = True
+    plan.setdefault("gates_fired", []).append("pers_seller_terminal_push_v1")
+    return plan
 
 
 def _recommendation_signal(entry: dict) -> bool | None:
