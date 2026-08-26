@@ -2112,6 +2112,7 @@ def _maybe_hi_unknown_buyer_walk_accept(
             or selected not in (
                 deterministic_negotiation.AGENT5_DEFAULT,
                 deterministic_negotiation.TEST2_SUPPORT_V3,
+                deterministic_negotiation.TEST4_HOTFIX_V1,
             )):
         return action
 
@@ -2173,7 +2174,8 @@ def _maybe_hi_unknown_buyer_walk_accept(
     # reachability spy's ``eligible_count`` equal the exact treatment scope.
     # The complete-information late-stasis repair is structurally disjoint, so
     # this hidden-information flag is intentionally not one of its conflicts.
-    if not runtime_flags.enabled(HI_UNKNOWN_BUYER_WALK_ACCEPT_FLAG):
+    if (selected != deterministic_negotiation.TEST4_HOTFIX_V1
+            and not runtime_flags.enabled(HI_UNKNOWN_BUYER_WALK_ACCEPT_FLAG)):
         return action
 
     result_plan = dict(plan_data)
@@ -2213,7 +2215,10 @@ def _maybe_test2_unknown_r99_accept(game: dict, action: dict) -> dict:
     closed.  With the flag off the selected action is returned unchanged.
     """
     selected = deterministic_negotiation.mode()
-    if (selected != deterministic_negotiation.TEST2_SUPPORT_V3
+    if (selected not in (
+            deterministic_negotiation.TEST2_SUPPORT_V3,
+            deterministic_negotiation.TEST4_HOTFIX_V1,
+        )
             or not isinstance(action, dict)
             or action.get("decision") not in ("RejectOffer", "WalkAway")):
         return action
@@ -2271,7 +2276,8 @@ def _maybe_test2_unknown_r99_accept(game: dict, action: dict) -> dict:
 
     # Consult the behavior flag only after proving the exact structural node.
     # This keeps default-OFF behavior inert and reachability counts meaningful.
-    if not runtime_flags.enabled(TEST2_UNKNOWN_R99_ACCEPT_FLAG):
+    if (selected != deterministic_negotiation.TEST4_HOTFIX_V1
+            and not runtime_flags.enabled(TEST2_UNKNOWN_R99_ACCEPT_FLAG)):
         return action
 
     result_plan = dict(plan_data)
@@ -2351,12 +2357,16 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
     if selected in (
         deterministic_negotiation.AGENT5_DEFAULT_V2,
         deterministic_negotiation.TEST2_SUPPORT_V3,
+        deterministic_negotiation.TEST4_HOTFIX_V1,
     ):
         # The official hidden support identifies legal price bounds, but not a
         # better accept/reject counterfactual.  Preserve the complete baseline
         # decision and replace only an outgoing unknown-horizon seller price.
         action = nego_support_v2.apply_hidden_unknown_seller(game, action)
-    if selected == deterministic_negotiation.TEST2_SUPPORT_V3:
+    if selected in (
+        deterministic_negotiation.TEST2_SUPPORT_V3,
+        deterministic_negotiation.TEST4_HOTFIX_V1,
+    ):
         # Fresh Test 2 evidence found the same literal support violation in all
         # seven hidden cap-10 seller openings.  V3 changes only a carried ask or
         # rejection counter; the baseline decision remains the owner.
@@ -2367,6 +2377,7 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
         deterministic_negotiation.AGENT5_DEFAULT,
         deterministic_negotiation.AGENT5_DEFAULT_V2,
         deterministic_negotiation.TEST2_SUPPORT_V3,
+        deterministic_negotiation.TEST4_HOTFIX_V1,
     ):
         action = top_seller_message_clone.apply_deterministic(
             game, action, arm=selected)
@@ -2389,6 +2400,8 @@ def _deterministic_policy_decide(game: dict, cfg, selected: str) -> dict:
         agent5_gate = deterministic_negotiation.AGENT5_DEFAULT_V2_GATE
     elif selected == deterministic_negotiation.TEST2_SUPPORT_V3:
         agent5_gate = deterministic_negotiation.TEST2_SUPPORT_V3_GATE
+    elif selected == deterministic_negotiation.TEST4_HOTFIX_V1:
+        agent5_gate = deterministic_negotiation.TEST4_HOTFIX_V1_GATE
     else:
         agent5_gate = None
     if agent5_gate is not None and runtime_flags.enabled("GLEE_TRACE_GATES"):

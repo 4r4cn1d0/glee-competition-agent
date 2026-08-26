@@ -63,11 +63,19 @@ exclusive with every unrelated policy, so merging it cannot move Agent 5 or the
 live Test 2 policy until deployment explicitly enables it on Test 2.  Its V2
 predecessor may remain set during that atomic migration.
 
+``test4_hotfix_v1`` is a strict deterministic successor to Test 2 V3.  It
+retains the V3 support-aware seller asks and one-cent buyer boundaries, then
+adds only two pointwise-dominant Test 4 repairs: a profitable standing offer
+replaces the copied buyer's zero-payoff WalkAway, and a profitable standing
+offer replaces Reject/Walk at the observed round-99 terminal node.  The
+post-hoc round-97 salvage remains independently switchable, and the selector
+does not weaken the 39/40-supported cent mechanism after one exceptional loss.
+The selector owns the complete policy; no component hashes a game id.
+
 More than one unrelated whole-policy flag being on is a configuration error and
-deliberately selects none.  The sole migration exception is V2 plus its Test 2
-V3 successor: V3 wins so the live overlay can be changed atomically without a
-momentary fall-through to the legacy stack.  Flag-off behavior is the
-pre-existing negotiation stack.
+deliberately selects none.  A strict successor masks only its declared V1/V2/V3
+predecessors during migration, preventing a momentary fall-through to the
+legacy stack.  Flag-off behavior is the pre-existing negotiation stack.
 """
 
 from __future__ import annotations
@@ -83,6 +91,7 @@ LEADER_REPLICA_FLAG = "GLEE_NEGO_LEADER_REPLICA_V1"
 AGENT5_DEFAULT_FLAG = "GLEE_NEGO_AGENT5_DEFAULT_V1"
 AGENT5_DEFAULT_V2_FLAG = "GLEE_NEGO_AGENT5_DEFAULT_V2"
 TEST2_SUPPORT_V3_FLAG = "GLEE_NEGO_TEST2_SUPPORT_V3"
+TEST4_HOTFIX_V1_FLAG = "GLEE_NEGO_TEST4_HOTFIX_V1"
 
 RANK_HYBRID = "rank_hybrid_v1"
 LEADER_REPLICA = "leader_replica_v1"
@@ -92,6 +101,8 @@ AGENT5_DEFAULT_V2 = "agent5_default_v2"
 AGENT5_DEFAULT_V2_GATE = "agent5_default_v2"
 TEST2_SUPPORT_V3 = "test2_support_v3"
 TEST2_SUPPORT_V3_GATE = "test2_support_v3"
+TEST4_HOTFIX_V1 = "test4_hotfix_v1"
+TEST4_HOTFIX_V1_GATE = "test4_hotfix_v1"
 
 WHOLE_POLICY_FLAGS = (
     RANK_HYBRID_FLAG,
@@ -99,8 +110,14 @@ WHOLE_POLICY_FLAGS = (
     AGENT5_DEFAULT_FLAG,
     AGENT5_DEFAULT_V2_FLAG,
     TEST2_SUPPORT_V3_FLAG,
+    TEST4_HOTFIX_V1_FLAG,
 )
-_AGENT5_POLICIES = (AGENT5_DEFAULT, AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3)
+_AGENT5_POLICIES = (
+    AGENT5_DEFAULT,
+    AGENT5_DEFAULT_V2,
+    TEST2_SUPPORT_V3,
+    TEST4_HOTFIX_V1,
+)
 
 __all__ = [
     "RANK_HYBRID_FLAG",
@@ -108,6 +125,7 @@ __all__ = [
     "AGENT5_DEFAULT_FLAG",
     "AGENT5_DEFAULT_V2_FLAG",
     "TEST2_SUPPORT_V3_FLAG",
+    "TEST4_HOTFIX_V1_FLAG",
     "RANK_HYBRID",
     "LEADER_REPLICA",
     "AGENT5_DEFAULT",
@@ -116,6 +134,8 @@ __all__ = [
     "AGENT5_DEFAULT_V2_GATE",
     "TEST2_SUPPORT_V3",
     "TEST2_SUPPORT_V3_GATE",
+    "TEST4_HOTFIX_V1",
+    "TEST4_HOTFIX_V1_GATE",
     "WHOLE_POLICY_FLAGS",
     "mode",
     "buyer_action",
@@ -129,16 +149,20 @@ __all__ = [
 def mode() -> str | None:
     """Return exactly one selected deterministic policy, else fail closed."""
     v3_enabled = runtime_flags.enabled(TEST2_SUPPORT_V3_FLAG)
+    hotfix_enabled = runtime_flags.enabled(TEST4_HOTFIX_V1_FLAG)
     policy_flags = [
         (RANK_HYBRID_FLAG, RANK_HYBRID),
         (LEADER_REPLICA_FLAG, LEADER_REPLICA),
-        (AGENT5_DEFAULT_FLAG, AGENT5_DEFAULT),
     ]
-    # V3 is a strict V2 superset.  Ignore the predecessor only during this one
-    # declared migration pair; every unrelated collision still fails closed.
-    if not v3_enabled:
-        policy_flags.append((AGENT5_DEFAULT_V2_FLAG, AGENT5_DEFAULT_V2))
-    policy_flags.append((TEST2_SUPPORT_V3_FLAG, TEST2_SUPPORT_V3))
+    # Each successor is a strict superset of the preceding lineage.  Ignore
+    # predecessor flags only while the successor is on so a live overlay can
+    # migrate atomically.  Unrelated whole-policy collisions still fail closed.
+    if not hotfix_enabled:
+        policy_flags.append((AGENT5_DEFAULT_FLAG, AGENT5_DEFAULT))
+        if not v3_enabled:
+            policy_flags.append((AGENT5_DEFAULT_V2_FLAG, AGENT5_DEFAULT_V2))
+        policy_flags.append((TEST2_SUPPORT_V3_FLAG, TEST2_SUPPORT_V3))
+    policy_flags.append((TEST4_HOTFIX_V1_FLAG, TEST4_HOTFIX_V1))
     selected = [
         policy
         for flag, policy in policy_flags
@@ -268,7 +292,7 @@ def direct_action(game: dict, selected: str | None = None) -> dict | None:
                 plan["gates_fired"] = gates
             result["_plan"] = plan
             return result
-    if selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3):
+    if selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3, TEST4_HOTFIX_V1):
         action = nego_support_v2.terminal_buyer_action(game)
         if action is not None:
             result = dict(action)
@@ -292,10 +316,10 @@ def matches_wire(game: dict, wire: dict) -> bool:
     if not isinstance(wire, dict):
         return False
     selected = mode()
-    if (selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3)
+    if (selected in (AGENT5_DEFAULT_V2, TEST2_SUPPORT_V3, TEST4_HOTFIX_V1)
             and nego_support_v2.matches_hidden_unknown_seller_wire(game, wire)):
         return True
-    if (selected == TEST2_SUPPORT_V3
+    if (selected in (TEST2_SUPPORT_V3, TEST4_HOTFIX_V1)
             and nego_support_v2.matches_hidden_cap10_seller_wire(game, wire)):
         return True
     expected = direct_action(game, selected)
@@ -314,6 +338,8 @@ def _agent5_gate(selected: str) -> str | None:
         return AGENT5_DEFAULT_V2_GATE
     if selected == TEST2_SUPPORT_V3:
         return TEST2_SUPPORT_V3_GATE
+    if selected == TEST4_HOTFIX_V1:
+        return TEST4_HOTFIX_V1_GATE
     return None
 
 
