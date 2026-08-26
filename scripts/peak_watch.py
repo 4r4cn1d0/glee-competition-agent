@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Authenticated one-minute, one-shot rating banks for every physical slot.
 
-Only slots armed through ``fleet.py peak SLOT RATING`` consume API budget.  An
-armed watcher resolves those slots' authenticated agent IDs, reads one overall
-leaderboard per minute, and asks the runner to enter its SDK-native lossless
+Only slots armed through ``fleet.py peak SLOT RATING`` or ``fleet.py
+peak-family SLOT FAMILY RATING`` consume API budget.  An armed watcher resolves
+those slots' authenticated agent IDs, reads the relevant authenticated rating
+source once per minute, and asks the runner to enter its SDK-native lossless
 drain on the first observation at or above the threshold.  It never signals an
 agent and never conditions the result on completed or successful games.
 """
@@ -15,6 +16,7 @@ import hashlib
 import json
 import math
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -52,6 +54,10 @@ class PollResult(NamedTuple):
     missing_identity: list[str]
 
 
+class StopRequested(BaseException):
+    """Internal clean-shutdown signal used by the control-plane reload."""
+
+
 def _reject_constant(token: str):
     raise ValueError(f"non-finite JSON constant {token}")
 
@@ -87,6 +93,8 @@ def load_env() -> dict[str, str]:
 
 
 def _finite_positive(value) -> float | None:
+    if isinstance(value, bool):
+        return None
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -108,6 +116,19 @@ def eligible_thresholds(control: dict) -> dict[str, float]:
             and threshold is not None
         ):
             eligible[slot] = threshold
+    return eligible
+
+
+def eligible_family_thresholds(control: dict) -> dict[str, tuple[str, float]]:
+    """Return unlatched family triggers after strict schema validation."""
+    fleet._validate_bank_control_schema(control)
+    disabled = set(control.get("disabled") or [])
+    latched = set(control.get("bank_latched") or [])
+    eligible = {}
+    for slot, spec in (control.get("bank_family_thresholds") or {}).items():
+        threshold = _finite_positive(spec.get("threshold"))
+        if slot not in disabled and slot not in latched and threshold is not None:
+            eligible[slot] = (spec["family"], threshold)
     return eligible
 
 
@@ -212,6 +233,35 @@ def capture_observation(slot: str, row: dict) -> dict:
     }
 
 
+def capture_family_observation(slot: str, family: str, stats: dict) -> dict:
+    """Capture the authenticated family sample and exact live stack identity."""
+    observed_ts = time.time()
+    scores = stats.get("scores") or {}
+    score_snapshot = {
+        name: {
+            "rating": (scores.get(name) or {}).get("rating"),
+            "games_played": (scores.get(name) or {}).get("games_played"),
+        }
+        for name in FAMILIES
+    }
+    observation = capture_observation(
+        slot,
+        {"player_id": stats.get("agent_id"), "rank": None, "row": None},
+    )
+    observation.update({
+        "observed_ts": observed_ts,
+        "rating_source": "authenticated-stats",
+        "family": family,
+        "authenticated_scores_at_observation": score_snapshot,
+        "active_games_at_observation": stats.get("active_games"),
+        "activity_deltas": game_count_deltas(slot, stats, now=observed_ts),
+    })
+    # Fail closed before the bank mutation if the authenticated audit payload
+    # contains a non-standard number such as NaN or Infinity.
+    json.dumps(observation, allow_nan=False)
+    return observation
+
+
 def game_count_deltas(slot: str, stats: dict, now: float | None = None) -> dict:
     """Compute authenticated 24h/48h per-family activity for the bank audit."""
     scores = stats.get("scores") or {}
@@ -270,13 +320,16 @@ def record_event(
     observation: dict,
     stats: dict | None,
 ) -> None:
+    activity = observation.get("activity_deltas")
+    if activity is None:
+        activity = game_count_deltas(slot, stats or {})
     event = {
         **observation,
         "slot": slot,
         "threshold": threshold,
         "observed_rating": row.get("rating"),
         "stats_after_request": stats,
-        "activity_deltas": game_count_deltas(slot, stats or {}),
+        "activity_deltas": activity,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(event, sort_keys=True, allow_nan=False)
@@ -294,11 +347,69 @@ def poll_once(
 ) -> PollResult:
     control = read_control_strict() if control is None else control
     thresholds = eligible_thresholds(control)
-    if not thresholds:
+    family_thresholds = eligible_family_thresholds(control)
+    armed_slots = set(thresholds) | set(family_thresholds)
+    if not armed_slots:
         return PollResult([], [])
-    authenticated_slots = set(ids.values()) & set(thresholds)
+    authenticated_slots = set(ids.values()) & armed_slots
     if not authenticated_slots:
-        return PollResult([], sorted(thresholds))
+        return PollResult([], sorted(armed_slots))
+    triggered = []
+    missing = sorted(armed_slots - authenticated_slots)
+
+    # Family triggers use the slot's own authenticated stats response.  This is
+    # both the rating source and the audit snapshot, so the number checked and
+    # the family counts recorded cannot come from different API observations.
+    for slot, (family, threshold) in family_thresholds.items():
+        if slot not in authenticated_slots:
+            continue
+        key_name = next(key for key, candidate in KEYS if candidate == slot)
+        try:
+            detail = GleeClient(api_key=env[key_name]).stats()
+            agent_id = str(detail.get("agent_id"))
+            if ids.get(agent_id) != slot:
+                raise ValueError(
+                    f"authenticated agent_id {agent_id!r} no longer maps to {slot}"
+                )
+            rating = _finite_positive(
+                ((detail.get("scores") or {}).get(family) or {}).get("rating")
+            )
+            if rating is None:
+                raise ValueError(f"stats has no finite positive {family} rating")
+        except Exception as exc:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] family peak sample warning for "
+                f"{slot}/{family}: {type(exc).__name__}: {exc}",
+                file=sys.stderr,
+                flush=True,
+            )
+            missing.append(slot)
+            continue
+        if rating < threshold:
+            continue
+        observation = capture_family_observation(slot, family, detail)
+        if not fleet.bank_observed_family_peak(
+            slot, family, rating, observation
+        ):
+            continue
+        row = {
+            "player_id": detail.get("agent_id"),
+            "rating": rating,
+            "family": family,
+        }
+        try:
+            record_event(slot, threshold, row, observation, detail)
+        except Exception as exc:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] peak event append failed for "
+                f"{slot}/{family}: {type(exc).__name__}: {exc}",
+                file=sys.stderr,
+                flush=True,
+            )
+        triggered.append(slot)
+
+    if not thresholds:
+        return PollResult(triggered, sorted(set(missing)))
     board = None
     failures = []
     # Use keys belonging to armed slots that have authenticated successfully in
@@ -306,7 +417,7 @@ def poll_once(
     # blind a healthy, armed Test5 (or any other slot).
     for key_name, slot in KEYS:
         key = env.get(key_name)
-        if slot not in authenticated_slots or not key:
+        if slot not in authenticated_slots or slot not in thresholds or not key:
             continue
         try:
             board = fetch_overall(key)
@@ -317,8 +428,6 @@ def poll_once(
         detail = "; ".join(failures) or "no authenticated armed key available"
         raise RuntimeError(f"all armed-slot leaderboard credentials failed: {detail}")
     rows = matching_rows(board, ids)
-    triggered = []
-    missing = []
     for slot, threshold in thresholds.items():
         row = rows.get(slot)
         if row is None:
@@ -345,7 +454,7 @@ def poll_once(
                 flush=True,
             )
         triggered.append(slot)
-    return PollResult(triggered, missing)
+    return PollResult(triggered, sorted(set(missing)))
 
 
 def _claim_singleton():
@@ -361,10 +470,16 @@ def _claim_singleton():
         raise SystemExit(f"peak watcher already running as pid {owner}")
     handle.seek(0)
     handle.truncate()
-    handle.write(str(os.getpid()))
+    # fleet.py refuses to arm a family trigger against an older, already-running
+    # watcher that would silently ignore the new control field.
+    handle.write(f"{os.getpid()} {fleet.PEAK_WATCH_FAMILY_CAPABILITY}")
     handle.flush()
     os.fsync(handle.fileno())
     return handle
+
+
+def _request_clean_stop(_signum, _frame) -> None:
+    raise StopRequested
 
 
 def _merge_identities(
@@ -388,6 +503,8 @@ def _merge_identities(
 
 def main() -> int:
     lock_handle = _claim_singleton()
+    prior_sigterm = signal.signal(signal.SIGTERM, _request_clean_stop)
+    prior_sigint = signal.signal(signal.SIGINT, _request_clean_stop)
     last_env: dict[str, str] | None = None
     env_fingerprint = None
     ids: dict[str, str] = {}
@@ -399,7 +516,9 @@ def main() -> int:
             try:
                 control = read_control_strict()
                 thresholds = eligible_thresholds(control)
-                if thresholds:
+                family_thresholds = eligible_family_thresholds(control)
+                armed = set(thresholds) | set(family_thresholds)
+                if armed:
                     try:
                         candidate_env = load_env()
                         if not any(candidate_env.get(key) for key, _slot in KEYS):
@@ -416,7 +535,6 @@ def main() -> int:
                         )
                     assert last_env is not None
                     fingerprint = tuple((key, last_env.get(key)) for key, _ in KEYS)
-                    armed = set(thresholds)
                     known = set(ids.values())
                     now = time.monotonic()
                     refresh = (
@@ -444,7 +562,7 @@ def main() -> int:
                     status = (
                         "triggered " + ",".join(result.triggered)
                         if result.triggered
-                        else f"poll ok (armed={len(thresholds)})"
+                        else f"poll ok (armed={len(armed)})"
                     )
                 print(f"[{time.strftime('%H:%M:%S')}] peak watch {status}", flush=True)
             except Exception as exc:
@@ -459,7 +577,12 @@ def main() -> int:
             if next_poll < now:
                 next_poll = now
             time.sleep(max(0.0, next_poll - now))
+    except StopRequested:
+        print(f"[{time.strftime('%H:%M:%S')}] peak watcher clean stop", flush=True)
+        return 0
     finally:
+        signal.signal(signal.SIGTERM, prior_sigterm)
+        signal.signal(signal.SIGINT, prior_sigint)
         fcntl.flock(lock_handle, fcntl.LOCK_UN)
         lock_handle.close()
 

@@ -1,10 +1,45 @@
 from __future__ import annotations
 
 import json
+import signal
 
 import pytest
 
 from scripts import peak_watch
+
+
+def test_clean_stop_signal_uses_internal_shutdown_path() -> None:
+    # The polling loop deliberately catches ordinary API/JSON Exceptions.  The
+    # shutdown sentinel must bypass that catch so SIGTERM cannot be swallowed
+    # when it arrives in the middle of a poll.
+    assert not issubclass(peak_watch.StopRequested, Exception)
+    with pytest.raises(peak_watch.StopRequested):
+        peak_watch._request_clean_stop(signal.SIGTERM, None)
+
+
+def test_signal_during_poll_exits_main_and_releases_singleton(monkeypatch) -> None:
+    class FakeLock:
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    lock = FakeLock()
+    monkeypatch.setattr(peak_watch, "_claim_singleton", lambda: lock)
+    monkeypatch.setattr(peak_watch.fcntl, "flock", lambda *_args: None)
+    monkeypatch.setattr(
+        peak_watch.signal,
+        "signal",
+        lambda _signal, _handler: signal.SIG_DFL,
+    )
+
+    def stop_mid_poll():
+        peak_watch._request_clean_stop(signal.SIGTERM, None)
+
+    monkeypatch.setattr(peak_watch, "read_control_strict", stop_mid_poll)
+
+    assert peak_watch.main() == 0
+    assert lock.closed
 
 
 def test_eligible_thresholds_filters_disabled_latched_and_invalid() -> None:
@@ -27,6 +62,21 @@ def test_eligible_thresholds_filters_disabled_latched_and_invalid() -> None:
         "champion": 2400.0,
         "conceder": 2300.0,
         "composite": 2505.0,
+    }
+
+
+def test_eligible_family_thresholds_filters_disabled_and_latched() -> None:
+    control = {
+        "bank_family_thresholds": {
+            "champion": {"family": "bargaining", "threshold": 2600},
+            "hardliner": {"family": "negotiation", "threshold": "2720.5"},
+            "randomized": {"family": "persuasion", "threshold": 2500},
+        },
+        "disabled": ["hardliner"],
+        "bank_latched": ["randomized"],
+    }
+    assert peak_watch.eligible_family_thresholds(control) == {
+        "champion": ("bargaining", 2600.0)
     }
 
 
@@ -64,6 +114,48 @@ def test_trigger_observation_uses_actual_slot_process_not_lagging_state(
     assert observation["pid"] == 777
     assert observation["process_command"].endswith("logs/composite")
     assert observation["arms_sha256_at_observation"] == "arm-hash"
+
+
+def test_family_observation_captures_same_sample_activity_pid_and_stack(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        peak_watch.fleet,
+        "_running_slot_command",
+        lambda _slot: (777, "Python run_agent.py --log-dir logs/composite"),
+    )
+    monkeypatch.setattr(peak_watch, "_overlay_hash", lambda _slot: "arm-hash")
+    monkeypatch.setattr(peak_watch, "_code_head", lambda: "head")
+    monkeypatch.setattr(
+        peak_watch,
+        "game_count_deltas",
+        lambda slot, stats, now=None: {
+            "slot": slot,
+            "current": stats["scores"]["negotiation"]["games_played"],
+            "sample_ts": now,
+        },
+    )
+    stats = {
+        "agent_id": "five",
+        "active_games": 4,
+        "scores": {
+            "bargaining": {"rating": 2501, "games_played": 101},
+            "negotiation": {"rating": 2720.5, "games_played": 102},
+            "persuasion": {"rating": 2403, "games_played": 103},
+        },
+    }
+
+    observation = peak_watch.capture_family_observation(
+        "composite", "negotiation", stats
+    )
+
+    assert observation["pid"] == 777
+    assert observation["arms_sha256_at_observation"] == "arm-hash"
+    assert observation["workspace_head_at_observation"] == "head"
+    assert observation["active_games_at_observation"] == 4
+    assert observation["authenticated_scores_at_observation"] == stats["scores"]
+    assert observation["activity_deltas"]["current"] == 102
+    assert observation["activity_deltas"]["sample_ts"] == observation["observed_ts"]
 
 
 def test_poll_once_banks_first_authenticated_threshold_observation(
@@ -124,6 +216,73 @@ def test_poll_once_banks_first_authenticated_threshold_observation(
     assert triggered.missing_identity == []
     assert bank_calls == [("composite", 2505.25, 1234)]
     assert events == [("composite", 2505.0, 2505.25, 7)]
+
+
+def test_poll_once_banks_first_authenticated_family_threshold_observation(
+    monkeypatch,
+) -> None:
+    control = {
+        "bank_family_thresholds": {
+            "composite": {"family": "negotiation", "threshold": 2720}
+        }
+    }
+
+    class FakeClient:
+        def __init__(self, api_key):
+            assert api_key == "agent-five-key"
+
+        def stats(self):
+            return {
+                "agent_id": "agent-five-id",
+                "active_games": 6,
+                "scores": {
+                    "bargaining": {"rating": 2500, "games_played": 100},
+                    "negotiation": {"rating": 2720.25, "games_played": 101},
+                    "persuasion": {"rating": 2400, "games_played": 102},
+                },
+            }
+
+    monkeypatch.setattr(peak_watch, "GleeClient", FakeClient)
+    monkeypatch.setattr(
+        peak_watch,
+        "fetch_overall",
+        lambda _key: pytest.fail("family-only trigger must not fetch overall board"),
+    )
+    monkeypatch.setattr(
+        peak_watch,
+        "capture_family_observation",
+        lambda _slot, family, _stats: {
+            "pid": 1234,
+            "family": family,
+            "activity_deltas": {"current": {"negotiation": 101}},
+        },
+    )
+    bank_calls = []
+    monkeypatch.setattr(
+        peak_watch.fleet,
+        "bank_observed_family_peak",
+        lambda slot, family, rating, observation: (
+            bank_calls.append((slot, family, rating, observation["pid"])) or True
+        ),
+    )
+    events = []
+    monkeypatch.setattr(
+        peak_watch,
+        "record_event",
+        lambda slot, threshold, row, observation, stats: events.append(
+            (slot, threshold, row["family"], row["rating"], stats["active_games"])
+        ),
+    )
+
+    result = peak_watch.poll_once(
+        {"GLEE_KEY_TEST5": "agent-five-key"},
+        {"agent-five-id": "composite"},
+        control=control,
+    )
+
+    assert result == peak_watch.PollResult(["composite"], [])
+    assert bank_calls == [("composite", "negotiation", 2720.25, 1234)]
+    assert events == [("composite", 2720.0, "negotiation", 2720.25, 6)]
 
 
 def test_poll_once_malformed_control_is_visible_not_silent_disarm(

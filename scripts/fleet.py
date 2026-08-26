@@ -8,6 +8,9 @@
     python scripts/fleet.py bank composite
     python scripts/fleet.py peak composite 2505
     python scripts/fleet.py peak-off composite
+    python scripts/fleet.py peak-family composite negotiation 2720
+    python scripts/fleet.py peak-family-off composite negotiation
+    python scripts/fleet.py reload-peak-watch
     python scripts/fleet.py start randomized
     python scripts/fleet.py llm composite off
     python scripts/fleet.py shift 600
@@ -26,6 +29,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -38,7 +42,10 @@ ARMS = os.path.join(REPO, "arms.json")
 CONTROL = os.path.join(REPO, "control.json")
 CONTROL_LOCK = os.path.join(REPO, "logs", "control.lock")
 STATE = os.path.join(REPO, "logs", "supervisor.json")
+PEAK_WATCH_LOCK = os.path.join(REPO, "logs", "peak_watch.lock")
+PEAK_WATCH_FAMILY_CAPABILITY = "family-peak-v1"
 FLEET_SLOTS = frozenset({"champion", "hardliner", "conceder", "randomized", "composite"})
+FAMILIES = frozenset({"bargaining", "negotiation", "persuasion"})
 
 
 class ControlUpdateError(RuntimeError):
@@ -46,6 +53,10 @@ class ControlUpdateError(RuntimeError):
 
 
 def _finite_positive(value) -> float | None:
+    # ``bool`` is a subclass of ``int``.  Accepting true as rating 1.0 would
+    # turn a schema typo into an immediate bank rather than failing closed.
+    if isinstance(value, bool):
+        return None
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -73,6 +84,31 @@ def _validate_bank_control_schema(control: dict) -> None:
         raise ControlUpdateError(
             f"cannot safely use {CONTROL}: bank_thresholds must map physical slots "
             "to finite positive ratings"
+        )
+    family_thresholds = control.get("bank_family_thresholds", {})
+    if not isinstance(family_thresholds, dict):
+        raise ControlUpdateError(
+            f"cannot safely use {CONTROL}: bank_family_thresholds must map "
+            "physical slots to family-threshold objects"
+        )
+    for slot, spec in family_thresholds.items():
+        if (
+            slot not in FLEET_SLOTS
+            or not isinstance(spec, dict)
+            or set(spec) != {"family", "threshold"}
+            or spec.get("family") not in FAMILIES
+            or _finite_positive(spec.get("threshold")) is None
+        ):
+            raise ControlUpdateError(
+                f"cannot safely use {CONTROL}: each bank_family_thresholds "
+                "entry must contain exactly an allowed family and a finite "
+                "positive threshold"
+            )
+    overlap = set(thresholds) & set(family_thresholds)
+    if overlap:
+        raise ControlUpdateError(
+            f"cannot safely use {CONTROL}: a physical slot may have either an "
+            f"overall or family bank threshold, not both ({sorted(overlap)})"
         )
     observations = control.get("bank_observations", {})
     if not isinstance(observations, dict) or any(
@@ -220,8 +256,8 @@ def _running_slot_command(probe: str) -> tuple[int | None, str]:
     return int(pid), command
 
 
-def _running_peak_watch_pid() -> int | None:
-    """Return the Python peak watcher PID, ignoring launch wrappers."""
+def _running_peak_watch_process() -> tuple[int | None, str]:
+    """Return the exact Python peak watcher, ignoring launch wrappers."""
     output = subprocess.run(
         ["ps", "-axo", "pid=,command="], capture_output=True, text=True
     ).stdout
@@ -233,16 +269,39 @@ def _running_peak_watch_pid() -> int | None:
         if len(parts) < 3 or not os.path.basename(parts[1]).lower().startswith("python"):
             continue
         try:
-            return int(parts[0])
+            return int(parts[0]), " ".join(parts[1:])
         except (ValueError, IndexError):
             continue
-    return None
+    return None, ""
 
 
-def _ensure_peak_watcher() -> int | None:
+def _running_peak_watch_pid() -> int | None:
+    return _running_peak_watch_process()[0]
+
+
+def _watcher_has_capability(pid: int, capability: str) -> bool:
+    try:
+        with open(PEAK_WATCH_LOCK, encoding="utf-8") as handle:
+            payload = handle.read().split()
+    except OSError:
+        return False
+    return len(payload) >= 2 and payload[0] == str(pid) and capability in payload[1:]
+
+
+def _ensure_peak_watcher(required_capability: str | None = None) -> int | None:
     """Start the durable minute watcher when arming the first threshold."""
     existing = _running_peak_watch_pid()
     if existing:
+        if required_capability and not _watcher_has_capability(
+            existing, required_capability
+        ):
+            print(
+                f"REFUSED: peak watcher pid {existing} does not advertise "
+                f"{required_capability}; replace it with the current code before "
+                "arming this trigger.",
+                file=sys.stderr,
+            )
+            return None
         return existing
     python = os.path.join(REPO, ".venv", "bin", "python")
     if not os.path.exists(python):
@@ -268,6 +327,11 @@ def _ensure_peak_watcher() -> int | None:
         time.sleep(0.25)
         running = _running_peak_watch_pid()
         if running:
+            if required_capability and not _watcher_has_capability(
+                running, required_capability
+            ):
+                time.sleep(0.25)
+                continue
             return running
         if proc.poll() is not None:
             break
@@ -276,6 +340,152 @@ def _ensure_peak_watcher() -> int | None:
         file=sys.stderr,
     )
     return None
+
+
+def _eligible_armed_peak_conditions(control: dict) -> list[str]:
+    """Describe triggers that would make a watcher reload create a gap."""
+    _validate_bank_control_schema(control)
+    disabled = set(control.get("disabled") or [])
+    latched = set(control.get("bank_latched") or [])
+    blocked = disabled | latched
+    conditions = [
+        f"{slot}:overall"
+        for slot in (control.get("bank_thresholds") or {})
+        if slot not in blocked
+    ]
+    conditions.extend(
+        f"{slot}:{spec['family']}"
+        for slot, spec in (control.get("bank_family_thresholds") or {}).items()
+        if slot not in blocked
+    )
+    return sorted(conditions)
+
+
+def _peak_watch_lock_is_free() -> bool:
+    """Prove the singleton lock is released without deleting its audit text."""
+    os.makedirs(os.path.dirname(PEAK_WATCH_LOCK), exist_ok=True)
+    with open(PEAK_WATCH_LOCK, "a+", encoding="utf-8") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        fcntl.flock(handle, fcntl.LOCK_UN)
+    return True
+
+
+def reload_peak_watch(timeout_s: float = 15.0) -> int:
+    """Replace only the minute watcher, with no unprotected armed trigger.
+
+    The control lock is held from the eligibility proof through replacement
+    verification.  Fleet commands therefore cannot arm a threshold in the
+    short interval between watcher PIDs.  No agent or supervisor PID is ever
+    signalled by this path.
+    """
+    with _edit_control() as control:
+        eligible = _eligible_armed_peak_conditions(control)
+        if eligible:
+            print(
+                "REFUSED: cannot reload peak watcher while eligible automatic "
+                f"thresholds are armed ({', '.join(eligible)}).",
+                file=sys.stderr,
+            )
+            return 1
+
+        old_pid, old_command = _running_peak_watch_process()
+        if old_pid is not None:
+            # Resolve twice immediately before signalling so a stale process
+            # table sample can never redirect SIGTERM to another PID.
+            verified_pid, verified_command = _running_peak_watch_process()
+            if verified_pid != old_pid or verified_command != old_command:
+                print(
+                    "REFUSED: peak watcher identity changed during reload; no "
+                    "process was signalled.",
+                    file=sys.stderr,
+                )
+                return 1
+            try:
+                os.kill(old_pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            except OSError as exc:
+                print(
+                    f"REFUSED: could not ask peak watcher pid {old_pid} to "
+                    f"terminate: {exc}",
+                    file=sys.stderr,
+                )
+                return 1
+
+            deadline = time.monotonic() + max(0.0, timeout_s)
+            current_pid, current_command = _running_peak_watch_process()
+            while (
+                current_pid == old_pid
+                and current_command == old_command
+                and time.monotonic() < deadline
+            ):
+                time.sleep(0.1)
+                current_pid, current_command = _running_peak_watch_process()
+            if current_pid == old_pid and current_command == old_command:
+                print(
+                    f"REFUSED: peak watcher pid {old_pid} did not exit cleanly; "
+                    "it was not escalated and no replacement was started.",
+                    file=sys.stderr,
+                )
+                return 1
+
+        # The supervisor may have noticed the clean exit and already installed
+        # a current replacement.  A capability-bearing new owner proves the old
+        # singleton lock was released and transferred safely.
+        replacement_pid, replacement_command = _running_peak_watch_process()
+        if replacement_pid is not None and replacement_pid != old_pid:
+            if _watcher_has_capability(
+                replacement_pid, PEAK_WATCH_FAMILY_CAPABILITY
+            ):
+                print(
+                    f"peak watcher reloaded: old pid {old_pid or 'none'} -> "
+                    f"pid {replacement_pid}; {PEAK_WATCH_FAMILY_CAPABILITY} verified."
+                )
+                return 0
+            print(
+                f"REFUSED: replacement watcher pid {replacement_pid} lacks "
+                f"{PEAK_WATCH_FAMILY_CAPABILITY}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        if not _peak_watch_lock_is_free():
+            print(
+                "REFUSED: prior peak watcher exited but its singleton lock is "
+                "still held; no replacement was started.",
+                file=sys.stderr,
+            )
+            return 1
+        new_pid = _ensure_peak_watcher(PEAK_WATCH_FAMILY_CAPABILITY)
+        if new_pid is None or new_pid == old_pid:
+            print(
+                "REFUSED: current peak watcher did not start as a distinct "
+                "capability-bearing process.",
+                file=sys.stderr,
+            )
+            return 1
+        actual_pid, actual_command = _running_peak_watch_process()
+        if (
+            actual_pid != new_pid
+            or not actual_command
+            or not _watcher_has_capability(
+                new_pid, PEAK_WATCH_FAMILY_CAPABILITY
+            )
+        ):
+            print(
+                "REFUSED: replacement peak watcher identity/capability could "
+                "not be verified.",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            f"peak watcher reloaded: old pid {old_pid or 'none'} -> pid "
+            f"{new_pid}; {PEAK_WATCH_FAMILY_CAPABILITY} verified."
+        )
+    return 0
 
 
 def _validate_bank_target(probe: str) -> bool:
@@ -312,6 +522,7 @@ def status() -> int:
     drain_now = set(control.get("drain_now") or [])
     latched = set(control.get("bank_latched") or [])
     thresholds = control.get("bank_thresholds") or {}
+    family_thresholds = control.get("bank_family_thresholds") or {}
     running = subprocess.run(["pgrep", "-f", "run_agent.py --probe"],
                              capture_output=True, text=True).stdout.split()
     watcher = _running_peak_watch_pid()
@@ -334,6 +545,12 @@ def status() -> int:
         peak_state = []
         if peak is not None:
             peak_state.append(f"peak>={peak:.2f}")
+        family_spec = family_thresholds.get(probe)
+        if isinstance(family_spec, dict):
+            family = family_spec.get("family")
+            family_peak = _finite_positive(family_spec.get("threshold"))
+            if family in FAMILIES and family_peak is not None:
+                peak_state.append(f"peak-{family}>={family_peak:.2f}")
         if probe in latched:
             peak_state.append("bank-latched")
         if peak_state:
@@ -449,7 +666,11 @@ def bank_observed_peak(
         if observation:
             event.update(observation)
             # The authoritative values are those checked under this lock.
-            event.update({"threshold": threshold, "observed_rating": clean_rating})
+            event.update({
+                "kind": "authenticated-overall-peak",
+                "threshold": threshold,
+                "observed_rating": clean_rating,
+            })
         # Validate before replacing control.json, so a bad enrichment can never
         # turn an observed peak into an unaudited or malformed control write.
         json.dumps(event, allow_nan=False)
@@ -458,6 +679,60 @@ def bank_observed_peak(
         control["bank_observations"] = observations
     print(f"{probe}: authenticated overall {clean_rating:.2f} reached armed bank "
           f"threshold {threshold:.2f}; immediate lossless drain requested.")
+    return True
+
+
+def bank_observed_family_peak(
+    probe: str,
+    family: str,
+    rating: float,
+    observation: dict | None = None,
+) -> bool:
+    """Atomically bank an armed slot at an authenticated family rating.
+
+    The family and threshold are re-read under the same control lock that
+    latches the lossless drain.  A stale watcher sample therefore cannot fire
+    after an operator changes or removes the family trigger.
+    """
+    if not _validate_bank_target(probe) or family not in FAMILIES:
+        return False
+    clean_rating = _finite_positive(rating)
+    if clean_rating is None:
+        return False
+    with _edit_control() as control:
+        spec = (control.get("bank_family_thresholds") or {}).get(probe)
+        latched = set(control.get("bank_latched") or [])
+        disabled = set(control.get("disabled") or [])
+        if not isinstance(spec, dict) or spec.get("family") != family:
+            return False
+        threshold = _finite_positive(spec.get("threshold"))
+        if threshold is None:
+            return False
+        if probe in latched or probe in disabled or clean_rating < threshold:
+            return False
+        _mark_banked(control, probe)
+        event = {
+            "kind": "authenticated-family-peak",
+            "family": family,
+            "ts": time.time(),
+            "threshold": threshold,
+            "observed_rating": clean_rating,
+        }
+        if observation:
+            event.update(observation)
+            event.update({
+                "kind": "authenticated-family-peak",
+                "family": family,
+                "threshold": threshold,
+                "observed_rating": clean_rating,
+            })
+        json.dumps(event, allow_nan=False)
+        observations = dict(control.get("bank_observations") or {})
+        observations[probe] = event
+        control["bank_observations"] = observations
+    print(f"{probe}: authenticated {family} rating {clean_rating:.2f} reached "
+          f"armed bank threshold {threshold:.2f}; immediate lossless drain "
+          "requested.")
     return True
 
 
@@ -481,21 +756,119 @@ def set_peak(probe: str, value: str | None) -> int:
             return 1
     with _edit_control() as control:
         thresholds = dict(control.get("bank_thresholds") or {})
+        family_thresholds = dict(control.get("bank_family_thresholds") or {})
         latched = set(control.get("bank_latched") or [])
         observations = dict(control.get("bank_observations") or {})
         if value is None:
-            thresholds.pop(probe, None)
+            removed = thresholds.pop(probe, None) is not None
+            if not removed:
+                active = family_thresholds.get(probe)
+                detail = (
+                    f"active trigger remains {active.get('family')}>="
+                    f"{active.get('threshold')}"
+                    if isinstance(active, dict)
+                    else "no overall trigger is armed"
+                )
+                print(
+                    f"REFUSED: {probe} overall peak was not removed; {detail}.",
+                    file=sys.stderr,
+                )
+                return 1
             latched.discard(probe)
             observations.pop(probe, None)
             message = f"{probe}: automatic peak banking removed"
         else:
             assert threshold is not None
             thresholds[probe] = threshold
+            # A physical slot has exactly one automatic bank condition.  This
+            # prevents an old family trigger from unexpectedly firing after the
+            # operator explicitly switches the slot back to overall banking.
+            family_thresholds.pop(probe, None)
             latched.discard(probe)
             observations.pop(probe, None)
             message = (f"{probe}: automatic one-shot bank armed at authenticated "
                        f"overall rating >= {threshold:.2f} (watcher pid {watcher_pid})")
         control["bank_thresholds"] = thresholds
+        control["bank_family_thresholds"] = family_thresholds
+        control["bank_latched"] = sorted(latched)
+        control["bank_observations"] = observations
+    print(message)
+    return 0
+
+
+def set_family_peak(
+    probe: str, family: str, value: str | None
+) -> int:
+    """Arm/rearm or remove a one-shot authenticated family-rating bank."""
+    if probe not in FLEET_SLOTS:
+        print(f"REFUSED: unknown physical slot {probe!r}.", file=sys.stderr)
+        return 1
+    if family not in FAMILIES:
+        print(
+            f"REFUSED: unknown family {family!r}; expected one of "
+            f"{', '.join(sorted(FAMILIES))}.",
+            file=sys.stderr,
+        )
+        return 1
+    threshold = None
+    watcher_pid = None
+    if value is not None:
+        threshold = _finite_positive(value)
+        if threshold is None:
+            print(
+                f"REFUSED: threshold must be a finite positive rating, got "
+                f"{value!r}.",
+                file=sys.stderr,
+            )
+            return 1
+        watcher_pid = _ensure_peak_watcher(PEAK_WATCH_FAMILY_CAPABILITY)
+        if watcher_pid is None:
+            return 1
+    with _edit_control() as control:
+        thresholds = dict(control.get("bank_thresholds") or {})
+        family_thresholds = dict(control.get("bank_family_thresholds") or {})
+        latched = set(control.get("bank_latched") or [])
+        observations = dict(control.get("bank_observations") or {})
+        if value is None:
+            current = family_thresholds.get(probe)
+            if not isinstance(current, dict) or current.get("family") != family:
+                overall = thresholds.get(probe)
+                if isinstance(current, dict):
+                    detail = (
+                        f"active trigger remains {current.get('family')}>="
+                        f"{current.get('threshold')}"
+                    )
+                elif overall is not None:
+                    detail = f"active trigger remains overall>={overall}"
+                else:
+                    detail = f"no {family} trigger is armed"
+                print(
+                    f"REFUSED: {probe} {family} peak was not removed; {detail}.",
+                    file=sys.stderr,
+                )
+                return 1
+            family_thresholds.pop(probe, None)
+            latched.discard(probe)
+            observations.pop(probe, None)
+            message = f"{probe}: automatic {family} peak banking removed"
+        else:
+            assert threshold is not None
+            # Family arming is intentionally exclusive for the physical slot:
+            # the operator asked to bank on this family, not whichever stale
+            # overall condition happens to cross first.
+            thresholds.pop(probe, None)
+            family_thresholds[probe] = {
+                "family": family,
+                "threshold": threshold,
+            }
+            latched.discard(probe)
+            observations.pop(probe, None)
+            message = (
+                f"{probe}: automatic one-shot bank armed at authenticated "
+                f"{family} rating >= {threshold:.2f} (watcher pid {watcher_pid})"
+            )
+        control["bank_thresholds"] = thresholds
+        control["bank_family_thresholds"] = family_thresholds
         control["bank_latched"] = sorted(latched)
         control["bank_observations"] = observations
     print(message)
@@ -778,6 +1151,8 @@ def main() -> int:
         return status()
     if cmd == "safe-restart":
         return safe_restart()
+    if cmd == "reload-peak-watch":
+        return reload_peak_watch()
     if cmd == "set" and len(rest) >= 2:
         return set_flags(rest[0], rest[1:])
     if cmd == "clear" and rest:
@@ -790,6 +1165,10 @@ def main() -> int:
         return set_peak(rest[0], rest[1])
     if cmd == "peak-off" and rest:
         return set_peak(rest[0], None)
+    if cmd == "peak-family" and len(rest) == 3:
+        return set_family_peak(rest[0], rest[1], rest[2])
+    if cmd == "peak-family-off" and len(rest) == 2:
+        return set_family_peak(rest[0], rest[1], None)
     if cmd == "start" and rest:
         return enable(rest[0], True)
     if cmd == "shift" and rest:
