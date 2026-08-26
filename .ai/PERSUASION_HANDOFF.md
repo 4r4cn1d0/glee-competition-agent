@@ -1,11 +1,493 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-25 21:58 IST. This file is the deployment boundary for
+Last updated: 2026-08-26 17:36 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
 
-## 21:58 Test 2 adaptive-credibility profile — code pushed, live boundary pending
+## 17:36 Test 2 tight-credibility reset live; bargaining + persuasion only
+
+- `GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1` is implemented default OFF for
+  a Test2-only deterministic trial. In tight prior-nonprofitable buyer cells, a
+  last strict decline licenses a posterior-profitable strict positive; a later
+  purchased LOW revokes that credit. Invalid credit changes BUY to PASS and
+  valid credit changes only a tight-prior-blocked PASS to BUY. It does not read
+  game ID, opponent, seller knowledge, current private quality, seller behavior,
+  or any non-persuasion path.
+- Focused tests pass `78/78`; exact Test2 reachability is `460/460/460`; full
+  verification is `2673 passed` plus exactly the three declared
+  non-persuasion failures. Fixed-stream replay changes `6,718` turns in `877`
+  games (`4,122` BUY->PASS, `2,596` PASS->BUY), proving reach but not efficacy
+  because seller adaptation and revealed-quality history diverge after the
+  first change.
+- Commit `985ead2` is pushed. Old PID `12216` was banked losslessly at
+  `Tbank=1787745279.855`, acquired no later game, drained seven holdings to
+  authenticated terminal/zero, and exited cleanly. Frozen pre-Tcfg Test 2
+  persuasion was `2304.49/17632`. One fleet write set only the new flag at
+  `Tcfg=1787745792` (17:33:12); the Test 2 non-persuasion hash, every other
+  slot including Agent 5, control state, and all persuasion A/B zeros remained
+  unchanged.
+- PID `20124` launched at 17:33:53 from pushed HEAD with exact
+  `--probe champion --llm-mode off --families bargaining,persuasion --max-time
+  3600`. The initial 101 turns covered seven bargaining and six persuasion
+  games, all heuristic with zero errors/timeouts and no negotiation assignment.
+  No reset firing had appeared at the initial health check. Continue exact
+  OFF/ON replay through 20 events per direction; the immediate single-flag
+  rollback and frozen 500/2,000 all-assignment gates at the top of
+  `.ai/EXPERIMENTS.md` remain authoritative.
+
+## 16:16 Test 4 V2+V3 live after operator-authorized lossless restart
+
+- `fleet.py bank randomized` stopped new acquisition and PID `5532` drained
+  seven held persuasion games to zero. Its final game
+  `1ded5a5f-8fbf-458c-b51c-ccf037841999` progressed normally through round 20
+  and logged `status=completed`. API state was `active=0,pending=0` at 16:13:12,
+  and PID `5532` exited at 16:13:29. No game was abandoned, killed, signaled,
+  force-cycled, or timed out.
+- Frozen pre-Tcfg Test 4 persuasion rating/count: `2291.55/10701`. HEAD and
+  origin both resolved to `00cf4a5027e84a0b5a8f0ef2b84a786cec8ecdb1`.
+  Pre-write whole-arms SHA was `d72153b476d2bbd17cde8f0be227f860e0028d08cf98562a41b205e6c783c07e`;
+  banked control SHA was `6482c5557f5fa641fa9556f74839d51e0fa1a3bd0301ee54c75bd571f11491ce`.
+- At `Tcfg=1787741035` / 16:13:55, one atomic fleet write changed only physical
+  Test 4 V2 `0 -> 1` and added V3 `1`. Reversing precisely those two edits
+  reproduces the complete pre-write arms SHA. Test 4's non-persuasion hash and
+  every other slot are unchanged; prose/truth remain explicit zero, unlock and
+  seller repair remain absent/OFF, every persuasion A/B key remains zero, and
+  Agent 5 remains banked/untouched.
+- Replacement PID `10380` launched at 16:14:42 with exact command shape
+  `--probe hardliner --llm-mode off --families persuasion --max-time 3600`,
+  concurrency eight. Its first 31 turns span four fresh games beginning at
+  round 1, all seller/player-1 heuristic with zero errors/timeouts and no V2/V3
+  eligibility yet. Audit exact OFF/ON replay until 20 clean V2 plus 20 clean V3
+  firings under the frozen rule at the top of `.ai/EXPERIMENTS.md`.
+
+## 15:42 Test 4 V2+V3 authorized; waiting for natural zero-game boundary
+
+- **15:50 boundary outcome**: old PID `1184` stopped acquisition naturally,
+  drained `8 -> 0`, reached authenticated `active=0,pending=0` at 15:47:58,
+  and exited without abandonment. No deployment write occurred. Successor PID
+  `5532` launched at 15:49:29 and had already acquired two games by 15:49:57,
+  with V2 still explicit zero and V3 absent/OFF. Do not arm it mid-game. The
+  next eligible window is only after PID `5532` naturally stops acquisition at
+  roughly 16:49:29 and then drains to terminal zero.
+- **Recovered terminal proof**: with the successor launch excluded, PID `1184`
+  touched 173 unique persuasion games and 3,460 turns in
+  `[1787735711,1787739569)`. All 173 have exactly one completed terminal result:
+  player 1/seller `79`, player 2/buyer `94`, and exact-zero own payoff `55`, with
+  zero missing IDs, nonterminal results, family mismatches, or parse errors. The
+  sorted-newline game-ID SHA-256 is
+  `0f276b43c625a04134a0ffc4bc67fb0e6557ec541a95fc2e52becf7b7d0f42bd`.
+  The initial deployment check saw only the final 17 appends because 156 results
+  had already been written before its file offset was frozen; that was an audit
+  timing error, not an unresolved-outcome signal. No write was attempted after
+  successor PID `5532` acquired games.
+
+- The operator authorized the first Test 4 persuasion repair only: preserve the
+  exact Agent 5 baseline and add V2=1 plus V3=1 on physical Test 4 / slot
+  `randomized`. Agent 5 remains protected; no other slot, seller addition,
+  buyer unlock, A/B flag, non-persuasion key, queue, or process is in scope.
+- Code is already pushed on current HEAD `00cf4a5`: V2 commit `6d3aec4`, V3
+  commit `cef2621`. Focused tests pass `164/164`; current Test 4 hardliner-stack
+  reachability passes `630/630/630` for each flag over 800 games. The full suite
+  is `2553 passed, 3 failed`, exactly the declared bargaining assertion and two
+  live-grid drift alarms. No code change is required.
+- Test 4 PID `1184` started at 14:45:11 IST with `--probe hardliner`, LLM off,
+  persuasion only, concurrency eight, and max-time 3600. At the 15:38 audit it
+  still had six active and three pending persuasion games, so it is not a safe
+  live-write boundary. V2 remains explicit zero, V3 absent/default OFF, and V1
+  remains one. No flag, file, queue, or process was changed.
+- Wait for PID `1184` to stop acquiring and drain naturally. Arm nothing until
+  authenticated `active_games=0` plus complete terminal proof for every game
+  touched by the PID. Before the one atomic fleet write, refresh and freeze all
+  overlays/hashes, control hash, arms mtime, exact PID/end, HEAD/origin,
+  authenticated Test 4 persuasion rating/count, and Agent 5 bank state.
+- The authoritative mechanism/cohort/500-game harm/2,000-game final rules are
+  now at the top of `.ai/EXPERIMENTS.md`. The only eventual intended command is
+  `scripts/fleet.py set randomized GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1
+  GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3=1`, executed by the deployment owner at a
+  clean boundary. Rollback is explicit V2=0/V3=0; never clear keys or intervene
+  in a process.
+
+## 10:52 Agent 5 bank enforcement restored; natural drain in progress
+
+- Agent 5 bank protection has been reasserted externally: `control.json` now
+  disables and drains composite, and fleet status is `BANKING`. PID `86125`
+  remains alive only to finish its final active game (`active=1`, `pending=0`),
+  with fresh turns proving it is not stranded. Do not call the bank complete
+  until the PID exits and active reaches zero; no force action was taken.
+- The authenticated persuasion board moved to rank 4 at `2406.19/15,017`, up
+  `+38.90` over 28 games since 10:34 and `+33.63` over 139 games from the
+  original protected `2372.56/14,878` snapshot. It is `8.33` behind rank 3 and
+  `25.26` ahead of rank 5. This is meaningful aggregate movement, not a causal
+  strategy verdict.
+- Test 2 PID `86866` and Test 4 PID `86712` still run only
+  `bargaining,persuasion`; the negotiation omission remains unresolved. Fleet
+  health is otherwise clean: no bans, strategy errors, timeout outcomes, or
+  stranded games.
+- Persuasion overlays remain byte-stable and correct: Test 2 exactly equals
+  Agent 5's 18-key dictionary, Test 4 has only its three required explicit-zero
+  extras, canceled additions are inert, and all ten persuasion `*_AB` flags
+  remain zero on every slot.
+- The trailing all-five cohort contains 3,414 persuasion turns in 191 games
+  across both roles (99 seller, 92 buyer), all heuristic, with zero errors or
+  canceled markers. Five V1 firings across three games passed exact replay
+  `5/5`; only BUY/yes to PASS/no plus the marker and sole gate changed. All 191
+  assignments remain locally unresolved with no matched timeout, no-deal, or
+  immediate terminal.
+- Agent 5's reactivation exposure through the latest audited turn is 2,780
+  persuasion turns over 139 games (70 seller, 69 buyer), all heuristic and
+  error-free. Its one V1
+  firing passed exact replay; all 139 local result joins remain unresolved.
+
+## 10:34 Agent 5 rating rebound; bank failure still unresolved
+
+- Agent 5 remains active on PID `86125` despite its recorded bank latch. The
+  authenticated persuasion board rebounded to rank 7 at `2367.29/14,989`, a
+  gain of `+27.81` over 43 games since 10:18. It is now cumulatively `-5.27`
+  over 111 games from the protected `2372.56/14,878` snapshot and `4.87` below
+  rank 6. This is meaningful rating movement but not a causal strategy verdict.
+- The topology incident remains unresolved: Agent 5 is still running all three
+  families, while Test 2 PID `86866` and Test 4 PID `86712` run only
+  `bargaining,persuasion`. Runtime execution is otherwise healthy; Test 1
+  rotated naturally and cleanly to PID `89190`, and there are no bans, errors,
+  timeout outcomes, or stranded games. No intervention was made.
+- Persuasion integrity is unchanged: Test 2 exactly matches Agent 5's 18-key
+  persuasion dictionary, Test 4 differs only by its three required explicit
+  zeros, all canceled additions remain inert, and all ten persuasion `*_AB`
+  flags are zero on every slot.
+- The trailing all-five cohort contains 4,010 persuasion turns in 224 games
+  across both roles (111 seller, 113 buyer), all heuristic, with zero errors or
+  canceled markers. Seventeen V1 firings across six games passed exact replay
+  `17/17`, changing only BUY/yes to PASS/no plus the V1 marker and sole gate.
+  All 224 assignments remain locally unresolved; no matched timeout, no-deal,
+  or immediate terminal was found.
+- Since its 09:43 reactivation, Agent 5 has accumulated 2,326 persuasion turns
+  across 119 games (61 seller, 58 buyer), all heuristic and error-free. Its one
+  inter-checkpoint V1 firing also passed exact replay `1/1`.
+
+## 10:18 Agent 5 exposure and rating deterioration continue
+
+- Agent 5 remains active on PID `86125` despite its recorded bank latch, now at
+  active/pending `9/2`. The authenticated persuasion board is rank 7 at
+  `2339.48/14,946`, another `-6.66` over 38 games since the 10:01 snapshot and
+  a cumulative `-33.08` over 68 games from the protected
+  `2372.56/14,878` baseline. No process or configuration intervention was made.
+- Test 2 PID `86866` and Test 4 PID `86712` remain active on only
+  `bargaining,persuasion`; their logs confirm zero negotiation turns after the
+  external change. Their persuasion runtime values remain Agent-5-identical in
+  effect, all canceled additions are inert, and every persuasion `*_AB` flag is
+  still zero.
+- The trailing all-five persuasion cohort contains 3,433 turns in 197 games
+  across both roles (101 seller, 96 buyer), all heuristic, with zero strategy
+  errors or canceled markers. Fifteen V1 firings across four games passed exact
+  replay `15/15`; only BUY/yes to PASS/no plus the V1 marker and sole gate
+  changed.
+- Eleven normal results joined; 186 assignments remain unresolved through
+  active play and/or collector backlog. No matched timeout, no-deal, immediate
+  terminal, or stranded game was found. Runtime health is otherwise clean.
+
+## 10:01 material external topology change and Agent 5 bank failure
+
+- Agent 5/composite was externally re-enabled and the supervisor launched PID
+  `86125` at 09:43:49 IST with all three families and LLM off. Although
+  `control.json` still lists composite under `bank_latched`, `disabled` and
+  `drain_now` were externally cleared, so the latch is not operationally
+  protecting it. Agent 5 is currently active/pending `7/1`. This workstream did
+  not make the change and will not stop, signal, drain, or reconfigure it.
+- The authenticated persuasion board moved Agent 5 from rank 6 at
+  `2372.56/14,878` to rank 7 at `2346.14/14,908`: `-26.42` over 30 new games.
+  The sample is too small for a causal strategy verdict, but the protected
+  rating exposure and bank failure are material operational incidents.
+- Test 4 and Test 2 were also externally bank-latched/rotated. Current PIDs
+  `86712` and `86866` run only `bargaining,persuasion`, omitting negotiation,
+  rather than the prior complete three-family commands. No intervention was
+  made; this is external configuration drift outside persuasion authority.
+- Persuasion values themselves remain clean: Test 2 still exactly matches Agent
+  5, Test 4 retains only its required explicit-zero extras, all canceled
+  additions remain inert, and every persuasion `*_AB` flag remains zero. The
+  latest trailing cohort has 2,897 turns in 164 games, all heuristic, with zero
+  strategy errors or canceled markers and no new V1 firing. Nineteen normal
+  results joined; 145 assignments remain unresolved, with no matched timeout,
+  no-deal, or immediate-terminal result.
+
+## 09:44 quiet monitoring checkpoint
+
+- Fleet recovery remains stable with no renewed ban, rotation, stall, warning,
+  error, timeout outcome, or stranded game. Every active slot has fresh work
+  across all three families with LLM off.
+- The trailing persuasion cohort contains 2,707 turns in 156 assignments across
+  both roles (85 seller, 71 buyer), all heuristic, with zero error rows or
+  canceled markers. Six V1 firings across four games passed exact replay `6/6`;
+  only BUY/yes to PASS/no, the V1 marker, and its sole gate changed.
+- Local results join `0/156`, so every assignment remains explicitly unresolved
+  through active play and/or collector backlog. No matched timeout, no-deal, or
+  immediate-terminal outcome was found.
+- Persuasion configuration remains unchanged and clean. Agent 5 remains banked
+  at rank 6, `2372.56/14,878`, `.40` above rank 7; Test 2 and Test 4 preserve
+  Agent 5's effective policy and every persuasion `*_AB` flag remains zero.
+
+## 09:27 quiet monitoring checkpoint
+
+- Recovery remains stable: no renewed ban, stall, warning, strategy error,
+  timeout outcome, or stranded game. Test 1 and Test 4 completed natural clean
+  rotations after the prior checkpoint, so all four slots have now rotated
+  cleanly through the recovery. Commands retain all three families and LLM off.
+- The trailing persuasion cohort contains 2,520 turns in 144 assignments across
+  both roles (65 seller, 79 buyer), all heuristic, with zero error rows or
+  canceled markers. Ten V1 firings across four games passed exact replay
+  `10/10`; every firing was correctly scoped and changed only BUY/yes to
+  PASS/no plus the V1 marker and sole gate.
+- Local results currently join `0/144`, so all 144 assignments remain unresolved
+  through active play and/or collector backlog. None is silently dropped, and
+  no matched timeout, no-deal, or immediate-terminal result was found.
+- Test 2 and Test 4 runtime persuasion state remains Agent-5-identical in
+  effect, including Test 4's required explicit-zero extras. All persuasion
+  `*_AB` flags remain zero. Agent 5 remains banked and unchanged at persuasion
+  rank 6, `2372.56/14,878`, still `.40` above rank 7.
+
+## 09:09 fleet recovered naturally; post-ban evidence clean
+
+- All four 08:48 queue bans expired naturally. Persuasion turns resumed within
+  7–23 seconds of each advertised expiry, and every running account now has
+  active work. Test 2 and Test 3 also completed natural clean rotations during
+  recovery; no process was manually changed and no game was stranded.
+- The trailing cohort contains 1,710 persuasion turns in 94 assignments across
+  both roles (53 seller, 41 buyer), all heuristic, with zero strategy errors or
+  canceled markers. Three V1 firings on one Test 2 buyer/text game passed exact
+  replay `3/3`: OFF was BUY/yes, ON matched live PASS/no byte-for-byte, and only
+  `buy`, the V1 marker, and its sole gate changed.
+- Three of the 94 assignments currently have normal round-20 local results;
+  91 remain unresolved through active play and/or collector backlog. No matched
+  timeout, no-deal, or immediate-terminal result was found, and unresolved
+  assignments were retained rather than selected away.
+- Test 2's replacement runtime remains exactly Agent 5's persuasion dictionary;
+  Test 4 retains only the required explicit-zero extras; all ten persuasion
+  `*_AB` flags remain zero. Agent 5 remains banked and untouched at rank 6,
+  `2372.56/14,878`, unchanged from the prior board snapshot.
+
+## 08:48 operational incident — fleet-wide queue bans recur
+
+- All four running accounts are queue-banned after the server recorded three
+  consecutive turn timeouts on each. Current expiry times are Test 1 08:53:24,
+  Test 2 08:53:39, Test 4 08:53:51, and Test 3 08:53:54 IST. Network read
+  timeouts/remote closes preceded the synchronized 403 responses, indicating a
+  correlated platform/network incident rather than a persuasion-source crash.
+- All four PIDs remain alive with the correct complete-agent commands. An
+  authenticated snapshot shows active `0` and pending `0` on every running
+  account, so no games remain in flight or stranded. Agent 5 also remains
+  banked at active/pending `0`. No process, queue, flag, or configuration action
+  was taken by this workstream.
+- Immediately before the outage, the trailing persuasion cohort contained
+  2,098 turns in 126 assignments across both roles, all heuristic, with zero
+  errors or canceled markers. Six V1 firings passed exact replay `6/6`, each
+  changing only BUY/yes to PASS/no plus the V1 marker and sole gate.
+- Persuasion configuration integrity remains clean: Test 2 exactly matches
+  Agent 5, Test 4 retains only its required explicit-zero extras, all ten
+  persuasion `*_AB` flags remain zero, and Agent 5 is untouched. The last board
+  snapshot before the outage moved Agent 5 from rank 5 to rank 6 at unchanged
+  `2372.56/14,878`; it was already off the podium.
+
+## 08:05 podium lost again through field movement; mechanism remains clean
+
+- Fresh authenticated persuasion snapshot `1787711433.466` places banked
+  Agent 5 at rank 5 with unchanged rating `2372.56` and unchanged count
+  `14,878`. Two competitors moved above it since the 07:44 snapshot; rank 6 is
+  still only `.40` behind. This is a board/competitor-driven podium loss, not a
+  causal strategy result.
+- Test 2 remains an exact live persuasion copy of Agent 5. Test 4 retains the
+  same shared policy plus only its three required explicit zeros. All canceled
+  additions remain absent/inert, every persuasion `*_AB` flag remains zero,
+  the overlay mtime is unchanged, and Agent 5 remains banked and untouched.
+- The trailing-15-minute persuasion cohort contains 2,512 turns in 147 games
+  across both roles (70 seller, 77 buyer), all heuristic, with zero errors or
+  canceled markers. Four V1 firings—two on Test 1 and two on Test 4—passed exact
+  replay `4/4`: OFF was BUY/yes, ON matched live PASS/no byte-for-byte, and only
+  `buy`, the V1 marker, and its sole gate changed.
+- Fleet health is clean: no PID change, stall, queue ban, warning, timeout, or
+  stranded game since 07:44. All four active slots continue all three families
+  with LLM off; no intervention was made.
+
+## 07:44 podium restored; mechanism and topology clean
+
+- Fresh authenticated persuasion snapshot `1787710380.527` returned banked
+  Agent 5 to rank 3 at unchanged rating `2372.56` and unchanged count `14,878`.
+  This restoration came from board/competitor movement, not new Agent 5 play;
+  rank 4 is only `.40` behind, so the podium remains fragile.
+- Test 1, Test 3, and Test 4 each completed a natural clean drain and replacement
+  launch between 07:26 and 07:39 IST. No games were stranded. Current commands
+  retain all three families with LLM off. Test 2 remains healthy on PID `77504`,
+  and Agent 5 remains banked.
+- Test 2's live persuasion environment remains exactly Agent 5's 18-key
+  dictionary. Test 4's replacement inherited those shared values plus only its
+  three required explicit zeros. Canceled additions remain absent/inert, the
+  fleet overlay mtime is unchanged, and all ten persuasion `*_AB` flags remain
+  zero.
+- The frozen trailing-15-minute persuasion cohort contains 1,579 turns in 94
+  assignments across both roles (52 seller, 42 buyer), all heuristic, with zero
+  errors or canceled markers. Its only V1 firing was Test 3 game
+  `de0de564-c535-461e-8734-7a0d24527eaa`, round 12, on the direct text decline
+  `Honestly, I would skip this one — it is not my best unit.` Exact OFF/ON
+  replay passed: OFF was BUY/yes, ON matched live PASS/no byte-for-byte, and the
+  only plan changes were `buy`, the V1 marker, and its sole gate.
+
+## 07:25 podium loss through board movement; live policy remains intact
+
+- Fresh authenticated persuasion snapshot `1787709257.238` has banked Agent 5
+  at rank 4, rating `2372.56`, and `14,878` games. Agent 5's rating and count
+  are unchanged; it was displaced from rank 3 by board/competitor movement.
+  Rank 3 is `2387.62`, while rank 5 is `2372.16`, only `.40` below Agent 5.
+  This is a material loss of the podium, not a causal strategy result.
+- Test 2 PID `77504` was launched automatically by the supervisor at 07:17:40
+  IST after the prior PID had zero active games for 1,037 seconds. The
+  supervisor explicitly recorded that no games were in flight, so none were
+  stranded. Its command still contains all three families and LLM off, and its
+  runtime persuasion environment exactly matches Agent 5's 18-key dictionary.
+  No manual process action or configuration write occurred.
+- Test 4 still matches Agent 5's effective persuasion policy with its three
+  required explicit zeros; every persuasion `*_AB` flag remains zero, canceled
+  additions remain absent/inert, and Agent 5 remains banked and untouched.
+- The latest 15-minute local persuasion cohort contains 488 turns in 27 games
+  across both roles (233 seller, 255 buyer), all heuristic, with zero canceled
+  markers and no new V1 firing. The result collector remains backlogged, so no
+  current cohort outcome is treated as joined or silently omitted.
+
+## 06:19 quiet monitoring checkpoint
+
+- All four active slots remain recovered. The trailing 15-minute persuasion
+  cohort contains 2,135 turns in 127 assigned games across both roles, all from
+  the heuristic source, with zero strategy errors and zero canceled-addition
+  markers. Agent 5 remains banked.
+- Test 2 still exactly matches Agent 5's persuasion dictionary; Test 4 remains
+  behavior-identical with its three required explicit zeros; every persuasion
+  `*_AB` flag remains zero. No fleet, process, queue, bargaining, negotiation,
+  `.env`, `arms.json`, or `control.json` change was made.
+- Eight new V1 firings across Test 3 and Test 4 were all buyer/player 2 at
+  `buyer_decision`, buyer-v2 true, on the same strict current textual decline.
+  Each live action was heuristic PASS/no with V1 as its sole gate. Exact OFF/ON
+  replay passed `8/8`: OFF was BUY/yes, ON matched the live plan and wire, and
+  only `buy`, the V1 marker, and `gates_fired` changed.
+- The latest authenticated board snapshot (`1787704930.921159`) still has
+  banked Agent 5 at persuasion rank 2 and rating `2372.56`; there is no new
+  rating or podium event.
+
+## 06:03 operational recovery and rank-2 board restoration
+
+- All four active slots resumed normal assignments after their approximately
+  05:54 queue-ban expiries. The trailing 15-minute cohort now contains 1,151
+  persuasion turns in 68 games (31 seller, 37 buyer), all heuristic, with zero
+  strategy errors and zero canceled-addition markers. No manual process or
+  configuration action was taken.
+- One V1 firing occurred on Test 3 game
+  `feb032c9-73db-4bc5-ad61-a5a0ab38213d`, round 11: buyer/player 2,
+  `buyer_decision`, buyer-v2 true, current text `DO NOT BUY - I recommend
+  passing on this unit.`, live PASS/no, and V1 as the sole gate. Exact replay
+  matched the live plan and wire byte-for-byte; OFF was BUY/yes, and the only
+  plan changes were `buy`, the V1 marker, and its gate.
+- At authenticated snapshot `1787704234.558379`, banked Agent 5 remained
+  2372.56 but improved from persuasion rank 3 to rank 2 through board/competitor
+  movement. Test 2/Test 4 persuasion overlays remain Agent-5-identical in
+  effect, all ten persuasion `*_AB` flags remain zero, and Agent 5 remains
+  untouched.
+
+## 05:47 operational incident — all active slots queue-banned
+
+- The competition service produced repeated connection aborts, read timeouts,
+  `Game is not active` responses, and then a server-side 403 on each of the four
+  active slots stating that its last three games timed out on its turn. At the
+  latest supervisor check, Test 1/Test 2/Test 3/Test 4 were queue-banned until
+  approximately 05:54 IST and produced zero persuasion turns in the trailing
+  15 minutes. This is a material fleet-wide operational failure, not a
+  persuasion mechanism result.
+- The supervisor had already recycled zero-active-game processes several times
+  during the service disruption. Each record explicitly reports zero games in
+  flight, so those supervisor restarts stranded no games; nevertheless the
+  repeated timeout streaks and fleet-wide queue bans require operator notice.
+  No process, queue, flag, `control.json`, `.env`, bargaining setting, or
+  negotiation setting was touched by the persuasion workstream.
+- Persuasion integrity remains clean despite the outage: Test 2 still exactly
+  equals Agent 5, Test 4 retains Agent 5's shared policy plus its three required
+  explicit zeros, every persuasion `*_AB` flag is zero, and the canceled
+  Test-2/Test-4 additions emitted no markers. Agent 5 remains banked and
+  unchanged at persuasion 2372.56 / authenticated rank 3 in the latest
+  available board snapshot.
+
+## 23:52 quiet monitoring checkpoint
+
+- The completed Agent 5 persuasion topology remains intact: Test 2's
+  persuasion dictionary still equals Agent 5 exactly; Test 4 retains the same
+  shared values plus the three required explicit zeros; all ten persuasion
+  `*_AB` flags are zero on every slot. Agent 5 remains banked. The four active
+  processes still use all three families with LLM off.
+- The trailing 15-minute turn cohort contains 2,565 persuasion turns in 144
+  assigned games across the four active slots (74 seller, 70 buyer). All turns
+  use the heuristic source, with zero strategy errors and zero canceled
+  Test-2/Test-4 addition markers. The result collector is still backlogged, so
+  these complete assignments remain outcome-unresolved rather than being
+  silently dropped or selected by completion.
+- One new V1 firing occurred on Test 1 game
+  `7088f8d8-a062-4fb9-9f8d-e4053d7e358b`, round 11. It was buyer/player 2 at
+  `buyer_decision`, buyer-v2 true, binary current message `no`, and emitted
+  heuristic `no` with V1 as its sole gate. Exact state replay matched the live
+  plan byte-for-byte: OFF was BUY/yes and ON was PASS/no, with only `buy`, the
+  V1 marker, and its gate changing.
+- Like-for-like display movement from the 18:02Z to 18:22Z state snapshots was
+  Test1/Test2/Test3/Test4 persuasion `-35/+11/-16/-2`; Agent 5 stayed 2373 while
+  banked. This is inside the established roughly +/-125 noise band. At snapshot
+  `1787682261.869326`, the authenticated board restored the account-best Agent 5
+  to persuasion rank 3 at `2372.56`. Its rating did not move; the podium change
+  came from board ordering/competitor movement rather than new Agent 5 games.
+
+## 23:30 Agent 5 persuasion copied to Test 2 and Test 4
+
+- The operator superseded both pending challenger allocations: physical Test 2
+  (`hardliner`) and Test 4 (`randomized`) must use Agent 5/composite's
+  deterministic persuasion behavior. The Test 2 `adaptive-credibility-v1`
+  profile was canceled before exposure. Its default-OFF code remains inert;
+  V2, V3, buyer unlock, and seller demand-collapse truth were never armed on
+  Test 2 and must not be armed by a later monitor.
+- Test 2 already had Agent 5's exact 18-key persuasion dictionary, so no fleet
+  write was made to Test 2. PID `63678`, launched at 23:01:36 IST with
+  `--probe champion`, `--llm-mode off`,
+  `--families bargaining,negotiation,persuasion`, and `--max-time 3600`, retains
+  V1 only and every persuasion `*_AB` key at zero.
+- Test 4 PID `60650` stopped acquiring naturally and completed its 4,151-second
+  shift at 23:29:46 IST with the supervisor's `drained cleanly` confirmation.
+  No process was restarted, signaled, stopped, drained, force-cycled, or
+  accelerated. At `Tcfg=1787680787` (23:29:47 IST), `scripts/fleet.py` changed
+  exactly these Test 4 values from `1` to explicit `0`:
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2`,
+  `GLEE_PERS_P08_POSITIVE_PROSE_V1`, and
+  `GLEE_PERS_ZERO_MARGIN_TRUTH_V1`. Explicit zeros are required because clearing
+  a running overlay key can fall back to its launch environment.
+- The supervisor naturally launched Test 4 replacement PID `70598` at
+  `T0=1787680796` (23:29:56 IST) with `--probe hardliner`, `--llm-mode off`,
+  `--families bargaining,negotiation,persuasion`, and `--max-time 3600`. The
+  three explicit zeros were present before launch. Agent 5 remained banked and
+  byte-identical throughout.
+- The first post-launch audit covered 243 persuasion turns in 15 games. Every
+  game's first observed turn was round 1, every turn used the heuristic source,
+  and none carried a retired V2, positive-prose, or zero-margin-truth gate or
+  marker.
+- Integrity checks passed. Test 4's full overlay hash changed only from
+  `c1cdd4f198a7f09f02d31de19c6bf76b9d0b4a44f5d6c1ffd9cffd984e3ec1ca`
+  to `5111db7097b190b27db242eeeb6ff2815e8c104c82cfc83076c02e19c1de3ce4`.
+  Its non-persuasion hash stayed
+  `2e9104ab483ad11c48e64a3cd003d796891f5317d3956ca28df0f7971485679e`.
+  Test 2 full/non-persuasion hashes stayed
+  `8e909bb8849afe77506ca277f9bc079952862157c920449f85b760e6d1cc543d` /
+  `25d9762a589ad98d64da05f417b0cd851964c9af354d7971fa4731f044cfc117`;
+  Agent 5 stayed
+  `e04bf476faf0916e6a5d0c4164477315bb00199d570de4ca7e465969f866ffb7`.
+  `control.json` stayed
+  `a55b9853f72d69f951d474a37137e71e7adb356d64f570d79193ef638ee34906`,
+  and all ten persuasion `*_AB` keys remain explicit zero on all five slots.
+- This is an operator-directed topology change, not an efficacy result. Record
+  the Test 4 strict-edge challenger as operator-terminated without a causal
+  promotion or rejection verdict; retain its complete prior cohort. Test 4 has
+  three additional explicit-zero keys, but its effective persuasion behavior
+  is now Agent 5-identical.
+
+## 21:58 Test 2 adaptive-credibility profile — SUPERSEDED BEFORE EXPOSURE
 
 - Pushed commit `96671bb` adds two broad deterministic, default-OFF persuasion
   repairs. `GLEE_PERS_BUYER_SELECTIVE_SIGNAL_UNLOCK_V1` removes only a

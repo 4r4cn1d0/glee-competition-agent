@@ -1,6 +1,200 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
-## READY IN CODE / AWAITING CLEAN LOAD — Test 2 `adaptive-credibility-v1` (25 Aug)
+## LIVE ON TEST 2 — `tight-credibility-reset-v1` (26 Aug)
+
+- **Activation boundary**: code/test commit `985ead2` is pushed. Test 2 PID
+  `12216` was losslessly banked at `Tbank=1787745279.855`; it acquired no new
+  game after that instant, all seven post-bank holdings authenticated terminal,
+  server state reached `active=0,pending=0` at 17:30:21 IST, and the PID exited
+  cleanly. Frozen pre-Tcfg persuasion was `2304.49/17632`. One fleet write set
+  only `GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1=1` at
+  `Tcfg=1787745792` (17:33:12). Test 2's non-persuasion hash and every other
+  slot remained byte-identical; all persuasion `*_AB` flags stayed zero.
+  Replacement PID `20124` launched at 17:33:53 from pushed HEAD with exact
+  `--probe champion --llm-mode off --families bargaining,persuasion --max-time
+  3600`. Its first 101 turns covered seven bargaining and six persuasion game
+  IDs, all heuristic with zero errors/timeouts and no negotiation assignment.
+  No controller firing had occurred at this initial health check; continue the
+  first-20-per-direction exact audit below.
+
+- **Allocation and null**: physical Test 2 / slot `hardliner` alone may
+  prospectively add `GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1=1` to its
+  otherwise frozen persuasion stack. Agent 5, every other slot, every seller
+  rule, non-persuasion key, and all persuasion `*_AB` flags remain unchanged.
+  This is a deterministic named one-slot challenger, not a randomized causal
+  A/B test. The null is no improvement in authenticated same-configuration,
+  same-role persuasion rating over the complete all-assignment cohort.
+- **Controller contract**: compute the complete ordinary buyer-v2 plan first.
+  Eligibility is persuasion buyer/player 2 at `buyer_decision`, current player
+  2, text or binary mode, `tight=true`, breakeven probability at least `.75`,
+  prior money EV no greater than price, a strict current direct positive, and
+  unchanged posterior EV strictly above price. Text signals use a full-string
+  anchored whitelist; ambiguous, historical, and future prose fails closed.
+  Seller knowledge, current private quality, opponent, and game ID are never
+  read. Credit is ordered public history: `last_strict_decline >
+  last_purchased_LOW`. Invalid credit changes an ordinary BUY to PASS. Valid
+  credit changes only a PASS proven to be the static tight-prior block
+  (`blocked=true`, prior below the configured threshold) to BUY. All other
+  states are byte-identical. Only a changed action adds the adjacent
+  `buyer_tight_credibility_reset_v1` metadata and sole gate. Current-decline
+  V1/V2/V3 retain final precedence; optional rank/selectivity/LCB/parser/audit/
+  unlock/pulse conflicts fail closed.
+- **Preflight and fixed-stream evidence**: the flag is default OFF. Focused
+  tests pass `78/78`; exact current Test 2-stack reachability passes
+  `eligible/fired/action_changed=460/460/460`; the full suite is `2673 passed`
+  with exactly the three declared non-persuasion failures. Fixed-stream replay
+  changes `6,718` turns in `877` games: `4,122` BUY->PASS and `2,596` PASS->BUY.
+  These counts prove reach and precedence only. They are not payoff evidence:
+  purchased quality is action-selected, passed quality is hidden, and the first
+  changed action alters later posterior state and seller behavior.
+- **Risk and objections**: the controller bundles reversible trust revocation
+  and restoration, so a live read identifies only the whole controller.
+  BUY->PASS can turn profitable highs into costly zeros; PASS->BUY can buy lows
+  because neighboring buyer-v2 posteriors were optimistic by roughly 4-7
+  points. A decline can be strategic bait. The measured-negative broad
+  selectivity/strike and LCB ideas, mechanism-rejected rank gate, canceled broad
+  selective-signal unlock, and underperforming LLM prose are not revived. The
+  large shadow surface is an exposure warning, not evidence of likely lift.
+  Display rating, raw payoff, and local percentile remain diagnostic only.
+- **Clean T0 and cohort**: first push the inert code. Then use SDK-native
+  `scripts/fleet.py bank hardliner` and wait without forcing until the old
+  process has stopped acquiring, every touched game is terminal, authenticated
+  active/pending are zero, and the PID exits. Freeze the exact process/load
+  boundary, Test 2 full and non-persuasion overlays, every other slot, control
+  hash, arms mtime, and authenticated persuasion rating/count. One atomic fleet
+  write may set only this Test 2 flag; start Test 2 with exactly `--llm-mode off
+  --families bargaining,persuasion`, leaving negotiation disabled. Enroll every
+  post-Tcfg Test 2 persuasion assignment: both roles and modes, all scales,
+  priors, knowledge states, fires/nonfires, buys/passes, zeros, losses,
+  timeouts, unresolved games, and immediate terminals. Never condition the
+  primary read on firing, direction, purchase, revealed quality, completion, or
+  success. Agent 5 and all other slots remain untouched.
+- **Mechanism audit and immediate rollback**: exact OFF/ON replay every turn
+  until at least 20 clean BUY->PASS and 20 clean PASS->BUY firings; nonfires
+  must be full-object identical. Any scope/signal error, malformed-history
+  fail-open, wrong credit order, non-tight PASS revival, prior-profitable
+  change, direct-decline overlap, multi-gate collision, illegal wire,
+  unexplained delta, strategy error, or attributable timeout rejects the
+  mechanism. Explicitly set only this Test 2 flag to `0` with fleet tooling;
+  never clear the key or alter the process/family stack.
+- **Frozen efficacy gates**: one harm look at `500` fully authenticated
+  post-Tcfg assignments with zero missing joins and at least `20` affected
+  games, including at least `5` per direction. Reject on a wholly negative
+  official Test2-minus-frozen-pre/contemporaneous-control 95% interval, or a
+  negative-payoff rate at least 10 points worse with a wholly positive interval;
+  no early efficacy promotion. Final read is `2,000` fully authenticated
+  assignments with zero missing/unresolved joins and at least `80` affected
+  games, including at least `20` per direction. Retain Test2-only only if the
+  overall official trend and tight-buyer point estimate are positive,
+  normalized-payoff delta is positive, zero/negative/severe-rate deltas are
+  nonpositive, every direction/mode/knowledge/scale point estimate is
+  nonnegative, no `n>=100` role x mode x prior slice loses at least `.5`
+  rating/game, and all mechanism/join checks remain clean. Agent 5 may not
+  receive the controller without separate explicit future authorization.
+
+## LIVE ON TEST 4 — `direct-decline-safety-v1` (26 Aug)
+
+- **Activation**: after explicit operator authorization to restart Test 4, the
+  SDK-native bank stopped acquisition and PID `5532` drained `7 -> 0` without
+  abandonment. Its final game completed round 20, authenticated state reached
+  `active=0,pending=0` at 16:13:12 IST, and the PID exited at 16:13:29. At the
+  stable no-process boundary, one `scripts/fleet.py` write set only Test 4 V2
+  and V3 to `1` at `Tcfg=1787741035` (16:13:55). Replacement PID `10380`
+  launched naturally at 16:14:42 with `--probe hardliner --llm-mode off
+  --families persuasion --max-time 3600`. The authenticated pre-Tcfg persuasion
+  baseline was `2291.55/10701`.
+- **Post-write isolation**: reversing only V2 `1 -> 0` and removing V3 from the
+  post-write arms document reproduces the exact pre-write whole-file SHA-256
+  `d72153b476d2bbd17cde8f0be227f860e0028d08cf98562a41b205e6c783c07e`.
+  Test 4's non-persuasion hash, every other slot, and all persuasion `*_AB`
+  values remained unchanged; Agent 5 stayed banked. The first 31 post-launch
+  turns covered four fresh round-1 seller games, all heuristic with no error,
+  timeout, or V2/V3 firing. Continue the frozen mechanism and efficacy rules
+  below from this immutable Tcfg.
+
+- **Operator authorization and isolation**: after reviewing Test 4's complete
+  persuasion logs, the operator authorized the first, lowest-risk repair only:
+  physical Test 4 / slot `randomized` keeps its Agent-5-equivalent persuasion
+  baseline with V1=1 and adds only
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1` and
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3=1`. Test 4's prose/truth additions stay
+  explicit zero; buyer unlock and seller demand-collapse truth remain absent/OFF;
+  all ten persuasion `*_AB` keys stay explicit zero. Agent 5, Test 1, Test 2,
+  Test 3, every non-persuasion key, `control.json`, and all processes are outside
+  this experiment and must remain unchanged.
+- **Falsifiable hypothesis**: direct current-round text warnings that V1 misses
+  should never cause an existing buyer-v2 BUY. V2/V3 must improve Test 4's
+  authenticated same-configuration, same-role persuasion outcome without a
+  material losing buyer/text subgroup. This is a deterministic named one-slot
+  challenger, not a randomized or causal A/B experiment; no component consults
+  game id, opponent identity, or a configuration-cell allowlist.
+- **Frozen evidence and objection**: the five-slot exact-log replay changes 128
+  buyer/text turns in 62 games relative to V1-only: 127 purchased qualities were
+  LOW, zero HIGH, and one unresolved. The newest complete Test 4 audit found
+  eight additional missed direct warnings; all eight control purchases revealed
+  LOW. These qualities are purchase-selected and seller adaptation is
+  counterfactual, so they prove a parser/action-consistency defect and
+  one-directional mechanism safety, not an identified official-rating lift.
+  Reach is only about 1% of Test 4 assignments, so this repair is not expected
+  to close the full gap to 2500 by itself.
+- **Mechanism contract**: V1 runs first, then V2, then V3. Each new gate is
+  limited to buyer/player 2, `buyer_decision`, current player 2, text mode,
+  buyer-v2, and a complete control plan with `buy=true`. Live must be
+  PASS/`no`, heuristic, legal, with exactly one adjacent marker/sole gate:
+  `buyer_explicit_decline_v2` or `buyer_explicit_decline_v3`. The only plan
+  delta may be `buy: true -> false`, its marker, and its gate. V1-owned, positive,
+  ambiguous, history-only, binary, seller, legacy-buyer, and existing-PASS turns
+  must remain byte-identical. A V1/V2 fire makes later gates unreachable.
+- **Preflight**: current HEAD `00cf4a5` contains V2 commit `6d3aec4` and V3
+  commit `cef2621`; both are default OFF. Focused V1/V2/V3 tests pass `164/164`.
+  Exact current Test 4 hardliner-stack reachability over 800 games passes
+  `630/630/630` independently for V2 and V3; separate stacked checks also pass.
+  Full suite passes `2553` with only the three declared non-persuasion failures
+  (bargaining horizon assertion and bargaining/negotiation live-grid drift).
+- **Clean activation boundary**: do not arm while any Test 4 persuasion game is
+  in flight. After the current PID stops acquiring naturally, require terminal
+  proof for every persuasion game it touched and authenticated `active_games=0`.
+  Freeze Test 4's exact PID/end time, HEAD/origin, full overlay, non-persuasion
+  hash, all other slot overlays, `control.json` hash, arms mtime, authenticated
+  persuasion rating/count, and Agent 5 bank state. Then the deployment owner may
+  use one atomic `scripts/fleet.py set randomized` write for V2=1 and V3=1.
+  Never restart, stop, signal, force-cycle, clear a key, or alter a queue.
+- **Cohort and evidence rule**: enroll every Test 4 persuasion assignment whose
+  first turn is post-Tcfg, including both roles, all nonfires, buys, passes,
+  positives, zeros, negative/severe outcomes, timeouts, unresolved games, and
+  immediate terminals. The primary endpoint is authenticated official
+  same-configuration, same-role rating delta. Display rating, raw payoff, and
+  local fitted percentile are diagnostic only. Compare the full Test 4 cohort
+  to its frozen pre-period and contemporaneous unchanged agents; never condition
+  on firing, purchase, completion, or a successful outcome.
+- **Audit and immediate rejection**: exact OFF/ON replay every firing until 20
+  clean V2 and 20 clean V3 events; nonfires must remain byte-identical. Any scope
+  drift, positive/history-only veto, multi-gate overlap, PASS-to-BUY, illegal
+  wire, nonheuristic source, unexplained plan delta, strategy error, or
+  attributable timeout immediately rejects the mechanism and requires setting
+  only Test 4 V2=0 and V3=0 explicitly through fleet tooling. If isolation is
+  uncertain, set both explicit zero and report the incident.
+- **Precommitted efficacy reads**: harm look at 500 fully authenticated Test 4
+  games with zero missing joins and at least five combined V2/V3-affected games;
+  reject if the official Test4-minus-frozen-pre/contemporaneous-unchanged trend
+  interval is wholly negative or on any mechanism failure. Final read at 2,000
+  fully authenticated games with zero missing joins and at least 20 combined
+  affected games. Retain only with a positive overall official trend, positive
+  buyer/text point estimate, no `n>=100` role x mode x prior slice losing at
+  least `.5` rating/game, and zero mechanism/join failures. Anything short stays
+  Test-4-only; Agent 5 may not receive it without a fresh explicit decision.
+
+## CANCELED BEFORE EXPOSURE — Test 2 `adaptive-credibility-v1` (25 Aug)
+
+- **Operator supersession at 23:29 IST**: the operator directed physical Test 2
+  and Test 4 to use Agent 5's exact effective persuasion behavior. Test 2
+  already matched Agent 5, so no Test 2 fleet write occurred and this profile
+  received zero prospective assignments. V2, V3, buyer unlock, and seller
+  demand-collapse truth remain absent/OFF on Test 2. Commits `cef2621` and
+  `96671bb` remain inert/default OFF and are not efficacy evidence.
+- **Verdict**: operator-canceled before exposure, neither promoted nor rejected.
+  Preserve the frozen mechanism evidence below as historical design work, but
+  do not arm the profile or execute its former pending deployment instructions.
 
 - **Falsifiable hypothesis**: the broad deterministic credibility profile will
   improve Test 2's official same-configuration, same-role persuasion rating by
@@ -102,6 +296,20 @@
   cannot contain the new repairs. Do not arm it. Wait for a later natural
   successor containing both commits and for zero in-flight persuasion games;
   never force or accelerate the boundary.
+
+## OPERATOR-TERMINATED, NO EFFICACY VERDICT — Test 4 strict-edge challenger (25 Aug)
+
+- Test 4's V2, zero-margin truth, and p=.8 positive-prose additions were set
+  from `1` to explicit `0` through `scripts/fleet.py` at
+  `Tcfg=1787680787`, immediately after PID `60650` naturally drained cleanly
+  and before replacement PID `70598` launched. Test 4 now has Agent 5-identical
+  effective persuasion behavior; Test 2 was already identical and Agent 5
+  remained banked and untouched.
+- The prior complete Test 4 cohort and clean mechanism audit remain retained.
+  Authenticated per-game joins were unavailable and the observed display
+  movement was inside the measured roughly +/-125 identical-agent noise band.
+  This operator topology change therefore supplies no causal promotion or
+  rejection verdict for any of the three components.
 
 ## BUILT DEFAULT OFF — complete-info unknown-horizon late stasis (25 Aug)
 
