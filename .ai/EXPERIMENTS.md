@@ -2,9 +2,12 @@
 
 ## AUTHORIZED / PENDING CLEAN TEST 4 BOUNDARY — `seller-positive-pass-streak-truth-v1` (27 Aug)
 
-- **Operator supersession and null**: the operator now authorizes this first
-  credibility-recovery stage on physical Test 4 / slot `randomized`, replacing
-  the earlier proposed Test 2 allocation.  The never-exposed cumulative-rate candidate
+- **Operator supersession and null**: the operator releases physical Test 1-4
+  for persuasion experimentation while protecting Agent 5, and assigns this
+  seller stage only to physical Test 4 / slot `randomized`.  Test 3 receives a
+  separate buyer-only direct-decline replication below; Test 2 finishes its
+  already-live buyer reset; Test 1 remains the contemporaneous control.  The
+  never-exposed cumulative-rate candidate
   `GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1` is abandoned because its own
   truthful NO/pass rounds lower its denominator and can self-lock the policy.
   Its historical flag is inert, not redefined.  The replacement is the separate
@@ -53,37 +56,38 @@
   declared bargaining horizon-floor and bargaining/negotiation live-grid drift
   failures.  An independent adversarial reviewer returned PASS after literal
   text-token and contradictory-metadata leaks were reproduced and closed.
-- **Allocation and identification**: run this addition alone on physical Test
-  4; protect Agent 5 and every other slot, preserve Test 4's complete B+P
-  topology, V1/V2/V3 buyer safety background, and non-persuasion overlay, and
-  keep all persuasion A/B keys zero.  Do not add terminal push, seller truth/
-  prose, the abandoned cumulative-rate flag, or another seller addition.
-  Because the operator requires a deterministic named one-slot
-  challenger rather than randomized per-game allocation, the result is
-  observational and cannot establish a causal treatment effect.  Retain every
-  post-boundary persuasion assignment and report the seller-role primary over
-  all seller assignments, both modes, fires/nonfires, buys/passes,
-  zeros/losses/timeouts/unresolved/immediate terminals, and compare official
-  same-role/configuration evidence to a frozen Test 4 pre-period and unchanged
-  contemporaneous agents.  Agent 5 is currently bargaining-only and therefore
-  is a protected historical benchmark, not a contemporaneous persuasion
-  control.  The game—not the turn—is the analysis unit.
-- **Clean deployment boundary owned outside Codex**: the present Test 4 PID
-  launched from the dirty workspace with the code likely loaded but the flag
-  absent, and it held active persuasion games during this audit.  First commit
-  and push the inert implementation, then require a later natural Test 4
-  process containing that commit and exact `--probe hardliner --llm-mode off
-  --families bargaining,persuasion --max-time 3600`.  After it stops acquiring
-  naturally, require terminal proof for every persuasion game it touched and
-  authenticated `active=0,pending=0`.  Freeze its PID/load boundary, Test 4
-  full/persuasion/non-persuasion overlays and hashes, every other slot,
-  `control.json`, arms mtime, authenticated persuasion rating/count, and the
-  preceding 2,000 authenticated seller assignments.  Only the deployment owner
-  may then use one `scripts/fleet.py set randomized` write to set
-  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`.  Verify that sole Test 4
-  persuasion-key delta, all persuasion A/B values zero, and byte-identical
-  Agent 5/other-slot/non-persuasion/control state.  Never edit fleet JSON by
-  hand or restart/signal/force-cycle a process.
+- **Allocation and identification**: run this seller addition only on physical
+  Test 4, retaining its existing buyer V2/V3 background.  Preserve its B+P
+  topology, LLM-off setting, non-persuasion overlay and every A/B zero.
+  Terminal push, zero-margin truth, positive prose, cumulative demand-collapse
+  truth, DP/DPV3, backload and every other seller alternative stay OFF.  Test 1
+  is the clean contemporaneous seller control; Test 2/Test 3 may inform seller-
+  role diagnostics but are not aggregate controls because their buyer profiles
+  differ.  Agent 5 remains untouched and is a historical benchmark only.
+
+  This deterministic one-host challenger remains observational rather than a
+  randomized causal estimate.  Retain every Test-4 seller assignment over fires
+  and nonfires, both modes, buys/passes, zeros/losses/timeouts/unresolved and
+  immediate terminals.  Compare the seller-role cohort against its frozen
+  Test-4 pre-period and contemporaneous Test 1.  Because concurrent Test-3
+  buyer changes can affect own-account self-play, the external-opponent seller
+  cohort is the attribution endpoint; the complete operational ITT must also be
+  nonnegative, and own-account games are retained but reported separately.
+  Count each game once from the seller side.  The game—not the turn—is the
+  analysis unit; aggregate display rating is diagnostic.
+- **Clean deployment boundary owned outside Codex**: local commit `a64eb3e`
+  remains ahead of `origin/main=24250a6`, current Test 4 PID `95845` started
+  before it, and Test 4 had active/pending persuasion games at live-audit epoch
+  `1787833107`.  First review/push the inert implementation, then require a
+  natural successor containing it with the exact existing complete-agent
+  command and topology.  Do not restart, signal, bank, drain, stop or
+  force-cycle it to accelerate the boundary.  Require terminal proof for every
+  touched persuasion game and authenticated `active=0,pending=0`; freeze PID/
+  load time, full/persuasion/non-persuasion overlays and hashes, all other slots,
+  `control.json`, arms mtime, authenticated persuasion count and the preceding
+  seller cohort.  Only the deployment owner may use a one-key
+  `scripts/fleet.py set randomized` write to set this flag to `1`.  Verify every
+  other byte and all A/B zeros.  Never edit fleet JSON manually.
 - **Mechanism audit and immediate rollback**: exact OFF/ON replay every state
   until 20 clean firings.  Require seller/player 1, known-loss LOW, rounds
   2..19/20, exact baseline YES, three passed explicit positives since the last
@@ -91,33 +95,39 @@
   marker/gate, and only the documented plan delta.  Nonfires must be full-object
   identical.  Any scope/history/quality/role/mode/round error, HIGH decline,
   overlap, illegal wire, unexplained delta, strategy error, or attributable
-  timeout rejects the mechanism and requires the deployment owner to set only
-  this flag explicitly to `0`; never clear the key.
+  timeout disarms this flag on Test 4.  Never clear the key.
 - **Precommitted looks**: continuous reads may inspect only mechanism scope,
   legality, errors, timeouts, assignment counts, join recovery, and reach;
   outcome/rating reads occur only at the fixed looks below.  Primary endpoint
-  is authenticated official seller-role, same-configuration rating difference-
-  in-differences against the frozen Test 4 pre-period and unchanged live slots.
+  is authenticated official seller-role, same-configuration Test-4 difference-
+  in-differences against its frozen pre-period and contemporaneous Test 1.
   Secondary all-assignment endpoints are seller payoff/price, zero-payoff rate,
   low-sale rate, mode/prior slices, affected-game later-HIGH recovery, and
   later-HIGH turn purchase rate.  No completed-only or firing-only filter is
   permitted.
-  - Harm: `N_seller>=500`, `N_affected>=40`, and zero missing joins.  Roll back
+  `Affected` is frozen at the game level: the first exact OFF/ON replay that
+  changes before treatment divergence enrolls the game once under Stage 1.
+  - Harm: Test 4 and equal-era Test 1 each have `N_seller>=500`, Test 4 has
+    `N_affected>=40`, and both have zero missing joins.  Roll back
     for any mechanism failure, a 99% CI for official seller DiD wholly below
     zero, or a zero-payoff deterioration of at least 10 percentage points whose
     99% CI is wholly above zero.
-  - Futility: `N_seller>=1,000`, `N_affected>=70`.  Stop only when the point
-    estimates for official seller DiD, normalized payoff, and affected-game
+  - Futility: Test 4 and equal-era Test 1 each have `N_seller>=1,000`, and Test
+    4 has `N_affected>=70`.  Stop only when the point
+    estimates for official seller DiD, normalized payoff and affected-game
     later-HIGH recovery versus frozen `11/113 = 9.7%` are all nonpositive.
-  - Final: `N_seller>=2,000`, `N_affected>=100`, and zero missing joins.  Retain
-    on Test 4 only if the official seller DiD lower 95% bound is above zero,
+  - Final: Test 4 and equal-era Test 1 each have `N_seller>=2,000`, Test 4 has
+    `N_affected>=100`, and both have zero missing joins.  Retain on Test 4 only
+    if the external-opponent official seller DiD lower 95% bound is above zero,
     normalized-payoff point delta is positive, zero- and low-sale-rate deltas
     are nonpositive, binary and text official points are nonnegative, no
     `n>=100` mode/prior slice loses at least `.5` rating/game, and mechanism
-    audit remains clean.  An inconclusive result may remain Test-4-only but
-    cannot advance.  Declare reach futility at 4,000 seller assignments if 100
-    affected games have not accrued.  If authenticated joins remain
-    unavailable, the policy cannot be promoted.
+    audit remains clean and the complete operational ITT point is nonnegative.
+    An inconclusive result may remain Test-4-only but cannot advance to Agent 5.
+    Any later Agent-5 proposal requires a 97.5% lower bound across this two-
+    experiment portfolio plus fresh explicit authorization.  Declare reach
+    futility at 4,000 seller assignments if 100 affected games have not accrued.
+    Without authenticated joins, the policy cannot be promoted.
 - **Frozen sequential advancement rule**: do not inspect arbitrary interim
   slices or alter the treatment between fixed looks.  Stage 2 and stage 3 are
   separate future flags and cohorts, never silent changes to V1.  Stage 1 must
@@ -140,6 +150,105 @@
   wholly new games in 1,617 seller assignments, while stage 3 reaches nine
   games (`0.56%`) and `9/25` affected LOW opportunities sold under control
   (`36%`).  Therefore neither later stage is built or authorized now.
+
+## AUTHORIZED / PENDING CLEAN TEST 3 BOUNDARY — `direct-decline-safety-v1` replication (27 Aug)
+
+- **Allocation and null**: physical Test 3 / slot `conceder` alone may add
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1` and
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3=1` to its otherwise frozen baseline.
+  Test 1 is the matched all-three-family control; Test 2 finishes its existing
+  tight-credibility-reset cohort; Test 4 retains its existing V2/V3 background
+  and separately tests seller Stage 1; Agent 5 remains untouched.  No seller
+  flag, non-persuasion key, topology or A/B value changes.  The null is no
+  improvement in authenticated same-configuration buyer/text outcomes over the
+  complete all-assignment cohort.
+- **Evidence and objection**: the trailing 12-hour Test 1-4 census retains
+  6,387 assignments, including 3,112 buyer assignments and all 467 unresolved
+  games.  In the 2,304 V2/V3-off Test 1-3 buyer assignments, 118 target turns
+  occurred in 29 games.  Control bought 29 target warnings in 18 resolved
+  games; every purchased quality was LOW and none HIGH, costing 29 prices on
+  those turns.  Frozen older replay is consistent: 127 LOW, zero HIGH and one
+  unresolved among 128 would-change purchases.  These are purchase-selected
+  qualities and the counterfactual effect of passing is hidden, so they prove a
+  parser/action-consistency defect and one-directional mechanism safety—not an
+  identified official-rating lift.
+- **Mechanism contract**: run complete buyer-v2 and explicit-decline V1 first,
+  then V2, then V3.  Each new gate is buyer/player 2 at `buyer_decision`, current
+  player 2, text mode, with a complete control BUY.  The current message must be
+  an unambiguous direct decline owned by that classifier.  Live changes only
+  BUY/`yes` to PASS/`no`, adds the corresponding marker and exactly one adjacent
+  gate, remains heuristic and legal, and never reads game ID, opponent, seller
+  private quality or a configuration allowlist.  V1-owned, positive,
+  ambiguous, history-only, binary, seller and existing-PASS turns remain byte-
+  identical; V1/V2 precedence keeps later gates disjoint.
+- **Preflight**: V2/V3 are default OFF and already present in pushed commits
+  `6d3aec4` and `cef2621`.  Focused tests pass `164/164`; the current full suite
+  including these tests is `2,787 passed / 3` declared non-persuasion failures.
+  Exact Test-3 `conceder` reachability over 800 games passes V2
+  `649/649/649` and `719/719/719` on two seeds; independent V3 checks pass the
+  same counts, and V3 above a V2-enabled Test-3 control passes `739/739/739`.
+  These synthetic counts prove reach, isolation and action movement only.
+- **Clean boundary owned outside Codex**: read-only epoch `1787833107` found
+  Test 3 PID `94138` running the correct all-three-family, LLM-off command but
+  holding active/pending persuasion games.  Do not write mid-process or restart,
+  signal, bank, stop, drain or force-cycle it.  At a later natural zero-game
+  boundary, require terminal proof for every touched persuasion game and
+  authenticated `active=0,pending=0`; freeze PID/load time, the byte-identical
+  Test-3/Test-1 persuasion baseline, Test 3's full/non-persuasion hashes, all
+  other slots, `control.json`, arms mtime and authenticated persuasion count.
+  Freeze the immediately preceding 2,500 Test-3 buyer assignments and the
+  equal-era 2,500 Test-1 buyer assignments as the fixed preperiod and block-
+  weight source.
+  The deployment owner may then use one atomic `scripts/fleet.py set conceder`
+  write for V2=1 and V3=1.  Verify those are the only deltas, Test 1/Test 2/Test
+  4/Agent 5 are byte-identical, and every persuasion A/B value remains zero.
+- **Cohort and audit**: enroll every Test-3 persuasion assignment whose first
+  turn is post-Tcfg, retaining both roles, every fire/nonfire, buy/pass, zero,
+  loss, timeout, unresolved and immediate terminal.  Primary analysis uses all
+  buyer assignments.  External-opponent Test3-minus-pre/Test1 buyer/text
+  evidence is the attribution endpoint; complete operational ITT must also be
+  nonnegative, and own-account self-play is retained but reported separately.
+  Aggregate display rating and firing-only payoff are diagnostic.  Exact OFF/ON
+  replay until 20 clean V2 and 20 clean V3 firings.  Any wrong role/mode/scope,
+  positive or history-only veto, multi-gate overlap, PASS-to-BUY, illegal wire,
+  nonheuristic source, unexplained plan delta, error or attributable timeout
+  rejects the replication and requires explicitly setting both Test-3 flags to
+  `0`; never clear a key.
+- **Frozen reads**: inspect outcomes only at the fixed looks.  An affected game
+  is enrolled exactly once at its first OFF/ON action divergence before any
+  treatment-induced history divergence; its component is that first V2 or V3
+  gate.  The frozen estimator is exact-configuration-blocked
+  `(Test3_post-Test3_pre) - (Test1_post-Test1_pre)` on authenticated external-
+  opponent buyer/text per-game official deltas, using fixed pooled-preperiod
+  block weights and a 10,000-resample within-block game bootstrap percentile CI.
+  This CI is descriptive because allocation has one treated host.
+
+  Harm requires 500 authenticated Test-3 buyer assignments including at least
+  250 text assignments, an equal-era Test-1 cohort with the same 500/250
+  minima, at least five affected Test-3 games with both gates represented, and
+  zero missing joins in either cohort; reject for a wholly negative 99%
+  official buyer/text interval, a zero/negative-payoff deterioration of at
+  least 10 percentage points with a
+  wholly positive 99% interval, or any mechanism failure.  Futility requires
+  1,250 Test-3 buyer assignments including at least 625 text, a matched Test-1
+  cohort with the same 1,250/625 minima, at least 15 affected games with at
+  least five first-divergence games per gate, and complete joins; stop only if
+  the
+  official buyer/text point, normalized-payoff point and improvement in zero
+  rate are all nonpositive versus control.  Final requires 2,500 Test-3 buyer
+  assignments including at least 1,250 text, a matched Test-1 cohort with the
+  same 2,500/1,250 minima, at least 30 affected games with at least 10
+  independent first-divergence games per gate, and zero missing joins.  Retain Test-3-only
+  only if the external-opponent official buyer/text lower 95% bound is above
+  zero, the whole-buyer and normalized-payoff points are positive,
+  zero/negative/severe-rate deltas are
+  nonpositive, V2 and V3 component points are nonnegative, the complete
+  operational ITT point is nonnegative, no `n>=100` mode/prior slice loses at
+  least `.5` rating/game, and the mechanism remains clean.  Without
+  authenticated joins it cannot promote.  Declare reach futility at 5,000 buyer
+  assignments if 30 affected games or 10 per-gate first-divergence games have
+  not accrued.  Any later Agent-5 proposal additionally requires a 97.5% lower
+  bound across this two-experiment portfolio and a fresh explicit decision.
 
 ## OPERATOR-TERMINATED, NO EFFICACY VERDICT — `seller-terminal-push-v1` (27 Aug)
 

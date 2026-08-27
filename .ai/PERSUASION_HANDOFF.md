@@ -1,53 +1,68 @@
 # Persuasion workstream handoff
 
-## 17:35 Test 4 positive-pass recovery authorized; code ready, deployment pending
+## 17:53 all non-Agent-5 slots released; two-role portfolio frozen
 
-- The operator authorized only stage 1 of the seller credibility recovery on
-  physical Test 4 / slot `randomized`: default-OFF
-  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`.  This supersedes the
-  earlier proposed Test 2 allocation.  Agent 5 and every other slot remain
-  protected.  Preserve Test 4's B+P/LLM-off topology, V1/V2/V3 buyer safety
-  background, non-persuasion overlay, and explicit-zero persuasion A/B flags.
-  Do not add terminal push, truth/prose, the deprecated cumulative-rate flag,
-  or another seller mechanism.
-- The implementation and its replacement test are committed together as a
-  default-OFF change; the deployment boundary must use a later natural process
-  containing that commit, not a process that happened to load dirty source.
-  The exact current Test 4 stack passes reachability
-  `371/371/371` on seed 270827 and an independent `326/326/326`; focused seller
-  interactions pass `172/172`, current persuasion tests `930/930`, and the full
-  suite is `2,787 passed / 3` declared non-persuasion failures.
-- Current Test 4 PID `95845` launched at 17:15:43 IST from the dirty workspace
-  and therefore likely loaded the stage-1 code, but its overlay lacks the flag
-  and no stage-1 marker has appeared.  It held active persuasion games during
-  this audit and is not a deployment boundary.  Do not write the flag now and
-  do not restart, signal, bank, stop, or force-cycle the process.
-- Deployment owner: first commit/push the inert implementation, wait for a
-  later natural Test 4 process containing that commit, then wait for its own
-  natural zero-game boundary with terminal proof for every persuasion game it
-  touched.  Freeze PID/load/Tcfg, Test 4 full/persuasion/non-persuasion hashes,
-  every other slot, control hash, arms mtime, official persuasion rating/count,
-  and the preceding 2,000 authenticated seller assignments.  At authenticated
-  `active=0,pending=0`, one `scripts/fleet.py set randomized` write may set only
-  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`; verify all other state is
-  byte-identical.  Never edit fleet JSON manually.
-- After activation, enroll every Test 4 persuasion assignment and use the
-  seller-role all-assignment primary.  Exact OFF/ON replay until 20 clean
-  firings; any scope/history/quality/role/mode/round error, HIGH decline,
-  overlap, illegal wire, unexplained delta, source error, or attributable
-  timeout requires the deployment owner to set only this flag explicitly zero.
-  Harm look: 500 authenticated seller assignments and >=40 affected games;
-  futility look: 1,000/70; final: 2,000 authenticated seller assignments, zero
-  missing joins and >=100 affected games, under the complete CI and recovery
-  rules at the top of `.ai/EXPERIMENTS.md`.  Agent 5 is currently
-  bargaining-only, so use it only as a frozen historical benchmark rather than
-  pretending it is a contemporaneous persuasion control.
-- Stages 2 and 3 are not built or authorized.  They require separate flags and
-  cohorts after stage 1 completes.  Current shadow reach is insufficient: the
-  earlier burn trigger creates only five wholly new games in 1,617 seller
-  assignments; the two-success bank reaches nine games and would forgo 9/25
-  LOW control sales.  Follow the frozen advancement thresholds in
-  `.ai/EXPERIMENTS.md`; do not tune them from interim outcomes.
+- The operator released physical Test 1-4 for persuasion experiments and kept
+  Agent 5 as the sole protected slot.  Do not turn that into four simultaneous
+  guesses.  Frozen portfolio: Test 4 runs the pending seller Stage-1 recovery;
+  Test 3 replicates the already-reviewed buyer direct-decline V2+V3 repair;
+  Test 2 finishes its existing buyer tight-credibility-reset cohort; Test 1 is
+  the untouched contemporaneous control.  Agent 5 is never enrolled or written.
+- Test 4 may add only default-OFF
+  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`, retaining its existing
+  buyer V2/V3 background.  The flag is absent/OFF fleet-wide and has had no live
+  exposure.  Its seller all-assignment reads remain 500/40 harm, 1,000/70
+  futility and 2,000/100 final under the complete criteria in
+  `.ai/EXPERIMENTS.md`.  Terminal push, zero-margin truth, positive prose,
+  cumulative demand-collapse truth, DP/DPV3, backload and every other seller
+  mechanism stay OFF.
+- Test 3 may add only
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1` and
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3=1`.  In the trailing 12-hour all-outcome
+  census, V2/V3-off Test 1-3 bought 29 target warnings in 18 games; every joined
+  purchase was LOW and none HIGH.  Frozen older replay adds 127 LOW, zero HIGH
+  and one unresolved among 128 would-change purchases.  This is a parser/action
+  consistency repair, not evidence of an identified rating lift.  Current
+  focused tests pass `164/164`; exact Test-3 `conceder` reachability passes
+  V2 `649/649/649` and `719/719/719`, V3 the same independently, and stacked V3
+  `739/739/739`.  Test 1 is its matched all-three-family buyer control.  Frozen
+  Test-3/Test-1 matched minima are 500 buyer/250 text/5 affected at harm,
+  1,250/625/15 with at least five first-divergence games per gate at futility,
+  and 2,500/1,250/30 with at least ten per gate at final; joins must be complete.
+- Test 2 receives no new persuasion flag.  Its tight-prior deadlock is the
+  largest remaining opportunity, but its live reset is only marginal so far:
+  93 joined target-cell games were 58 zero, 19 negative and 16 positive, net
+  `+4.4P`; PASS-to-BUY precision was 202 HIGH / 40 LOW.  Finish the frozen
+  Test-2 trial before proposing another trust-unlock controller.
+- Read-only audit at epoch `1787833107` found Test 1 PID `94358`, Test 2 PID
+  `90664`, Test 3 PID `94138`, and Test 4 PID `95845`, all with active/pending
+  persuasion games.  No current process is a safe write boundary.  Test 4's
+  inert Stage-1 commit is local `a64eb3e` while `origin/main` remains `24250a6`;
+  push/review it and require a later natural code-loaded successor.  Test 3's
+  V2/V3 code is already in pushed history, but its current games still forbid a
+  mid-process write.  Never restart, signal, bank, stop, drain or force-cycle a
+  process merely to accelerate either experiment.
+- At each separate clean boundary, require terminal proof for every touched
+  persuasion game and authenticated `active=0,pending=0`; freeze PID/load/Tcfg,
+  full/persuasion/non-persuasion overlays, other slots, `control.json`, arms
+  mtime and authenticated counts.  Deployment-owner fleet writes may change
+  only the authorized flag(s) on that one slot.  Verify Test 1, Test 2, Agent 5,
+  every non-persuasion byte and every persuasion A/B zero are unchanged.
+- Exact OFF/ON replay the first 20 Stage-1 firings on Test 4 and the first 20 of
+  each V2/V3 gate on Test 3.  Any scope/role/history/quality/mode/round error,
+  HIGH Stage-1 decline, positive/history-only buyer veto, overlap, illegal wire,
+  unexplained delta, source error or attributable timeout disarms only the
+  failing addition; a shared-code defect disarms the affected profile.  Retain
+  every assignment, nonfire and unresolved outcome.  Use role-specific official
+  evidence; aggregate display rating cannot identify either component.  Recent
+  own-account exposure was about 4.6% of Test-4 seller games and 3.7% of Test-3
+  buyer games, so external-opponent role-specific DiD is the attribution check,
+  complete operational ITT must be nonnegative, and self-play is reported
+  separately rather than discarded.
+- Stage 2, Stage 3 and seller terminal push remain unbuilt or withheld.  Stage 2
+  adds only five wholly new games in 1,617 seller assignments; Stage 3 reaches
+  nine games and would forgo 9/25 LOW control sales; terminal push stopped at 19
+  clean firings without efficacy joins.  None runs concurrently with Stage 1.
 
 ## 03:05 positive-pass seller repair implemented default OFF; not live
 
@@ -118,7 +133,7 @@
   terminal gates, and zero source errors.  No process, queue, family, bargaining
   setting, or negotiation setting was changed.
 
-Last updated: 2026-08-27 01:23 IST. This file is the deployment boundary for
+Last updated: 2026-08-27 17:53 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
