@@ -4187,3 +4187,42 @@ known stale bargaining horizon-floor expectation plus live-corpus grid drift
 alarms for bargaining, negotiation, and persuasion. No strategy, live fleet
 configuration, `arms.json`, `control.json`, `.env`, supervisor state,
 deployment, or running process was changed for this work.
+
+### 2026-08-28 04:50 IST: one-round seller cent rule isolated for fleet promotion
+
+The operator explicitly requested the existing one-round seller mechanism on
+every fleet slot. Codex implemented the default-OFF deterministic flag
+`GLEE_NEGO_SINGLE_SELLER_CENT_V1`. It owns only a negotiation seller's legal
+offer in a known one-round game. It does not own buyer decisions, cap-10 or
+unknown-horizon games, bargaining, persuasion, or any other negotiation move.
+Complete information asks the visible buyer value minus exactly `$0.01`.
+Hidden information cannot reveal the buyer's private type, so it uses the
+existing official-support asks: seller values 80/100/120 map to
+119.99/119.99/149.99 at unit scale (and scale linearly while retaining an
+absolute cent); seller 150 remains structurally dead and asks 200 as the
+existing first-principles free roll. This hidden rule is not an extraction
+guarantee: for seller 80, the same 119.99 ask leaves a cent only against buyer
+120, is too high against buyer 100, and leaves 30.01 against buyer 150.
+
+The new gate has hard precedence over whole-policy replicas only in its exact
+cell and is exempt from downstream price guards. Test 4's custom randomized
+wrapper initially bypassed the gate (`eligible=131`, `fired=0`) and also shifted
+unrelated RNG actions when naively routed. The final router consumes and
+discards the same randomized target draw before ordinary dispatch, preserving
+the subsequent RNG stream; its repeat check passed `131/131/131`. Exact
+800-game reachability also passed Test 1 and Test 3 at `131/131/131` each.
+Test 2 and Agent 5 each produced `51 eligible / 51 fired / 0 wire changes` in
+300-game checks because their already-live V3/V1 whole policies submit the same
+one-round seller prices; the new flag standardizes ownership there without a
+behavioral delta.
+
+Focused negotiation/precedence/probe tests passed 96/96. The mandatory full
+suite finished 2,813 passed / 4 failed in 342.62s; failures are the unchanged
+stale bargaining horizon-floor expectation and live-grid drift alarms for all
+three families. Code remains inert while the new flag is OFF. No live overlay,
+process, family topology, bargaining/persuasion behavior, `.env`, `arms.json`,
+or `control.json` was changed by Codex. Fleet activation requires code-loaded
+processes and setting only `GLEE_NEGO_SINGLE_SELLER_CENT_V1=1` on champion,
+hardliner, conceder, randomized, and composite; Agent 5 is stopped, so its flag
+may be staged for its next launch. Test 4 currently does not run negotiation,
+but its corrected router is ready if negotiation is re-enabled later.

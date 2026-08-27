@@ -55,6 +55,18 @@ EPS = 0.01
 DETERMINISTIC_FLAG = "GLEE_NEGO_DETERMINISTIC_FP_V1"
 DETERMINISTIC_GATE = "deterministic_first_principles_v1"
 
+# Fleet promotion switch for only the seller-owned one-round offer.  This is
+# deliberately separate from DETERMINISTIC_FLAG: arming the seller mechanism
+# must not also replace cap-10 buyer decisions.  Complete information leaves
+# the visible buyer exactly one cent. Terminal-recorded opponents accepted
+# 892/892 positive shares and rejected 159/159 non-positive shares, but the
+# first-turn ITT was incomplete, so this is strong response evidence rather
+# than a logical acceptance guarantee. Hidden information uses the official
+# four-value support grid because the buyer's private value is unknowable.
+SINGLE_SELLER_FLAG = "GLEE_NEGO_SINGLE_SELLER_CENT_V1"
+SINGLE_SELLER_GATE = "single_seller_cent_v1"
+SINGLE_SELLER_COMPONENT = "single_round_seller_cent"
+
 #: Share at which we take an early offer rather than wait for our own terminal
 #: turn.  Owns exactly one decision.  Set to 1 - 0.0057, the measured
 #: walk-away rate in cap-10 complete-information games.
@@ -89,6 +101,10 @@ def enabled() -> bool:
 
 def deterministic_enabled() -> bool:
     return runtime_flags.enabled(DETERMINISTIC_FLAG)
+
+
+def single_seller_enabled() -> bool:
+    return runtime_flags.enabled(SINGLE_SELLER_FLAG)
 
 
 def treatment_assignment(game_id: object) -> bool | None:
@@ -185,6 +201,32 @@ def deterministic_eligible(game: dict) -> bool:
         return False
 
 
+def single_seller_eligible(game: dict) -> bool:
+    """Whether the exact one-round seller offer is structurally available."""
+    try:
+        if not _eligible(game):
+            return False
+        parsed = cell(game)
+        if parsed is None:
+            return False
+        horizon, _complete, i_am_seller, _my_value, _their_value = parsed
+        return (
+            horizon == "single"
+            and i_am_seller
+            and (game.get("valid_actions") or {}).get("type") == "offer"
+        )
+    except Exception:
+        return False
+
+
+def single_seller_owns(game: dict) -> bool:
+    """True only when the seller-only fleet flag owns this outgoing ask."""
+    try:
+        return single_seller_enabled() and single_seller_eligible(game)
+    except Exception:
+        return False
+
+
 def deterministic_owns(game: dict) -> bool:
     """True when the non-randomized promotion flag owns this designed move."""
     try:
@@ -193,10 +235,24 @@ def deterministic_owns(game: dict) -> bool:
         return False
 
 
+def promoted_owns(game: dict) -> bool:
+    """Whether either deterministic promotion owns the current move."""
+    return single_seller_owns(game) or deterministic_owns(game)
+
+
+def promotion_gate(game: dict) -> str | None:
+    """Return the exact promotion gate responsible for this owned move."""
+    if single_seller_owns(game):
+        return SINGLE_SELLER_GATE
+    if deterministic_owns(game):
+        return DETERMINISTIC_GATE
+    return None
+
+
 def owns(game: dict) -> bool:
     """True when this module, and nothing downstream, sets the price."""
     try:
-        if deterministic_owns(game):
+        if promoted_owns(game):
             return True
         if game.get("game_family") != "negotiation":
             return False

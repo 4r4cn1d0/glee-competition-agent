@@ -208,8 +208,23 @@ def make_probe(name: str, cfg, log=None, seed: int | None = None):
 
     def strategy(game: dict) -> dict:
         from .actions import coerce, safe_action
-        # Route only bargaining: Test 4's negotiation and persuasion streams
-        # retain the custom randomized policy and its field-identification role.
+        # Route the exact one-round seller promotion through ordinary dispatch.
+        # Advance the discarded randomized action first so this one deterministic
+        # override cannot shift Test 4's RNG stream and silently change later,
+        # unrelated probe actions.
+        if (name == "randomized"
+                and game.get("game_family") == "negotiation"):
+            from . import first_principles
+            if first_principles.single_seller_owns(game):
+                try:
+                    inner(game)
+                except Exception:
+                    pass
+                return base(game)
+
+        # Route only bargaining otherwise: Test 4's remaining negotiation and
+        # persuasion streams retain the custom randomized policy and its
+        # field-identification role.
         if (name == "randomized"
                 and game.get("game_family") == "bargaining"):
             from . import runtime_flags

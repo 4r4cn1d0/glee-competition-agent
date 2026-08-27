@@ -2313,15 +2313,20 @@ def decide(game: dict, cfg) -> dict:
     # buyer replicas.  Otherwise a selected replica returns before _decide()
     # and silently shadows the cent-leaving terminal price.  This override is
     # itself deterministic and owns only first_principles.DESIGNED cells.
-    if first_principles.deterministic_owns(game):
+    if first_principles.promoted_owns(game):
         action = first_principles.action(game)
         if action is not None:
+            gate = first_principles.promotion_gate(game)
             plan = {
-                "source": first_principles.DETERMINISTIC_GATE,
-                "component": "first_principles",
+                "source": gate or "first_principles",
+                "component": (
+                    first_principles.SINGLE_SELLER_COMPONENT
+                    if gate == first_principles.SINGLE_SELLER_GATE
+                    else "first_principles"
+                ),
             }
-            if runtime_flags.enabled("GLEE_TRACE_GATES"):
-                plan["gates_fired"] = [first_principles.DETERMINISTIC_GATE]
+            if runtime_flags.enabled("GLEE_TRACE_GATES") and gate is not None:
+                plan["gates_fired"] = [gate]
             action["_plan"] = plan
         else:
             action = _decide(game, cfg)
