@@ -1,5 +1,25 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
+## LIVE WITH OPERATOR-ACCEPTED CROSSOVER — Test 3 V2+V3 and Test 4 Stage 1 (27 Aug, 20:38 IST)
+
+- The operator explicitly superseded the pending clean-boundary wait and
+  accepted the in-flight game hit.  At Tcfg/arms mtime `1787843298`, fleet
+  tooling set only Test 3 `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2=1`, Test 3
+  `GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3=1`, and Test 4
+  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`.
+- Exact semantic verification found no other arms delta.  Agent 5, Test 1,
+  Test 2, all non-persuasion state and `control.json` were byte-identical, and
+  every persuasion A/B flag stayed explicit zero.  Final arms SHA-256 is
+  `1a6195d3a2ca22b1574094dc078549242aa9b9fb4499dbbac315f2ce38f542e9`;
+  control SHA-256 is
+  `f80a0edd84b6a19fdd18399b1c20bd1807ea4eea4abc605824f444322df99607`.
+- Because both slots had active persuasion games, any game first observed
+  before Tcfg is a crossover/operational enrollee, not clean efficacy evidence.
+  Retain it in operational ITT and report it separately.  The clean prospective
+  cohort begins only with games whose first logged turn is strictly post-Tcfg.
+  All original fixed looks, complete-join requirements, endpoints, mechanism
+  contracts and rollback rules below remain unchanged.
+
 ## AUTHORIZED / PENDING CLEAN TEST 4 BOUNDARY — `seller-positive-pass-streak-truth-v1` (27 Aug)
 
 - **Operator supersession and null**: the operator releases physical Test 1-4

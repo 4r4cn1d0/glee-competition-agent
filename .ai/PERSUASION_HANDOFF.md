@@ -1,5 +1,34 @@
 # Persuasion workstream handoff
 
+## 20:38 operator-authorized immediate activation; crossover games retained
+
+- At the operator's explicit direction to deploy immediately and accept the
+  in-flight game hit, the clean-zero-game wait was superseded.  Fleet tooling
+  activated Test 3 buyer direct-decline V2+V3 and Test 4 seller Stage 1 while
+  both slots still had active persuasion games.  Any game whose first logged
+  turn predates this boundary is retained as a crossover/operational game and
+  is excluded from clean prospective efficacy attribution.
+- The only semantic arms changes were
+  `conceder.GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2: absent -> 1`,
+  `conceder.GLEE_PERS_BUYER_EXPLICIT_DECLINE_V3: absent -> 1`, and
+  `randomized.GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1: absent -> 1`.
+  They were applied with two authorized `scripts/fleet.py set` calls.  Final
+  arms mtime/Tcfg is epoch `1787843298` (2026-08-27 20:38:18 IST), with SHA-256
+  `1a6195d3a2ca22b1574094dc078549242aa9b9fb4499dbbac315f2ce38f542e9`.
+- `control.json` remained byte-identical at SHA-256
+  `f80a0edd84b6a19fdd18399b1c20bd1807ea4eea4abc605824f444322df99607`.
+  Agent 5 and every other slot were byte-identical, no non-persuasion key
+  changed, and all ten code-recognized persuasion A/B keys remained explicit
+  zero on all five slots.
+- The loaded processes were Test 3 PID `15115` (20:30:02 IST, all three
+  families, LLM off) and Test 4 PID `12316` (19:37:00 IST, bargaining plus
+  persuasion, LLM off).  The immediate post-Tcfg sample contained 62 Test-3
+  turns across seven persuasion games and seven Test-4 turns across two games,
+  with zero strategy errors and no eligible new-gate firing yet.  Continue the
+  frozen first-20 exact mechanism audits, counting clean prospective games only
+  when their first logged turn is strictly after Tcfg while retaining all
+  crossover outcomes separately.
+
 ## 17:53 all non-Agent-5 slots released; two-role portfolio frozen
 
 - The operator released physical Test 1-4 for persuasion experiments and kept
