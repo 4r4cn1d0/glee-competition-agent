@@ -14,9 +14,9 @@
   "families": {
     "conceder": "bargaining,negotiation,persuasion",
     "champion": "bargaining,negotiation,persuasion",
-    "hardliner": "bargaining,negotiation,persuasion",
-    "randomized": "bargaining,negotiation,persuasion",
-    "composite": "bargaining,negotiation,persuasion"
+    "hardliner": "bargaining,persuasion",
+    "randomized": "bargaining,persuasion",
+    "composite": "bargaining,persuasion"
   },
   "llm": {
     "conceder": "off",
@@ -25,20 +25,36 @@
     "hardliner": "off",
     "randomized": "off"
   },
-  "bank_thresholds": {
-    "composite": 2505.0
-  },
+  "bank_thresholds": {},
   "bank_latched": [
-    "composite"
+    "composite",
+    "hardliner",
+    "randomized"
   ],
   "bank_observations": {
+    "randomized": {
+      "kind": "manual",
+      "ts": 1787766144.420578,
+      "pid": 52607
+    },
+    "hardliner": {
+      "kind": "manual",
+      "ts": 1787773417.726725,
+      "pid": 11737
+    },
     "composite": {
       "kind": "manual",
-      "ts": 1787679042.797973,
-      "pid": null
+      "ts": 1787836573.8276322,
+      "pid": 8693
     }
   },
   "drain_now": [
     "composite"
-  ]
+  ],
+  "bank_family_thresholds": {
+    "composite": {
+      "family": "negotiation",
+      "threshold": 2720.0
+    }
+  }
 }

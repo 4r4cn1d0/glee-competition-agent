@@ -803,3 +803,70 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-25 15:47Z — surface: the bargaining accept/offer floors and their exact boundary values
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-25 18:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 00:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 03:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 06:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 09:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 12:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 13:19Z — manual multi-agent review: Test 4 V3/one-cent successor
+
+The first candidate bundled a round-9 acceptance fallback after four rejected
+cent bids. Strategy review blocked it: the branch generalized from one failure
+and would discard a mechanism accepted in 39/40 retained terminal records. The
+branch and module were deleted. Review also required the post-hoc round-97
+salvage to remain independently switchable; selector-implied activation was
+removed. The revised selector inherits V3 and adds only copied profitable
+WalkAway acceptance and profitable round-99 terminal acceptance. A fresh code
+review and a fresh strategy/identification review both returned PASS.
+
+## 2026-08-26 15:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 18:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-26 21:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 00:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 03:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 06:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 09:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 12:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

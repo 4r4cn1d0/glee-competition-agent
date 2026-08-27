@@ -3,6 +3,245 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-27 18:49 IST — Agent 5 activity defense complete; banked after exact bargaining cushion
+
+The operator authorized whatever lossless play was needed to keep Agent 5 clear
+of the official activity penalties.  The authenticated pre-defense boundary was
+`16:45 IST`: bargaining `2637.44/15,348`, negotiation `2823.94/15,272`, and
+persuasion `2314.94/15,343`.  The first all-family defense cohort used physical
+slot `composite`, hardliner, LLM off, and its locked deterministic overlay.  It
+was drained through `scripts/fleet.py` only.  A later supervisor relaunch briefly
+used the then-configured bargaining+persuasion next topology and added 15
+persuasion games before a lossless bank; this was not treated as bargaining
+evidence.  The remainder ran bargaining-only through clean zero-game watchdog
+replacements.  No strategy flag, `.env`, manual JSON edit, Test 4 state, or
+other slot was changed.  The Agent 5 overlay stayed exactly
+`759831b1fffae74225d5a6acf1e88493ba6d0d9dfa22db4afbf66d21f3852a7a`.
+
+All 79 games assigned after the boundary were retained and have terminal files:
+bargaining was 20/20 agreements (8 P1, 12 P2); negotiation was 9 agreements,
+8 no-deals, and 5 walk-aways (8 P1, 14 P2); persuasion was 37 completed games
+(18 P1, 19 P2).  There are zero missing finals, timeouts, invalids,
+abandonments, or unresolved games in this cohort.  The exact authenticated
+post-defense state is bargaining `2658.47/15,368`, negotiation
+`2790.16/15,294`, and persuasion `2285.52/15,380`: rating changes of `+21.03`,
+`-33.78`, and `-29.42`, respectively.  Overall therefore moved from about
+`2592.11` to `2578.05`; this cost is retained rather than hidden by conditioning
+on bargaining or agreements.
+
+At `18:46:13 IST`, finalized bargaining plus the sole in-flight bargaining game
+first covered the exact `15,368` target.  One `scripts/fleet.py bank composite`
+request stopped new acquisition and let that game finish.  It agreed, raised
+bargaining to `2658.47`, and PID `8693` exited; the supervisor recorded the slot
+down at `18:46:32`.  Authenticated active games are zero, `fleet.py status`
+reports `composite BANKED`, and there is no composite runner.  Only the NEXT
+launch topology was restored to `bargaining,persuasion`; negotiation remains
+excluded and the slot remains disabled/banked.  Do not start it merely because
+the next-family string is restored.
+
+Conservative first-sample-after-cutoff activity is now B/N/P `20/22/37` over
+24h and `869/836/923` over 48h.  That clears the official 10/day rule by
+`+10/+12/+27`, the project 15/day safety buffer by `+5/+7/+22`, the official
+100/48h rule by `+769/+736/+823`, and the 115/48h safety buffer by
+`+754/+721/+808`.  The earliest projected next crossing is negotiation around
+`2026-08-28 16:40:37 IST` (48h stepping to 98), followed by its 24h count near
+`16:42:49` (stepping to 9).  Ratings-history cadence adds up to about ten
+minutes of uncertainty, so begin the next defense materially before `16:30 IST`.
+
+Queue diagnosis is observational but concrete.  Between `17:33:12` and
+`17:46:52`, Test 4 acquired 15 bargaining games while Agent 5 acquired one;
+Agent 5 nevertheless had the exact bargaining-only command, successful API
+polling, no cooldown, 403, 429, 5xx, transport error, or fleet fence.  The SDK
+re-posts its idempotent queue entry every 15 seconds, yet the documented
+30-second baseline fallback was not observed.  There is no read-only queue
+membership endpoint, so a stale/low-priority backend entry cannot be separated
+from undocumented suitability/rating scheduling.  Strategy cannot cause this
+because it runs only after assignment.  Do not alter Test 4 or add another
+Agent 5 family as a speculative bargaining fix; another active family can
+suppress baseline fallback.  Preserve these timestamps for a platform-support
+escalation if the next Agent 5 defense is similarly sparse.
+
+## 2026-08-27 03:05 IST — current-stack bargaining veto; recoverable seller repair implemented inert
+
+The apparent bargaining high-share hole is now **rejected**, not implemented.
+The permitted P2 / disclosed-H12 / `delta_2=.95` / messages-off cell is already
+owned before generic bargaining by `bargaining_p2_commitment.action()`.  In the
+current component stack there were 46 exact first triggers: 45 joined plus one
+unresolved, all 45 joined games later agreed, and accepting the `.45-.50`
+standing offer early was worse in all `45/45` by a mean `21.47` pot points.
+Test 2 was `12/12` worse and Agent 5 `14/14` worse.  This directly supersedes
+the older pre-component `35/0` post-hoc signal.  Do not create a standalone V2
+or revive the broad parent.  At a future deployment-owned clean boundary, the
+misleading but unreachable `GLEE_BARG_HIGH_SHARE_DELAY_GUARD=1` should be set
+explicit zero; Codex made no fleet write here.
+
+The original default-OFF persuasion candidate
+`GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1` is also abandoned before exposure.
+Its cumulative all-round buy rate counted the repair's own LOW/NO passes, so it
+could reinforce itself and permanently suppress LOW recommendations.  The
+historical flag is now deliberately inert and only fences newer seller work.
+It was not silently redefined.
+
+The working tree instead contains the new default-OFF deterministic
+`GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1`.  It runs the complete seller
+baseline first and can change only an ordinary known-value all-push LOW
+`YES -> NO` before round 20 when the three most recent explicit positive
+recommendations were all passed.  Exact NO/pass rows are ignored; the first
+later purchased YES immediately resets the streak and restores the original
+all-push policy.  Binary history uses the strict binary parser; token-text
+history requires literal `yes`/`no`.  Ordered completed history, buyer-decision
+consistency, role/phase/knowledge metadata, finite values, `u < price`, prior
+EV at least price, token/KEEP/LLM-off wire settings, and every seller-policy
+conflict all fail closed.  A firing changes only the wire, `recommend`,
+`reason`, `lie_rate`, and adds one marker plus sole gate
+`pers_seller_positive_pass_streak_truth_v1`; nonfires are byte-identical.
+
+Corrected both-mode all-assignment audit: Agent 5 had 1,432 seller assignments
+(1,253 joined, 179 unresolved); the streak reached 668 LOW turns in 109 games,
+with `8/664` observed target LOWs selling.  Test 2 had 644 assignments (625
+joined, 19 unresolved); it reached 359 turns in 59 games, with `3/359` selling.
+This is action-selected mechanism motivation only.  It cannot identify restored
+future conversion or official rating lift.  Focused safety/interaction tests
+pass `172/172`; persuasion-wide tests pass `708/708`; the full suite is `2,787
+passed / 3 failed`, with exactly the declared bargaining horizon-floor and
+bargaining/negotiation live-grid drift failures.  Exact Test 2 stack
+reachability over 800 games is
+`eligible=fired=action_changed=365/365/365`.  An independent adversarial review
+returned PASS after malformed text/metadata leaks were closed.  Agent 5 and all
+live fleet state remain untouched; fresh explicit authorization and a clean
+deployment-owner boundary are required for any Test 2 challenger.
+
+## 2026-08-27 02:10 IST — terminal push rolled back; next B/P holes audited
+
+The operator ended Test 2's persuasion `seller-terminal-push-v1` challenger.
+At `T1=1787776198.0249655`, one supported `scripts/fleet.py set hardliner`
+write changed only `GLEE_PERS_SELLER_TERMINAL_PUSH_V1` from `1` to explicit
+`0`.  Test 2's non-persuasion hash, `control.json`, Agent 5 and every other
+slot remained byte-identical; every persuasion `*_AB` key remains zero.  The
+121-assignment pre-T1 cohort contained 19 clean firings but was far below the
+precommitted efficacy boundary, so it is operator-terminated without a
+promotion or rejection verdict.
+
+The strongest current bargaining code/configuration hole is that
+`GLEE_BARG_HIGH_SHARE_DELAY_GUARD=1` on Test 2 and Agent 5 is unreachable:
+the code also requires `GLEE_BARG_DISCOUNT_NO_REGRESS=1`, while that broad
+parent is correctly `0` after the human scope correction.  Do not revive the
+parent.  A future default-OFF standalone V2 should preserve only the existing
+discounted `.45-.50` current-high-water predicate, three provenance-checked
+opponent offers, and all conflict fences.  Frozen evidence was 35 wins/zero
+losses with a maximally adverse unresolved bound still positive; fresh
+current-stack replay reached 24 Test 2 games (22 joined, 18 better/4 worse,
+`+.0617` pot per joined trigger) and 45 Agent 5 games (44 joined, 40/4,
+`+.0855`).  The cutoff is post-hoc and accept-now is compared with a trajectory
+generated under rejection, so this is a prospective challenger hypothesis,
+not a causal promotion.  The higher-risk secondary hole is Bob's unknown-
+horizon fitted-offer exit cliff: `best_ask()` returning `None` abruptly hands
+control to the much lower quadratic glide.  It appeared in 34/1,200 Test 2 and
+25/1,200 Agent 5 assignments, but the observed low accepted offers are heavily
+selected; holding the prior ask may turn them into zeros.
+
+The strongest next persuasion hypothesis is the existing default-OFF
+`GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1`.  Agent 5's complete joined cohort
+has 1,432 seller assignments.  In 94 games its exact predicate reached 660
+known-LOW all-push recommendations after cumulative demand fell below 50%; only
+15/660 sold.  In 38 games a buyer stopped entirely after buying a recommended
+LOW, leaving 378 later HIGH items unsold.  The fresh Test 2 reset-era seller
+stream reproduced the pattern: 264 exact turns in 42 games, only 4/264 sold,
+and 233 later HIGH items missed after 21 buyers stopped.  This supports a broad
+trust-preservation test—LOW becomes `no` only after collapse, HIGH stays
+`yes`—but cannot prove restored future conversion because the trigger and
+purchases are action-selected and the opponent may never resume.  Test it
+alone, prospectively, over every assigned seller game using official
+same-role/configuration evidence.
+
+The lower-risk, lower-reach persuasion hole is strict warning prose that the
+legacy fallback still treats as positive.  Agent 5 bought 40 such V1-missed
+warnings across 21 games; all 40 revealed LOW and zero HIGH.  Existing
+default-OFF V2/V3 only convert those direct-warning BUYs to PASS.  This is a
+semantic repair, not yet an efficacy result, and its roughly 2.3% assignment
+reach cannot plausibly supply the full rating target alone.  Do not add another
+buyer-unlock layer: Test 2's current reset had 27/42 affected PASS-to-BUY games
+negative.  Also keep retired broad bargaining floor releases, persuasion
+backloading, LLM prose, blanket selectivity/LCB, and rank gates off.
+
+## 2026-08-26 23:17 IST — Test 4 negotiation frozen at 2914.38
+
+The operator directed `test 4 stop negotiation`. At the authenticated boundary,
+Test 4 / physical slot `randomized` was PID `52607`, hardliner policy, LLM off,
+all three families, with eight active games. Negotiation was `2914.38/10,421`.
+Codex set only the next-launch family list to `bargaining,persuasion` and used
+the SDK-native manual bank at `ts=1787766144.420578`. The runner stopped queue
+acquisition, drained active games `8 -> 3 -> 2 -> 1 -> 0`, and negotiation
+remained exactly `2914.38/10,421` throughout. PID `52607` exited naturally and
+the supervisor left the banked slot down at 23:16:34; no process was signaled
+and no game was abandoned.
+
+After authenticated zero and process exit, Codex re-enabled only Test 4.
+Replacement PID `53923` launched at 23:17:05 with the verified command
+`--probe hardliner --families bargaining,persuasion --llm-mode off`, concurrency
+eight and a 3,600-second bound. Its first seven logged turns comprise five
+bargaining and two persuasion turns, with zero negotiation turns. A subsequent
+authenticated read still showed negotiation `2914.38/10,421`. Test 4's strategy
+flags were preserved but are dormant for negotiation because that family is no
+longer queued. No other slot or strategy configuration was changed.
+
+## 2026-08-26 18:49 IST — Test 4 V3/one-cent negotiation successor ready
+
+The new default-OFF whole-policy selector is
+`GLEE_NEGO_TEST4_HOTFIX_V1`. It is a strict successor to Test 2 support V3:
+hidden unknown- and cap-10 seller asks stay inside the official four-value
+support; hidden cap-10 terminal buyers retain the absolute `seller+$0.01`
+support bid; all V1 first-principles cent cells and the observed-leader buyer
+matrix remain. The selector additionally folds in only two pointwise-dominant
+repairs: a copied hidden/unknown buyer `WalkAway` becomes `AcceptOffer` when the
+standing offer leaves at least one cent, and a buyer Reject/Walk becomes Accept
+at the observed round-99 terminal node when it leaves at least one cent. The
+measured-negative broad hidden accept-all-profitable policy is not revived.
+
+Evidence retained all outcomes. V3's cap-10 repricing was motivated by seven
+fresh seller games whose opening asks all exceeded the largest possible buyer;
+four agreed, two no-dealed, and one walked, with two crumb agreements scoring
+`-5.7/-6.3`. Exact cent offers were accepted `39/40` in retained terminal
+records, so an initially proposed deterministic round-9 fallback from one
+exceptional failure was rejected by the red team and removed. The hidden
+Walk-to-Accept repair is payoff-dominant because Walk pays zero. Round 99 is
+terminal in `1,225/1,225` observed games reaching it, making profitable Accept
+payoff-dominant there. The post-hoc round-97 guard remains its own independent
+flag and is not implied by the selector.
+
+Two independent post-diff red-team reviewers returned PASS after the round-9
+rule was removed and round 97 was decoupled. Focused negotiation tests pass
+`919/919`; the complete suite is `2,690 passed / 3 failed`, with exactly the
+pre-existing bargaining horizon-floor expectation and bargaining/negotiation
+live-grid drift alarms. Exact Test 4 physical-stack reachability using its live
+`hardliner` wrapper passes `7,004 eligible / 7,004 fired / 1,520 submitted
+actions changed` over 600 games; representative seller asks move
+`317.65 -> 119.99` and `47,647.20 -> 14,999.99`.
+
+Commit `cd5b6ee0f433cbe96e519e6a7993b7d240288b41` is pushed to
+`origin/main` and the successor is live only on Test 4. The new selector was
+armed at 18:50:01 IST while old PID `22195` continued on V1; it stopped taking
+new work at its normal one-hour boundary, completed every held game, and exited
+cleanly at 19:06:46 after a 4,083-second shift. Replacement PID `39161` launched
+at 19:06:57 as the same `hardliner` wrapper, all three families, LLM off,
+concurrency eight. A live negotiation at `ts=1787751425.8028271` recorded
+`plan.source=test4_hotfix_v1` and gate `test4_hotfix_v1`. Only then was Test 4's
+superseded `GLEE_NEGO_AGENT5_DEFAULT_V1` set to zero; a later negotiation at
+`ts=1787751458.433494` still recorded and fired `test4_hotfix_v1`, proving the
+live overlay transition. The independent round-97 flag remains one. The launch
+baseline read was negotiation `2738.20/9,917`, bargaining `2648.85/10,265`, and
+persuasion `2348.04/10,913`. No other slot was promoted, and Test 4's bargaining
+or persuasion configuration was not changed.
+
+The first three successor negotiation completions moved the live rating to
+`2729.38/9,920`, but they do not identify a policy regression. Two were duplicate
+hidden one-round buyer/P2 cells with own value `1,000,000` and a sole incoming
+ask of `1,196,000`; both correctly rejected because no profitable action or
+counterturn existed. The third was hidden one-round seller/P1 with own value
+`100`; the corrected support ask was exactly `119.99` and the hidden buyer walked.
+Thus the first two zeros were action-forced and the third used the human-supplied
+one-cent/support rule. Keep all three in subsequent all-outcome rollout analysis.
+
 ## 2026-08-26 16:39 IST — Test 4 round-97 low-share negotiation guard live
 
 Commit `9dab12127dab33e3eeca6c38826901cd11a187b2` is pushed to
@@ -61,6 +300,236 @@ with zero malformed actions or strategy errors. The rare round-97 gate has not
 yet fired. Bargaining remained exactly frozen at 10,186 games while negotiation
 advanced to 9,740. No other slot, agent, bargaining behavior, or persuasion
 flag was changed by this negotiation rollout.
+
+## 2026-08-26 16:16 IST — Test 4 V2+V3 live after clean restart
+
+The operator explicitly authorized restarting Test 4. Codex used the supported
+SDK-native bank so PID `5532` stopped acquisition, finished all seven held
+persuasion games, reached authenticated zero/zero, and exited without any
+abandonment or signal. At the stable no-process boundary, one fleet write set
+only Test 4 persuasion V2=1 and V3=1 at `Tcfg=1787741035`; exact reversal
+reproduces the full pre-write arms hash. Replacement PID `10380` launched at
+16:14:42 as hardliner, persuasion-only, LLM off. Agent 5, other slots, every
+non-persuasion key, prose/truth, unlock/seller repair, and every A/B flag stayed
+unchanged. The first post-launch turns are clean; first-20-per-gate exact replay
+is now active under `.ai/EXPERIMENTS.md`.
+
+## 2026-08-26 15:42 IST — Test 4 direct-decline repair authorized, not yet live
+
+The operator authorized a Test-4-only deterministic V2+V3 buyer direct-decline
+repair after the log review. Existing code is already pushed/default OFF and
+passes focused tests and exact Test 4 hardliner-stack reachability. Agent 5 and
+all non-persuasion behavior remain outside scope. Test 4 PID `1184` still had
+live persuasion games at the predeployment audit, so no flag or process action
+was taken. The complete frozen experiment rule and clean-boundary instructions
+are at the top of `.ai/EXPERIMENTS.md` and `.ai/PERSUASION_HANDOFF.md`.
+PID `1184` later drained cleanly to zero at 15:47:58 and exited, but no fleet
+write occurred before successor PID `5532` acquired games at 15:49:57. V2/V3
+therefore remain OFF; wait for PID `5532`'s next natural zero-game boundary.
+The bounded PID-1184 terminal join is complete: 173/173 unique persuasion games
+(79 seller, 94 buyer, 55 exact-zero own outcomes), 3,460 turns, and zero missing,
+nonterminal, wrong-family, or malformed records. Its sorted-newline game-ID
+SHA-256 is
+`0f276b43c625a04134a0ffc4bc67fb0e6557ec541a95fc2e52becf7b7d0f42bd`.
+
+## 2026-08-26 12:54 IST — Test 4 bargaining and negotiation frozen
+
+The operator directed: "freeze test 4 bargaining and negotiation." At the
+authenticated pre-change boundary, physical slot `randomized` / Test 4 was PID
+`95548`, policy `hardliner`, LLM off, and already excluded negotiation; it was
+still playing bargaining and persuasion with six active games. The exact
+family state was bargaining `2680.04/10184`, negotiation `2724.71/9738`, and
+persuasion `2350.49/10178`.
+
+Codex used only repository fleet tooling to set the next-launch families to
+`persuasion`, then requested the runner's SDK-native lossless bank. PID `95548`
+stopped queueing new games, completed all six in-flight outcomes, reached
+authenticated `active_games=0`, and exited naturally at `12:53:24 IST`. No
+process was killed or interrupted and no game was abandoned. The exact frozen
+post-drain ratings/counts are bargaining **`2684.18/10186`** and negotiation
+**`2724.71/9738`**; persuasion was `2355.84/10184`.
+
+Only after PID `95548` disappeared from the process table did Codex re-enable
+the slot. Replacement PID `97052` launched at `12:54:04 IST` with the verified
+command `--families persuasion`, the same hardliner policy, LLM off,
+concurrency eight, and a 3,600-second bound. The first post-launch read had two
+active games while bargaining and negotiation counts remained exactly
+`10186`/`9738`. Test 4 must remain persuasion-only unless the operator
+explicitly unfreezes a family. No strategy flags, Agent 5 controls, or other
+slots were changed. Agent 5 had independently already completed its previously
+armed negotiation-2720 bank before this request.
+
+## 2026-08-26 11:28 IST — Agent 5 family-only 2720 negotiation bank is live
+
+Codex implemented, reviewed, committed, pushed, and deployed authenticated
+per-family peak banking in commit
+`00cf4a5027e84a0b5a8f0ef2b84a786cec8ecdb1`. The focused control/watcher suite
+passed `48/48`; the full suite passed `2553` tests with only the three known
+pre-existing failures (the bargaining horizon-floor assertion and the
+bargaining/negotiation live-grid drift alarms). Two review findings were fixed
+before deployment: clean watcher shutdown can no longer be swallowed by the
+poll loop, and a wrong trigger-removal command now refuses instead of falsely
+claiming success.
+
+With no eligible rating trigger armed, repository tooling reloaded only the
+minute watcher from old PID `63596` to PID `94819`; the replacement singleton
+advertises `family-peak-v1`. All five competition-agent PIDs remained unchanged,
+including Agent 5 PID `93204`, so no game process, supervisor, queue, or strategy
+was interrupted. Fleet tooling then armed exactly
+`bank_family_thresholds.composite={"family":"negotiation","threshold":2720.0}`.
+There is no Agent 5 overall threshold, disabled request, drain request, or bank
+latch. The watcher recorded `poll ok (armed=1)` at `11:28:09 IST`.
+
+The post-arm authenticated read kept Agent 5 live on all three families with
+seven active games: bargaining `2460.07/15106`, negotiation `2672.03/15064`,
+and persuasion `2392.22/15065`. The exact strategy overlay remains unchanged at
+SHA-256 `94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`.
+The sole automatic stop condition is now the first fresh authenticated Agent 5
+**negotiation rating >=2720.00**. Overall rating, rank, bargaining, persuasion,
+and the historical 2505 crossing must never substitute for it. On a qualifying
+sample the watcher atomically requests the existing SDK-native lossless drain;
+the runner stops queueing new games, finishes every in-flight game, and stays
+down.
+
+## 2026-08-26 11:06 IST — operator resumed Agent 5; only negotiation 2720 may bank it
+
+The operator explicitly superseded the overall-2505 peak lock: "let agent 5
+take games again, dont stop it from taking games unless the negotiation reaches
+2720+." The prior lossless drain had completed server-side with
+`active_games=0`; PID `86125` then exited naturally at `11:05:56` and the
+supervisor left physical slot `composite` down. No process was signalled and no
+game was abandoned.
+
+Only after the old PID was fully down, Codex used safe fleet tooling to remove
+the obsolete authenticated-overall threshold (`fleet.py peak-off composite`)
+and re-enable the slot (`fleet.py start composite`). Control now contains no
+Agent 5 overall threshold, no Agent 5 bank latch, and no Agent 5 drain/disabled
+request. Replacement PID `93204` launched at `11:06:56` on the unchanged
+78-key overlay SHA-256
+`94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`, policy
+`hardliner`, all three families, LLM off, concurrency eight, and a 3,600-second
+shift. It immediately resumed play; the first verified read had four active
+games. Authenticated family state was bargaining `2468.47/15057`, negotiation
+`2663.29/15015`, and persuasion `2406.19/15017`, so the new trigger had not
+fired.
+
+Effective immediately, **do not bank Agent 5 for overall rating, rank,
+bargaining, persuasion, or the historical 2505 observation.** Its sole
+rating-triggered bank condition is the first fresh authenticated
+**negotiation-family rating >=2720.00**. A family-specific one-minute watcher
+extension is being implemented and tested; until it is armed, monitoring must
+apply the same exact family-only condition and must never substitute overall.
+When it fires, preserve the exact authenticated negotiation observation and use
+only the repository's lossless bank path.
+
+## 2026-08-26 10:43 IST — Agent 5 crossed 2505; lossless peak bank requested
+
+The first fresh authenticated overall-board observation in this monitoring run
+put physical slot `composite` / Agent 5 at **2513.66 overall** at
+`2026-08-26 10:43:29 IST` (`ts=1787721209.085619`, overall rank 1). This is an
+overall rating, not the bargaining-family substitute. The same authenticated
+observation reported bargaining `2471.96/15052`, negotiation `2668.82/15009`,
+and persuasion `2400.19/15012`. It therefore satisfied the operator's exact
+`>=2505.00` peak-lock trigger on the first qualifying sample; no second sample
+was awaited.
+
+Codex immediately used `scripts/fleet.py bank composite`. The fleet tool
+atomically requested the runner's SDK-native lossless drain: it stops queueing
+on its next normal poll, completes every in-flight game, and stays down. No
+process was signalled, killed, interrupted, or force-cycled, and no game was
+abandoned. At observation/request time the live process was PID `86125`
+(started `2026-08-26 09:43:49 IST`), workspace HEAD
+`3434ed555fe4ea57f4ac7e28e01b7951bfd1fb8e`, and the locked 78-key overlay's
+canonical SHA-256 was
+`94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`.
+
+Authenticated activity at the trigger was bargaining/negotiation/persuasion
+`+1586/+1551/+1584` over the trailing 24-hour baseline and
+`+4302/+4269/+4301` over the trailing 48-hour baseline, far above the
+`15`/`115` defense buffers. Agent 5 is now peak-locked: deploy no further
+experimental strategy to it. Verify PID `86125` continues normally while it
+drains, then verify it is fully down and absent from all queues. Preserve and
+report every terminal result from this final cohort before making any
+performance claim.
+
+## 2026-08-26 09:43 IST — operator explicitly restarted Agent 5
+
+The operator twice directed "restart Agent 5", superseding its stopped state.
+The physical `composite` slot was already fully down with zero local process,
+so `scripts/fleet.py start composite` safely removed only its disabled/drain
+controls. The supervisor launched PID `86125` at `09:43:49` on workspace HEAD
+`3434ed555fe4ea57f4ac7e28e01b7951bfd1fb8e` with policy `hardliner`, all three
+families, LLM off, concurrency eight, and a bounded 3,600-second shift. No
+running process was signalled or interrupted and no game was abandoned.
+
+The locked 78-key strategy overlay is unchanged at canonical SHA-256
+`94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`.
+The previous one-shot `bank_latched` audit record and 2505 threshold remain in
+control, as `fleet.py start` intentionally preserves them; the old crossing
+will not immediately bank the replacement or count as a newly armed trigger.
+Server verification after launch reported all three rating families and seven
+active games. At that read, bargaining was `2495.94/14919`, negotiation
+`2616.98/14876`, persuasion `2372.56/14878`, and overall `2495.16`. No strategy
+flag, family topology, LLM setting, or other slot was changed.
+
+## 2026-08-26 09:05 IST — AC recovery verified; first usable shift still pending
+
+The host has remained on AC power with the lid open since 08:43:49. `pmset`
+records zero Sleep and zero DarkWake events after that boundary, and the
+watcher, collector, and rating snapshot daemons have recovered their normal
+cadence. All four challenger accounts resumed matchmaking after their common
+queue bans expired. Test 2 drained without abandonment at 08:48:41 and launched
+PID `82326`; Test 3 drained without abandonment at 08:57:46 and launched PID
+`82601`. Test 1 PID `78356` and Test 4 PID `78267` still have matched games and
+must finish their lossless drains naturally. No process was signalled and no
+fleet configuration changed.
+
+The two finalized pre-recovery shifts retain 665 outcomes: bargaining 220
+agreements and two timeouts; negotiation 105 agreements, 63 no-deals, 49 walks,
+and five timeouts; persuasion 211 completions and ten timeouts. They contain
+169 exact-zero payoffs and zero invalids. The weakest adequately sampled cell
+is Test 2 bargaining P1, complete information, known H12 at fitted percentile
+`.2854` (`n=21`, all agreements). Test 2 persuasion is the weakest finalized
+profile-family at `.4605` over 76 scoreable outcomes; 35 hidden-value seller
+records are retained but cannot be assigned a percentile. These are outage-
+spanning diagnostics, not deployment evidence.
+
+The next falsifiable read is one full natural shift that begins after the ban,
+runs continuously on AC with zero sleep, and finishes with zero unresolved
+games. Retain all zeros, timeouts, invalids, roles, and cells. If Test 2 P1
+complete/H12 bargaining remains below `.40` with at least 20 all-outcome games
+in that clean shift, inspect its exact offer/accept path and propose a new
+default-OFF deterministic hypothesis. Do not revive broad observed-gain or the
+discount-no-regress parent: both are already measured negative or out of the
+human-corrected scope. Agent 5 remains banked and unchanged.
+
+## 2026-08-25 23:30 IST — Test 2 and Test 4 now use Agent 5 persuasion
+
+The operator superseded the pending persuasion challengers and requested Agent
+5's effective persuasion behavior on physical Test 2 (`hardliner`) and Test 4
+(`randomized`). Test 2 already had the exact Agent 5 persuasion dictionary, so
+it received no fleet write. Its proposed `adaptive-credibility-v1` additions
+were canceled before exposure and remain absent/OFF.
+
+Test 4 PID `60650` completed its natural 4,151-second shift and drained cleanly
+at 23:29:46 IST. At `Tcfg=1787680787`, fleet tooling changed only
+`GLEE_PERS_BUYER_EXPLICIT_DECLINE_V2`,
+`GLEE_PERS_P08_POSITIVE_PROSE_V1`, and
+`GLEE_PERS_ZERO_MARGIN_TRUTH_V1` from `1` to explicit `0`. Replacement PID
+`70598` launched naturally at 23:29:56 with the same hardliner probe, all three
+families, LLM off, and a 3,600-second maximum shift. No process or queue was
+forced, and Agent 5 remained banked and untouched.
+
+The Test 4 non-persuasion overlay hash remained
+`2e9104ab483ad11c48e64a3cd003d796891f5317d3956ca28df0f7971485679e`;
+the respective Test 2 and Agent 5 full overlays remained byte-identical across
+the write; `control.json`
+remained `a55b9853f72d69f951d474a37137e71e7adb356d64f570d79193ef638ee34906`.
+All ten persuasion `*_AB` keys are explicit zero on every slot. Test 4 retains
+the three explicit-zero keys because clearing them can reactivate launch-env
+values; its effective behavior is nevertheless Agent 5-identical. The Test 4
+challenger is operator-terminated without a causal efficacy verdict, not
+promoted or rejected.
 
 ## 2026-08-25 20:52 IST — high-share bargaining flag is configured but unreachable
 
@@ -3558,3 +4027,123 @@ stale bargaining horizon-floor assertion and the bargaining/negotiation live
 grid drift alarms. Review found no remaining high-risk code issue. Exact rating
 freeze remains impossible: an observation stops new matchmaking promptly, but
 up to the slot's existing concurrency of already-matched games must settle.
+
+**23:30 IST rollout completion.** The remaining pre-commit runners all exited
+through their SDK boundaries and were never signalled. Verified live replacement
+PIDs are champion `62880` (22:50:39), hardliner/Test 2 `63678` (23:01:36),
+conceder/Test 3 `65015` (23:09:21), and randomized/Test 4 `70598` (23:29:56).
+Every command retains all three families, concurrency 8, and LLM off; each start
+postdates bank commit `457cc91`. Agent 5 remains down/BANKED, so it has no process
+to replace until its next authorised defence shift. Watcher PID `63596` remained
+live on exact 60-second ticks throughout the rollout. Fleet-wide minute-bank
+capability is therefore live on every currently running slot and available on
+the stopped Agent 5 code path at its next start.
+
+### 2026-08-26 07:41 IST: post-outage cohorts finalized; host sleep remains the blocker
+
+Agent 5 remains authenticated at overall `2490.75`, bargaining
+`2480.55/14916`, negotiation `2619.14/14874`, and persuasion
+`2372.56/14878`. It is down with `disabled`, `drain_now`, and `bank_latched`
+still present, its locked overlay unchanged, and no observed decay. Conservative
+activity lower bounds are B/N/P `1813/1780/1814` over 24 hours and
+`4501/4473/4499` over 48 hours, so no defence shift is due.
+
+Tests 1, 3, and 4 eventually completed clean zero-abandon drains at 07:38,
+07:26, and 07:33 respectively and relaunched with current code, all three
+families, LLM off, and deterministic overlays. Test 2 PID `77504` is also
+current-code-loaded, but its preceding process was replaced only after an
+authenticated zero-active stall and produced no natural finalized cohort.
+Every randomizer, A/B, probe, and cell-assignment control remains off.
+
+The three natural drains retained 984 outcomes: bargaining 324 agreements and
+4 timeouts; negotiation 175 agreements, 94 no-deals, 52 walks, 5 timeouts, and
+4 invalid-moves-exceeded; persuasion 305 completed and 21 timeouts. There were
+245 exact-zero payoffs. The weakest adequately sampled completed cell was Test
+4 bargaining P1, hidden information, unknown horizon, messaging off at fitted
+percentile `.4012` (`n=10`, all agreements). Test 4 persuasion was the weakest
+profile-family at `.4915` over 85 scoreable outcomes, with 18 additional
+retained seller records lacking the value needed for a percentile. These are
+not deployment evidence: all three cohorts span the synchronized transport
+failure and the Test 4 cell is still small.
+
+The operational confounder is now directly observed. macOS recorded 27
+Maintenance Sleep/DarkWake cycles between 07:18 and 07:41 while on battery,
+despite the live `caffeinate` assertion. The fleet was healthy at the last
+check with 7--8 active games per challenger, but clamshell/battery sleep can
+again reset connections and trigger synchronized timeout bans. Do not signal or
+cycle the fleet. The falsifiable next check is one fully awake, AC-powered,
+zero-timeout/zero-invalid natural shift; only then re-evaluate Test 4's hidden
+unknown-horizon bargaining cell. If synchronized failures persist while the
+host is continuously awake, investigate shared transport; if only one slot
+fails, inspect that runner and its invalid-move wire before proposing strategy.
+
+### 2026-08-27 00:41 IST: persuasion round-20 incentive audit (analysis only)
+
+A human report that Tiberius passed a truthful HIGH/YES final round at `p=1/3`
+is consistent with terminal cheap-talk discounting, but the missing `v/price`
+ratio prevents calling it a mistake. In our clean truthful-history games,
+Tiberius bought HIGH/YES on round 20 in `4/4` known `v=2P` cases, but `0/5` at
+`v=1.2P`, `0/2` at `v=1.25P`, and `0/5` when value was unknown. It is
+value-sensitive, not an unconditional terminal refuser.
+
+The current seller has no special terminal override: HIGH is always YES; LOW is
+YES only in prior-profitable/all-push or still-responsive unknown-value states.
+Since equal-seller Tcfg `1787680787`, our `p=1/3` round-20 actions were 543/543
+HIGH YES and 382/1,061 LOW YES, so 41.3% of all 925 YES messages were LOW. The
+remaining 679 LOWs were NO. Among resolved actions, YES sold 390/837 while NO
+sold 0/625; this is selected observational evidence, not the counterfactual
+conversion rate. Opponent sellers said YES on 1,324/1,594 (83.1%) of our
+`p=1/3` final buyer decisions, confirming that terminal recommendations are
+heavily pooled.
+
+Decision: reject an unconditional buyer round-20 PASS or BUY. Large-value
+cells still profit from buying; low-value terminal positives are often dumps.
+The appropriate buyer hypothesis is a value-aware terminal threshold, and it
+must preserve truthful high-value histories. A separate seller hypothesis is
+stronger: default-OFF `SELLER_TERMINAL_PUSH_V1`, changing only terminal LOW
+control-NO to YES. It has no reputation continuation cost and current NOs never
+sold, but efficacy remains prospective. This is not the measured-negative
+broad backload arm: that arm withheld earlier sales in already prior-profitable
+cells, whereas this proposed test changes only the final action where the
+current complete control plan says NO. Do not stack it into an active Test 2
+buyer cohort; if later authorized, isolate on Test 2, exact-replay first 20
+firings, and judge all seller assignments under the existing 500/2,000 rules.
+
+### 2026-08-27 01:00 IST: Test 2 terminal seller push implemented; deployment pending
+
+The operator explicitly authorized the seller-only terminal hypothesis on Test
+2. Codex implemented `GLEE_PERS_SELLER_TERMINAL_PUSH_V1` default OFF in
+`glee_agent/strategies/persuasion.py`. The complete prior seller plan is now a
+baseline function wrapped by a strict postcondition. Only seller/player 1,
+persuasion, exact numeric round 20/20, private LOW, baseline-NO states may move
+to YES. The plan retains its reason and every prior field; the only differences
+are `recommend: false -> true`, marker `seller_terminal_push_v1`, and sole gate
+`pers_seller_terminal_push_v1`. HIGH, earlier/non-20 rounds, existing YES,
+buyers, malformed states, conflicting seller mechanisms, and nonfires are
+byte-identical. The role key may be absent because the official persuasion
+protocol structurally fixes P1 as seller; a contradictory key still fails
+closed. This is deterministic and game-ID invariant.
+
+Focused verification passed 52/52, the persuasion suite passed 663/663, and the
+mandatory exact physical Test 2 `hardliner` / effective `champion` reachability
+check passed 117 eligible, 117 fired, and 117 submitted NO-to-YES action changes
+over 800 paired games, covering binary and text wire types. The full suite was
+2742 passed with exactly the three known unrelated failures: the stale
+bargaining horizon-floor expectation and bargaining/negotiation live-grid drift
+alarms. `scripts/check_reachability.py` now recognizes the new gate with its
+exact structural predicate. No live configuration, process, queue, `.env`,
+`arms.json`, `control.json`, bargaining behavior, or Agent 5 state was changed.
+
+Deployment objection: the current Test 2 tight-credibility-reset experiment
+precommitted a frozen seller and was only 910/2,000 at its latest complete
+checkpoint. Do not blend cohorts. Claude/deployment owner should review and
+push the inert code, wait for a code-loaded SDK-native bank and lossless
+zero-game drain, mark the reset-only cohort operator-superseded without an
+efficacy verdict at its exact final count, retain its buyer flag as frozen
+background, then set only
+`GLEE_PERS_SELLER_TERMINAL_PUSH_V1=1` using `scripts/fleet.py`. Preserve Test
+2's bargaining + persuasion / negotiation-disabled / LLM-off topology, every
+other Test 2 key, Agent 5 and other slots, all A/B zeros, and control. First-20
+exact replay, immediate explicit-zero rollback rules, and 500-seller harm /
+2,000-seller final efficacy rules are frozen at the top of
+`.ai/EXPERIMENTS.md`.

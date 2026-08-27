@@ -3,6 +3,53 @@
 Each line is something measured, with its sample. Hypotheses do NOT belong here;
 they go in EXPERIMENTS.md until they have evidence.
 
+## Current-stack high-share bargaining audit (27 Aug)
+
+- The earlier pre-component `.45-.50` acceptance signal does not survive the
+  current P2 commitment stack.  The permitted P2 / disclosed-H12 /
+  `delta_2=.95` / messages-off cell is already decided by the commitment
+  component before generic bargaining.  Across 46 exact first triggers, 45
+  joined and one remained unresolved; every joined game later agreed.
+- Accepting the standing `.45-.50` offer at the trigger was worse than the
+  observed later agreement in all `45/45`, by a mean `21.47` pot points.  Test 2
+  was `12/12` worse (mean `21.61`); Agent 5 was `14/14` worse (mean `21.77`).
+  The current thresholds rise from about `.5687` at round 1 to `.9499` at round
+  11, so a standalone high-share override would loosen a winning active policy.
+  Do not implement it or revive its broad parent.
+
+## Seller positive-pass streak localization (27 Aug)
+
+- Corrected audit retained both seller action types and all assignments.  Agent
+  5 had 1,432 seller assignments (1,253 joined, 179 unresolved); Test 2 had 644
+  (625 joined, 19 unresolved).
+- After three consecutive passed explicit positive recommendations, Agent 5's
+  ordinary known-LOW all-push state appeared on 668 turns in 109 games; 664
+  target outcomes were observed and only `8/664` sold.  Test 2 reached 359
+  turns in 59 games and sold `3/359`.
+- These are action-selected rates under continued all-push behavior.  They
+  localize ignored recommendations but do **not** identify whether a truthful
+  LOW decline restores later HIGH conversion or improves official rating.  A
+  prospective all-assignment challenger is required for efficacy.
+
+## Test 4 seller-recovery shadow and later-stage reach (27 Aug)
+
+- The stable Test 4 V2/V3-era cohort contains 3,078 persuasion assignments,
+  including 1,617 seller assignments (1,594 joined and 23 unresolved).  The
+  exact three-passed-positive repair reaches 113 seller games / 644 LOW turns;
+  only `14/644` targeted LOW recommendations sold under the existing all-push
+  control.  After first reach, only 11/113 games later bought a HIGH
+  recommendation (`28/598` later HIGH turns).
+- Moving the trigger from three passed positives to the proposed
+  bought-LOW-plus-one-pass condition adds only five wholly new affected games
+  in those 1,617 assignments.  A two-success recovery bank changes only nine
+  fixed-history games / 25 additional LOW turns, but `9/25` of those LOW
+  control recommendations sold.  The earlier trigger is presently too sparse
+  to identify, while the two-success bank has material visible opportunity
+  cost.  Neither should be bundled with the first prospective stage.
+- Every figure above is a fixed-history shadow under the old seller policy.
+  Seller and buyer adaptation make it reach/safety evidence only, not an
+  identified counterfactual effect or official-rating estimate.
+
 ## Complete-information unknown-horizon late stasis audit (25 Aug)
 
 - Among 724 clean negotiation first-action games, 66 were in this cell: 61

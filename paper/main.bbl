@@ -1,0 +1,35 @@
+\begin{thebibliography}{4}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[{GLEE Competition Organizing Team}(2026)]{gleecompetition2026}
+{GLEE Competition Organizing Team}.
+\newblock {GLEE Competition}: Rules, scoring, and call for papers.
+\newblock \url{https://glee-competition.com/docs}, 2026.
+\newblock Accessed 2026-08-26.
+
+\bibitem[Kamenica and Gentzkow(2011)]{kamenica2011bayesian}
+Emir Kamenica and Matthew Gentzkow.
+\newblock Bayesian persuasion.
+\newblock \emph{American Economic Review}, 101\penalty0 (6):\penalty0
+  2590--2615, 2011.
+\newblock \doi{10.1257/aer.101.6.2590}.
+
+\bibitem[Rubinstein(1982)]{rubinstein1982}
+Ariel Rubinstein.
+\newblock Perfect equilibrium in a bargaining model.
+\newblock \emph{Econometrica}, 50\penalty0 (1):\penalty0 97--109, 1982.
+\newblock \doi{10.2307/1912531}.
+
+\bibitem[Shapira et~al.(2024)Shapira, Madmon, Reinman, Amouyal, Reichart, and
+  Tennenholtz]{shapira2024glee}
+Eilam Shapira, Omer Madmon, Itamar Reinman, Samuel~Joseph Amouyal, Roi
+  Reichart, and Moshe Tennenholtz.
+\newblock {GLEE}: A unified framework and benchmark for language-based economic
+  environments, 2024.
+\newblock URL \url{https://arxiv.org/abs/2410.05254}.
+
+\end{thebibliography}
