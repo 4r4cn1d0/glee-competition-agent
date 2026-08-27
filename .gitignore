@@ -15,4 +15,7 @@ logs/
 nohup.out
 glee_test1_negotiation_transcripts.txt
 transcripts/
+# Generated, continuously refreshed opponent-intelligence database and dossiers.
+# The reproducible builder is tracked; the multi-gigabyte live evidence is not.
+opponent_intelligence/
 .DS_Store

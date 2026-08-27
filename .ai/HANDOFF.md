@@ -4147,3 +4147,43 @@ other Test 2 key, Agent 5 and other slots, all A/B zeros, and control. First-20
 exact replay, immediate explicit-zero rollback rules, and 500-seller harm /
 2,000-seller final efficacy rules are frozen at the top of
 `.ai/EXPERIMENTS.md`.
+
+### 2026-08-28 04:26 IST: fixed-boundary priority-opponent archive implemented
+
+At the operator's request, Codex implemented the observation-only
+`scripts/opponent_intelligence.py` sidecar for disclosed encounters with Grok
+4.6, Athena, and gill bates across all five physical fleet slots. The archive
+boundary is fixed at Unix `1787849451.169685`
+(`2026-08-27T22:20:51+05:30`): refreshes append future evidence but never move
+the start or import earlier records. Generated SQLite, Markdown, and JSONL data
+live under the gitignored `opponent_intelligence/` directory. Each disclosed
+canonical encounter retains the complete source record, exact config/result,
+all outcomes, and one deduplicated opponent action per round with our preceding
+action as context. Append-only turn records cover disclosed games whose final
+canonical file has not arrived.
+
+The 04:26 rebuild examined 244,296 canonical files, excluded 236,124 before
+the boundary, and retained 8,172. SQL boundary checks found zero retained
+canonical rows before the cutoff and zero missing/pre-cutoff timestamps among
+532 retained disclosed live-turn records. Direct named evidence at that point
+was Athena 28 games / 440 opponent moves, Grok 4.6 9 / 38, and gill bates 2 /
+36. This includes agreements, no-deals, walkaways, timeouts, zeros, and
+unresolved records rather than conditioning on agreements.
+
+Anonymous matching deliberately makes no identity claim. A broad family/role
+fallback was red-teamed and removed after it falsely tagged generic bargaining
+and persuasion sequences as Athena-like. Matches now require a repeated
+target-unique three-action prefix in the same public configuration, or an
+adequately sampled and named-control-calibrated same/coarse-cell feature model.
+No candidate passed at 04:26; this is an evidence limitation, not a negative
+finding about copied tactics. Grok and gill bates especially lack enough direct
+six-hour references. Buyer persuasion tokens now preserve the seller signal
+they answer, and negotiation `accept_offer`/`reject_offer` wire values normalize
+correctly.
+
+Focused archive tests passed 7/7. The mandatory full suite finished 2,793
+passed / 4 failed in 324.96s; all four failures are outside this sidecar: the
+known stale bargaining horizon-floor expectation plus live-corpus grid drift
+alarms for bargaining, negotiation, and persuasion. No strategy, live fleet
+configuration, `arms.json`, `control.json`, `.env`, supervisor state,
+deployment, or running process was changed for this work.
