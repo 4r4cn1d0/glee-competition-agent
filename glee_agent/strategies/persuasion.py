@@ -84,13 +84,23 @@ PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1_FLAG = (
 PERS_ZERO_MARGIN_TRUTH_V1_FLAG = "GLEE_PERS_ZERO_MARGIN_TRUTH_V1"
 PERS_P08_POSITIVE_PROSE_V1_FLAG = "GLEE_PERS_P08_POSITIVE_PROSE_V1"
 
-# Known-value all-push currently ignores observed demand after entering its
-# prior-EV shortcut.  This deterministic, default-OFF trust-repair switch uses
-# the same cumulative 50% response threshold already used by the unknown-value
-# seller: once demand has collapsed, LOW turns decline while HIGH turns retain
-# their unconditional recommendation.
+# Deprecated, never-exposed cumulative-rate candidate.  It is intentionally no
+# longer read by the strategy: its own truthful NOs lowered the cumulative buy
+# rate and could make the policy self-lock.  Keep the name only so stale overlay
+# values are visible and can fence newer seller experiments rather than silently
+# changing meaning under a historical flag.
 PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG = (
     "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1"
+)
+
+# Replacement for the unsafe cumulative-rate candidate above.  This separate,
+# default-OFF deterministic switch waits for three consecutive *positive
+# recommendations* to be passed, then declines only known-loss LOW units.
+# Negative recommendations are excluded from the streak, and the next purchased
+# positive recommendation resets it immediately; the repair's own truthful NOs
+# therefore cannot lock the seller into NO.
+PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1_FLAG = (
+    "GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1"
 )
 
 # Deterministic last-round seller override.  It is deliberately independent of
@@ -537,43 +547,6 @@ def _seller_plan_baseline(game: dict, cfg) -> dict:
                 plan["prior_margin"] = round(margin, 4)
                 return plan
 
-    # DETERMINISTIC DEMAND-COLLAPSE TRUTH REPAIR (default OFF).
-    #
-    # The prior-EV shortcut below otherwise recommends every LOW item forever,
-    # even when the observed buyer has stopped responding.  In the complete
-    # recent Agent 5 seller cohort, this strict pre-action state reached 150 LOW
-    # turns across 21 games; 149 next outcomes are observed, only 2/149 control
-    # recommendations sold, and one outcome remains unresolved.  The rule gives
-    # up only those already-collapsed low-quality pushes and uses the same
-    # cumulative <50% response test as the existing unknown-value branch.  HIGH
-    # units returned above remain unconditionally recommended.  The evidence is
-    # action-selected and does not identify the official rating effect, so the
-    # behavior is isolated behind a default-OFF Test 2 challenger flag.
-    if (runtime_flags.enabled(PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG)
-            and (game.get("valid_actions") or {}).get("type")
-                in ("seller_message", "seller_recommendation")
-            and game.get("your_player") == "player_1"
-            and state.get("current_player") in (None, "player_1")
-            and state.get("player_1_role") in (None, "seller")
-            and quality == "low"
-            and knows_values
-            and history
-            and buy_rate is not None
-            and buy_rate < 0.5
-            and prior_value >= price):
-        return {
-            "recommend": False,
-            "reason": "repair trust after demand collapse",
-            "round": round_no,
-            "total_rounds": total,
-            "buy_rate": buy_rate,
-            "knows_values": True,
-            "lie_rate": 0.0,
-            "quality_is_high": False,
-            "seller_demand_collapse_truth_v1": True,
-            "gates_fired": ["pers_seller_demand_collapse_truth_v1"],
-        }
-
     if p * v + (1.0 - p) * u >= price:
         # BACKLOADING ARM. The claim below -- "a buyer purchases every round
         # regardless" -- is refuted by a live transcript: at p=1/3, v/price=3
@@ -594,7 +567,10 @@ def _seller_plan_baseline(game: dict, cfg) -> dict:
         # GLEE_NEGO_ZOPA_AB does, and scripts/live_percentile.py recovers the
         # arm with the same pure function. At 4,042 seller games a day an effect
         # of this size resolves in well under an hour.
-        _bl = int(runtime_flags.as_float("GLEE_PERS_BACKLOAD_AB", 0.0))
+        _bl_raw = runtime_flags.as_float("GLEE_PERS_BACKLOAD_AB", 0.0)
+        # A malformed live overlay must fail closed instead of taking down the
+        # seller path while converting NaN/Inf to ``int``.
+        _bl = int(_bl_raw) if math.isfinite(_bl_raw) else 0
         if _bl > 0:
             import hashlib as _h
             _gid = str(game.get("game_id") or "")
@@ -692,14 +668,17 @@ def _seller_plan_baseline(game: dict, cfg) -> dict:
             "quality_is_high": False}
 
 
-def _seller_terminal_push_has_conflict(plan: dict) -> bool:
-    """Fail closed when another optional seller mechanism may own the turn."""
-    # Check live switches as well as plan markers.  Several optional mechanisms
-    # only mark a plan in their narrow target cell, so marker-only isolation
-    # would allow two armed seller policies to silently share other cells.
+def _seller_positive_pass_streak_truth_has_conflict(plan: dict) -> bool:
+    """Keep the trust repair isolated from every optional seller policy."""
+    # This check is intentionally global rather than target-turn-only.  An A/B
+    # control may leave no marker in ``plan`` while still owning the game; letting
+    # demand truth fire there would destroy attribution.  The terminal override
+    # is also a conflict even off round 20 so independently armed deterministic
+    # policies never share a seller cohort.
     if any((
-        runtime_flags.enabled(PERS_ZERO_MARGIN_TRUTH_V1_FLAG),
         runtime_flags.enabled(PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG),
+        runtime_flags.enabled(PERS_ZERO_MARGIN_TRUTH_V1_FLAG),
+        runtime_flags.enabled(PERS_SELLER_TERMINAL_PUSH_V1_FLAG),
         runtime_flags.enabled("GLEE_PERS_DP"),
         runtime_flags.enabled("GLEE_PERS_DP_V3"),
         runtime_flags.enabled("GLEE_PERS_P08_R125_BINARY_TRUTH_AB"),
@@ -718,6 +697,243 @@ def _seller_terminal_push_has_conflict(plan: dict) -> bool:
         "dp_v3",
         "zero_margin_truth_v1",
         "seller_demand_collapse_truth_v1",
+        "seller_terminal_push_v1",
+        "p08_r125_binary_truth_arm",
+        "p08_r125_prose_arm",
+        "p08_positive_prose_v1",
+    }
+    return bool(plan.get("gates_fired")) or any(
+        marker in plan for marker in conflict_markers)
+
+
+def _seller_positive_pass_streak(
+        history, current_round, message_mode) -> int | None:
+    """Count passed positive recommendations since their most recent sale.
+
+    The demand repair emits truthful NOs on LOW units.  Counting those rounds in
+    a cumulative purchase rate makes the treatment reinforce itself and can
+    trap the seller in permanent honesty.  Instead, inspect only exact token
+    recommendations, walking backward until the latest accepted YES.  A NO/pass
+    is ignored, so it neither creates evidence of collapsed positive demand nor
+    prevents a later HIGH/YES sale from unlocking the ordinary all-push policy.
+
+    ``None`` means the history is malformed for this exact mechanism.  Failing
+    closed is important for resumed games and for future wire-schema changes.
+    """
+    if (not isinstance(history, list)
+            or not isinstance(current_round, (int, float))
+            or isinstance(current_round, bool)
+            or not math.isfinite(float(current_round))
+            or not float(current_round).is_integer()
+            or int(current_round) != len(history) + 1):
+        return None
+
+    streak = 0
+    expected_round = 1
+    parsed: list[tuple[bool, bool]] = []
+    for entry in history:
+        if not isinstance(entry, dict):
+            return None
+        row_round = entry.get("round")
+        if (not isinstance(row_round, (int, float))
+                or isinstance(row_round, bool)
+                or not math.isfinite(float(row_round))
+                or not float(row_round).is_integer()
+                or int(row_round) != expected_round
+                or int(row_round) >= int(current_round)):
+            return None
+        expected_round += 1
+
+        if message_mode == "text":
+            # Token-style text must be a literal wire token.  Do not reuse the
+            # legacy neutral-text=>positive fallback or accept a detached
+            # ``recommended`` field as evidence of an explicit YES.
+            raw_message = entry.get("seller_message")
+            if not isinstance(raw_message, str):
+                return None
+            token = raw_message.strip().lower()
+            if token == "yes":
+                signal = True
+            elif token == "no":
+                signal = False
+            else:
+                return None
+        else:
+            signal = _strict_binary_signal(entry)
+        bought = entry.get("bought")
+        if signal is None or not isinstance(bought, bool):
+            return None
+        buyer_decision = entry.get("buyer_decision")
+        if isinstance(buyer_decision, bool):
+            decision_bought = buyer_decision
+        elif isinstance(buyer_decision, str):
+            token = buyer_decision.strip().lower()
+            if token == "yes":
+                decision_bought = True
+            elif token in ("no", "pass"):
+                decision_bought = False
+            else:
+                return None
+        else:
+            return None
+        if decision_bought is not bought:
+            return None
+        if signal is False:
+            # Buying after an exact decline is internally contradictory; do not
+            # infer demand from a history whose semantics cannot be trusted.
+            if bought:
+                return None
+        parsed.append((signal, bought))
+
+    for signal, bought in reversed(parsed):
+        if signal is False:
+            continue
+        if bought:
+            return streak
+        streak += 1
+    return streak
+
+
+def seller_positive_pass_streak_truth_v1_eligible(
+        game: dict, plan: dict, cfg) -> bool:
+    """Exact pre-action scope of the isolated positive-pass repair."""
+    state = game.get("game_state") or {}
+    history = state.get("history")
+    raw_round = state.get("round")
+    raw_total = state.get("total_rounds")
+    message_mode = state.get("seller_message_type")
+    positive_pass_streak = _seller_positive_pass_streak(
+        history, raw_round, message_mode)
+    raw_price = state.get("product_price")
+    raw_prior = state.get("p")
+    raw_high_value = state.get("v")
+    raw_low_value = state.get("u")
+    values = (raw_price, raw_prior, raw_high_value, raw_low_value)
+    exact_finite_values = all(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        for value in values
+    )
+    if exact_finite_values:
+        price = float(raw_price)
+        prior = float(raw_prior)
+        high_value = float(raw_high_value)
+        low_value = float(raw_low_value)
+        prior_value = prior * high_value + (1.0 - prior) * low_value
+    else:
+        price = prior = high_value = low_value = prior_value = math.nan
+    exact_nonterminal_round = (
+        isinstance(raw_round, (int, float))
+        and not isinstance(raw_round, bool)
+        and math.isfinite(float(raw_round))
+        and float(raw_round).is_integer()
+        and 1.0 < float(raw_round) < 20.0
+        and isinstance(raw_total, (int, float))
+        and not isinstance(raw_total, bool)
+        and math.isfinite(float(raw_total))
+        and float(raw_total) == 20.0
+    )
+    message_style = (
+        runtime_flags.get("GLEE_PERS_MSG_STYLE") or "plain"
+    ).strip().lower()
+    token_max_p = runtime_flags.as_float("GLEE_PERS_TOKEN_MAX_P", 0.0)
+    action_type = (game.get("valid_actions") or {}).get("type")
+    exact_wire_phase = (
+        (message_mode == "binary" and action_type == "seller_recommendation")
+        or (message_mode == "text" and action_type == "seller_message")
+    )
+    return not (game.get("game_family") != "persuasion"
+            or not exact_wire_phase
+            or game.get("your_player") != "player_1"
+            or state.get("current_player") != "player_1"
+            or state.get("phase") not in (None, "seller_message")
+            or state.get("player_1_role") not in (None, "seller")
+            or state.get("player_2_role") not in (None, "buyer")
+            # The local generator can omit this redundant key while still
+            # providing finite v/u.  Reject an explicit contradiction without
+            # making omission render the production predicate unreachable.
+            or state.get("is_seller_know_cv") is False
+            or str(state.get("current_quality", "")).lower() != "low"
+            or not exact_nonterminal_round
+            or message_style != "token"
+            or not runtime_flags.enabled("GLEE_PERS_KEEP_MSG")
+            or not math.isfinite(token_max_p) or token_max_p != 0.0
+            or str(getattr(cfg, "llm_mode", "")).strip().lower() != "off"
+            # If LOW itself is worth at least the price, every sale is harmless
+            # to the buyer and declining can only throw revenue away.
+            or not exact_finite_values
+            or price <= 0.0 or not 0.0 <= prior <= 1.0
+            or low_value >= price
+            or not math.isfinite(prior_value) or prior_value < price
+            or not isinstance(history, list) or not history
+            or positive_pass_streak is None
+            or positive_pass_streak < 3
+            # Apply after the complete baseline is known.  This exact reason and
+            # plan shape prove that control really submitted YES via the ordinary
+            # prior-EV all-push shortcut.  In particular, backload-control games
+            # can no longer record a false fire on an already-NO action.
+            or plan.get("recommend") is not True
+            or plan.get("reason") != "prior alone justifies purchase"
+            or plan.get("knows_values") is not True
+            or plan.get("quality_is_high") is not False
+            or plan.get("lie_rate") != 1.0
+            or _seller_positive_pass_streak_truth_has_conflict(plan))
+
+
+def _apply_seller_positive_pass_streak_truth_v1(
+        game: dict, plan: dict, cfg) -> dict:
+    """Turn only an ordinary all-push LOW recommendation into a decline."""
+    if (not runtime_flags.enabled(
+            PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1_FLAG)
+            or not seller_positive_pass_streak_truth_v1_eligible(
+                game, plan, cfg)):
+        return plan
+
+    # Modern all-assignment logs found this exact state before 668 LOW turns in
+    # 109 Agent 5 games (8/664 observed target LOWs sold), 359 LOW turns in 59
+    # Test 2 games (3/359 sold), and 644 LOW turns in 113 Test 4 games (14/644
+    # sold).  Those action-selected rates motivate only a prospective challenger;
+    # they do not identify rating lift.  The code changes only YES -> NO, never
+    # HIGH units, terminal turns, fewer than three ignored recommendations,
+    # prose/LLM wires, or another optional seller policy.
+    plan["recommend"] = False
+    plan["reason"] = "repair trust after three ignored recommendations"
+    plan["lie_rate"] = 0.0
+    plan["seller_positive_pass_streak_truth_v1"] = True
+    plan.setdefault("gates_fired", []).append(
+        "pers_seller_positive_pass_streak_truth_v1")
+    return plan
+
+
+def _seller_terminal_push_has_conflict(plan: dict) -> bool:
+    """Fail closed when another optional seller mechanism may own the turn."""
+    # Check live switches as well as plan markers.  Several optional mechanisms
+    # only mark a plan in their narrow target cell, so marker-only isolation
+    # would allow two armed seller policies to silently share other cells.
+    if any((
+        runtime_flags.enabled(PERS_ZERO_MARGIN_TRUTH_V1_FLAG),
+        runtime_flags.enabled(PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG),
+        runtime_flags.enabled(PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1_FLAG),
+        runtime_flags.enabled("GLEE_PERS_DP"),
+        runtime_flags.enabled("GLEE_PERS_DP_V3"),
+        runtime_flags.enabled("GLEE_PERS_P08_R125_BINARY_TRUTH_AB"),
+        runtime_flags.enabled("GLEE_PERS_P08_R125_PROSE_AB"),
+        runtime_flags.enabled(PERS_P08_POSITIVE_PROSE_V1_FLAG),
+    )):
+        return True
+
+    backload = runtime_flags.as_float("GLEE_PERS_BACKLOAD_AB", 0.0)
+    if not math.isfinite(backload) or backload != 0.0:
+        return True
+
+    conflict_markers = {
+        "backload_arm",
+        "dp",
+        "dp_v3",
+        "zero_margin_truth_v1",
+        "seller_demand_collapse_truth_v1",
+        "seller_positive_pass_streak_truth_v1",
         "p08_r125_binary_truth_arm",
         "p08_r125_prose_arm",
         "p08_positive_prose_v1",
@@ -727,8 +943,9 @@ def _seller_terminal_push_has_conflict(plan: dict) -> bool:
 
 
 def seller_plan(game: dict, cfg) -> dict:
-    """Return the complete baseline seller plan plus isolated terminal repair."""
+    """Return the baseline seller plan plus isolated deterministic overlays."""
     plan = _seller_plan_baseline(game, cfg)
+    plan = _apply_seller_positive_pass_streak_truth_v1(game, plan, cfg)
     if not runtime_flags.enabled(PERS_SELLER_TERMINAL_PUSH_V1_FLAG):
         return plan
 

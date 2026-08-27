@@ -401,37 +401,13 @@ def _p_pers_zero_margin_truth_v1(game, p):
             and p.get("recommend") is True)
 
 
-def _p_pers_seller_demand_collapse_truth_v1(game, plan):
-    """Changed-action scope of the deterministic known-low trust repair."""
-    state = game.get("game_state") or {}
-    history = [entry for entry in (state.get("history") or [])
-               if isinstance(entry, dict)]
-    if not history:
-        return False
-    try:
-        price = float(state.get("product_price"))
-        prior = float(state.get("p"))
-        high_value = float(state.get("v"))
-        low_value = float(state.get("u"))
-    except (TypeError, ValueError):
-        return False
-    prior_value = prior * high_value + (1.0 - prior) * low_value
-    buy_rate = (
-        sum(entry.get("bought") is True for entry in history) / len(history)
-    )
-    return ((game.get("valid_actions") or {}).get("type")
-            in ("seller_message", "seller_recommendation")
-            and game.get("your_player") == "player_1"
-            and (state.get("current_player") is None
-                 or state.get("current_player") == "player_1")
-            and (state.get("player_1_role") is None
-                 or state.get("player_1_role") == "seller")
-            and str(state.get("current_quality") or "").lower() == "low"
-            and all(math.isfinite(value) for value in (
-                price, prior, high_value, low_value, prior_value, buy_rate))
-            and prior_value >= price
-            and buy_rate < 0.5
-            and plan.get("recommend") is True)
+def _p_pers_seller_positive_pass_streak_truth_v1(game, plan):
+    """Production-owned scope of the deterministic ignored-YES repair."""
+    from glee_agent.config import Config
+    from glee_agent.strategies import persuasion
+
+    return persuasion.seller_positive_pass_streak_truth_v1_eligible(
+        game, plan, Config.from_env())
 
 
 def _p_pers_seller_terminal_push_v1(game, plan):
@@ -935,9 +911,9 @@ KNOWN = {
     "GLEE_PERS_ZERO_MARGIN_TRUTH_V1": (
         "persuasion", ("pers_zero_margin_truth_v1",),
         _p_pers_zero_margin_truth_v1),
-    "GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1": (
-        "persuasion", ("pers_seller_demand_collapse_truth_v1",),
-        _p_pers_seller_demand_collapse_truth_v1),
+    "GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1": (
+        "persuasion", ("pers_seller_positive_pass_streak_truth_v1",),
+        _p_pers_seller_positive_pass_streak_truth_v1),
     "GLEE_PERS_SELLER_TERMINAL_PUSH_V1": (
         "persuasion", ("pers_seller_terminal_push_v1",),
         _p_pers_seller_terminal_push_v1),

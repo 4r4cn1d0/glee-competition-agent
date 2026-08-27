@@ -1,9 +1,273 @@
 # Persuasion workstream handoff
 
-Last updated: 2026-08-26 17:36 IST. This file is the deployment boundary for
+## 17:35 Test 4 positive-pass recovery authorized; code ready, deployment pending
+
+- The operator authorized only stage 1 of the seller credibility recovery on
+  physical Test 4 / slot `randomized`: default-OFF
+  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`.  This supersedes the
+  earlier proposed Test 2 allocation.  Agent 5 and every other slot remain
+  protected.  Preserve Test 4's B+P/LLM-off topology, V1/V2/V3 buyer safety
+  background, non-persuasion overlay, and explicit-zero persuasion A/B flags.
+  Do not add terminal push, truth/prose, the deprecated cumulative-rate flag,
+  or another seller mechanism.
+- The implementation and its replacement test are committed together as a
+  default-OFF change; the deployment boundary must use a later natural process
+  containing that commit, not a process that happened to load dirty source.
+  The exact current Test 4 stack passes reachability
+  `371/371/371` on seed 270827 and an independent `326/326/326`; focused seller
+  interactions pass `172/172`, current persuasion tests `930/930`, and the full
+  suite is `2,787 passed / 3` declared non-persuasion failures.
+- Current Test 4 PID `95845` launched at 17:15:43 IST from the dirty workspace
+  and therefore likely loaded the stage-1 code, but its overlay lacks the flag
+  and no stage-1 marker has appeared.  It held active persuasion games during
+  this audit and is not a deployment boundary.  Do not write the flag now and
+  do not restart, signal, bank, stop, or force-cycle the process.
+- Deployment owner: first commit/push the inert implementation, wait for a
+  later natural Test 4 process containing that commit, then wait for its own
+  natural zero-game boundary with terminal proof for every persuasion game it
+  touched.  Freeze PID/load/Tcfg, Test 4 full/persuasion/non-persuasion hashes,
+  every other slot, control hash, arms mtime, official persuasion rating/count,
+  and the preceding 2,000 authenticated seller assignments.  At authenticated
+  `active=0,pending=0`, one `scripts/fleet.py set randomized` write may set only
+  `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1=1`; verify all other state is
+  byte-identical.  Never edit fleet JSON manually.
+- After activation, enroll every Test 4 persuasion assignment and use the
+  seller-role all-assignment primary.  Exact OFF/ON replay until 20 clean
+  firings; any scope/history/quality/role/mode/round error, HIGH decline,
+  overlap, illegal wire, unexplained delta, source error, or attributable
+  timeout requires the deployment owner to set only this flag explicitly zero.
+  Harm look: 500 authenticated seller assignments and >=40 affected games;
+  futility look: 1,000/70; final: 2,000 authenticated seller assignments, zero
+  missing joins and >=100 affected games, under the complete CI and recovery
+  rules at the top of `.ai/EXPERIMENTS.md`.  Agent 5 is currently
+  bargaining-only, so use it only as a frozen historical benchmark rather than
+  pretending it is a contemporaneous persuasion control.
+- Stages 2 and 3 are not built or authorized.  They require separate flags and
+  cohorts after stage 1 completes.  Current shadow reach is insufficient: the
+  earlier burn trigger creates only five wholly new games in 1,617 seller
+  assignments; the two-success bank reaches nine games and would forgo 9/25
+  LOW control sales.  Follow the frozen advancement thresholds in
+  `.ai/EXPERIMENTS.md`; do not tune them from interim outcomes.
+
+## 03:05 positive-pass seller repair implemented default OFF; not live
+
+- The cumulative-rate `GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1` candidate is
+  abandoned before exposure.  Its own LOW/NO passes could lower the cumulative
+  purchase rate and self-lock the seller into honesty.  The old flag is now
+  deliberately inert and remains a conflict fence; it was not silently given
+  new semantics.
+- New default-OFF `GLEE_PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1` runs only
+  after the complete seller baseline.  It changes an ordinary known-value
+  all-push LOW `yes` to `no` only on rounds 2-19 after the three most recent
+  explicit positive recommendations were passed.  Explicit NO/pass rounds are
+  ignored; any later purchased YES resets the streak immediately and restores
+  baseline all-push behavior.  A firing changes the wire plus
+  `recommend/reason/lie_rate`, then adds only
+  `seller_positive_pass_streak_truth_v1=true` and sole gate
+  `pers_seller_positive_pass_streak_truth_v1`.
+- Every state boundary fails closed: exact seller role/action/current player,
+  noncontradictory phase and knowledge metadata, finite known values, `u<price`,
+  prior EV at least price, ordered complete history with exact bool outcomes and
+  consistent buyer decisions, token style/KEEP/LLM off, literal text tokens,
+  nonterminal LOW, and zero seller-policy conflicts.  HIGH, round 20, fewer than
+  three misses, a recent accepted YES, malformed history, prose, and all
+  nonfires are byte-identical.
+- Corrected audit retained binary and text plus all assignments.  Agent 5:
+  1,432 assigned / 1,253 joined / 179 unresolved; 668 target turns in 109 games,
+  `8/664` observed target LOWs sold.  Test 2: 644 / 625 / 19; 359 target turns in
+  59 games, `3/359` sold.  This is action-selected motivation only; future HIGH
+  recovery and official rating lift remain prospective.
+- Focused safety and terminal-interaction tests pass `172/172`; persuasion-wide
+  tests pass `708/708`; full verification is `2,787 passed / 3` declared
+  non-persuasion failures.  Exact Test 2 reachability over 800 games passes
+  `365/365/365`.  An independent adversarial reviewer returned PASS after
+  reproducing and closing malformed text/metadata leaks.  No persuasion flag,
+  fleet file, queue, family, or process was changed. Agent 5 remains protected.
+  Any Test 2 activation needs fresh explicit authorization, pushed inert code,
+  and a deployment-owner clean boundary.
+
+## 02:00 Test 2 seller-terminal-push operator rollback
+
+- The operator ended the Test 2 `seller-terminal-push-v1` challenger before its
+  frozen efficacy boundary.  This is an operator-terminated, underpowered
+  cohort with **no efficacy verdict**; the mechanism was not rejected.  At
+  `T1=1787776198.0249655`, one `scripts/fleet.py set hardliner` write changed
+  only `GLEE_PERS_SELLER_TERMINAL_PUSH_V1` from `1` to explicit `0`.  The key
+  must remain explicit zero because clearing it could expose the launch value.
+- The complete local first-action cohort before T1 contains 121 persuasion
+  assignments / 2,367 turns: 55 seller and 66 buyer games.  The terminal gate
+  fired in 19 seller games.  Every live firing record is seller/player 1, LOW,
+  exact round 20/20, heuristic, legal binary/text YES, and carries the terminal
+  gate alone; there were zero strategy-source errors or timeout records.  The
+  required first-20 exact replay audit therefore ended at 19/20.  The local
+  result collector has no joins for this final window, so no resolved-only
+  payoff analysis is permitted.
+- The frozen pre-activation official baseline was `2191.75/18718`.  The first
+  authenticated post-rollback observation was `2110.46/18835`, a descriptive
+  `-81.29/+117` movement that is inside known persuasion volatility and cannot
+  identify the 19 terminal actions.  It neither promotes nor rejects the rule.
+- Integrity verification is exact.  Test 2's non-persuasion canonical hash
+  stayed `8b680c6c61b1e7cda48b0148654291517de971803cc9815f8007d3097998e268`;
+  Agent 5 stayed
+  `94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`;
+  Test 1/Test 3/Test 4 were byte-identical; `control.json` stayed
+  `e6f1e5b033cdb9176c8a19c41af1b80f1240160e0f1e8049acebca987c452d22`;
+  and every persuasion `*_AB` value remains zero.  Runtime lookup with the
+  process's launch value still equal to `1` resolves the overlay to `0`, and
+  the first 42 post-cache-boundary turns contained 31 persuasion actions, zero
+  terminal gates, and zero source errors.  No process, queue, family, bargaining
+  setting, or negotiation setting was changed.
+
+Last updated: 2026-08-27 01:23 IST. This file is the deployment boundary for
 the persuasion-owned workstream. Negotiation and bargaining owners may read it;
 they must not edit persuasion strategy or flags. Persuasion work does not alter
 their code, configuration, experiments, or fleet flags.
+
+## 01:15 Test 2 terminal-push release and lossless activation drain
+
+- The operator explicitly transferred one-time deployment ownership to Codex.
+  Reviewed commit `24250a6158749ad2a2b50857219465f0d6eb7eef` is pushed and
+  is now both `HEAD` and `origin/main`.  No concurrent dirty file was included.
+- Old Test 2 PID `73380` launched at epoch `1787769362` on pre-feature code and
+  drained naturally.  Its complete persuasion cohort is 172 distinct games /
+  3,440 actions (84 seller games, 88 buyer games); all 172 have local
+  `completed/completed` finals, zero missing.  The sorted game-ID SHA-256 is
+  `7598ebbb53374eb07c0b150824cde476ccc2a54411a006e9cc7e0eb3c4089a83`.
+  The server-clean boundary was `active=0,pending=0,queued_for=null` at
+  `1787773226`; authenticated persuasion was `2177.61/18714`.
+- The supervisor launched code-loaded PID `11737` at 01:12:36 before the
+  terminal flag could be set, and that PID acquired games with the flag absent.
+  It was therefore losslessly banked through `scripts/fleet.py bank hardliner`
+  at `Tbank=1787773417.726725`.  It stops acquiring, completes every holding,
+  and stays down; no process was signalled, killed, restarted or force-cycled.
+- Frozen pre-flag arms mtime is `1787751447.613576`, raw arms SHA-256 is
+  `dc3ac77bf76802b820015d64d29f88cc51e34da8f13ff902f973001e3c069e2b`.
+  Test 2 full/persuasion/non-persuasion canonical hashes are respectively
+  `0650af3e0782e999f41118c40256d888b876c9c3e20f87fc8525b5069eb7c93d`,
+  `eee459a2f7a029110d8f3f8d14172c4564b23b47fe38dc8fd0c5b33b4610be34`,
+  and `8b680c6c61b1e7cda48b0148654291517de971803cc9815f8007d3097998e268`.
+  Other-slot canonical hashes are Test 1/champion
+  `df914eabdd6a0224db5f06331bb9fa090ff0ab003fc2cbf09d350a8f69590f53`,
+  Test 3/conceder
+  `8af0b4bb1eb5c4b6f348ae2d630a5de4e1c95568ef1ecc5e7c56d2d06b60b2b0`,
+  Test 4/randomized
+  `2283ba9bb351a41f0e5dd246c03d20f8618d0396a121f82019abdfef0e034670`,
+  and Agent 5/composite
+  `94bb689c645ec743406c64c3570b1b8e10e7d2778050ec0ca98950a3201e38b6`.
+  Pre-bank raw `control.json` hash was
+  `22361f368a5d93647c4e221d8b8937bfa72f01c8b0afafa8caa6d3ee69e8fdd9`;
+  post-bank control hash is
+  `a7e3d3a7538e2c98201636406008088cbd15862fd9e58d51235dfdbb2da6d900`.
+  The terminal flag remains absent and all persuasion A/B flags are zero.
+- PID `11737` then reached server zero at `1787773636.289`, exited, and left
+  Test 2 BANKED/DOWN.  It touched exactly four persuasion games / 80 turns (two
+  seller, two buyer); all four have completed local finals and authenticated
+  joins, missing zero.  Their sorted-ID SHA-256 is
+  `b47c481d687787745e4230a329741c481a9414dba2ea3c208eda8b576b087917`.
+  The final authenticated pre-activation baseline is `2191.75/18718`.
+- At the clean boundary, one `scripts/fleet.py set` added only
+  `GLEE_PERS_SELLER_TERMINAL_PUSH_V1=1` at
+  `Tcfg=1787773691.967196`.  Removing that key from the post-write Test 2
+  overlay reproduces the exact frozen full and persuasion hashes; its
+  non-persuasion hash and the four other slot hashes are unchanged, all
+  persuasion A/B values remain zero, and post-write control remained byte
+  identical to the banked control.  Post-write Test 2 full/persuasion hashes
+  are `473c184890f65346734942cff98e812bd4874f2b81f5460c38f23602d51c8677`
+  and `e1344591415f011fadfd2d6a782599eed8d4cfba979fee2b4fe91b8190c07085`;
+  raw arms SHA-256 is
+  `da15fc65caefaae00533f2bc64715705d6bd47cfe69bce6f93eb7a8e014226d3`.
+- Fleet tooling enabled the normal slot at `1787773725.5243123`.  PID `12367`
+  launched naturally at 01:19:10 with exact `--probe champion --llm-mode off
+  --families bargaining,persuasion --max-time 3600`; process environment has
+  both terminal push and the existing buyer reset equal to `1`.  HEAD and
+  origin are `24250a6`.  The first post-load action was a heuristic persuasion
+  seller action at `1787773755.781995`; early nonfires have no terminal marker
+  or gate.
+- The first live firing was clean at `1787773978.089248`, game
+  `a27f72d4-a957-4485-ae6d-44f0f4d55150`: persuasion text seller/player 1,
+  exact round 20/20, known LOW, source heuristic.  Exact OFF replay was
+  `message=no` with `recommend=false`; live/ON was `message=yes`, changing only
+  `recommend false->true` and adding `seller_terminal_push_v1=true` plus sole
+  gate `pers_seller_terminal_push_v1`.  The live action and full plan matched
+  ON replay exactly.  State/OFF-plan/ON-plan SHA-256 values are respectively
+  `384f64354688f893657ef007d6c1779c4b3bb16f5bc2b4189862f3ed897b53d9`,
+  `e9bf49dff435db920d9c70c3d4f9bac5c98583ac7022d43b9ae6f5e0733a08bc`,
+  and `28089c6b06697cde0ea6e49ea7b0280a9acc058e2e80c4f43430fe7b3ab6121b`.
+  The 216 preceding persuasion nonfires were all byte-identical OFF/ON, with
+  zero replay exceptions, live mismatches, source errors, or timeouts.
+  Continue exact replay until 20 clean firings; the frozen efficacy gates are
+  unchanged.
+
+## 01:00 Test 2 seller terminal push authorized, implemented, not live
+
+- The operator authorized a Test-2-only seller round-20 repair.  The working
+  tree now contains default-OFF `GLEE_PERS_SELLER_TERMINAL_PUSH_V1`.  It runs
+  the complete baseline seller plan first and can only change LOW quality,
+  exact numeric round 20/20, baseline NO to YES.  HIGH, earlier rounds,
+  baseline YES, buyer behavior and all nonfires remain identical.  Its only
+  plan delta is `recommend: false -> true`, marker
+  `seller_terminal_push_v1`, and sole gate
+  `pers_seller_terminal_push_v1`.  It fails closed against every optional
+  seller mechanism and accepts an omitted structural seller-role key while
+  rejecting a contradictory one.
+- Verification is clean: focused `52/52`, all persuasion `663/663`, and exact
+  current Test 2 stack reachability `117/117/117` eligible/fired/action-changed
+  over 800 paired games.  The full suite is `2742 passed` with exactly the three
+  declared non-persuasion failures (bargaining horizon-floor plus bargaining
+  and negotiation live-grid drift).  No live file, process, queue, Agent 5
+  setting, or fleet flag was changed by this implementation.
+- Do **not** activate inside the current reset-only cohort: that precommit froze
+  every seller rule and the latest complete checkpoint was 910/2,000.  At the
+  deployment boundary, mark that cohort operator-superseded without an efficacy
+  verdict at its exact final authenticated count, retain the already-live buyer
+  reset as frozen background, and open a fresh incremental seller cohort.
+- Claude/deployment owner must review, commit, and push the inert code, then use
+  the normal SDK-native bank and natural zero-game drain.  At authenticated
+  `active=0,pending=0`, freeze the complete boundary described in
+  `.ai/EXPERIMENTS.md`; use exactly one `scripts/fleet.py set hardliner
+  GLEE_PERS_SELLER_TERMINAL_PUSH_V1=1` write; verify that this is the only Test 2
+  persuasion delta and Agent 5, all other slots, the Test 2 non-persuasion hash,
+  `control.json`, family topology, and every A/B zero remain unchanged.  Test 2
+  stays bargaining + persuasion, negotiation disabled, LLM off.
+- Exact replay the first 20 firings.  Any non-LOW, non-round-20, wrong-seat,
+  multi-gate, illegal-wire, unexplained-delta, error, or attributable-timeout
+  incident immediately rejects the mechanism and sets only this flag explicit
+  zero through fleet tooling.  The frozen 500-seller harm / 2,000-seller final
+  rules are now at the top of `.ai/EXPERIMENTS.md`.
+
+## 00:15 Test 2 910-game checkpoint; next seller repair remains inert
+
+- The tight-credibility-reset cohort is complete through 910/910 authenticated
+  terminal assignments (`460` seller, `450` buyer), with zero unresolved games,
+  errors, timeouts, or immediate terminals. Exact contract audit is clean for
+  all `429` changed turns across `61` games: `293` BUY->PASS turns in `29`
+  games and `136` PASS->BUY turns in `32` games.
+- The frozen first-500 secondary harm rule passes: negative outcomes were
+  `31/500` (`6.2%`) versus `32/500` (`6.4%`) immediately before deployment;
+  the approximate change interval is `[-3.2pp,+2.8pp]`, far below the
+  precommitted `+10pp` harm boundary. Test 2's aggregate rating decline is not
+  isolated: it moved `-138.89/910`, while unchanged Test 1 moved
+  `-126.47/779` and Test 3 moved `-255.75/807`. The authenticated per-game
+  official-rating export still has zero post-Tcfg joins, so this is neither a
+  promotion nor a causal efficacy finding. Continue the isolated controller to
+  its frozen endpoint; do not stack a seller change into this cohort.
+- Safety objection: `19/32` games touched by the PASS->BUY leg were negative,
+  especially tight equality-prior cells. This is trigger-selected and cannot
+  establish causality, but it rules out adding another buyer-buying layer. A
+  future revoke-only split is only a hypothesis because it can skip hidden
+  HIGH units.
+- The best disjoint next challenger remains the already implemented,
+  default-OFF `GLEE_PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1`. In the latest Test 2
+  scan, the baseline kept recommending `216` known-LOW units after cumulative
+  demand fell below 50%, producing only `2` purchases across `34` games. The
+  current exact Test 2 stack passes reachability `345/345/345`; its focused
+  suite passes `75/75`. Full verification is `2690 passed` plus exactly the
+  three declared non-persuasion failures. This evidence justifies a later clean
+  prospective Test 2 cohort, not activation now and not a claim that restored
+  honesty will recover future HIGH sales.
+- No fleet state, process, queue, bargaining/negotiation setting, or Agent 5
+  configuration was changed during this review. Agent 5 remains protected and
+  the seller flag remains OFF.
 
 ## 17:36 Test 2 tight-credibility reset live; bargaining + persuasion only
 

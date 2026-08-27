@@ -219,6 +219,7 @@ def test_omitted_redundant_seller_role_remains_reachable(
     [
         (persuasion.PERS_ZERO_MARGIN_TRUTH_V1_FLAG, "1"),
         (persuasion.PERS_SELLER_DEMAND_COLLAPSE_TRUTH_V1_FLAG, "1"),
+        (persuasion.PERS_SELLER_POSITIVE_PASS_STREAK_TRUTH_V1_FLAG, "1"),
         ("GLEE_PERS_DP", "1"),
         ("GLEE_PERS_DP_V3", "1"),
         ("GLEE_PERS_BACKLOAD_AB", "2"),
@@ -278,6 +279,7 @@ def test_malformed_or_non_numeric_round_fields_fail_closed(
         {"dp_v3": True},
         {"zero_margin_truth_v1": True},
         {"seller_demand_collapse_truth_v1": True},
+        {"seller_positive_pass_streak_truth_v1": True},
         {"p08_r125_binary_truth_arm": "truth"},
         {"p08_r125_prose_arm": "prose"},
         {"p08_positive_prose_v1": True},
