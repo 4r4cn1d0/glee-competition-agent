@@ -1,5 +1,57 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
+## AUTHORIZED / PENDING LOSSLESS TEST 4 LOAD — `complete-unknown-buyer-dynamic-stop-v1` (28 Aug)
+
+- **Policy and null**: Test 4 alone may set
+  `GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1=1`. The null is no
+  improvement in all-assignment Test 4 negotiation percentile/rating versus
+  its frozen immediately preceding hotfix period. This is deterministic and
+  has no game hash, random arm, opponent/name branch, or cell allowlist.
+- **Exact scope**: complete-information, explicitly unknown-horizon, feasible
+  buyer/P2 decision; existing Test 4 copied buyer chooses `RejectOffer`; ten
+  consecutive wire-exact mutual-stasis cycles; current profitable seller ask
+  ranks at least `.50` in the checked-in official-seed same-role cell; rounds
+  below 99. The sole wire delta is `RejectOffer -> AcceptOffer`. Counterprice,
+  message, sellers, hidden games, known/capped horizons, nonfires, round 97 and
+  round 99 remain under their existing owners. The failed score-floor flag
+  stays explicit zero.
+- **Retrospective motivation, not efficacy**: 389 deduplicated finalized
+  feasible buyer games across the same copied component produced 21 first
+  triggers: 14 better, six worse, one tie; affected lift `+.28370`, full-cohort
+  ITT `+.01532`, game-bootstrap 95% ITT CI `[+.00478,+.02725]`. Test 4 was
+  6/6 better, all six observed continuations no-deals. The complete Test 4
+  9,226-turn target scan had zero unresolved matching triggers.
+- **Verification**: related focused tests `115/115`; negotiation suite
+  `841/841`; exact Test 4 hardliner-wrapper reachability
+  `1,225/1,225/1,225`. Full suite `2,861 passed / 4 unrelated baseline/data-
+  drift failures` (one bargaining assertion and three live-grid alarms).
+- **Prospective accounting**: freeze the exact flag-write time, replacement
+  PID/start, first loaded negotiation turn, negotiation rating/game count, and
+  preceding Test 4 cohort. Retain every subsequent Test 4 negotiation
+  assignment—fires and nonfires, both roles, all information/horizon/message
+  cells, agreements, no-deals, zeros, walks, timeouts, and unresolved joins.
+  Report affected fires separately but never substitute them for ITT. This
+  single-host before/after comparison is observational, not causal.
+- **Decision rule**: audit every fire until 20 clean fires. Explicit-zero
+  rollback immediately for any seller/hidden/capped/infeasible/round-99 fire,
+  fewer than ten exact cycles, seed rank below `.50`, counter/message change,
+  illegal action, strategy error, or overlap with the failed score-floor gate.
+  First outcome look occurs only after 30 resolved fires and at least 500 total
+  post-load Test 4 negotiation assignments with zero missing result joins.
+  Roll back for harm if affected official same-cell percentile is below the
+  frozen structural cohort by at least `.05` with a 95% interval wholly below
+  zero, or if the all-assignment zero-rate rises at least five points with its
+  95% interval wholly above zero. No early efficacy promotion. At 75 resolved
+  fires and at least 1,500 assignments, retain only if affected and all-
+  assignment percentile point estimates are both positive, zero-rate is
+  nonincreasing, complete/unknown buyer point estimate is positive in both
+  message modes, all joins resolve, and the mechanism audit remains clean.
+- **Deployment safety**: physical slot `randomized` keeps its effective
+  hardliner wrapper, all three families, every bargaining/persuasion setting,
+  and every unrelated negotiation/peak control. Load pushed code only at a
+  natural lossless boundary; never signal, abandon, or force a game. A staged
+  overlay is not live proof—require a fresh production gate fire.
+
 ## LIVE WITH OPERATOR-ACCEPTED CROSSOVER — Test 3 V2+V3 and Test 4 Stage 1 (27 Aug, 20:38 IST)
 
 - The operator explicitly superseded the pending clean-boundary wait and

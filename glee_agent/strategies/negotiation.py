@@ -79,6 +79,25 @@ COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_GATE = (
 COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_MIN_ROUND = 75
 COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES = 10
 
+# Default-off deterministic optimal-stopping overlay for Test 4's copied
+# complete-information buyer.  Unlike the rejected score-floor challenger, it
+# never changes a counterprice.  Across 389 finalized feasible buyer games on
+# the three slots using this same copied component, accepting the first current
+# offer whose exact seed rank was at least .50 after ten wire-exact mutual
+# stasis cycles improved 14 games, worsened 6, and tied 1.  Mean affected lift
+# was +.28370 exact percentile and full-cohort lift was +.01532 (game-bootstrap
+# 95% CI [.00478, .02725]).  Test 4 itself was 6/6 improvements with no
+# unresolved matching trajectory.  This is retrospective evidence, so the
+# behavior remains default OFF and is pinned to Test 4's complete hotfix stack.
+COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_FLAG = (
+    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1"
+)
+COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_GATE = (
+    "complete_unknown_buyer_dynamic_stop_v1"
+)
+COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_CYCLES = 10
+COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_MIN_PERCENTILE = 0.50
+
 # Default-off deterministic repair for one pointwise-dominated terminal action
 # in the copied buyer component used by Agent 5 V1 and Test 2 V3.  The flag is
 # deliberately separate from the measured-negative broad hidden/unknown
@@ -111,6 +130,7 @@ UNKNOWN_HORIZON_TERMINAL_ROUND = 99
 _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS = (
     COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG,
     COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG,
+    COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_FLAG,
     "GLEE_NEGO_CLOSE_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
     "GLEE_NEGO_FP_ALWAYS",
@@ -1773,6 +1793,56 @@ def _complete_unknown_late_stasis_stack_ok() -> bool:
                    for name in _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS)
 
 
+def _complete_unknown_buyer_dynamic_stop_stack_ok() -> bool:
+    """Pin the stopping overlay to Test 4 without blocking its r97 guard."""
+    if (deterministic_negotiation.mode()
+            != deterministic_negotiation.TEST4_HOTFIX_V1):
+        return False
+    required = (
+        "GLEE_NEGO_BOUND_AS_FLOOR",
+        "GLEE_NEGO_CONTINUATION_ACCEPT",
+        "GLEE_NEGO_CURVE_PRICING",
+        "GLEE_NEGO_DEADGAME_V1",
+        "GLEE_NEGO_ENDGAME_V3",
+        "GLEE_NEGO_HORIZON_V2",
+        "GLEE_NEGO_OPEN_CLAIM_ALWAYS",
+        "GLEE_NEGO_POSTERIOR",
+        "GLEE_NEGO_STALL_POLICY",
+        "GLEE_NEGO_TABLE",
+    )
+    if not all(runtime_flags.enabled(name) for name in required):
+        return False
+    pinned = (
+        ("GLEE_NEGO_ACCEPT_SPAN", 0.48),
+        ("GLEE_NEGO_CLAIM_FLOOR", 0.80),
+        ("GLEE_NEGO_FINAL_OPTION", 0.60),
+        ("GLEE_NEGO_OPEN_CLAIM", 0.95),
+        ("GLEE_NEGO_SPAN_INVARIANT", 0.40),
+    )
+    for name, expected in pinned:
+        actual = runtime_flags.as_float(name, math.nan)
+        if not math.isfinite(actual) or abs(actual - expected) > 1e-12:
+            return False
+
+    # The independent round-97 low-share policy is deliberately allowed and
+    # retains first precedence.  Every other overlapping experimental writer
+    # fails this controller closed, including the rejected score-floor path and
+    # the older broad late-stasis guard.
+    conflicts = (
+        COMPLETE_UNKNOWN_LATE_STASIS_FLAG,
+        COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG,
+        *(
+            name for name in _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS
+            if name not in (
+                COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG,
+                COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG,
+                COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_FLAG,
+            )
+        ),
+    )
+    return not any(_flag_is_nonzero(name) for name in conflicts)
+
+
 def _counter_wire_number(entry: dict, expected_from: str,
                          entry_round: int) -> float | None:
     """Parse a recorded counter, requiring provenance when schema provides it."""
@@ -1898,6 +1968,146 @@ def _complete_unknown_buyer_score_floor_terms(
         sample_size,
         boundary,
     )
+
+
+def _maybe_complete_unknown_buyer_dynamic_stop(
+    game: dict, action: dict,
+) -> dict:
+    """Accept a proved current median-or-better payoff after exact stasis.
+
+    Unknown horizon does not provide a legitimate time fraction for backward
+    induction. This overlay instead uses observable state: ten complete mutual
+    stasis cycles prove that neither wire price is moving, and the official
+    complete-information seed ranks the standing payoff without estimating an
+    unplayed counteroffer. It changes only RejectOffer to AcceptOffer; the
+    baseline counter remains untouched whenever any precondition fails.
+    """
+    if (not runtime_flags.enabled(
+            COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_FLAG)
+            or not isinstance(action, dict)
+            or action.get("decision") != "RejectOffer"
+            or not _complete_unknown_buyer_dynamic_stop_stack_ok()):
+        return action
+
+    public_keys = {
+        key for key in action if not str(key).startswith("_")
+    }
+    if (not public_keys.issubset({"decision", "product_price", "message"})
+            or not {"decision", "product_price"}.issubset(public_keys)):
+        return action
+    plan = action.get("_plan")
+    if (not isinstance(plan, dict)
+            or plan.get("source")
+            != deterministic_negotiation.TEST4_HOTFIX_V1
+            or plan.get("component") != "observed_leader_buyer"):
+        return action
+
+    state = game.get("game_state")
+    valid_actions = game.get("valid_actions")
+    if (not isinstance(state, dict)
+            or not isinstance(valid_actions, dict)
+            or game.get("game_family") != "negotiation"
+            or state.get("game_family") not in (None, "negotiation")
+            or valid_actions.get("type") != "decision"
+            or game.get("phase") not in (None, "decision")
+            or state.get("phase") not in (None, "decision")
+            or state.get("complete_information") is not True
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None
+            or not isinstance(state.get("messages_allowed"), bool)
+            or state.get("current_player") != "player_2"
+            or game.get("your_player") != "player_2"
+            or state.get("player_1_role") != "seller"
+            or state.get("player_2_role") != "buyer"):
+        return action
+
+    round_number = _strict_finite_scalar(state.get("round"))
+    seller_value = _strict_finite_scalar(state.get("player_1_value"))
+    buyer_value = _strict_finite_scalar(state.get("player_2_value"))
+    standing = state.get("last_offer")
+    if (round_number is None or not round_number.is_integer()
+            or round_number < 1
+            or round_number >= UNKNOWN_HORIZON_TERMINAL_ROUND
+            or seller_value is None or seller_value <= 0.0
+            or buyer_value is None or buyer_value <= seller_value
+            or not isinstance(standing, dict)
+            or standing.get("from_player") != "player_1"):
+        return action
+    offer_round = _strict_finite_scalar(standing.get("round"))
+    offer_price = _strict_finite_scalar(standing.get("price"))
+    if (offer_round != round_number or offer_price is None
+            or offer_price < seller_value - 1e-9
+            or offer_price > buyer_value - 0.01 + 1e-9):
+        return action
+
+    buyer_gain = buyer_value - offer_price
+    if buyer_gain < 0.01 - 1e-9:
+        return action
+
+    # Compare history with the actual coerced wire, not the strategy's raw
+    # action: enabled postconditions can legally alter the submitted counter.
+    public_baseline = {
+        key: value for key, value in action.items()
+        if not str(key).startswith("_")
+    }
+    try:
+        projected = coerce(public_baseline, game)
+    except Exception:
+        return action
+    if projected.get("decision") != "RejectOffer":
+        return action
+    projected_counter = _strict_finite_scalar(
+        projected.get("product_price"))
+    if projected_counter is None:
+        return action
+    cycles, historical_offer, counter_price = _exact_mutual_stasis_cycles(
+        state,
+        projected,
+        "player_2",
+        cycles_required=COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_CYCLES,
+    )
+    if (cycles < COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_CYCLES
+            or historical_offer != offer_price
+            or counter_price is None):
+        return action
+
+    ranked = nego_score_floor.payoff_percentile(
+        state,
+        "player_2",
+        seller_value,
+        buyer_value,
+        buyer_gain,
+    )
+    if ranked is None:
+        return action
+    accept_percentile, sample_size = ranked
+    if accept_percentile < COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_MIN_PERCENTILE:
+        return action
+
+    plan_data = dict(plan)
+    plan_data[COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_GATE] = {
+        "eligible": True,
+        "mode": "deterministic",
+        "baseline_decision": "RejectOffer",
+        "round": int(round_number),
+        "cycles": cycles,
+        "offer_price": offer_price,
+        "counter_price": counter_price,
+        "seller_value": seller_value,
+        "buyer_value": buyer_value,
+        "buyer_gain": buyer_gain,
+        "accept_seed_percentile": accept_percentile,
+        "minimum_seed_percentile": (
+            COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_MIN_PERCENTILE
+        ),
+        "seed_cell_n": sample_size,
+    }
+    if _trace_enabled():
+        plan_data["gates_fired"] = list(
+            plan_data.get("gates_fired") or []
+        )
+        _gate(plan_data, COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_GATE)
+    return {"decision": "AcceptOffer", "_plan": plan_data}
 
 
 def _maybe_complete_unknown_r97_low_share_accept(
@@ -2234,6 +2444,8 @@ def _maybe_complete_unknown_buyer_score_floor(
             or action.get("decision") != "RejectOffer"
             or deterministic_negotiation.mode()
             != deterministic_negotiation.TEST4_HOTFIX_V1
+            or _flag_is_nonzero(
+                COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_FLAG)
             or _flag_is_nonzero(COMPLETE_UNKNOWN_LATE_STASIS_FLAG)):
         return action
     public_keys = {
@@ -2716,6 +2928,7 @@ def decide(game: dict, cfg) -> dict:
             except Exception:
                 pass              # a message is never worth risking the move
     action = _maybe_complete_unknown_r97_low_share_accept(game, action)
+    action = _maybe_complete_unknown_buyer_dynamic_stop(game, action)
     action = _maybe_complete_unknown_buyer_score_floor(game, action)
     action = _maybe_complete_unknown_late_stasis(game, action)
     action = _maybe_test2_unknown_r99_accept(game, action)

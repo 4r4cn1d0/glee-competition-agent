@@ -134,6 +134,32 @@ def _midrank(samples: list[float], normalized_payoff: float) -> float:
     return (lo + hi) / 2.0 / len(samples)
 
 
+def payoff_percentile(
+    state: dict,
+    seat: str,
+    seller_value: float,
+    buyer_value: float,
+    payoff: float,
+) -> tuple[float, int] | None:
+    """Return exact-seed midrank and cell size for one visible payoff.
+
+    This deliberately has the same complete-information fail-closed boundary
+    as :func:`cent_payoff_floor`.  It is a rank lookup for a payoff available
+    *now*, not a continuation model and not an estimate of an unplayed offer.
+    """
+    if (
+        isinstance(payoff, bool)
+        or not isinstance(payoff, (int, float))
+        or not math.isfinite(float(payoff))
+    ):
+        return None
+    resolved = _samples(state, seat, seller_value, buyer_value)
+    if resolved is None:
+        return None
+    samples, base = resolved
+    return _midrank(samples, float(payoff) / base), len(samples)
+
+
 def cent_payoff_floor(
     state: dict,
     seat: str,

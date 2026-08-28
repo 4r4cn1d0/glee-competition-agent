@@ -3,6 +3,69 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-28 21:42 IST — Test 4 dynamic complete/unknown buyer stop ready for lossless rollout
+
+Implemented the default-OFF deterministic flag
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1`. It is a one-way stopping
+overlay on Test 4's existing `test4_hotfix_v1` copied buyer component. It owns
+only canonical negotiation buyer/P2 decisions with complete information, an
+explicitly unknown horizon, a feasible visible ZOPA, a profitable current
+seller offer, and a baseline `RejectOffer`. After ten fully recorded,
+consecutive mutual-stasis cycles at the exact submitted wire prices, it accepts
+only when the payoff available now has checked-in official-seed same-cell
+midrank at least `.50`. It changes only `RejectOffer -> AcceptOffer`; it never
+changes a counterprice. There is no absolute round-75 trigger. Round 97 remains
+owned first by the existing low-share guard and round 99 remains owned by the
+existing any-positive terminal guard. Hidden, known-horizon, capped, seller,
+infeasible, malformed, changing, low-rank, and non-Test-4 states fail closed.
+The failed score-floor counter policy and older broad stasis policy are
+reciprocal conflicts, while the existing round-97 guard is deliberately
+compatible.
+
+The all-outcome retrospective census deduplicated 389 finalized feasible
+complete/unknown buyer games from the three slots running the same copied
+buyer component: Test 4/randomized 109, composite 102, and hardliner 178. At
+the first qualifying ten-cycle state, 21 games would change: 14 improve, six
+worsen, and one tie against the actually observed continuation. Mean affected
+exact-percentile lift is `+.28370`; full-cohort ITT lift is `+.01532`. A game-
+level bootstrap gives 95% intervals `[+.11043,+.47637]` affected and
+`[+.00478,+.02725]` ITT. Test 4 itself is 6/6 improvements: all six observed
+continuations were no-deals, and their alternative exact-percentile lifts were
+approximately `+.4649` to `+.5982`. A separate scan of all 9,226 target
+complete/unknown Test 4 turn rows after the hotfix found exactly those six
+matching games, all with finalized result rows and zero unresolved matching
+triggers. Agreements, no-deals, zeros, timeouts, walks, and unresolved results
+were retained in the 389-game eligibility census; no agreement-only filter was
+used.
+
+This evidence is retrospective, not a randomized causal estimate. In
+particular, the six pooled adverse continuations prove that waiting can still
+beat accepting, and the official seed CDF can drift from the live field. The
+new lookup ranks only the current played offer; it does not infer an unplayed
+counter's acceptance probability. The lower `.50` rank bands were mixed or
+harmful in the threshold grid; `.50` is the observed break, not a guarantee of
+positive rating at every future Test 4 rating.
+
+Verification: focused dynamic/score-floor/round-97/late-stasis tests pass
+`115/115`; every negotiation-prefixed test passes `841/841`. Exact current
+Test-4-overlay reachability with its real `hardliner` wrapper passes
+`1,225 eligible / 1,225 fired / 1,225 submitted actions changed` over 800
+games, with representative changes at rounds 29/31/33 and both expected gates
+traced. The mandatory complete suite is `2,861 passed / 4 failed`: the known
+stale bargaining horizon assertion plus bargaining, negotiation, and
+persuasion live-grid drift alarms caused by current `logs/` disagreeing with
+the frozen simulator proportions. None executes this new policy.
+
+Deployment scope is physical Test 4 / slot `randomized` only. Use supported
+fleet tooling to set exactly
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1=1`, preserve its hardliner
+wrapper, all-three-family topology, explicit score-floor rollback zero, every
+other negotiation flag, bargaining, persuasion, and peak/bank control, then
+request only a natural lossless cycle so the new code loads. Never signal or
+abandon a game. A staged flag or replacement PID is not mechanism proof:
+confirm a fresh production turn with
+`complete_unknown_buyer_dynamic_stop_v1` before calling the behavior live.
+
 ## 2026-08-27 18:49 IST — Agent 5 activity defense complete; banked after exact bargaining cushion
 
 The operator authorized whatever lossless play was needed to keep Agent 5 clear

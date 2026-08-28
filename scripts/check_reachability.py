@@ -803,6 +803,26 @@ def _p_complete_unknown_buyer_score_floor(game, p):
             + 1e-12 >= metadata.get("target_percentile", math.inf))
 
 
+def _p_complete_unknown_buyer_dynamic_stop(game, p):
+    """Exact candidate scope of Test 4's state-based buyer stop."""
+    if game.get("game_family") != "negotiation":
+        return False
+    state = game.get("game_state") or {}
+    metadata = p.get("complete_unknown_buyer_dynamic_stop_v1") or {}
+    return (state.get("complete_information") is True
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and state.get("current_player") == "player_2"
+            and state.get("player_2_role") == "buyer"
+            and (game.get("valid_actions") or {}).get("type") == "decision"
+            and metadata.get("eligible") is True
+            and 1 <= metadata.get("round", -1) < 99
+            and metadata.get("cycles", 0) >= 10
+            and metadata.get("seed_cell_n", 0) > 0
+            and metadata.get("accept_seed_percentile", 0.0) + 1e-12
+            >= metadata.get("minimum_seed_percentile", math.inf))
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -851,6 +871,9 @@ KNOWN = {
     "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1": (
         "negotiation", ("complete_unknown_buyer_score_floor_v1",),
         _p_complete_unknown_buyer_score_floor),
+    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1": (
+        "negotiation", ("complete_unknown_buyer_dynamic_stop_v1",),
+        _p_complete_unknown_buyer_dynamic_stop),
     "GLEE_NEGO_DETERMINISTIC_FP_V1": (
         "negotiation", ("deterministic_first_principles_v1",),
         _p_deterministic_first_principles),
@@ -1216,6 +1239,7 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                     "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
                     "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1",
+                    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1",
                     )
                     and family == "negotiation"
                     and params.get("complete_information") is True
@@ -1229,6 +1253,8 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                 field_opponent = opponent
                 low_share_r97 = target_flag.endswith(
                     "R97_LOW_SHARE_ACCEPT_V1")
+                dynamic_buyer = target_flag.endswith(
+                    "BUYER_DYNAMIC_STOP_V1")
 
                 def exact_mutual_stasis_opponent(game):
                     state = game.get("game_state") or {}
@@ -1250,6 +1276,14 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                         if role != "seller":
                             return field_opponent(game)
                         price = buyer - 0.10 * span
+                    elif dynamic_buyer:
+                        # The candidate owns buyer/P2 only. Hold the visible
+                        # 70%-buyer-share price: just outside the copied
+                        # policy's 71.2% acceptance fence, but at or above the
+                        # exact seed median in the reachable official cells.
+                        if role != "seller":
+                            return field_opponent(game)
+                        price = seller + 0.30 * span
                     else:
                         # Give the recorder 25% of the visible span, below its
                         # live .48 accept fence, in either role.
@@ -1506,6 +1540,7 @@ def main() -> int:
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1",
+                                  "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
                                   "GLEE_BARG_HIGH_SHARE_DELAY_GUARD",
