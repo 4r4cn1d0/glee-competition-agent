@@ -1,5 +1,21 @@
 # EXPERIMENTS — hypothesis, design, verdict
 
+## LIVE CODE / ARMED, MECHANISM PENDING — `complete-unknown-buyer-dynamic-stop-v1` (28 Aug, 21:53 IST)
+
+- Implementation commit `fe7e435` is pushed. The sole persistent strategy
+  delta is Test 4 `GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1=1`, written
+  at `21:42:12 IST`; deleting it reproduces the exact pre-write overlay hash.
+- Old PID `55176` losslessly banked after all eight games completed and exited
+  at `21:52:54`. New code-loaded PID `57711` started at `21:53:35` with the
+  preserved hardliner/all-three-family/LLM-off command. Fresh Test 4
+  negotiation turns begin at `ts=1787934227.8768342` and retain the hotfix
+  source. No game was signalled or abandoned.
+- The prospective ITT boundary is PID 57711 start / `ts>=1787934215`. At this
+  record no eligible dynamic-stop gate had naturally fired. Call the rollout
+  staged, code-loaded and armed—not mechanism-verified—until the first exact
+  production fire is audited. A 15-minute read-only heartbeat now performs
+  that audit and the fixed monitoring rules below remain unchanged.
+
 ## AUTHORIZED / PENDING LOSSLESS TEST 4 LOAD — `complete-unknown-buyer-dynamic-stop-v1` (28 Aug)
 
 - **Policy and null**: Test 4 alone may set

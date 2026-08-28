@@ -3,6 +3,43 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-28 21:56 IST — Test 4 dynamic stop code-loaded and armed; first natural fire pending
+
+Commit `fe7e435` is pushed to `origin/main`. At `21:42:12 IST`, supported
+fleet tooling added exactly one Test 4 / physical `randomized` overlay key:
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_DYNAMIC_STOP_V1=1`. Removing that key from
+the post-write JSON reproduces the complete pre-write canonical SHA-256
+`731a3a3652d5e6cdc836bb2006c0fd71d05a187badec4399515f928b72d6a11a`.
+The failed score-floor flag remains explicit `0`; the inert `.655` value,
+round-97 guard, hotfix, seller-cent rule, hardliner wrapper, all three
+families, and every bargaining/persuasion/other negotiation value are
+unchanged. Final arms SHA-256 is
+`7eb915cea0e7b65dda159affdc12686fa2ae6fdc1a1a83efb03edd446fcb816f`.
+
+PID `55176` predated the commit, so a supported manual bank was requested at
+`21:42:28 IST`. It stopped acquiring, completed all eight in-flight games,
+including one complete/unknown negotiation through its round-97 handoff, and
+exited without a signal or abandonment. The supervisor recorded it down at
+`21:52:54 IST`. `fleet.py start randomized` was issued only after process-table
+proof that 55176 was absent. The supervisor launched PID `57711` at
+`21:53:35 IST` with the exact preserved command: hardliner, LLM off,
+concurrency 8, bargaining+negotiation+persuasion. The first fresh negotiation
+turn was logged at `21:53:47 IST` with `source=test4_hotfix_v1`; subsequent
+fresh turns confirm normal queueing. Final `control.json` restores the prior
+disabled/drain sets (composite only), empty `cycle_now`, unchanged bank latch
+and thresholds, with only the expected randomized manual-bank observation
+updated to PID 55176; SHA-256 is
+`ed3f750ea644cd6f1f850023b8cb554092ea9f2f92260ff5be553d18e366c1d0`.
+
+No naturally eligible
+`complete_unknown_buyer_dynamic_stop_v1` turn had appeared at this record, so
+the deployment is accurately classified as **staged, code-loaded, and
+running; mechanism fire pending**, not yet gate-fired. The existing 15-minute
+`refresh-rival-move-dossiers` heartbeat is active and now scans only Test 4
+turns with `ts >= 1787934215` for the first fire, checks full role/info/horizon/
+stasis/rank/wire scope, and never modifies configuration or processes. Do not
+cycle again merely to obtain a fire; wait for a naturally eligible game.
+
 ## 2026-08-28 21:42 IST — Test 4 dynamic complete/unknown buyer stop ready for lossless rollout
 
 Implemented the default-OFF deterministic flag
