@@ -4327,3 +4327,26 @@ allocation is deterministic and single-host, compare all-outcome movement with
 the frozen preperiod but do not call it causal; any malformed fire, changed
 hidden/seller/capped/terminal action, or submitted boundary below its recorded
 payoff floor requires explicit-zero rollback.
+
+### 2026-08-28 07:18 IST: Test 4 score floor live and first fire verified
+
+Commit `bf85c73` was pushed to `main`, then only Test 4's physical
+`randomized` overlay received
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1=1` and
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_PCT=0.655`. Its old hardliner
+wrapper PID `73135` was losslessly banked: it stopped queueing, completed its
+remaining games, and exited without a signal or abandonment. The supervisor
+then launched PID `76883` at `07:15:17 IST` from the pushed checkout, still as
+hardliner, LLM off, concurrency 8, and all three families. No bargaining,
+persuasion, other negotiation flag, other slot, or peak threshold was changed.
+
+The first real production fire occurred at `07:17:56 IST` in game
+`f5dfab43-2b9b-46a3-9b94-ea4fa3f253b1`, complete-information buyer/P2,
+unknown horizon, silent, seller value `1,000,000`, buyer value `1,200,000`.
+After ten exact cycles the round-75 wire changed from baseline `1,057,600.00`
+to `1,099,999.99`, preserving buyer payoff `100,000.01`. Gate metadata recorded
+target `.655`, achieved official-seed midrank `.6666667`, and exact-cell n=57.
+Round 77 then emitted the same boundary with `trigger=sticky`, proving that the
+post-activation provenance path loaded and fired rather than snapping back to
+the baseline. This verifies deployment and mechanism, not outcome efficacy;
+the game was still unresolved at this observation.
