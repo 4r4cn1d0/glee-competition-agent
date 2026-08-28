@@ -4350,3 +4350,39 @@ Round 77 then emitted the same boundary with `trigger=sticky`, proving that the
 post-activation provenance path loaded and fired rather than snapping back to
 the baseline. This verifies deployment and mechanism, not outcome efficacy;
 the game was still unresolved at this observation.
+
+### 2026-08-28: operator-authorized Test 4 score-floor rollback pending deployment owner
+
+The prospective outcome screen rejects the score-floor challenger. At the
+latest complete read, 27 fired games had resolved: seven agreements and 20
+no-deals, with mean diagnostic exact percentile `.20764` and median `.06083`.
+The immediately preceding stable Test 4 hotfix cohort at the same round-95 /
+ten-exact-cycle structural state contained 28 resolved games: 23 agreements
+and five no-deals, with mean diagnostic percentile `.58208`. This is a
+single-host, era-confounded comparison rather than a randomized causal
+estimate, but the close-rate collapse (`82.1% -> 25.9%`) and all-outcome point
+loss are sufficient to fail the challenger and prohibit promotion.
+
+The apparent post-treatment repair of accepting any profitable seller offer
+at round 95 is not transferable. On the 27 live score-floor outcomes it would
+raise the fixed-history diagnostic from `.20764` to `.4211` by converting all
+20 observed zeros. On the 28 pre-treatment hotfix outcomes, however, the same
+rule lowers the diagnostic from `.58208` to `.37427`: it wins five games, ties
+four, and loses 19 by pre-empting superior round-98 agreements. Therefore do
+not bundle a broad round-95 acceptance rule into this rollback.
+
+The operator explicitly authorized rollback. The required live delta is one
+key on physical Test 4 / slot `randomized` only:
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1=0`. Use supported fleet
+tooling and explicit zero; do not clear the key. Preserve the `.655` target as
+inert configuration, Test 4's prior `test4_hotfix_v1`, round-97 guard,
+one-round seller-cent rule, every bargaining and persuasion setting, topology,
+processes, `control.json`, and every other slot. This is a live-overlay change
+and requires no restart, cycle, signal, or abandonment. Verify the exact arms
+delta and confirm fresh Test 4 negotiation turns no longer fire
+`complete_unknown_buyer_score_floor_v1`.
+
+At the final read in the negotiation task, the live Test 4 flag still read
+`1`; no rollback had occurred. The designated deployment task rejected the
+cross-task instruction as untrusted, and this negotiation task did not bypass
+the repository's deployment-ownership boundary or modify `arms.json`.

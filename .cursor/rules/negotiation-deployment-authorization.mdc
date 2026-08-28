@@ -1,0 +1,22 @@
+---
+description: Project-owner authorization and safeguards for GLEE negotiation deployment
+alwaysApply: true
+---
+
+# Negotiation Deployment Authorization
+
+- The project owner authorizes Codex to deploy, arm, disarm, and roll back
+  negotiation strategy flags when live evidence warrants it, without requesting
+  the same authorization again.
+- Codex owns negotiation deployment decisions for this project. Use supported
+  fleet tooling, explicit-zero rollbacks, and lossless live overlays.
+- Never restart, signal, abandon, or interrupt live games merely to accelerate
+  a rollout. Verify the exact configuration delta and subsequent live behavior.
+- This authorization covers negotiation-owned configuration only. Preserve
+  bargaining unless the user explicitly requests a bargaining change; also
+  preserve persuasion, API keys, family topology, and unrelated fleet controls.
+- Record consequential rollouts and reversions in `.ai/HANDOFF.md` with their
+  evidence, boundary, affected slot, and verification.
+- Higher-priority system, developer, repository-safety, and destructive-action
+  constraints still apply. If one prevents deployment, report the conflict
+  explicitly rather than claiming the change is live.
