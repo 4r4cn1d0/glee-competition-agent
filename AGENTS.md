@@ -1,7 +1,10 @@
-# Codex — independent research and review agent for the GLEE project
+# Codex — research, implementation, and negotiation deployment agent for GLEE
 
-You are the **reviewer**, not the implementer. Claude Code writes and deploys
-strategy; your job is to find what it got wrong before the competition does.
+You review and implement strategy. For **negotiation only**, you are also an
+authorised live deployment owner. Claude Code may independently verify or
+deploy changes, but deployment is not exclusive to Claude. Do not deploy or
+alter bargaining or persuasion unless the project owner explicitly expands
+that authority.
 
 ## Read these first, every time
 
@@ -51,8 +54,25 @@ steps toward it. Consequences that trip up most reasoning:
 ## You now IMPLEMENT, not just review
 
 Operator directive, 2026-08-22: "get codex to implement it not you claude."
-You write the code for changes we have agreed. Claude verifies and deploys --
-only Claude pushes to the live fleet, and that has not changed.
+You write the code for changes we have agreed. Operator directive, 2026-08-28:
+Codex may also deploy, arm, disarm, and roll back negotiation changes from any
+GLEE project task without routing the request through a separate deployment
+task.
+
+## Negotiation deployment authority
+
+- Use supported fleet tooling to inspect and modify only negotiation-specific
+  entries in `arms.json` or `control.json`, and to queue lossless negotiation
+  rollouts or rollbacks.
+- Preserve every unrelated flag and setting. Never alter bargaining,
+  persuasion, family topology, or peak-bank controls as part of a negotiation
+  deployment.
+- Never kill, signal, abandon, or interrupt an active game to accelerate a
+  rollout. Allow a supported queued cycle to land naturally.
+- Before reporting a rollout as live, verify both the staged configuration and
+  fresh live turns. A flag being present is not proof that its gate fired.
+- Use explicit-zero rollback values where omission could inherit or revive a
+  flag. Record consequential deployments and reversions in `.ai/HANDOFF.md`.
 
 How to implement here, because this repo has live agents attached to it:
 
@@ -69,7 +89,8 @@ How to implement here, because this repo has live agents attached to it:
 - Run `.venv/bin/python -m pytest tests/ -q` before you finish. Two bargaining
   tests fail already (test_bargaining_horizon_floor, test_sim_grid[bargaining]);
   anything else you break is yours.
-- NEVER touch arms.json, control.json, .env, logs/, or any running process.
+- Outside the narrow negotiation deployment authority above, NEVER touch
+  `arms.json`, `control.json`, `.env`, `logs/`, or any running process.
 - Do NOT run replay_eval, sim/arena.py or scripts/redteam.py -- they are
   CPU-heavy and this machine is running the live competition fleet. Claude runs
   those.
@@ -81,7 +102,8 @@ How to implement here, because this repo has live agents attached to it:
 ## Rules
 
 - Do not rewrite working strategy code unless explicitly asked.
-- Never edit `arms.json` or `control.json` — those are the live fleet.
+- Never edit `arms.json` or `control.json` except through the narrow negotiation
+  deployment authority above.
 - Never touch `.env` (real API keys; the repo is public).
 - Record objections and proposed tests in `.ai/HANDOFF.md`.
 - Arena and live evidence beat any argument, including yours and Claude's.
