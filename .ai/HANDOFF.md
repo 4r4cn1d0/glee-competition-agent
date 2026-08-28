@@ -4226,3 +4226,104 @@ processes and setting only `GLEE_NEGO_SINGLE_SELLER_CENT_V1=1` on champion,
 hardliner, conceder, randomized, and composite; Agent 5 is stopped, so its flag
 may be staged for its next launch. Test 4 currently does not run negotiation,
 but its corrected router is ready if negotiation is re-enabled later.
+
+### 2026-08-28 06:41 IST: Test 4 complete/unknown buyer score-floor challenger
+
+The operator requested a deterministic payoff/rating floor for the repeated
+complete-information, unknown-horizon buyer stasis seen in Test 4 and authorized
+testing and Test-4-only deployment. The implementation is default OFF behind
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1`; the separately auditable
+target knob is `GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_PCT`, with an
+audited default and proposed Test 4 value of `.655`.
+
+The mechanism owns only Test 4's selected `test4_hotfix_v1` buyer/P2 policy in
+a feasible complete-information negotiation with an explicitly unknown horizon.
+It cannot act before round 75, after round 95, or until ten complete, consecutive,
+wire-exact mutual-stasis cycles have occurred. It computes the smallest cent
+payoff whose midrank reaches the target in the exact checked-in official seed
+cell, then counters at `buyer_value - payoff_floor`. An incoming ask at or below
+that boundary is accepted. After the first changed counter breaks baseline
+stasis, ownership persists only through a contiguous provenance-checked history
+in which every emitted buyer counter remains exactly at the boundary. Hidden
+information, sellers, known horizons, infeasible zones, malformed values/history,
+other whole policies, the older broad stasis guard, and model/target failures
+all remain byte-identical. The existing round-97 low-share guard runs first;
+round 97's last buyer counter and Test 4's pointwise any-positive round-99
+salvage remain unchanged.
+
+At the predeployment API read Test 4 negotiation was display `2828.95` over
+`10,629` games, implying raw approximately `2834.11`. Ignoring the hourly
+opponent-strength transform, merely holding that raw rating requires percentile
+approximately `.60426`; `.655` supplies about five percentile points of buffer.
+The exact user-supplied silent cell (seller 80, buyer 150, official H=99 proxy)
+has 57 seed records: payoff `45.00` is only `.605263`, while `45.01` is
+`.666667`. Accordingly the observed frozen counter `100.16` moves only to
+`104.99`, never to the seller's `133.20` ask. The message-enabled exact cell is
+different, as scoring requires: n=53 yields payoff floor `40.01` and boundary
+`109.99` at the same target.
+
+A complete six-hour Test 4 log shadow retained all outcomes and unresolved
+states. It found 113 structural candidate turns, 103 exact fires across ten
+games, 103 counter changes, zero immediate accepts, and zero final-wire
+mismatches. At first reach those ten games later comprised four no-deals, one
+agreement, and five unresolved—not a selected-deal sample. The first-reach game
+IDs were `978c17b8-0e5d-4b99-ab59-02f80e340bb5`,
+`b4ef4014-8569-4dbe-9235-5a6ca3ab8b4e`,
+`c7949ad6-fe65-44db-85e0-d5965eef76b2`,
+`36629d25-0ac3-4e01-b4f4-64562623e044`,
+`8a5752e0-8e88-42e4-9a5e-e12108ed269a`,
+`9c47f995-4931-4edf-bdb0-376680a953e6`,
+`cba7031f-2572-4d42-8898-2869d08b7572`,
+`f4d251bd-a70d-44d0-b4fc-9bc3937c3398`,
+`be88acbc-0511-42f0-be70-f9085404b07e`, and
+`324206a1-baa3-40bd-8a7e-8f0b2c0fc7f0`.
+
+The precommit adversarial review found two composition/provenance defects and
+both were fixed before rollout. First, score-floor counters from rounds 75--95
+made the older round-97 guard compare history with Test 4's pre-floor counter,
+silently disabling the guard. Round 97 now recognizes only a proved score-floor
+activation followed by ten exact boundary cycles; the real `100.16 -> 104.99`
+sequence reaches `AcceptOffer` and records
+`stasis_counter_source=score_floor`. Second, one historical counter equal to
+the boundary could masquerade as prior activation. Sticky ownership now proves
+ten cycles at Test 4's currently computed/coerced baseline, a real transition
+from that baseline to the exact score boundary, and every subsequent wire.
+Histories already sitting at the boundary and an unrelated
+`99.00 -> 104.99` transition both fail closed. The same reviewer returned PASS
+after those regressions were added.
+
+Exact Test 4 live-stack reachability must use its actual `hardliner` process
+wrapper rather than the physical slot name `randomized`. With that wrapper,
+800 games at seed `280829` passed `418 eligible / 418 fired / 418 submitted
+actions changed`. The representative wires included `12864.00 -> 12999.99` at
+rounds 75/77/79 with both `test4_hotfix_v1` and the score-floor gate traced.
+Independent 800-game seeds `280830` and final-diff `280831` passed
+`385/385/385` and `407/407/407`, respectively.
+Focused score-floor tests pass 36/36; the adjacent negotiation/endgame suite
+passes 231/231. The mandatory full suite is `2,849 passed / 4 failed`; all four
+are declared unrelated machine-state failures: the stale bargaining horizon
+assertion and bargaining, negotiation, and persuasion live-grid drift alarms.
+
+Identification objection: the official seed maps a *played payoff* to an exact
+historical cell percentile, but does not identify whether a particular opponent
+will accept this previously unplayed counter. The live field CDF and hourly
+opponent-strength adjustment also evolve, so `.655` is a buffered challenger
+target, not a mathematical guarantee of positive official rating in every
+future game. The only pointwise guarantee retained is that any ordinary deal
+owned by this gate meets its seed floor; true terminal salvage may rationally
+take a smaller positive payoff instead of zero.
+
+Deployment scope is Test 4 only. Preserve its complete existing overlay,
+hardliner wrapper, all-three-family topology, bargaining, persuasion, round-97
+guard, one-round seller-cent rule, peak/bank controls, and every unrelated flag.
+After pushed code is loaded at a natural lossless boundary, set only
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1=1` and
+`GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_PCT=0.655`. Do not restart,
+signal, abandon a game, or change another slot. The prospective cohort begins
+at the exact overlay timestamp and retains every Test 4 negotiation assignment,
+including nonfires, agreements, no-deals, walks, timeouts, zeros, and unresolved
+results. First verify 20 exact live fires with zero scope/wire errors. Because
+allocation is deterministic and single-host, compare all-outcome movement with
+the frozen preperiod but do not call it causal; any malformed fire, changed
+hidden/seller/capped/terminal action, or submitted boundary below its recorded
+payoff floor requires explicit-zero rollback.

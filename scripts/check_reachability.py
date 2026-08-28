@@ -784,6 +784,25 @@ def _p_complete_unknown_r97_low_share_accept(game, p):
             and metadata.get("buyer_zopa_share", math.inf) <= 0.20 + 1e-9)
 
 
+def _p_complete_unknown_buyer_score_floor(game, p):
+    """Exact candidate scope of Test 4's late score-floor counter."""
+    if game.get("game_family") != "negotiation":
+        return False
+    state = game.get("game_state") or {}
+    metadata = p.get("complete_unknown_buyer_score_floor_v1") or {}
+    return (state.get("complete_information") is True
+            and state.get("horizon_known") is False
+            and state.get("max_rounds") is None
+            and state.get("current_player") == "player_2"
+            and state.get("player_2_role") == "buyer"
+            and (game.get("valid_actions") or {}).get("type") == "decision"
+            and metadata.get("eligible") is True
+            and 75 <= metadata.get("round", -1) < 97
+            and metadata.get("seed_cell_n", 0) > 0
+            and metadata.get("achieved_seed_percentile", 0.0)
+            + 1e-12 >= metadata.get("target_percentile", math.inf))
+
+
 KNOWN = {
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
@@ -829,6 +848,9 @@ KNOWN = {
     "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1": (
         "negotiation", ("complete_unknown_r97_low_share_accept_v1",),
         _p_complete_unknown_r97_low_share_accept),
+    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1": (
+        "negotiation", ("complete_unknown_buyer_score_floor_v1",),
+        _p_complete_unknown_buyer_score_floor),
     "GLEE_NEGO_DETERMINISTIC_FP_V1": (
         "negotiation", ("deterministic_first_principles_v1",),
         _p_deterministic_first_principles),
@@ -1193,6 +1215,7 @@ def _collect_states(field, draws, flags, families, target_flag=None,
             if (target_flag in (
                     "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                     "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
+                    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1",
                     )
                     and family == "negotiation"
                     and params.get("complete_information") is True
@@ -1482,6 +1505,7 @@ def main() -> int:
                                   "GLEE_NEGO_TABLE_VCONT_PRECEDENCE_AB",
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_LATE_STASIS_V1",
                                   "GLEE_NEGO_COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_V1",
+                                  "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS_AB",
                                   "GLEE_BARG_DISCOUNT_NO_REGRESS",
                                   "GLEE_BARG_HIGH_SHARE_DELAY_GUARD",

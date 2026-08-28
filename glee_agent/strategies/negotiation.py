@@ -21,7 +21,8 @@ from __future__ import annotations
 import math
 
 from .. import (deterministic_negotiation, first_principles, nego_arms,
-                nego_support_v2, pricing, runtime_flags, top_buyer_clone,
+                nego_score_floor, nego_support_v2, pricing, runtime_flags,
+                top_buyer_clone,
                 top_buyer_clone_hi_cap10,
                 top_opus_buyer_clone,
                 top_opus_buyer_clone_hi_unknown,
@@ -57,6 +58,27 @@ COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND = 97
 COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES = 10
 COMPLETE_UNKNOWN_R97_LOW_SHARE_MAX_ZOPA_SHARE = 0.20
 
+# Default-off Test-4 stasis release.  At its 28 Aug predeployment rating,
+# Test 4 needed roughly .604 adjusted percentile merely to hold.  The default
+# target is .655 (a five-point safety margin) and remains explicitly overridable.
+# The checked-in official-seed cell for buyer 150 / seller 80 / silent / H=99
+# has n=57: payoff 45.00 is only .605263, while 45.01 is .666667.  Therefore
+# the exact example moves a frozen 100.16 counter only as far as 104.99.  This
+# does not identify the opponent's response to an unplayed counter; it limits
+# the concession cost of a deterministic Test-4 challenger.
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG = (
+    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_V1"
+)
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_TARGET_FLAG = (
+    "GLEE_NEGO_COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_PCT"
+)
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_DEFAULT_TARGET = 0.655
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_GATE = (
+    "complete_unknown_buyer_score_floor_v1"
+)
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_MIN_ROUND = 75
+COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES = 10
+
 # Default-off deterministic repair for one pointwise-dominated terminal action
 # in the copied buyer component used by Agent 5 V1 and Test 2 V3.  The flag is
 # deliberately separate from the measured-negative broad hidden/unknown
@@ -88,6 +110,7 @@ UNKNOWN_HORIZON_TERMINAL_ROUND = 99
 # older arm or an unanalysed factorial treatment.
 _COMPLETE_UNKNOWN_LATE_STASIS_CONFLICTS = (
     COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_FLAG,
+    COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG,
     "GLEE_NEGO_CLOSE_AB",
     "GLEE_NEGO_FIRST_PRINCIPLES",
     "GLEE_NEGO_FP_ALWAYS",
@@ -1844,6 +1867,39 @@ def _exact_mutual_stasis_cycles(
     return cycles, offer_price, current_counter
 
 
+def _complete_unknown_buyer_score_floor_terms(
+    state: dict, seller_value: float, buyer_value: float,
+) -> tuple[float, float, float, int, float] | None:
+    """Resolve the exact seed target, payoff floor, and buyer boundary."""
+    target = runtime_flags.as_float(
+        COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_TARGET_FLAG,
+        COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_DEFAULT_TARGET,
+    )
+    zopa = buyer_value - seller_value
+    resolved = nego_score_floor.cent_payoff_floor(
+        state,
+        "player_2",
+        seller_value,
+        buyer_value,
+        target,
+        zopa - 0.01,
+    )
+    if resolved is None:
+        return None
+    payoff_floor, achieved_percentile, sample_size = resolved
+    boundary = round(buyer_value - payoff_floor, 2)
+    if (boundary < seller_value + 0.01 - 1e-9
+            or buyer_value - boundary < payoff_floor - 1e-9):
+        return None
+    return (
+        target,
+        payoff_floor,
+        achieved_percentile,
+        sample_size,
+        boundary,
+    )
+
+
 def _maybe_complete_unknown_r97_low_share_accept(
     game: dict, action: dict,
 ) -> dict:
@@ -1938,9 +1994,54 @@ def _maybe_complete_unknown_r97_low_share_accept(
         return action
     if projected.get("decision") != "RejectOffer":
         return action
+    projected_baseline_counter = _strict_finite_scalar(
+        projected.get("product_price"))
+    if projected_baseline_counter is None:
+        return action
     cycles, historical_offer, counter_price = _exact_mutual_stasis_cycles(
         state, projected, "player_2",
         cycles_required=COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES)
+    counter_source = "baseline"
+    if (cycles < COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES
+            or historical_offer != offer_price
+            or counter_price is None):
+        # The score-floor challenger deliberately changes the repeated buyer
+        # wire before round 97.  When both guards are armed, recognize only a
+        # provenance-checked score-floor activation followed by ten exact
+        # cycles at that boundary.  Otherwise the older round-97 guard would
+        # silently stop firing because it compares history with the pre-floor
+        # Test-4 baseline counter.
+        score_terms = None
+        if (runtime_flags.enabled(
+                COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG)
+                and deterministic_negotiation.mode()
+                == deterministic_negotiation.TEST4_HOTFIX_V1):
+            score_terms = _complete_unknown_buyer_score_floor_terms(
+                state, seller_value, buyer_value)
+        if score_terms is not None:
+            boundary = score_terms[-1]
+            score_projected = dict(projected)
+            score_projected["product_price"] = boundary
+            score_cycles, score_offer, score_counter = (
+                _exact_mutual_stasis_cycles(
+                    state,
+                    score_projected,
+                    "player_2",
+                    cycles_required=(
+                        COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES
+                    ),
+                )
+            )
+            if (_score_floor_activation_persists(
+                    state, boundary, projected_baseline_counter)
+                    and score_cycles
+                    >= COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES
+                    and score_offer == offer_price
+                    and score_counter is not None):
+                cycles = score_cycles
+                historical_offer = score_offer
+                counter_price = score_counter
+                counter_source = "score_floor"
     if (cycles < COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_CYCLES
             or historical_offer != offer_price
             or counter_price is None):
@@ -1971,10 +2072,283 @@ def _maybe_complete_unknown_r97_low_share_accept(
             COMPLETE_UNKNOWN_R97_LOW_SHARE_MAX_ZOPA_SHARE
         ),
     }
+    if counter_source != "baseline":
+        plan_data[COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_GATE][
+            "stasis_counter_source"
+        ] = counter_source
     if _trace_enabled():
         plan_data["gates_fired"] = list(plan_data.get("gates_fired") or [])
         _gate(plan_data, COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_GATE)
     return {"decision": "AcceptOffer", "_plan": plan_data}
+
+
+def _score_floor_activation_persists(
+    state: dict, boundary: float, expected_baseline: float,
+) -> bool:
+    """Recognize a prior score-floor counter and require an unbroken trail.
+
+    The first changed counter breaks the ten-cycle baseline stasis by design.
+    Without this reconstruction the next turn would snap back to the frozen
+    baseline.  Activation must be a transition from the currently computed,
+    coerced Test-4 baseline after ten exact cycles; every later wire is checked
+    for contiguous round, player, decision, offer, and counter provenance.
+    """
+    round_number = _strict_finite_scalar(state.get("round"))
+    parsed_baseline = _strict_finite_scalar(expected_baseline)
+    history = state.get("history")
+    if (round_number is None or not round_number.is_integer()
+            or parsed_baseline is None
+            or abs(parsed_baseline - boundary) <= 1e-9
+            or not isinstance(history, list)):
+        return False
+    current_round = int(round_number)
+    by_round: dict[int, dict] = {}
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        parsed = _strict_finite_scalar(entry.get("round"))
+        if parsed is None or not parsed.is_integer():
+            continue
+        entry_round = int(parsed)
+        if entry_round in by_round:
+            return False
+        by_round[entry_round] = entry
+
+    activation_round = None
+    for candidate_round in range(
+        COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_MIN_ROUND,
+        min(current_round, COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND),
+    ):
+        entry = by_round.get(candidate_round)
+        if not isinstance(entry, dict):
+            continue
+        offer = entry.get("offer")
+        if not isinstance(offer, dict):
+            continue
+        offer_price = _finite_wire_number(offer.get("price"))
+        candidate_counter = _counter_wire_number(
+            entry, "player_2", candidate_round)
+        if (offer.get("from_player") != "player_1"
+                or not _optional_record_round_matches(
+                    offer, candidate_round)
+                or offer_price is None
+                or offer_price <= boundary + 1e-9
+                or entry.get("decided_by") != "player_2"
+                or entry.get("decision") != "RejectOffer"
+                or candidate_counter is None
+                or abs(candidate_counter - boundary) > 1e-9):
+            continue
+
+        # A matching historical price alone is not provenance.  Reconstruct
+        # the candidate turn and prove that it was a real transition away from
+        # ten preceding exact baseline cycles—the condition under which this
+        # gate can first emit ``boundary``.  This rejects a coincidental price
+        # match or a trajectory that had already been sitting at the boundary.
+        prior_entry = by_round.get(candidate_round - 2)
+        if not isinstance(prior_entry, dict):
+            continue
+        prior_counter = _counter_wire_number(
+            prior_entry, "player_2", candidate_round - 2)
+        if (prior_counter is None
+                or abs(prior_counter - parsed_baseline) > 1e-9):
+            continue
+        activation_state = dict(state)
+        activation_state["round"] = candidate_round
+        activation_state["last_offer"] = offer
+        activation_state["history"] = [
+            by_round[entry_round]
+            for entry_round in sorted(by_round)
+            if entry_round < candidate_round
+        ]
+        prior_cycles, prior_offer, projected_counter = (
+            _exact_mutual_stasis_cycles(
+                activation_state,
+                {
+                    "decision": "RejectOffer",
+                    "product_price": prior_counter,
+                },
+                "player_2",
+                cycles_required=COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES,
+            )
+        )
+        if (prior_cycles < COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES
+                or prior_offer != offer_price
+                or projected_counter != prior_counter):
+            continue
+        activation_round = candidate_round
+        break
+    if activation_round is None:
+        return False
+
+    for entry_round in range(activation_round, current_round):
+        entry = by_round.get(entry_round)
+        if not isinstance(entry, dict):
+            return False
+        offer = entry.get("offer")
+        if not isinstance(offer, dict):
+            return False
+        if entry_round % 2 == 1:
+            counter = _counter_wire_number(
+                entry, "player_2", entry_round)
+            if (offer.get("from_player") != "player_1"
+                    or not _optional_record_round_matches(offer, entry_round)
+                    or entry.get("decided_by") != "player_2"
+                    or entry.get("decision") != "RejectOffer"
+                    or counter is None
+                    or abs(counter - boundary) > 1e-9):
+                return False
+        else:
+            echoed_price = _strict_finite_scalar(offer.get("price"))
+            if (offer.get("from_player") != "player_2"
+                    or not _optional_record_round_matches(offer, entry_round)
+                    or echoed_price is None
+                    or abs(echoed_price - boundary) > 1e-9
+                    or entry.get("decided_by") != "player_1"
+                    or entry.get("decision") != "RejectOffer"
+                    or _counter_wire_number(
+                        entry, "player_1", entry_round) is None):
+                return False
+    return True
+
+
+def _maybe_complete_unknown_buyer_score_floor(
+    game: dict, action: dict,
+) -> dict:
+    """Release a late frozen Test-4 buyer counter up to a score-aware ceiling.
+
+    This is an ordinary-round policy, not a terminal acceptance rule.  It owns
+    only feasible, complete-information, unknown-horizon Test-4 buyer/P2 states
+    after round 75 and ten exact mutual-stasis cycles.  The counter moves to the
+    highest price that still leaves the smallest cent payoff meeting the
+    configured official-seed percentile.  Once emitted, that boundary persists
+    only through a fully provenance-checked reject trail.  An incoming price at
+    or below the boundary is accepted.
+
+    The official seed identifies the payoff rank of a played price; it does not
+    identify how an opponent will react to this previously unplayed counter.
+    Consequently the behavior is a default-OFF deterministic Test-4 challenger,
+    while round-99 any-positive salvage remains owned by the terminal policy.
+    """
+    if (not runtime_flags.enabled(COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_FLAG)
+            or not isinstance(action, dict)
+            or action.get("decision") != "RejectOffer"
+            or deterministic_negotiation.mode()
+            != deterministic_negotiation.TEST4_HOTFIX_V1
+            or _flag_is_nonzero(COMPLETE_UNKNOWN_LATE_STASIS_FLAG)):
+        return action
+    public_keys = {
+        key for key in action if not str(key).startswith("_")
+    }
+    if (not public_keys.issubset({"decision", "product_price", "message"})
+            or not {"decision", "product_price"}.issubset(public_keys)
+            or (action.get("_plan") is not None
+                and not isinstance(action.get("_plan"), dict))):
+        return action
+
+    state = game.get("game_state")
+    valid_actions = game.get("valid_actions")
+    if (not isinstance(state, dict)
+            or not isinstance(valid_actions, dict)
+            or game.get("game_family") != "negotiation"
+            or state.get("game_family") not in (None, "negotiation")
+            or valid_actions.get("type") != "decision"
+            or game.get("phase") not in (None, "decision")
+            or state.get("phase") not in (None, "decision")
+            or state.get("complete_information") is not True
+            or state.get("horizon_known") is not False
+            or state.get("max_rounds") is not None
+            or not isinstance(state.get("messages_allowed"), bool)
+            or state.get("current_player") != "player_2"
+            or game.get("your_player") != "player_2"
+            or state.get("player_1_role") != "seller"
+            or state.get("player_2_role") != "buyer"):
+        return action
+
+    round_number = _strict_finite_scalar(state.get("round"))
+    seller_value = _strict_finite_scalar(state.get("player_1_value"))
+    buyer_value = _strict_finite_scalar(state.get("player_2_value"))
+    standing = state.get("last_offer")
+    if (round_number is None or not round_number.is_integer()
+            or int(round_number) < COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_MIN_ROUND
+            # Round 97 creates buyer/P2's last counter on round 98.  Preserve
+            # that existing high-payoff counter and the independent low-share
+            # acceptance guard; this release owns ordinary rounds 75..95 only.
+            or int(round_number) >= COMPLETE_UNKNOWN_R97_LOW_SHARE_ACCEPT_ROUND
+            or seller_value is None or seller_value <= 0.0
+            or buyer_value is None or buyer_value <= seller_value
+            or not isinstance(standing, dict)
+            or standing.get("from_player") != "player_1"):
+        return action
+    offer_round = _strict_finite_scalar(standing.get("round"))
+    offer_price = _strict_finite_scalar(standing.get("price"))
+    if (offer_round != round_number or offer_price is None
+            or offer_price <= 0.0):
+        return action
+
+    score_terms = _complete_unknown_buyer_score_floor_terms(
+        state, seller_value, buyer_value)
+    if score_terms is None:
+        return action
+    (target, payoff_floor, achieved_percentile, sample_size,
+     boundary) = score_terms
+
+    public_baseline = {
+        key: value for key, value in action.items()
+        if not str(key).startswith("_")
+    }
+    try:
+        projected = coerce(public_baseline, game)
+    except Exception:
+        return action
+    if (projected.get("decision") != "RejectOffer"
+            or _strict_finite_scalar(projected.get("product_price")) is None):
+        return action
+    baseline_counter = _strict_finite_scalar(projected["product_price"])
+    cycles, historical_offer, historical_counter = _exact_mutual_stasis_cycles(
+        state,
+        projected,
+        "player_2",
+        cycles_required=COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES,
+    )
+    sticky = _score_floor_activation_persists(
+        state, boundary, baseline_counter)
+    initial = (
+        cycles >= COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_CYCLES
+        and historical_offer == offer_price
+        and historical_counter == baseline_counter
+    )
+    if not initial and not sticky:
+        return action
+
+    plan_data = dict(action.get("_plan") or {})
+    plan_data[COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_GATE] = {
+        "eligible": True,
+        "mode": "deterministic",
+        "trigger": "sticky" if sticky else "ten_cycle_stasis",
+        "round": int(round_number),
+        "cycles": cycles,
+        "offer_price": offer_price,
+        "baseline_counter": baseline_counter,
+        "score_floor_counter": boundary,
+        "seller_value": seller_value,
+        "buyer_value": buyer_value,
+        "payoff_floor": payoff_floor,
+        "target_percentile": target,
+        "achieved_seed_percentile": achieved_percentile,
+        "seed_cell_n": sample_size,
+    }
+    if _trace_enabled():
+        plan_data["gates_fired"] = list(
+            plan_data.get("gates_fired") or []
+        )
+        _gate(plan_data, COMPLETE_UNKNOWN_BUYER_SCORE_FLOOR_GATE)
+    if offer_price <= boundary + 1e-9:
+        return {"decision": "AcceptOffer", "_plan": plan_data}
+
+    result = dict(action)
+    result["product_price"] = boundary
+    result["_plan"] = plan_data
+    return result
 
 
 def _maybe_complete_unknown_late_stasis(game: dict, action: dict) -> dict:
@@ -2342,6 +2716,7 @@ def decide(game: dict, cfg) -> dict:
             except Exception:
                 pass              # a message is never worth risking the move
     action = _maybe_complete_unknown_r97_low_share_accept(game, action)
+    action = _maybe_complete_unknown_buyer_score_floor(game, action)
     action = _maybe_complete_unknown_late_stasis(game, action)
     action = _maybe_test2_unknown_r99_accept(game, action)
     return _maybe_hi_unknown_buyer_walk_accept(game, action)
