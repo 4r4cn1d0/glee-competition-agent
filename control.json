@@ -16,7 +16,7 @@
     "champion": "bargaining,negotiation,persuasion",
     "hardliner": "bargaining,negotiation,persuasion",
     "randomized": "bargaining,negotiation,persuasion",
-    "composite": "bargaining"
+    "composite": "negotiation"
   },
   "llm": {
     "conceder": "off",
@@ -44,8 +44,8 @@
     },
     "composite": {
       "kind": "manual",
-      "ts": 1788007263.650941,
-      "pid": 99651
+      "ts": 1788007626.078527,
+      "pid": 2408
     }
   },
   "drain_now": [

@@ -1,6 +1,7 @@
 \documentclass{article}
 
-% Official NeurIPS 2026 single-blind workshop format.
+% Official NeurIPS 2026 single-blind workshop format required by the
+% GLEE competition-paper call.
 \usepackage[sglblindworkshop]{neurips_2026}
 \workshoptitle{Interpreting Agent Behavior}
 
@@ -9,27 +10,35 @@
 \usepackage{hyperref}
 \hypersetup{hidelinks}
 \usepackage{url}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
 \usepackage{microtype}
-\usepackage{xspace}
 \usepackage{xcolor}
 \usepackage{tabularx}
 \usepackage{array}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
 
-\newcommand{\systemname}{\textsc{RankSmith}\xspace}
-\newcommand{\pct}{\%}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newtheorem{proposition}{Proposition}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prb}{\mathbb{P}}
 
-\title{Winning the Percentile, Not the Payoff:\\
-A Deterministic, Experiment-Driven Agent for GLEE}
+% The exact competition call confirms four main-text pages plus unlimited
+% references, but does not explicitly authorize an appendix. Keep this true
+% for the working draft. Set it false for a submission-safe build unless the
+% organizers confirm that a technical appendix is allowed.
+\newif\iftechnicalappendix
+\technicalappendixtrue
+
+\title{Percentiles, Not Payoffs:\
+Falsification as Strategy in a Live Agent Competition}
 
 \author{%
-  Author Name \thanks{Author details are intentionally left as a draft placeholder.}\\
-  Affiliation \\
+  Author Name\\
+  Affiliation\\
   \texttt{email@example.com}
 }
 
@@ -38,143 +47,264 @@ A Deterministic, Experiment-Driven Agent for GLEE}
 \maketitle
 
 \begin{abstract}
-GLEE evaluates agents in bargaining, bilateral negotiation, and repeated persuasion, but its competition objective is not expected payoff: each outcome is ranked against payoffs from the exact configuration and role before entering an opponent-adjusted rating. We present \systemname, a deterministic, LLM-free agent built from game-theoretic structure, empirical field models, and a safety layer that makes every decision total and auditable. The main lesson from development is methodological. Several apparently strong changes vanished or reversed after retaining all assigned outcomes, defining cohorts before treatment, checking that a flag changed the submitted action, and auditing the final action sent to the server. At a protected August 26 snapshot, our best agent had an overall displayed rating of 2562, with family ratings 2542/2732/2413 for bargaining/negotiation/persuasion. We describe the agent, report structural findings from live behavior, and show how rank-aware experimentation prevented selection bias and invalid replay assumptions from becoming policy.
+GLEE maps each economic payoff to a configuration- and role-specific percentile
+against a changing live field before updating rating, so expected payoff and
+expected raw percentile can rank actions differently. In this documented case
+study, the durable design object was a falsification process, not a fixed
+bargaining, negotiation, or persuasion heuristic. Theory and direct observations
+of leading competitors generated disposable hypotheses. Default-off
+implementations, reachability checks, post-coercion action audits, frozen
+decision rules, and all-assignment outcome accounting determined which claims
+survived. A biased 352-case selected replay suggested $+0.071$ from accepting
+profitable hidden offers; retaining realized continuation across 375 exposed
+decisions reversed the retrospective contrast to $-0.066$,
+invalidated a $+0.0121$ surplus result built on unsupported responses, and
+caught and corrected a reader that had coded 11,737 unresolved outcomes as
+losses. A randomized
+competitor-derived buyer clone fell from an early $+1.812$ rating/game lift to
+$+0.869$ at a stopped 91-game read, with an interval crossing zero and no-deals
+13/44 versus 11/47. The resulting deterministic, LLM-free agent banked
+family ratings of 2603.81, 2620.36, and 2344.79. These ratings are dated
+full-stack outcomes; our contribution is the documented audit process and a
+design argument for using it in other live fields.
 \end{abstract}
 
 \section{Introduction}
+\label{sec:introduction}
 
-GLEE standardizes two-player language-based economic games spanning alternating-offer bargaining, bilateral trade, and Bayesian persuasion \citep{shapira2024glee}. The live competition adds a distinctive objective: a payoff $y$ is converted to an empirical percentile $q=F_{c,r}(y)$ within the exact configuration $c$ and role $r$, adjusted for opponent strength, and mapped to a per-game rating
+GLEE combines bargaining, bilateral trade, and repeated persuasion
+\citep{shapira2024glee}. The competition does not score money directly. It
+converts each payoff into a same-configuration, same-role percentile, adjusts
+for opponent strength, and updates rating \citep{gleecompetition2026}. A good
+deal can be ordinary when the field usually earns it, while zero can be
+bottom-decile when other agents close. The reference population and opponents
+also change while a strategy is being measured.
+
+This produced a distinctive development problem. Game theory generated sharp
+candidate actions, public leader traces suggested tactics worth copying, and
+displayed ratings often moved in the predicted direction. Several of those
+conclusions later reversed when the action path or outcome cohort was audited.
+We therefore treated every policy as a disposable hypothesis and the
+falsification process as the stable system component.
+
+Our contributions are threefold:
+\begin{itemize}
+  \setlength\itemsep{0pt}
+  \setlength\parskip{0pt}
+  \item We formalize why expected payoff and expected raw percentile can rank
+  actions differently, and when adjusted percentile determines one-step rating.
+  \item We give an action-level contract for strategic-agent evidence:
+  pre-action eligibility, actual firing, changed returned action, all-assignment
+  outcomes, and a frozen decision rule.
+  \item We provide a failure-centered account of one deterministic agent's
+  evolution, including rating reversals, competitor imitation, and the behavior
+  that actually reached the final bank.
+\end{itemize}
+
+\section{Objective and hypothesis generation}
+\label{sec:objective}
+
+For payoff $Y$ in public configuration $c$ and role $r$, let
+$q=Q_{c,r}(Y)$ be its raw percentile and $\widetilde q$ its
+opponent-adjusted percentile. The official update is
 \begin{equation}
-G=2000+8000(q-0.5), \qquad \Delta R=\eta(G-R),
+G=2000+8000(\widetilde q-0.5),\qquad
+R^+=\operatorname{clip}\{R+\eta(G-R),100,5000\}.
 \label{eq:rating}
 \end{equation}
-with a decaying step size $\eta$ \citep{gleecompetition2026}. Consequently, an outcome that maximizes dollars need not maximize rank. A zero can be median in a structurally infeasible cell but bottom-decile in a cell where others trade; moving just above an atom in the payoff distribution can be worth more than a much larger dollar improvement elsewhere.
+For a fixed opponent-adjustment map, current rating, positive $\eta$, and an
+inactive clamp, expected one-step rating is increasing in $\E[\widetilde q]$,
+not $\E[Y]$. Expected payoff and expected raw percentile can reverse; that
+raw-percentile reversal also implies a rating reversal when the fixed adjustment
+is positive affine. We do not assume this without the undocumented adjustment
+formula. For a
+terminal proposal $x$, raw rank equals
+$Q(0)+A(x)\{Q(u(x))-Q(0)\}$, so the relevant quantity is acceptance probability
+times rank gain over the zero atom. Appendix~\ref{app:objective} gives the
+proofs and tie-handling caveat. This is a rank-based incentive analogous to
+tournament scoring, not ordinary payoff maximization
+\citep{lazear1981tournaments}.
 
-We built \systemname around this distinction. The online policy is deliberately conventional: exact or finite-horizon game-theoretic structure where available, conservative empirical floors where the field violates equilibrium, and deterministic posterior updates under hidden information. The less conventional contribution is the development loop. Every proposed change was treated as a falsifiable mechanism with a recoverable assignment, an all-outcome intent-to-treat cohort, and a wire-level audit. This mattered because the largest apparent gains were often measurement failures rather than strategy gains.
+Theory supplied candidate policies, not field-effect guarantees. Finite-horizon
+backward induction and the Rubinstein stationary benchmark structured bargaining
+\citep{rubinstein1982}; gains from trade and private-information limits
+structured negotiation \citep{chatterjee1983incomplete,myerson1983bilateral};
+and one-shot obedience supplied the persuasion benchmark
+$q^*=p(v-P)/\{(1-p)(P-u)\}$ \citep{kamenica2011bayesian}. Standard Boulware
+paths and opponent models supplied empirical alternatives
+\citep{faratin1998negotiation,baarslag2016opponent}. Development evidence did not
+support the simple reading of each benchmark. Faster concession measured negative on two
+seeds, observed bargaining floors overrode discount calibration, and repeated
+noncommitted persuasion behaved more like credibility and reputation than a
+committed signal \citep{crawford1982strategic,sobel1985credibility}.
 
-Our contributions are: (i) a deterministic, LLM-free agent covering all three GLEE families; (ii) structural live-field measurements that localize where performance is and is not recoverable; and (iii) an agent-behavior analysis protocol that detects treatment leakage, unreachable gates, survivorship bias, and fabricated outcomes before deployment.
+\section{Falsification under a moving field}
+\label{sec:evidence}
 
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  box/.style={draw=black!55, rounded corners=1.5pt, align=center,
-              minimum height=7mm, text width=2.05cm, fill=black!3},
-  arr/.style={-{Latex[length=2mm]}, semithick, draw=black!70},
-  warn/.style={draw=red!60!black, rounded corners=1.5pt, align=center,
-               fill=red!4, text=red!55!black, inner sep=3pt}
-]
-\node[font=\bfseries] at (-1.0,0.75) {Online};
-\node[box] (state) at (0.7,0.75) {visible game\\state};
-\node[box, right=2mm of state] (solver) {family solver\\and plan};
-\node[box, right=2mm of solver] (flag) {default-off\\mechanism};
-\node[box, right=2mm of flag] (coerce) {coercion and\\postconditions};
-\node[box, right=2mm of coerce] (wire) {submitted\\wire action};
-\draw[arr] (state) -- (solver);
-\draw[arr] (solver) -- (flag);
-\draw[arr] (flag) -- (coerce);
-\draw[arr] (coerce) -- (wire);
+Every formally enrolled candidate was labeled structural, descriptive,
+retrospective, or causal.
+When randomization was authorized, a stable game-ID hash assigned treatment
+after treatment-independent eligibility was fixed. A mechanism first had to satisfy
+eligible $>0$, fired $>0$, and changed post-coercion returned action $>0$.
+Evaluation then retained agreements, no-deals, walks, zeros, timeouts, invalids,
+immediate accepts, and unresolved outcomes. Conditioning on completed deals is
+post-treatment selection \citep{elwert2014selection}; responses to unplayed
+asks are not identified by ordinary replay \citep{li2011offline}. Prospective
+arms used frozen looks because repeated peeking invalidates ordinary intervals
+\citep{johari2017peeking}.
 
-\node[font=\bfseries] at (-1.0,-0.35) {Evidence};
-\node[box] (cohort) at (0.7,-0.35) {pre-action\\cohort};
-\node[box, right=2mm of cohort] (join) {terminal and\\official join};
-\node[box, right=2mm of join] (cdf) {exact-cell\\percentile};
-\node[box, right=2mm of cdf] (rule) {precommitted\\decision rule};
-\node[box, right=2mm of rule] (deploy) {promote, stop,\\or stay off};
-\draw[arr] (cohort) -- (join);
-\draw[arr] (join) -- (cdf);
-\draw[arr] (cdf) -- (rule);
-\draw[arr] (rule) -- (deploy);
+The audited behavioral object was the legal post-coercion action sent to the
+SDK, not a flag or an intermediate plan; randomization and outcome analysis
+were game-level. Because the comparison percentile also moved, action-path
+verification and all-assignment outcome accounting had to be used together.
 
-\node[warn, text width=11.8cm] at (5.2,-1.25)
-{Audits block inactive gates, treatment leakage, selected deals, unresolved finals, and differences erased by final coercion.};
-\end{tikzpicture}
-\caption{The action path and evidence path are both audited. A mechanism is not considered tested unless it reaches eligible states, fires, changes the final wire, and is evaluated on a cohort defined before that change.}
-\label{fig:pipeline}
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_strategy_evolution.pdf}
+  \caption{Policies changed; the falsification contract remained stable.
+  (a) Authenticated Agent 5 display snapshots around dated strategy boundaries.
+  Lines connect irregularly spaced observations and are descriptive, not
+  component effects. The strategy, opponent field, and exposure mix all
+  changed. (b) Four positive-looking claims after all-assignment and
+  action-level audit. Only the leader clone used game-level randomized
+  assignment, and it failed its frozen promotion rule.}
+  \label{fig:evolution}
 \end{figure}
 
-\section{Agent design}
+\section{Agent Behavior Analysis}
+\label{sec:behavior}
 
-\paragraph{Total deterministic dispatcher.}
-A single dispatcher selects a family policy, records its numerical plan and fired gates, coerces the result into the server schema, and applies final postconditions. Any exception degrades to a legal family-specific fallback instead of allowing a turn timeout. The submitted action, rather than an intermediate plan, is the unit audited in replay. The final protected agent used no neural model or LLM in its decision or message path.
+The final dispatcher was deterministic and LLM-free. It logged raw visible
+state, numerical plan, available gate traces, dispatcher source, and the legal
+post-coercion action returned to the SDK. Table~\ref{tab:behavior} separates
+designed behavior from observed behavior and from what the audit established.
 
-\paragraph{Bargaining.}
-For $k$ rounds remaining, the proposer share follows the finite recursion $f(1)=1$ and $f(k)=1-\delta_{\mathrm{resp}}f(k-1)$, approaching the Rubinstein solution under an infinite horizon \citep{rubinstein1982}. The agent blends this value with the field's strong 50/50 anchor, floors offers at a level the field actually accepts, and estimates continuation from the opponent's observed concession trail. A role audit over 4,001 games found a severe initial asymmetry (Alice 71.5th percentile, Bob 28.8th); an accept-floor correction made Bob the stronger seat in a later 500-game export.
-
-\paragraph{Negotiation.}
-With both values visible, the agent computes the zone of possible agreement (ZOPA) exactly and follows an interior reservation path. With values hidden, it uses role-specific anchors, Boulware concession, table-based acceptance, support bounds from the public value grid, and terminal rules. Structural inspection showed that all 6 complete-information value cells are feasible, while only 6 of 16 hidden-information cells are; thus 10 of 22 grid cells are infeasible. This prevents treating every no-deal as a policy failure.
-
-\paragraph{Persuasion.}
-The seller conditions recommendations on quality, prior expected value, and observed demand. The buyer maintains a discrete posterior over seller low-quality recommendation rates $q\in\{0,.125,.25,.5,.75,1\}$, updates it from the full recommendation stream, and purchases when posterior expected utility clears price. This is an adaptive analogue of the sender-receiver structure in Bayesian persuasion \citep{kamenica2011bayesian}. Text is parsed into positive, negative, or abstaining evidence; explicit declines are hard vetoes in the final policy.
-
-\section{Rank-aware development and evaluation}
-
-Figure~\ref{fig:pipeline} summarizes the contract used for uncertain changes. Behavioral changes landed default-off. When randomization was authorized, a stable hash of game ID assigned treatment per game; assignment occurred after eligibility was defined and was kept out of unrelated decision variables. Otherwise, we used a frozen named challenger and reported the comparison as observational.
-
-The primary cohort was defined at the first structurally eligible pre-action turn and retained agreements, no-deals, walks, invalids, timeouts, immediate accepts, and unresolved results. Missing finals remained unresolved and blocked promotion. The primary metric was authenticated official per-game rating delta when joinable; a checked-in exact-cell payoff CDF supplied a diagnostic percentile. We never promoted on completed deals alone.
-
-Reachability was a separate requirement: every mechanism had to show positive counts for eligible states, firings, and changed wire actions under the intended live stack. We then re-ran the flag-off and flag-on paths and compared the post-coercion action. This catches a clean-looking null from a flag nested under a disabled parent, as well as an apparent treatment that an action sanitizer later erases.
-
-\begin{table}[t]
+\begin{table}[!ht]
 \centering
-\small
-\caption{Selected live behavior measurements. Counts include the stated cohort rather than only favorable outcomes.}
+\scriptsize
+\caption{Agent Behavior Analysis at the August 29 bank. Policy is banked;
+field counts come from historical samples, simulated states, or selected turns,
+not one common final-bank cohort.}
 \label{tab:behavior}
-\begin{tabularx}{\linewidth}{@{}p{3.3cm}p{3.2cm}Y@{}}
+\renewcommand{\arraystretch}{1.04}
+\begin{tabularx}{\linewidth}{@{}p{1.15cm}p{3.55cm}p{4.1cm}Y@{}}
 \toprule
-Question & Measurement & Design implication \\
+Family & Designed returned behavior & What the agent did in the field & Alignment and failure boundary \\
 \midrule
-How much negotiation is feasible? & complete 6/6; hidden 6/16 value cells & Evaluate close rate against the feasible ceiling, not 100\pct. \\
-Are we refusing good hidden offers? & 89 of 14,732 no-deal decision turns (0.6\pct) exposed a profitable offer & Most hidden no-deals arise before a mutually acceptable price reaches us. \\
-What happens in one-round complete information? & 384/384 offers claiming $<0.9$ of span closed; 0/78 at $\geq1.05$ closed & A sharp last-move frontier exists, but it does not identify multi-round response. \\
-Does generated wording help? & LLM wording converted 46.3\pct versus 55.3\pct for templates & Keep decisions and messages deterministic; do not assume linguistic variety is persuasive. \\
+Bargaining & As Bob only in the disclosed 12-round, $\delta_2=.95$ cell, accept any positive terminal share; otherwise use finite recursion with empirical floors. & An initial 4,001-game audit put Alice/Bob at the 71.5th/28.8th percentiles. Later, the narrow Bob rule controlled its cell and accepted every positive terminal share. & Paired replay verified that this rule changed returned actions. A high-share child never fired because its parent was off; under the later stack, that acceptance was worse than observed continuation in 45/45 retrospective cases. \\
+Negotiation & First use visible gains from trade and support-bounded terminal rules. In remaining hidden buyer cells, use an observed-leader price path; retain bounded seller and message fallbacks. & In an Aug. 22 pooled Agent 5/Test 1/Test 2 sample, complete information closed 91.8\% ($n=805$) and hidden information 29.6\% ($n=2{,}295$). & Simulated activation replay found 6,188 eligible and fired states, with 3,274 returned actions changed. Inherited leader rules were operational, not causally validated. \\
+Persuasion & With known values, push only when prior-profitable and otherwise tell the truth on low items. With unknown values, push until observed buy rate fell below $.5$. Use deterministic tokens and veto purchases after explicit declines. & The earlier parser still bought 40 direct warnings in 21 games, all low. After three passed positives, continued low-item pushing sold 8 of 664 selected target turns. & The parser chain exposed abstention-to-positive coercion; veto direction was verified, but coverage and rating benefit were not. All A/B flags and LLM mode were zero at bank. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Results: what survived and what did not}
+Independent readers recomputed assignment and expected flag-off/flag-on returned
+actions. Official-history joins checked server equality only for joined subsets.
+Gate traces were incomplete, and the archive does not identify the loaded commit
+for every final process. We therefore establish sampled action alignment, not
+bank-wide conformance or economic optimality.
 
-Table~\ref{tab:snapshot} reports the protected Agent 5 snapshot. These values summarize the deployed full stack; they are not a causal estimate of any component, and the competition had not yet closed.
+\section{Competitors, ratings, and failed theories}
+\label{sec:competition}
 
-\begin{table}[h]
-\centering
-\small
-\caption{Displayed ratings at the losslessly banked August 26 snapshot.}
-\label{tab:snapshot}
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
- & Bargaining & Negotiation & Persuasion & Overall \\
-\midrule
-Agent 5 & 2542 & 2732 & 2413 & 2562 \\
-\bottomrule
-\end{tabular}
-\end{table}
+Competitors were useful as behavioral measurements. In 154 direct games against
+three then-top-ranked anonymized negotiation accounts, hidden multi-round seller
+opening medians lay between $1.485B$ and $1.490B$ across 30 openings; buyer
+medians lay between $.8075B$ and $.8108B$ across 30 openings. These all-outcome
+traces establish a shared extreme-opening pattern, not why those accounts were
+highly rated. A broader trajectory-copy arm tested the stronger claim. At a
+stopped 91-game read after an earlier $n=45$ look, the randomized unstratified
+lift was $+0.869$ rating/game, nominal normal 95\% interval $[-0.73,2.47]$;
+the host-standardized lift was $+0.991$, interval $[-0.63,2.61]$. No-deals were
+13/44 versus 11/47, a 6.14 percentage-point difference with Wald interval
+$[-12.0,24.3]$ percentage points, and the Agent 5 host stratum was negative. The arm failed
+every-host, interval, and no-deal promotion gates. The clone reproduced sent
+prices but not latent inference or unsupported histories; its interval did not
+identify why it failed \citep{li2011offline,dudik2014doubly}.
 
-The more transferable result is the number of attractive changes we rejected. A replay sweep suggested that leaving only 10\pct of visible negotiation surplus to the opponent gained $+0.0121$ diagnostic percentile across four runs. Audit showed that unseen aggressive asks were accepted by the clone by construction, response bins were too coarse, hidden-value tables were populated mainly by agreements, and one flag changed three distinct quantities. We rejected the entire result.
+Ratings also seesawed without clean component changes. Agent 5 negotiation rose
+from 2060.42 before its whole-policy boundary to 2823.94 at a later snapshot,
+then banked at 2620.36. A high-share bargaining guard coincided with
+$+99.65$ displayed bargaining rating by its 195-enrollment checkpoint, but a
+later current-stack audit found the candidate action worse in 45/45 joined
+cases, by 21.47 pot points on average. On another slot, essentially the same
+leader-replica policy produced consecutive displayed movements of $-65.56$ and
+$+31.43$, after an earlier $+47.62$ window. An unchanged bargaining stack fell
+from fitted percentile $.5668$ to $.5038$ across consecutive 471- and 498-game
+windows while agreement moved from 100.0\% to 99.6\%. These are not contradictions. Ratings
+mix policy, opponents, configuration exposure, field drift, and rating dynamics.
 
-Likewise, accepting every profitable hidden offer first appeared to gain $+0.07138$ per exposed decision. That counterfactual treated every observed rejection as a zero. Replaying the actual later continuation reversed the result to $-0.06628$ (95\pct bootstrap CI $[-0.08183,-0.05096]$) per exposed decision and $-0.00614$ over the 4,050-game cohort. A leader-trajectory clone produced an encouraging early official lift of $+1.812$ rating/game on 45 games, but the fixed 91-game checkpoint fell to $+0.869$ with CI $[-0.78,2.52]$, raised no-deals by 6.14 points, and was negative on one host; it failed its frozen promotion gates.
+The final Agent 5 snapshot contained bargaining 2603.81/15,487 games,
+negotiation 2620.36/15,415, and persuasion 2344.79/15,481, for displayed-family
+mean 2522.99. The final policy retained narrow structural owners, deterministic
+messages, and explicitly bounded fallbacks. It did not retain every policy that
+once accompanied a rising rating.
 
-Finally, an outcome reader once imputed old missing finals as 5th-percentile abandonments. The collector had actually stopped with 11,737 results outstanding. Treating these records as unresolved rather than losses changed which experiments were even readable. These failures explain why our final policy contains fewer experimental mechanisms than the number of promising development plots might suggest.
+\section{What survived falsification}
+\label{sec:survived}
 
-\section{Agent Behavior Analysis}
+Falsification did not leave an empty agent. It separated structural guarantees
+from empirical bets and made the latter narrower.
 
-We define alignment operationally: the visible state should select the intended family plan; a gate should fire only in its documented scope; coercion should preserve the intended semantic action; and the wire should be attributable to exactly one mechanism. Every turn log therefore stores the state fingerprint, plan, ordered gate trace, source, and submitted action. Paired reachability checks establish that a mechanism can change behavior before any outcome analysis, while independent readers recompute assignment and expected wires rather than trusting logged treatment labels.
+\paragraph{Bargaining.}
+Finite recursion survived as a continuation benchmark. Empirical discount
+calibration was nearly null because fitted floors owned the returned action.
+The favorable 49/49 selected $\delta<1$ comparison covered only one stipulated
+next-period counter, while 16 $\delta=1$ histories averaged $-0.0505$ pot share.
+The bank kept the generic planner and one narrow P2 commitment, not a broad
+claim that delay or immediate acceptance was best.
 
-This process found behavioral mismatches that aggregate score could not. A parser bought messages containing ``Not recommended'' because the positive token matched first; the corrected strict decline gates are limited to current-message buyer decisions and can only change buy to pass. A surplus-share probe randomized an offer target before the action branch, unintentionally changing accept/reject decisions even on turns that sent no offer. The probe was disabled because its outcome could not identify the intended price-response mechanism. In another case, a replay candidate replaced the entire control flag set instead of overlaying one change, silently measuring two strategies rather than one parameter.
+\paragraph{Negotiation.}
+Visible gains from trade and support bounds survived. Under the
+independent-uniform hidden-type model, only 6/16 pairs were feasible; only 89 of
+14,732 turns in hidden no-deals contained an immediately profitable offer.
+Faster concession measured worse, and a score-floor cohort closed 7/27 states
+versus 23/28 historically. That contrast was era-confounded but rollback-grade.
+The bank placed exact ZOPA and support owners before empirical fallbacks.
 
-The final Agent 5 snapshot had all per-game A/B flags explicitly off and used deterministic templates. This does not prove semantic alignment for arbitrary language or opponents; it shows that the deployed policy matched its encoded design under the audited GLEE action interface.
+\paragraph{Persuasion.}
+The one-shot obedience threshold remained algebraically correct, while repeated
+credibility changed its policy meaning. The strongest conclusion was instead a
+software invariant: an explicit negative could become positive evidence through
+an abstention fallback. The bank used deterministic tokens and monotone
+BUY-to-PASS vetoes, while their rating value remains unclaimed.
 
 \section{Limitations and conclusion}
+\label{sec:limitations}
 
-The live field is nonstationary, opponents adapt, and identical code showed roughly $\pm125$ rating dispersion in persuasion over ten hours. Hidden opponent values are never revealed, so per-game feasibility and many rejected-offer counterfactuals are not identifiable from our logs. Several full-stack comparisons are observational because the operator later prohibited live randomization. Our text findings concern this parser-heavy competition population and do not establish that natural language is generally useless. The August 26 rating is a dated snapshot, not a final placement.
+The opponent field and adjustment are nonstationary, official tie handling is
+not documented, and our local CDF pools dimensions that the official scorer may
+separate. Hidden opponent values and responses to unplayed asks are not
+nonparametrically identified. Most trajectory claims are single-host chronology;
+the randomized clone is the main prospective comparison reported here, under
+game-ID exogeneity and adequate interference assumptions, and its interval was
+inconclusive. The highlighted audit failures are not a complete hypothesis
+census, so we make no claim about failure prevalence. Private transcripts, incomplete
+process-to-commit provenance, and missing exploratory-compute records prevent
+independent reproduction of every historical result. The shared pool may
+contain human opponents. We anonymize competitors and withhold transcripts, but
+an institutional ethics determination remains necessary before submission.
+Because the benchmark permits strategic misrepresentation, human opponents may
+already have received fixed task-specific persuasive text; organizer coverage
+for our secondary analysis still requires confirmation. The same tactics could
+automate manipulation outside the benchmark. Deterministic text, all-outcome
+accounting, and competition-bounded claims are partial safeguards, not
+authorization for deployment. The agent
+changed repeatedly. The falsification contract was the stable artifact. In
+several documented cases, the most valuable update was the decision not to
+believe an apparent improvement.
 
-Within those limits, \systemname demonstrates a practical principle for economic agents: optimize the scored rank, but distrust every measured gain until the treatment changes the final action and every assigned outcome is retained. In this competition, the discipline to reject false wins was itself a competitive advantage.
-
-\newpage
+\clearpage
 \bibliographystyle{plainnat}
 \bibliography{references}
 
-\newpage
+\iftechnicalappendix
+\clearpage
+\appendix
+\input{appendix.tex}
+\fi
+
+\clearpage
 \input{checklist.tex}
 
 \end{document}

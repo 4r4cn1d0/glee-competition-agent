@@ -1,0 +1,1025 @@
+\section{Formal objective and observability}
+\label{app:objective}
+
+This supplement separates mathematical consequences of the scoring rule from
+assumptions about the live field. The distinction matters because an equation
+can prove what a policy guarantees without proving that opponents will respond
+as the policy hopes.
+
+\subsection{Game and score notation}
+
+A game has public configuration $c\in\mathcal C$, role $r\in\mathcal R$,
+public history $H_t$, own type $\theta_i$, opponent type $\theta_{-i}$, action
+$A_t$, terminal payoff $Y$, and opponent strength $s_o$. Player $i$ acts on
+$I_{i,t}=(c,r,H_t,\theta_i)$; its own type is observed, while
+$\theta_{-i}$ may remain hidden. The platform maps $Y$ to a raw within-cell
+percentile $q=Q_{c,r}(Y)$, applies an undocumented opponent-specific adjustment
+$\widetilde q=h_o(q)$, and then applies Eq.~\eqref{eq:rating}. The public
+documentation specifies the same-configuration, same-role comparison and the
+rating update, but does not specify how ties are handled
+\citep{gleecompetition2026}. Because the rules page is mutable, the version
+accessed on 2026-08-30 is preserved in \path{docs/reference/glee-docs.md}.
+
+For exposition, define the exact-equality midrank of a fixed reference multiset
+$D=\{z_1,\ldots,z_n\}$ by
+\begin{equation}
+q_D(y)=\frac{1}{n}\sum_{i=1}^n
+\left[\mathbf 1\{z_i<y\}+\frac12\mathbf 1\{z_i=y\}\right].
+\label{eq:midrank}
+\end{equation}
+If $Z$ is uniformly sampled from $D$, then
+$q_D(y)=\Prb(Z<y)+\tfrac12\Prb(Z=y)$, the usual probability-of-superiority
+interpretation behind rank statistics \citep{mann1947test}. The local code uses
+the same convention with a $10^{-9}$ numerical tolerance for equality, so
+Eq.~\eqref{eq:midrank} is its mathematical idealization. Neither convention
+should be stated as the official tie rule without organizer confirmation.
+
+\begin{proposition}[Midrank jump]
+For $y_1<y_2$, the local diagnostic rank gain is
+\begin{equation}
+q_D(y_2)-q_D(y_1)=\frac{1}{n}\left(
+\#\{i:y_1<z_i<y_2\}+\frac12\#\{i:z_i=y_1\}
++\frac12\#\{i:z_i=y_2\}\right).
+\end{equation}
+\end{proposition}
+\begin{proof}
+Expand Eq.~\eqref{eq:midrank} at $y_2$ and $y_1$. Observations strictly below
+$y_1$ cancel. An observation at $y_1$ contributes $1$ to the first rank and
+$1/2$ to the second, every interior observation contributes $1$, and an
+observation at $y_2$ contributes $1/2$ only to the first rank.
+\end{proof}
+
+The proposition explains why a one-cent change can cross a large atom and have
+more rank value than a much larger monetary change elsewhere. It also shows
+why pooling the wrong cells changes the optimization problem.
+
+\begin{proposition}[Rating equivalence]
+Assume $R$, $\eta>0$, and the opponent adjustment are fixed for the decision,
+and that the rating clamp is inactive. For any two actions $a$ and $b$,
+\[
+\E[\Delta R\mid a]\geq \E[\Delta R\mid b]
+\quad\Longleftrightarrow\quad
+\E[\widetilde q\mid a]\geq \E[\widetilde q\mid b].
+\]
+\end{proposition}
+\begin{proof}
+Substituting Eq.~\eqref{eq:rating} gives
+$\E[\Delta R\mid a]=\eta\{8000\E[\widetilde q\mid a]-2000-R\}$.
+All terms other than $\E[\widetilde q\mid a]$ are fixed, and the remaining
+coefficient is positive.
+\end{proof}
+
+Display shrinkage, a binding clamp, a changing opponent model, or a comparison
+across different current ratings breaks one or more assumptions. The
+proposition is a one-step decision result, not a theorem about final leaderboard
+position.
+
+\begin{proposition}[Expected payoff can reverse expected raw rank]
+There exist a monotone percentile map $Q$ and actions $A,B$ such that
+$\E[Y_B]>\E[Y_A]$ but $\E[Q(Y_B)]<\E[Q(Y_A)]$.
+\end{proposition}
+\begin{proof}
+Let $Q(y)=\{1+\exp[-(y-5)/2.5]\}^{-1}$. Action $A$ pays $10$ surely. Action
+$B$ pays $0$ or $21$, each with probability $1/2$. Then
+$\E[Y_A]=10<10.5=\E[Y_B]$. However,
+$\E[Q(Y_A)]=Q(10)=0.8808$, while
+$\E[Q(Y_B)]=\{Q(0)+Q(21)\}/2=0.5588$. Figure~\ref{fig:rank} plots this
+construction.
+\end{proof}
+
+This construction does not by itself order $\E[h_o(Q(Y))]$ for an arbitrary
+nonlinear opponent adjustment. It carries through to expected adjusted rank,
+and hence to one-step rating under the preceding proposition, when
+$h_o(q)=a_o+b_oq$ with $b_o>0$, or whenever the fixed adjustment otherwise
+preserves the two expectation orderings. The public formula is unavailable, so
+the main paper keeps the raw-rank reversal and rating equivalence distinct.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.82\linewidth]{figures/fig_rank_objective.pdf}
+  \caption{Illustrative payoff-rank reversal, not an estimated GLEE cell. The
+  risky action raises expected money while lowering expected percentile.}
+  \label{fig:rank}
+\end{figure}
+
+\begin{proposition}[Terminal proposal value]
+Suppose a proposal $x$ is accepted with probability $A(x)$, yields payoff
+$u(x)$ if accepted, and yields zero if rejected. For a fixed raw percentile map
+$Q$,
+\[
+\E[Q(Y)\mid x]=Q(0)+A(x)\{Q(u(x))-Q(0)\}.
+\]
+\end{proposition}
+\begin{proof}
+Condition on acceptance and rejection, then collect the two terms.
+\end{proof}
+
+The baseline $Q(0)$ is not generally zero. Under local midranks, if every
+reference payoff in the cell is zero, then $q_D(0)=1/2$. This is a sufficient
+condition for a zero to be locally neutral. Strategic infeasibility alone is
+not sufficient because irrational trades, invalid outcomes, or a mixed
+reference population can place nonzero mass elsewhere.
+
+\subsection{Hidden-type non-identification}
+
+Let the same information state $I_{i,t}$ arise under two observationally
+equivalent opponent types $\theta_{-i}^{(1)}$ and $\theta_{-i}^{(2)}$. Any
+deterministic policy $\pi_i(I_{i,t})$ must take the same action under both. If
+one type pair admits gains from trade and the other does not, no such policy can
+condition on true feasibility before a revealing action occurs. A prior
+over types can support a Bayesian action, but the prior is a modeling
+assumption when hidden opponent values are never revealed. In particular, the
+observed competition logs do not nonparametrically identify the hidden joint
+type frequencies or the response to an offer that was never sent.
+
+\section{Bargaining derivations}
+\label{app:bargaining}
+
+Consider a unit pie, alternating proposals, a finite number $k$ of proposal
+opportunities, discount factors $\delta_i,\delta_j\in(0,1]$, and acceptance of
+offers that make the responder indifferent. Let $f_i(k)$ be player $i$'s share
+when $i$ proposes with $k$ opportunities remaining.
+
+\begin{proposition}[Finite-horizon recursion]
+The subgame-perfect proposer share satisfies
+\begin{equation}
+f_i(1)=1,\qquad f_i(k)=1-\delta_j f_j(k-1).
+\label{eq:finite_recursion}
+\end{equation}
+If a stationary limit exists and $\delta_i\delta_j<1$, then
+\begin{equation}
+f_i^*=\frac{1-\delta_j}{1-\delta_i\delta_j},\qquad
+f_j^*=\frac{1-\delta_i}{1-\delta_i\delta_j}.
+\end{equation}
+\end{proposition}
+\begin{proof}
+With one opportunity left, the proposer can retain the entire pie while giving
+the responder its rejection value of zero. With $k>1$, rejection makes player
+$j$ the next proposer, where $j$ receives $f_j(k-1)$ one period later. Player
+$i$ therefore offers $\delta_j f_j(k-1)$ and retains the remainder, proving the
+recursion by backward induction. At a stationary limit,
+$f_i^*=1-\delta_j f_j^*$ and $f_j^*=1-\delta_i f_i^*$. Substitution and division
+by $1-\delta_i\delta_j$ give the result.
+\end{proof}
+
+When $\delta_i=\delta_j=1$, the stationary equations do not select a unique
+split. The implementation chooses the equal split only in its unknown or
+long-horizon branch; known finite horizons retain the parity of the backward
+recursion. The finite recursion follows backward induction under the stated
+terminal rule. The long-horizon formula is the Rubinstein benchmark
+\citep{rubinstein1982}. The connection between
+axiomatic Nash bargaining and strategic alternating-offer models is discussed
+by \citet{binmore1986nash}.
+
+\begin{proposition}[Patient-responder parity]
+If responder $j$ has $\delta_j=1$, then for every integer $m\geq0$,
+\[
+f_i(2m+1)=\delta_i^m,\qquad f_i(2m)=0\quad(m\geq1).
+\]
+\end{proposition}
+\begin{proof}
+The base cases are $f_i(1)=1$ and
+$f_i(2)=1-f_j(1)=0$. Assume the claim through $2m$. The alternating recursion
+gives $f_j(2m)=1-\delta_i f_i(2m-1)=1-\delta_i^m$, so
+$f_i(2m+1)=1-f_j(2m)=\delta_i^m$. It then gives
+$f_j(2m+1)=1-\delta_i f_i(2m)=1$, so
+$f_i(2m+2)=1-f_j(2m+1)=0$.
+\end{proof}
+
+\subsection{Continuation values and safe decisions}
+
+With pie size $M$ and $k\geq2$, a responder $i$ who rejects
+becomes proposer next period and has equilibrium continuation
+$\delta_i f_i(k-1)M$. A current proposer $i$ whose offer is refused becomes
+the next responder and has continuation
+$\delta_i[1-f_j(k-1)]M$. These are model-based continuation values. The live
+policy additionally uses a fairness floor and a trend estimate from observed
+concessions, so its final aspiration is a heuristic blend rather than an
+equilibrium theorem.
+
+\begin{proposition}[Terminal positive acceptance]
+At a genuinely terminal decision, accepting a strictly positive monetary
+payoff strictly dominates rejection payoff zero. Under any nondecreasing
+percentile map, it weakly dominates in raw rank.
+\end{proposition}
+\begin{proof}
+The monetary claim follows from $y>0$. Monotonicity gives $Q(y)\geq Q(0)$.
+\end{proof}
+
+\begin{proposition}[Limited discounted guard]
+Let $o$ be a current offer to player $i$. Consider only the continuation action
+that sends counter $c$, which the opponent accepts exactly one period later.
+If $o\geq\delta_i c$, accepting now weakly dominates that continuation in
+discounted money.
+\end{proposition}
+\begin{proof}
+Acceptance pays $o$ now. The stipulated continuation pays $c$ one period later,
+with present value $\delta_i c$.
+\end{proof}
+
+The qualification is essential. The guard does not dominate a policy that
+chooses a different counter, receives a new opponent offer, or reaches a better
+agreement several rounds later. A retrospectively selected corpus contained
+49/49 favorable comparisons for $\delta<1$, with mean gain $0.03326$ of the pie
+and nominal game-bootstrap interval $[0.02722,0.03930]$. At the patient boundary
+$\delta=1$, 16 decisions averaged $-0.0505$. The interval is descriptive
+conditional on the selected rule and corpus. The candidate excluded the patient
+boundary, but was later retired; the broad guard was off at the Agent 5 bank.
+
+\subsection{Heuristics and their status}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Bargaining rules separated by what they actually guarantee.}
+\label{tab:barg_heuristics}
+\begin{tabularx}{\linewidth}{@{}p{3.1cm}p{5.0cm}Y@{}}
+\toprule
+Rule & Exact property & What remains empirical \\
+\midrule
+Finite recursion & Eq.~\eqref{eq:finite_recursion} under the alternating-offer assumptions. & Opponents need not play the equilibrium response. \\
+Aspiration floor & Target is at least the configured floor and the computed refusal continuation. & The target may be unattainable or rank-suboptimal. \\
+Observed concession projection & If no positive concession is detected, continuation is the last offer discounted; otherwise the code searches up to five steps and caps at model continuation. & The broad observed-gain deployment measured negative on three seeds: $-0.0012,-0.0013,-0.0006$. \\
+One-step gain threshold & Under assumed gain $G$, waiting one step is preferred to share $s$ when $s<\delta G/(1-\delta)$. & The assumed $G=0.05$ was not reached in 895 measured continuations; median realized gain was $0.0012$. \\
+P2 discounted commitment & A documented discounted floor is checked before acceptance, and even-round counters are computed from that floor. & Bank-active only in Bob/P2, disclosed-12-round, $\delta_2=.95$; no guarantee of agreement or optimality. \\
+Broad discounted guard & If active, the limited dominance result above applies in its exact scope. & Retrospective candidate; retired and off at the dated bank. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Negotiation derivations}
+\label{app:negotiation}
+
+Let a seller value the item at $s$, a buyer value it at $b$, and a transaction
+occur at price $p$. Seller payoff is $p-s$ and buyer payoff is $b-p$.
+
+\begin{proposition}[Strict gains from trade]
+A price giving both players strictly positive payoff exists if and only if
+$b>s$. The set of such prices is $(s,b)$.
+\end{proposition}
+\begin{proof}
+Both payoffs are positive exactly when $p>s$ and $p<b$, which is possible
+exactly when $s<b$.
+\end{proof}
+
+The public value grid contains 6/6 feasible complete-information cells. Under
+the simulator's independent-uniform joint model for latent types, 6/16 hidden
+type pairs are feasible. If the six complete cells and sixteen modeled hidden
+pairs are also weighted uniformly, 10/22, or 45.45\%, are infeasible. The
+complete count is structural; the hidden frequency is conditional on a joint
+model that the logs do not identify. Neither count is an application of the
+Myerson--Satterthwaite impossibility theorem. That theorem concerns full
+efficiency subject to incentive, participation, and budget constraints under
+private information \citep{myerson1983bilateral}.
+
+\begin{proposition}[Conditional bounds from offers]
+Assume every buyer proposal would give the buyer nonnegative payoff if accepted,
+and every seller proposal would give the seller nonnegative payoff if accepted.
+Then every observed buyer bid satisfies $p_b\leq b$, and every observed seller
+ask satisfies $p_s\geq s$. If the relevant observed set is nonempty, the maximum
+buyer bid is a lower bound on $b$, and the minimum seller ask is an upper bound
+on $s$.
+\end{proposition}
+\begin{proof}
+Nonnegative buyer payoff gives $b-p_b\geq0$. Nonnegative seller payoff gives
+$p_s-s\geq0$. Taking extrema preserves the inequalities.
+\end{proof}
+
+The assumption is not cosmetic. The corpus includes loss-making offers and a
+small number of agreements outside the rational support. The policy therefore
+treats these bounds as conditional evidence, not revealed truth.
+
+\begin{proposition}[Support floor]
+Let latent positive surplus $Z$ satisfy $Z\geq Z_{\min}>0$. If the agent accepts
+own surplus $0<u<\alpha Z_{\min}$ for $\alpha\in(0,1)$, then its realized share
+obeys $u/Z<\alpha$.
+\end{proposition}
+\begin{proof}
+Since $Z\geq Z_{\min}$, $u/Z\leq u/Z_{\min}<\alpha$.
+\end{proof}
+
+This supports a structural veto once the support table and role are correct.
+It does not show that threshold $\alpha$ maximizes rank. The current hidden
+support threshold uses $\alpha=0.4$.
+
+\begin{proposition}[Boulware path]
+For anchor $a$, reservation point $z$, elapsed fraction $e\in[0,1]$, and
+$k>0$, the path $t(e)=a+(z-a)e^k$ satisfies $t(0)=a$, $t(1)=z$, and is monotone
+toward $z$.
+\end{proposition}
+\begin{proof}
+The endpoints follow by substitution. For $e>0$,
+$t'(e)=k(z-a)e^{k-1}$, which has the sign of $z-a$.
+\end{proof}
+
+The exponent controls timing, not correctness. Boulware and conceder functions
+are standard automated-negotiation tactics \citep{faratin1998negotiation}, but
+exponent 1.2 was negative relative to the exponent-2.0 default in two replay
+seeds. No result for exponent 1.5 is claimed.
+
+\begin{proposition}[Ultimatum accounting]
+If $Z=b-s>0$, a seller price $p=s+\tau Z$ gives the seller $\tau Z$ and the
+buyer $(1-\tau)Z$. A buyer price $p=b-\tau Z$ gives the buyer $\tau Z$ and the
+seller $(1-\tau)Z$.
+\end{proposition}
+\begin{proof}
+Substitute each price into $p-s$ and $b-p$.
+\end{proof}
+
+The identity does not imply acceptance. In observed one-round complete-
+information play, 384/384 asks claiming less than 0.90 of span closed, while
+0/78 asks claiming at least 1.05 closed. There were no observations in the
+intervening band, and the evidence does not identify multi-round behavior.
+
+\begin{proposition}[Conditional terminal extraction]
+Suppose $s<b$, the move is genuinely terminal, and the opponent accepts every
+strictly positive payoff. For $0<\epsilon<b-s$, a seller price $b-\epsilon$
+and buyer price $s+\epsilon$ each leave the responder $\epsilon$ and give the
+proposer $b-s-\epsilon$.
+\end{proposition}
+\begin{proof}
+Direct substitution gives both payoffs. The acceptance assumption then closes
+the transaction.
+\end{proof}
+
+The statement permits real-valued prices. Transmitted prices are cent-rounded,
+so an implementation must choose $\epsilon$ and rounding that leave the
+responder strictly positive.
+
+A later retained audit found positive opponent gain accepted in 1,489/1,493
+terminal cases, including 39/40 exact-cent offers, while 0/159 nonpositive
+offers were accepted. This is strong descriptive support for the model, but
+terminal availability is selected and the result is not a randomized
+full-cohort effect.
+
+\subsection{What counteroffers do and do not prove}
+
+Let $p$ be an incoming profitable offer and $t$ the planned counter. The
+implementation transmits $p'=\max\{p,t\}$ for a seller and
+$p'=\min\{p,t\}$ for a buyer. If accepted, seller surplus $p'-s$ or buyer
+surplus $b-p'$ is therefore at least the surplus under $p$. This transformation
+cannot
+guarantee that the counter will be accepted. Rejecting a profitable offer can
+still turn a deal into a no-deal. Likewise, a structurally infeasible
+``deadgame'' offer is not a free option: it can forfeit an irrational acceptance
+or consume a strategic opportunity, and zero can still have rank cost.
+
+The implementation also distinguishes an exact horizon from a capped planning
+clock. A synthetic round count may shape a Boulware curve, but it cannot
+authorize final-round extraction, acceptance, or walk-away behavior. This is a
+software-safety invariant, not a game-theoretic result.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Negotiation heuristics, guarantees, and observed limits.}
+\label{tab:nego_heuristics}
+\begin{tabularx}{\linewidth}{@{}p{3.1cm}p{5.0cm}Y@{}}
+\toprule
+Rule & Exact property & Empirical or identification limit \\
+\midrule
+Visible ZOPA & Strict gains exist exactly when $b>s$. & Opponents can reject rational offers. \\
+Hidden support veto & Prevents accepting below a chosen share under correct support and role. & The share parameter is empirical; hidden joint types are not observed. \\
+Offer-derived type bound & Valid under individual rationality. & Loss-making proposals violate the premise. \\
+Generic offer clamp & On its scoped visible-ZOPA path, preserves nonnegative own surplus and leaves a configured opponent share. & Earlier specialized paths, hidden ZOPA, and terminal paths differ. \\
+Dynamic stop & Exact gate requires complete, feasible, unknown-horizon buyer state plus ten-wire stasis and a seed-rank threshold. & Stasis does not prove no future improvement; prospective live evidence is observational. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Persuasion derivations}
+\label{app:persuasion}
+
+An item is high quality with probability $p\in(0,1)$. Buyer values are $v$ for
+a high item and $u$ for a low item, with $v>P>u$ at price $P$. A seller
+recommends all high items and independently recommends a fraction
+$q\in[0,1]$ of low items.
+
+\begin{proposition}[Recommendation obedience]
+After a recommendation,
+\begin{equation}
+\Prb(H\mid M=1)=\frac{p}{p+(1-p)q}.
+\end{equation}
+A myopic risk-neutral buyer finds purchase weakly optimal if and only if
+\begin{equation}
+q\leq q^*=\frac{p(v-P)}{(1-p)(P-u)}.
+\end{equation}
+and strictly optimal when $q<q^*$. At equality the buyer is indifferent; the
+implementation breaks the money-value tie toward purchase.
+\end{proposition}
+\begin{proof}
+Bayes' rule gives the posterior because high items are always recommended and
+low items are recommended with probability $q$. Conditional expected value is
+\[
+\frac{pv+(1-p)qu}{p+(1-p)q}.
+\]
+Requiring it to be at least $P$, multiplying by the positive denominator, and
+rearranging gives
+$p(v-P)\geq(1-p)q(P-u)$, which is equivalent to the stated threshold.
+\end{proof}
+
+This is a one-shot obedience condition. Bayesian persuasion assumes commitment
+to a signal structure \citep{kamenica2011bayesian}; the competition instead
+repeats messages and lets the buyer learn credibility. Cheap-talk partitions,
+reputation, and long-run persuasion are therefore relevant but different
+benchmarks
+\citep{crawford1982strategic,sobel1985credibility,kreps1982reputation,fudenberg1989reputation,best2024longrun}.
+
+\begin{proposition}[Buyer break-even threshold]
+If the posterior probability of high quality is $\pi$, buying is weakly
+money-optimal exactly when
+\[
+\pi\geq\frac{P-u}{v-u}.
+\]
+\end{proposition}
+\begin{proof}
+Buying has expected value $\pi v+(1-\pi)u-P$. Requiring this to be nonnegative
+and rearranging gives the result.
+\end{proof}
+
+This money threshold is not automatically rank-optimal or dynamically optimal.
+The rank distribution can reward different risk, and a purchase changes the
+information available in later rounds.
+
+\subsection{Regularized discrete posterior used by the buyer}
+
+The implementation places prior weight on
+$q_j\in\{0,0.125,0.25,0.5,0.75,1\}$ and uses a high-item message error
+$\epsilon=0.02$. For a purchased item, quality is revealed. The likelihoods
+for a recommendation indicator $m\in\{\mathrm{YES},\mathrm{NO}\}$ are
+\begin{align}
+\ell_j(H,m)&=p\{(1-\epsilon)\mathbf1[m=\mathrm{YES}]+\epsilon\mathbf1[m=\mathrm{NO}]\},\\
+\ell_j(L,m)&=(1-p)\{q_j\mathbf1[m=\mathrm{YES}]+(1-q_j)\mathbf1[m=\mathrm{NO}]\}.
+\end{align}
+For an unpurchased item, quality remains hidden and the likelihood marginalizes
+the two lines. Posterior weights update as
+\begin{equation}
+w_j' = \frac{w_j\ell_j(o)}{\sum_k w_k\ell_k(o)}.
+\end{equation}
+This is the idealized Bayesian update under stationary $q_j$, the stated error
+model, conditional independence, and correct message parsing. The implementation
+regularizes prior weights below $10^{-4}$, likelihoods below $10^{-12}$, and
+degenerate denominators. It is therefore a robustified approximation rather
+than exact Bayes. The grid and error rate are modeling choices.
+
+\begin{proposition}[Prefix lie-budget invariant]
+Let
+\[
+\bar q=\lambda\min\{1,\max\{0,q^*\}\},\qquad \lambda\in[0,1].
+\]
+Suppose the seller recommends a low-quality item only when doing so preserves
+$R_t\leq \bar qL_t$, where $R_t$ is the number of recommended low items and
+$L_t$ the number of low items observed through time $t$. Then every prefix
+satisfies $R_t\leq \bar qL_t$.
+\end{proposition}
+\begin{proof}
+The inequality holds initially. A high item changes neither count. Passing on a
+low item increments only $L_t$ and cannot violate the inequality. Recommending
+a low item is allowed only after checking the inequality for the incremented
+counts. Induction completes the proof.
+\end{proof}
+
+The invariant is a budget check, not an optimal schedule. It applies only after
+earlier policy owners and only when the seller knows the values needed for
+$q^*$. In the dated bank, $\lambda=0$ in seller-known cells: prior-profitable
+cells used an earlier all-push branch, while other low items were truthful.
+Seller-unknown cells could not compute the budget. They recommended low items
+while the observed buy rate was absent or at least $.5$, and turned truthful
+below $.5$. An internal toy calculation favored backloading over all-push, but
+its state, horizon, and payoff functional were not preserved completely enough
+for a quantitative claim. Thus one-shot $q<q^*$ reasoning does not prove that
+earlier lying or all-push is optimal.
+
+\subsection{Language and credibility state}
+
+The parser produces positive, negative, or abstaining evidence. In the legacy
+path, ``not recommended'' suppressed the positive token and returned
+abstention; a later fallback converted abstention to a positive recommendation
+signal. The
+bug was not a positive-keyword match. Explicit-decline vetoes were subsequently
+implemented as monotone safety guards that can change BUY to PASS but cannot
+force a purchase. Agent 5 used V1, which still missed 40 direct-warning
+purchases across 21 games; all 40 revealed low quality. This proves the
+direction of the software change, not its economic optimality or completeness,
+because a decline can also refer to a high-quality item.
+
+A separate positive-pass automaton counts three latest explicit positive
+recommendations that were passed, ignores rounds with no recommendation, and
+resets after a bought positive. On its narrow known-low, prior-profitable,
+nonterminal scope, it can change an all-push YES to NO. Agent 5 produced 668
+selected turns in 109 games, with 8 sales among 664 low-item turns. These
+turns are dependent within games and selected by the state machine, so they are
+mechanism evidence rather than a causal sample size.
+
+\section{Identification and experimental protocol}
+\label{app:identification}
+\label{app:experiments}
+
+\subsection{Potential outcomes and experimental unit}
+
+Let $g$ index games, $X_g$ be treatment-independent pre-action information
+available to the policy, $E_g=e(X_g)$ indicate
+eligibility, $T_g\in\{0,1\}$ be assignment, and $Z_g(t)$ be a named game-level
+outcome under arm $t$, such as raw percentile or official rating change. For an eligible randomized cohort, the intent-to-treat
+estimand is
+\begin{equation}
+\tau_{\mathrm{ITT}}=\E[Z_g(1)-Z_g(0)\mid E_g=1].
+\end{equation}
+A difference in arm means identifies this quantity if assignment is independent
+of both potential outcomes conditional on eligibility, eligibility is defined
+before treatment, both arms have positive assignment probability, treatment
+versions are stable, observed outcomes satisfy consistency, and interference
+assumptions are adequate. Aggregation across assignment strata must preserve
+the target stratum weights. A stable hash of game ID makes assignment
+reproducible. It behaves like random assignment only if game IDs are exogenous
+and the hash plus salt is treated as a random oracle.
+
+The game is the unit because turns inside one game share a history, latent type,
+opponent, and terminal outcome. Counting turns as independent observations
+would create pseudo-replication. Adaptive opponents and repeated encounters can
+also violate simple no-interference assumptions, so we report these as design
+conditions rather than automatic facts.
+
+\begin{proposition}[Interface noninterference]
+Assume deterministic policies whose internal state is fully determined by the
+public history; treatment has no effect outside eligible histories; environment
+and opponent randomness are coupled; and both arms return identical actions at
+every history reachable under either arm. Then treatment has no behavioral
+effect through the game interface.
+\end{proposition}
+\begin{proof}
+The initial public histories coincide. At any common reachable history, the
+actions coincide by assumption. Coupled randomness therefore produces the same
+next public history. Induction gives identical histories and actions through the
+terminal interaction.
+\end{proof}
+
+In sampled paired replay, positive counts for eligibility, firing, and changed
+returned action are a necessary diagnostic for the named direct action effect.
+They do not prove the proposition's universal premises: treatment can alter
+hidden internal state, timing, or later ineligible actions. Nor are the counts
+sufficient. The live process must have loaded the intended code and
+configuration, assignment must be valid, and the outcome join must be correct.
+
+\subsection{Selection, replay, and unplayed actions}
+
+Agreement is downstream of both strategy and opponent response. Conditioning
+on completed deals can induce collider bias and estimates behavior among
+selected agreements rather than full-policy value
+\citep{elwert2014selection}. This caused two concrete errors: interpreting
+accepted asks as the field's attempted demand, and initially scoring every
+rejected profitable offer as a zero even when the control later closed at a
+better price.
+
+Exact-action replay from randomized logs can identify some policy values under
+known propensities and support conditions \citep{li2011offline}. Doubly robust
+estimators combine propensity and outcome models, but still require at least
+one valid component and adequate support \citep{dudik2014doubly}. Our own logs
+do not reveal the response to a price never offered. Two continuation-value
+fits changed the sign of the proposed offer engine, so the engine was rejected
+rather than resolved by choosing the more favorable model.
+
+Missing outcomes require a separate assumption. A complete-case estimate is
+valid only if resolution is independent of arm and relevant potential outcomes
+conditional on the analysis strata. Otherwise, unresolved games must remain
+unresolved or receive adverse bounds. One retrospective study moved from a
+positive terminal estimate to a negative adverse bound after unresolved
+outcomes were treated correctly.
+
+\subsection{Sequential decisions}
+
+Ordinary fixed-horizon intervals do not preserve their nominal coverage when a
+researcher repeatedly stops on a favorable look \citep{johari2017peeking}.
+Our operational response was to freeze checkpoints and decision rules before
+reading outcomes. This controls researcher degrees of freedom but is not, by
+itself, formal time-uniform 95\% inference. Group-sequential boundaries
+\citep{pocock1977group} or confidence sequences
+\citep{howard2021confidence} would be required for principled continuous
+monitoring under their respective assumptions.
+
+The retrospective intervals in this draft are nominal game-bootstrap summaries
+conditional on the selected rule, threshold, and corpus. Where a reached-state
+analysis is used, one first exposure per unique game is retained and games, not
+turns, are resampled. The archived summaries do not preserve the resample count,
+seed, opponent clustering, or threshold-search correction for every result.
+They therefore do not carry unconditional 95\% coverage. Fresh prospective
+data or nested selection-aware resampling would be required for confirmatory
+inference.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Evidence labels used throughout the draft.}
+\label{tab:evidence_labels}
+\begin{tabularx}{\linewidth}{@{}p{2.5cm}p{4.4cm}Y@{}}
+\toprule
+Label & What it establishes & What it does not establish \\
+\midrule
+Structural theorem & Consequence of stated game and score assumptions. & Opponent adherence or field benefit. \\
+Software invariant & What the audited code can and cannot transmit. & Economic optimality. \\
+Descriptive audit & Frequency or association in a defined corpus. & Treatment effect. \\
+Reached-decision comparison & Hindsight comparison between accept-now and the realized control continuation. & Response to the policy had the action changed. \\
+Randomized ITT & Policy effect under pre-action randomization and stated identification assumptions. & Mechanism effect outside eligibility or under interference. \\
+Before/after comparison & Chronological change in the observed stack. & Causality without parallel trends and no concurrent change. \\
+Invalid or refuted study & A tempting estimate whose estimand, data, or implementation failed audit. & Evidence for the proposed strategy. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.94\linewidth]{figures/fig_audit_contract.pdf}
+  \caption{The action-level evidence contract and six observed failure
+  boundaries. The returned action is the post-coercion object handed to the
+  SDK. Server receipt is established only where that object can be joined to
+  official history. A present flag is not evidence that a behavior fired.}
+  \label{fig:audit}
+\end{figure}
+
+\section{Strategy evolution, ratings, and competitors}
+\label{app:evolution}
+
+The main paper treats policy changes as dated hypotheses rather than a single
+monotone improvement sequence. This section records the cross-family theory
+chain, the authenticated rating chronology, and the competitor observations
+that generated imitation experiments. The chronology is intentionally not an
+interrupted time-series estimate. Opponents, cell exposure, rating step size,
+and in some intervals more than one component changed.
+
+\subsection{From theory to retained behavior}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Theory generated candidate actions; field evidence determined their
+status. The final column describes the dated bank, not a claim of equilibrium
+play.}
+\label{tab:theory_evolution}
+\begin{tabularx}{\linewidth}{@{}p{2.4cm}p{3.5cm}p{4.3cm}Y@{}}
+\toprule
+Family and benchmark & Candidate prediction & Observed failure or qualification & Retained behavior \\
+\midrule
+Bargaining: alternating offers and discounted continuation \citep{rubinstein1982} & Patience and horizon should determine acceptance and counteroffers; accepting $o\geq\delta c$ dominates one stipulated next-period accepted counter. & Empirical floors owned many returned actions, the broad discount change was null, and a promising high-share release became 45/45 worse under the later P2 owner. The theorem never dominated arbitrary continuation. & Generic finite recursion plus empirical floors, with one silent P2/H12/$\delta=.95$ owner. Broad guard off. \\
+Negotiation: gains from trade, private information, and concession functions \citep{chatterjee1983incomplete,faratin1998negotiation} & Use visible ZOPA, infer safe reservation bounds, concede over time, and test leader-like anchors. & Exponent 1.2 measured $-0.0166$ and $-0.0182$ local percentile versus 2.0. The randomized leader clone raised no-deals and failed its frozen checkpoint. & First-principles precedence and support-bounded terminal inference, followed by explicitly labeled empirical fallbacks. \\
+Persuasion: committed obedience and repeated credibility \citep{kamenica2011bayesian,sobel1985credibility} & Recommend low items only within the one-shot obedience budget; richer language might preserve conversion. & GLEE has repeated, noncommitted messages. Continued low-item pushing after three passed positives sold 8/664 target turns; archived LLM wording converted 46.3\% versus 55.3\% for templates, without a preserved denominator or causal design. & Deterministic tokens, prior-profitable pushing, truth in other known-value cells, an adaptive unknown-value cutoff, and buyer safety vetoes. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Dated Agent 5 rating chronology}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Authenticated Agent 5 display movements around selected boundaries.
+Every row is descriptive chronology. Family letters are B/N/P.}
+\label{tab:rating_chronology}
+\begin{tabularx}{\linewidth}{@{}p{2.25cm}p{3.25cm}p{4.4cm}Y@{}}
+\toprule
+Boundary & Strategy or operation & Display movement and games & Interpretation \\
+\midrule
+Aug. 25, 04:07--07:29 & High-share guard, whole negotiation V1, and narrow P2 commitment assembled at separate boundaries. & Overall $2220.76\rightarrow2467.17$ ($+246.41$) while ordinary play and several components changed. & History of the assembled stack, not attribution to any one component. \\
+Aug. 26, 09:43--10:43 & Same 78-key overlay before and after a clean restart. & Overall $2495.16\rightarrow2513.66$; B $-23.98/133$, N $+51.84/133$, P $+27.63/134$. & One fixed stack produced sharply different family signs. \\
+Aug. 27, 16:45--18:49 & Locked policy; family topology narrowed only to satisfy activity quotas. & All 79 assignments terminal: B $+21.03/20$, N $-33.78/22$, P $-29.42/37$; mean approximately $-14.06$. & Operational maintenance cost retained without selecting the winning family. \\
+Aug. 29, 10:57--18:18 & Tight credibility reset copied into the final stack, followed by minimum-game close. & B $+14.60/19$, N $-1.02/19$, P $+40.12/25$; family mean $2505.09\rightarrow2522.99$. & The reset experiment had not met its own final rule, so the persuasion rise is not its effect. \\
+Final bank & Hardliner wrapper, LLM off, no active process. & B $2603.81/15{,}487$, N $2620.36/15{,}415$, P $2344.79/15{,}481$. & Valid endpoint; configuration alone does not prove the code-to-action chain for every game. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The checked-in source data for Figure~\ref{fig:evolution} record every plotted
+timestamp, value, and ledger provenance. The largest trajectory lesson is not
+the net rise. The same or near-identical policy eras produced both gains and
+losses. For example, the unchanged Test 2 bargaining stack moved from fitted
+same-cell percentile $.5668$ ($n=471$) to $.5038$ ($n=498$), although
+agreement remained 99.6\%. Test 4's deterministic leader replica moved
+$+47.62$, then $-65.56$ in a fully joined 155-game shift, then $+31.43$ in a
+fully joined 132-game shift. The last two fitted percentiles were $.49710$ and
+$.49568$, with intervals spanning $.5$. Display movement should therefore
+never be divided by game count and called a treatment effect.
+
+\subsection{Competitors as hypothesis sources}
+
+Competitor identities are anonymized as stable labels because opponent names
+were disclosed in only about half the games, our own agents also appeared as
+opponents, and the shared pool may include humans. The behavior summaries use
+all directly observed games in their declared slices, not completed deals only.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Direct competitor observations and the experiments they motivated.}
+\label{tab:competitors}
+\begin{tabularx}{\linewidth}{@{}p{2.65cm}p{4.35cm}Y@{}}
+\toprule
+Population & Direct observation & Evidential status \\
+\midrule
+Three then-leading negotiation accounts A--C & 154 direct games. In hidden multi-round play, seller first-offer medians were $1.485$--$1.490B$ across 30 openings; buyer medians were $.8075$--$.8108B$ across 30 openings. Snapshot ratings ranged from 2649.25 to 2918.75. & Shared extreme-opening pattern across seats and horizons; no estimate of why the accounts ranked highly. \\
+Type-identified slice of A & Two completed cap-10 buyer games identify value $1.2B$ and midpoint normalized shares $.679,.679,.684,.717,.840$. & Direct only for one account and type. Scaling to $1.0B$ or $1.5B$ was part of the randomized treatment, not a leader fact. \\
+Four-account trajectory clone & At a stopped 91-game read after an earlier $n=45$ look, candidate $+1.116$ rating/game ($n=44$) versus control $+.247$ ($n=47$), difference $+.869$, nominal normal interval $[-.73,2.47]$. Host-standardized difference $+.991$, interval $[-.63,2.61]$. Candidate no-deals were 6.14 percentage points higher, Wald interval $[-12.0,24.3]$ percentage points, and one host was negative. & Game-hash randomized ITT under the stated assignment and interference assumptions. Repeated looks make intervals descriptive. Failed the precommitted promotion rule and was stopped. \\
+Profiled bargaining opponents & Thirty-three profiles over 4,779 games had fitted acceptance thresholds from $.168$ to $.679$. & Real heterogeneity, but the opponent-specific exploit measured $-.0043$ diagnostic percentile and was removed. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The clone arm assigned the low bit of
+$\operatorname{SHA256}(\texttt{nego\_top\_buyer\_clone\_v1}\,\|\,\texttt{game\_id})$
+to candidate, with host declared as a stratum before pooled analysis. The
+deidentified release retains the assigned arm but withholds game IDs, so it
+reproduces estimates without independently re-deriving assignment.
+
+\section{Selected evidence ledger}
+\label{app:ledger}
+
+This ledger includes findings cited in the main paper, negative or invalid
+studies that changed the final interpretation, and qualified signals needed to
+explain the dated configuration. It is not a census of every exploratory plot
+or threshold tried. The private machine-readable experiment and findings
+ledgers remain the authoritative historical registry; that restriction creates
+reporting-selection and reproducibility risk.
+
+\subsection{Structural and descriptive findings}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Selected behavioral measurements used during development.}
+\label{tab:full_findings}
+\begin{tabularx}{\linewidth}{@{}p{3.4cm}p{4.0cm}Y@{}}
+\toprule
+Finding & Evidence & Interpretation \\
+\midrule
+Negotiation feasibility & Complete 6/6; hidden 6/16 value pairs under the independent-uniform grid model. & Hidden frequency and 10/22 aggregate require the stated joint and weighting assumptions. \\
+Negotiation close rate & Complete 91.8\% ($n=805$); hidden 29.6\% ($n=2{,}295$). & Roughly 92\% and 79\% of the corresponding feasible ceilings, under uniform hidden types. \\
+Profitable incoming offers in later no-deals & 89 of 14,732 dependent decision turns, 0.6\%. & Turn-level selected evidence only; no unique-game rate is inferred. \\
+Complete-information support & 911/911 checked outcomes agreed with the public value support. & Supports use of exact visible ZOPA, not hidden-type inference. \\
+Bargaining role asymmetry & 4,001-game audit: Alice 71.5th percentile, Bob 28.8th. & Motivated role-specific diagnosis. Later improvement is observational. \\
+One-round response bracket & 384/384 below 0.90 span closed; 0/78 at or above 1.05 closed. & Descriptive bracket with an unobserved gap. \\
+Persuasion wording & Archived summary: LLM copy converted 46.3\%, templates 55.3\%. & Negative direction only; the frozen summary lacks the denominator and uncertainty needed for a stronger claim. \\
+Cross-stack dispersion & Endpoints described as identical spanned roughly 250 persuasion rating points over ten hours. & Commit and exposure provenance were incomplete; this is an observed range, not a statistical noise floor. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Rejected, negative, and invalid studies}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Hypotheses that were not allowed to become final-policy claims.}
+\label{tab:negative}
+\begin{tabularx}{\linewidth}{@{}p{3.0cm}p{4.9cm}Y@{}}
+\toprule
+Candidate & Result or defect & Verdict \\
+\midrule
+Aggressive visible-surplus share & Replay suggested $+0.0121$ percentile, but the clone auto-accepted unseen asks, used coarse bins, learned from selected agreements, and bundled three semantics. & Entire result invalidated. \\
+Accept every profitable hidden offer & A biased selected replay covered 352 cases and reported $+0.07138$ without realized continuation. The corrected fixed-history replay covered 375 exposed decisions, 156 action changes, and 4,050 cohort games: exposed contrast $-0.06628$, nominal interval $[-0.08183,-0.05096]$; cohort average $-0.00614$. & Different retrospective estimands and denominators; removed before deployment, not ITT. \\
+Ultimatum share 0.90/0.95 & Percentile changes $-0.003$ and about $-0.012$ to $-0.015$; close rate fell 1.6--2.0 points. & Rejected. \\
+Faster concession & Exponent 1.2 measured $-0.0166$ and $-0.0182$ local percentile in two seeds versus 2.0. & Retain slower default. \\
+Broad bargaining observed-gain rule & Three seeds $-0.0012,-0.0013,-0.0006$. & Rejected. \\
+High-share bargaining override & Earlier selected replay found 35/35 favorable joined continuations and a positive adverse-missing bound. Under the later current P2 stack, accepting was worse than observed continuation in 45/45 joined cases, mean $-21.47$ pot points. & Stack-dependent retrospective reversal; configured child unreachable and no revival. \\
+Unguarded stonewall release & Displayed rating moved about $-200$ over five uncontrolled hours. & Temporal co-movement motivated rollback; not an effect estimate. \\
+Per-opponent exploitation & $-0.0043$ diagnostic percentile. & Removed. \\
+Response-model offer engine & Sign changed across two continuation fits; unplayed asks lacked support. & Not identified. \\
+Leader-trajectory clone & Early $+1.812$ rating/game at $n=45$ became $+0.869$ at a stopped $n=91$ read, nominal normal interval $[-0.73,2.47]$, with no-deals up 6.14 percentage points and one negative host. & Failed frozen promotion gates. \\
+Negotiation score-floor counter & Historical hotfix closed 23/28 games with diagnostic percentile $.58208$; the later live floor closed 7/27 with $.20764$. & Era-confounded historical control, but rollback-grade safety failure; final flag explicit zero. \\
+Cold-final reader & Imputed 11,737 unresolved outcomes as fifth-percentile abandonments. & Reader corrected; affected analyses reopened. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Qualified positive signals}
+
+The strongest pathwise reached-decision result is the $\delta<1$ bargaining
+comparison reported above. It remained retrospective and the guard was off at
+the bank. A complete-information unknown-horizon dynamic-stop audit found
+21 retrospective triggers among 389 feasible buyer games: 14 better, 6 worse,
+and 1 tie, with cohort-average diagnostic contrast $+0.01532$ and nominal
+game-bootstrap interval $[0.00478,0.02725]$. The $.50$ rule came from an
+observed threshold-grid break, so the interval does not cover selection. The
+live deployment was not randomized; the draft does not call it causal.
+
+The positive-pass persuasion state machine reached 668 low-item turns on Agent
+5 and sold 8 of 664, while another stack reached 359 and sold 3. The selection
+and repeated turns prevent a causal interpretation. The result supports the
+existence of the behavior state and a falsifiable next experiment, not a policy
+promotion on its own.
+
+\section{Expanded Agent Behavior Analysis}
+\label{app:behavior}
+
+\subsection{Audited action path}
+
+The intended execution contract was:
+\begin{enumerate}
+  \item Route the raw visible state to one family solver.
+  \item Normalize the fields that family uses and compute a numerical plan.
+  \item Apply ordered default-off gates, recording available trace events.
+  \item Coerce the candidate into the exact server schema.
+  \item Apply family postconditions and a legal fallback on error.
+  \item Log the raw state, plan, optional gate list, coarse source, and
+  post-coercion action returned to the SDK.
+\end{enumerate}
+The returned action, not an intermediate variable, is the local behavioral
+unit. This
+prevents a policy from being called treated when a sanitizer later restores the
+control action. It is not a server acknowledgement. Equality with official
+history was established only for successfully joined subsets.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Dated Agent 5 configuration, intended owner, and alignment boundary.}
+\label{tab:alignment}
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}p{4.0cm}p{4.0cm}Y@{}}
+\toprule
+Component & Effective bank configuration & Intended owner and behavior & Evidence boundary \\
+\midrule
+Dispatcher & Family policy with LLM off; gate tracing configured. & Return a legal post-coercion action, using a family fallback on exception. & Logs precede SDK return; traces are optional and known incomplete. \\
+Bargaining & Silent P2/H12/$\delta_2=.95$ owner on; broad discounted guard and its A/B arm off; high-share flag on but parent off. & Narrow P2 commitment owns its cell; generic finite-horizon and floor planner owns the rest. & The high-share child was unreachable. The archive does not prove the loaded commit for every final process. \\
+Negotiation & Agent-5 default router V1 on. & First-principles owners take highest precedence, then an unflagged reservation-bound inference handles eligible hidden cap-10 buyer terminals; the observed-leader action function is buyer fallback. Seller fallback retains current decisions and an inherited message-only table in supported cells. & The inherited rules remained operational although the buyer rule's standalone experiment failed promotion gates; they are not causally validated. \\
+Persuasion & Honest rounds 99, lie shading 0, buyer-v2, tight reset and V1 decline veto on, token templates. & Known values use prior-profitable all-push and otherwise low-item truth. Unknown values push while buy rate is absent or at least $.5$, then turn truthful. Posterior money gate precedes reset and veto. & V1 missed 40 direct-warning purchases in 21 games, all revealing low quality. V2/V3 coverage was absent. \\
+Analysis & Every enumerated A/B and probe flag in the archived overlay was explicit zero. & Recompute assignment, compare exact off/on returned actions, and join all terminal outcomes. & No complete final-PID manifest or bank-wide joined-action denominator exists, so universal conformance is not claimed. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Forensic cases}
+
+\paragraph{Parser abstention converted to purchase.}
+For ``not recommended,'' the positive token was correctly suppressed by
+negation, leaving zero phrase score. The parser returned abstention. The legacy
+persuasion path then coerced every abstention to recommendation YES. The
+alignment failure was therefore between tri-state parsing and binary fallback,
+not inside token matching. This produced a positive recommendation signal, not
+a direct purchase action. A strict decline guard was later constrained to
+BUY-to-PASS changes, which makes its direction auditable but did not cover every
+direct-warning phrase.
+
+\paragraph{Treatment leakage.}
+A negotiation surplus probe randomized a target before the offer branch. The
+same target entered accept/reject variables, so treatment changed decisions on
+turns that sent no offer. The outcome could estimate only the bundled policy,
+not the intended response to a different ask. The probe was disabled.
+
+\paragraph{Replay overlay mismatch.}
+One candidate replay replaced the full control flag set instead of overlaying a
+single key. A favorable comparison therefore measured two different stacks.
+The corrected protocol freezes the base stack, changes one flag, and compares
+the final submitted action byte for byte outside the scoped eligibility.
+
+\paragraph{Non-firing gates.}
+A flag nested under a parent omitted by the replay control produced a clean
+$+0.0000$ null while never executing. The reachability contract now requires
+positive eligible, fired, and changed-action counts before outcome analysis.
+
+The result is limited but meaningful: selected paired states and joined actions
+matched their reconstructed owners, while the audits exposed the mismatches
+above. The configuration snapshot alone does not establish that the reviewed
+commit produced every banked action. Nor do these checks prove human-like
+language understanding or economic optimality.
+
+\section{Related work}
+\label{app:related}
+
+\paragraph{Rank objectives.}
+GLEE's within-cell percentile resembles a rank-order incentive rather than a
+standard expected-payoff objective \citep{lazear1981tournaments}. Under local
+midranks it has a probability-of-superiority interpretation
+\citep{mann1947test}, connecting it to pairwise ranking and U-statistic risk
+\citep{clemencon2008ranking}. This should not be confused with $\alpha$-Rank,
+which evaluates populations through evolutionary response graphs
+\citep{omidshafiei2019alpharank}.
+
+\paragraph{Bargaining and bilateral trade.}
+The axiomatic Nash solution and strategic Rubinstein solution provide
+complementary benchmarks
+\citep{nash1950bargaining,rubinstein1982,binmore1986nash}. Two-sided private
+information can create shading, delay, and inefficiency
+\citep{chatterjee1983incomplete,chatterjee1987twosided,admati1987delay}, while
+bilateral-trade mechanism constraints limit full efficiency
+\citep{myerson1983bilateral}. Recent field evidence shows that incomplete-
+information bargaining can still concentrate around simple splits
+\citep{keniston2024splitting}. Among 192 selected completed
+complete-information deals, median captured surplus was 49.4\%, although only
+14\% lay in the 45--55\% band. Completion is selected, so this center does not
+establish a field preference or an equilibrium.
+
+\paragraph{Automated negotiation.}
+Time-, resource-, and behavior-dependent concession functions
+\citep{faratin1998negotiation}, incomplete-information agent strategies
+\citep{fatima2002optimal}, and opponent modeling
+\citep{jennings2001automated,baarslag2016opponent} motivate the agent's modular
+policy. Negotiating-agent competitions have long revealed that heterogeneous
+tactics and evaluation details matter \citep{baarslag2013anac}. Our additional
+problem is that a payoff is converted to a cell-specific rank before rating.
+
+\paragraph{Strategic communication and persuasion.}
+Cheap-talk models study how preference conflict coarsens credible information
+\citep{crawford1982strategic,farrell1996cheap}. Repetition can create credibility
+\citep{sobel1985credibility}, while long communication can expand equilibrium
+outcomes \citep{aumann2003long}. Bayesian persuasion instead grants
+commitment to a signal structure \citep{kamenica2011bayesian}. GLEE combines
+repetition, endogenous credibility, and parser-mediated language, closer to
+recent long-run persuasion and language-based persuasion agents
+\citep{best2024longrun,apel2022predicting,raifer2022automatic} than to any one
+canonical model.
+
+\paragraph{Language-model negotiation.}
+Recent benchmarks study multi-issue negotiation, price bargaining, tactics,
+and personality in LLM agents
+\citep{abdelnabi2023negotiation,bianchi2024arena,xia2024bargaining}. GLEE
+standardizes three economic families and a large configuration grid
+\citep{shapira2024glee}. Our final policy is deliberately LLM-free. The
+contribution is not a new language model, but a theory-guided policy and an
+audit method for what the agent actually transmitted.
+
+\paragraph{Empirical evaluation.}
+Empirical game-theoretic analysis treats simulator or field interaction as a
+way to estimate a reduced strategic game \citep{wellman2025egta}. Logged-policy
+evaluation can be unbiased when action propensities and support are valid
+\citep{li2011offline,dudik2014doubly}. Our negative results illustrate the
+failure of those assumptions under selected deals, unplayed asks, adaptive
+opponents, and stack mismatch. Precommitted looks follow the warning against
+ordinary A/B peeking \citep{johari2017peeking}; formal continuous monitoring
+would require adjusted sequential methods
+\citep{pocock1977group,howard2021confidence}.
+
+\section{Reproducibility, assets, and governance}
+\label{app:reproducibility}
+\label{app:governance}
+
+The draft is tied to the archived Agent 5 snapshot at 2026-08-29
+18:18:40 IST. Family ratings and lifetime game counts were bargaining
+2603.81/15,487, negotiation 2620.36/15,415, and persuasion 2344.79/15,481. The
+mean displayed rating was 2522.99. The process had zero active games and no
+runner at the bank. These values are a dated observational endpoint.
+
+The repository contains the deterministic family policies, runtime-flag
+helpers, reachability checks, public-grid simulator, local percentile model,
+tests, experiment ledger, and state snapshot. The general local CDF is a
+diagnostic approximation: bargaining pools roles and discount factors,
+negotiation omits opponent value and message state, and persuasion omits some
+knowledge and scale dimensions. An exact complete-information negotiation seed
+helper uses the full visible cell for its narrow score-floor purpose. Neither
+diagnostic should be described as the official opponent-adjusted scorer.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Draft artifact manifest. Paths are repository-relative.}
+\label{tab:manifest}
+\begin{tabularx}{\linewidth}{@{}p{4.1cm}Y@{}}
+\toprule
+Artifact & Purpose \\
+\midrule
+\path{glee_agent/strategies/bargaining.py} & Finite recursion, continuation, aspiration, and acceptance policy. \\
+\path{glee_agent/strategies/negotiation.py} & ZOPA, support, Boulware, hidden-value, and dynamic-stop policy. \\
+\path{glee_agent/strategies/persuasion.py} & Seller schedule, buyer posterior, parser gates, and credibility state. \\
+\path{scripts/check_reachability.py} & Eligible, fired, and final-action-change checks. \\
+\path{sim/percentile.py} & Local midrank diagnostic scorer. \\
+\path{.ai/FINDINGS.md} & Frozen measured facts, including negative results. \\
+\path{.ai/EXPERIMENTS.md} & Precommitted rules, cohorts, boundaries, and verdicts. \\
+\path{paper/data/agent5_rating_checkpoints.csv} & Authenticated rating checkpoints and line-level ledger provenance used by Figure~\ref{fig:evolution}. \\
+\path{paper/data/clone_checkpoint_deidentified.csv} & Deidentified 91-game arm, host-stratum, rating-change, and terminal-outcome table for the buyer-clone read. \\
+\path{paper/analysis/analyze_clone_checkpoint.py} & Reproduces pooled, host-standardized, and no-deal estimates and their stated normal intervals. \\
+\path{paper/figures/gen_fig_strategy_evolution.py} & Reproduces the main strategy-evolution and falsification figure. \\
+\path{paper/figures/gen_fig_audit_contract.py} & Reproduces Figure~\ref{fig:audit}. \\
+\path{paper/figures/gen_fig_rank_objective.py} & Reproduces Figure~\ref{fig:rank}. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The deidentified clone table removes game IDs, opponent names, values, prices,
+messages, and timestamps. It reproduces the reported outcome summaries but
+cannot re-audit hash assignment or source-to-wire joins. At the earlier read,
+14 of 36 newly added rows failed the strict live-turn join and were retained
+only after a deterministic match on host, dashboard minute, public setup,
+incoming price, returned action, and arm source. Their inclusion reduced the
+apparent lift from $+2.51$ to $+1.81$ rating/game. Rating and payoff were not
+join keys.
+
+The archive does not contain a complete manifest linking every final process
+ID to its loaded commit, start boundary, effective overlay hash, and joined
+server-action coverage. The repository is private at draft time, and private competition transcripts
+are not redistributed. Thus the draft does not claim open access to all data or
+code. A reproducibility package would need an anonymized code snapshot,
+environment lock, figure and table commands, a data-access statement, and
+derived non-identifying aggregates. At the draft freeze, the competition and
+development host was a 10-core Apple M4 MacBook Air with 24 GB memory, running
+macOS 26.5.1 on arm64 and Python 3.11.15. The final strategy ran with LLM mode
+off, used no model training, and used no GPU inference. An earlier development
+comparison did use LLM-generated persuasion wording, but its provider, model
+version, prompt procedure, and output-selection record were not preserved.
+Historical per-analysis
+wall time, peak memory, and total preliminary CPU use have not been
+reconstructed, so this is not a complete compute account.
+
+The authors did not recruit or instruct human participants. The official shared
+pool can, however, contain human opponents. The draft makes no individual-level
+human claim and withholds transcripts, but the authors should obtain an
+institutional or organizer determination about whether analysis of those
+interactions is exempt before submission. Strategic persuasion and bargaining
+policies also have clear dual-use potential. The present release should remain
+limited to a controlled benchmark until stronger safeguards and human-centered
+evaluation exist.

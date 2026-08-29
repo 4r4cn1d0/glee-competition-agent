@@ -3,6 +3,41 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-29 18:26 IST — New agent `The One & Only` launched on family-best composite
+
+The operator supplied and explicitly authorized deployment of a newly created
+agent (`f602813c-ea01-420e-9046-897153c60344`).  Read-only `/stats` validation
+proved the credential and a clean zero-game start.  The credential was passed
+only through hidden stdin into the child environment; it was not written to the
+repository, `.env`, process arguments, or logs.
+
+Because the repository supervisor and fleet controls support exactly five
+physical slots, this agent was launched as an isolated, bounded standalone
+runner rather than being coupled to an existing slot.  PID `5665` started at
+`18:26:14 IST` from workspace HEAD `24fc164` with policy `composite`, LLM off,
+concurrency 8, all three families, a 2-second poll interval, and a 3,600-second
+cooperative stop limit.  It writes only to its dedicated directory
+`logs/the_one_and_only`; `GLEE_PROBE` is deliberately unset, so existing slot
+banking and live overlays cannot affect it.  After the hour it must stop
+acquiring and drain every in-flight game naturally.
+
+The deterministic launch overlay copies every `GLEE_BARG_*` and `GLEE_NEGO_*`
+value from physical `composite` / Agent 5 and every `GLEE_PERS_*` value from
+physical `hardliner` / Test 2, plus the shared tracing/opponent settings.  All
+randomized `*_AB` flags were verified explicit zero.  The 81-key canonical
+overlay SHA-256 is
+`c1a68e6b0431c3598c67b975be1e8855464ecbc4d417dbc980fb2c04cb6d0d20`.
+This is an operator-requested observational family-winner assembly, not a
+causal claim that the cross-agent rating gaps arise from those overlays.
+
+Post-launch verification found PID `5665` alive with the exact composite /
+all-three-family command and the authenticated agent already holding one active
+game.  Existing fleet PIDs `86338`, `91615`, `93550`, and `96414` and their
+commands were byte-for-byte unchanged; `arms.json` was unchanged at
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+This standalone runner has no automatic restart or fleet bank control.  Do not
+launch a second process with the same credential or reuse its log directory.
+
 ## 2026-08-29 10:57 IST — Agent 5 started with Test 2's exact persuasion overlay
 
 The operator explicitly overrode the prior Agent-5 persuasion hold and asked to
@@ -4560,3 +4595,30 @@ At the final read in the negotiation task, the live Test 4 flag still read
 `1`; no rollback had occurred. The designated deployment task rejected the
 cross-task instruction as untrusted, and this negotiation task did not bypass
 the repository's deployment-ownership boundary or modify `arms.json`.
+
+### 2026-08-29 18:18 IST: Agent 5 final activity quotas completed and banked
+
+Agent 5 crossed into persuasion decay after its rolling 48-hour count reached
+85. One authenticated hourly tick applied at `18:00:43 IST`: persuasion fell
+from `2318.14` to `2317.39` with the lifetime game count unchanged at `15465`,
+exactly the rule's `(100 - 85) / 100 * 5 = 0.75` deduction.
+
+The operator's minimum-game close plan was then executed family by family
+through supported `scripts/fleet.py` launches, with LLM off and the existing
+hardliner strategy/flags unchanged. Persuasion-only PID `97751` completed 16
+games and banked at `15481 / 2344.79`, leaving 101 games in both the rolling
+24-hour and 48-hour windows. Bargaining-only PID `99651` completed 11 games and
+banked at `15487 / 2603.81`. Negotiation-only PID `2408` completed exactly 10
+games and banked at `15415 / 2620.36`. The two one-game overages were queue
+handoff/concurrency races; every in-flight game finished naturally and none
+was signalled or abandoned.
+
+At `18:18:40 IST` (`00:48:40 AoE`), physical slot `composite` was `BANKED`,
+had zero active games and no runner, and its authenticated family-rating mean
+was `2522.99`. The post-`00:00 AoE` final-day counts are bargaining 11,
+negotiation 10, and persuasion 16. Combined with the games surviving at the
+competition close, the projected close-window totals are B119/N121/P101 over
+48 hours and B11/N10/P16 over 24 hours. Therefore do not restart Agent 5 before
+the `2026-08-29 23:59:59 AoE` close unless authenticated counts contradict
+these frozen totals. The first reconstructed persuasion expiry is after the
+competition closes, at approximately `2026-08-30 18:28:23 IST`.
