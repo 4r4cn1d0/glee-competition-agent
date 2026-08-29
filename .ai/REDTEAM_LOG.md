@@ -870,3 +870,63 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-27 12:47Z — surface: the concession schedule and stall detection
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 15:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 18:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-27 21:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 00:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 03:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 06:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 09:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 12:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 15:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 18:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-28 21:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-29 00:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-29 03:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-29 06:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-29 09:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

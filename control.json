@@ -14,9 +14,9 @@
   "families": {
     "conceder": "bargaining,negotiation,persuasion",
     "champion": "bargaining,negotiation,persuasion",
-    "hardliner": "bargaining,persuasion",
-    "randomized": "bargaining,persuasion",
-    "composite": "bargaining,persuasion"
+    "hardliner": "bargaining,negotiation,persuasion",
+    "randomized": "bargaining,negotiation,persuasion",
+    "composite": "bargaining"
   },
   "llm": {
     "conceder": "off",
@@ -34,18 +34,18 @@
   "bank_observations": {
     "randomized": {
       "kind": "manual",
-      "ts": 1787766144.420578,
-      "pid": 52607
+      "ts": 1787933548.574406,
+      "pid": 55176
     },
     "hardliner": {
       "kind": "manual",
-      "ts": 1787773417.726725,
-      "pid": 11737
+      "ts": 1787869974.3377228,
+      "pid": 53973
     },
     "composite": {
       "kind": "manual",
-      "ts": 1787836573.8276322,
-      "pid": 8693
+      "ts": 1788007263.650941,
+      "pid": 99651
     }
   },
   "drain_now": [

@@ -3,6 +3,80 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-29 10:57 IST — Agent 5 started with Test 2's exact persuasion overlay
+
+The operator explicitly overrode the prior Agent-5 persuasion hold and asked to
+copy Test 2's persuasion onto physical `composite` and start it.  The preflight
+was a clean stopped boundary: no Agent-5 PID, authenticated `active_games=0`
+and `pending_games=0`, and persuasion baseline `2304.67 / 15,456` games
+(`bargaining 2589.21 / 15,468`, `negotiation 2621.38 / 15,396`).  No running
+game was interrupted.
+
+Supported fleet tooling made the minimal exact copy.  The 18 persuasion keys
+already shared with Test 2 were left untouched; only
+`GLEE_PERS_BUYER_TIGHT_CREDIBILITY_RESET_V1=1` and the explicit safety value
+`GLEE_PERS_SELLER_TERMINAL_PUSH_V1=0` were added to Agent 5.  Its persuasion
+dictionary now has the same canonical SHA-256 as Test 2,
+`9fa0fb417acb4c4e22568991aae2a064da7859e2901792c5d5375fd3c070e7c8`.
+Agent 5's non-persuasion overlay remained exactly
+`33c9a48838ac485f56aa1467a0c91c2faad9dd0a7979575eb27060569a7b2a83`;
+all ten persuasion A/B flags remain zero fleet-wide.  Raw post-write hashes are
+arms `07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`
+and control `fed21cd9c72ff843f69671e4515393cbeb159db4dbf44a74ac05ba6294662c7a`.
+
+Agent 5's families changed from `bargaining,negotiation` to
+`bargaining,negotiation,persuasion`; policy `hardliner`, LLM `off`, and all
+other slot state were preserved.  The supervisor naturally launched PID
+`27631` at `10:57:29 IST` from HEAD/origin `b54cb33` with the exact all-three
+family command and no signal or forced cycle.  Fresh heuristic-sourced turns
+were observed in all three families, beginning at `ts=1787981256.596627`; the
+first fresh persuasion action was a legal buyer `no` at
+`ts=1787981259.380439`, followed by legal `yes`/`no` decisions.  Fresh stats
+showed six active games and no launch/strategy error.  No natural credibility-
+reset firing had occurred at this freeze, so mechanism verification is still
+pending and efficacy is not claimed.
+
+This is an operator-directed promotion despite the Test-2 experiment lacking
+its precommitted efficacy verdict: the clean reset-only cohort ended at 1,086
+assignments / 79 affected games, short of the 2,000 / 80 final read, and later
+data were contaminated by a seller-terminal experiment.  Treat this Agent-5
+launch as a new prospective boundary.  The stored negotiation peak threshold
+`2720` and the existing one-shot bank latch were preserved exactly; because the
+latch is retained, the peak watcher is currently not re-armed for this run.
+
+## 2026-08-28 23:50 IST — Test 4 dynamic stop is wired correctly; live offers are score-blocked
+
+Read-only diagnosis after the operator questioned the absence of production
+fires found no deployment or reachability defect.  Test 4 is on healthy
+hardliner/all-three-family successor PID `63467`; the dynamic-stop flag resolves
+to `1`, the rejected score-floor flag resolves to explicit `0`, the required
+hotfix stack is valid, commit `fe7e435` is an ancestor of current HEAD, and
+1,729 post-boundary negotiation turns contain zero strategy/wire anomalies.
+The correct OFF-to-ON exact-stack reachability run (the live overlay had to be
+copied with this one flag set to zero for the control) passed `1,155 eligible /
+1,155 fired / 1,155 submitted actions changed` over 800 games.  The focused
+dynamic-stop/score-floor/round-97/late-stasis suite passes `115/115`.
+
+The prospective production census through this check retains all 194 Test 4
+negotiation assignments since `ts=1787934215`.  Eleven games entered the exact
+complete-information, explicitly unknown-horizon buyer/P2 cell.  Four reached
+ten wire-exact mutual-stasis cycles, but their best standing-offer seed ranks
+were only `.01818`, `.09821`, `.22807`, and `.26316`; therefore zero met the
+precommitted `.50` acceptance floor and zero should have fired.  The other seven
+target games either never completed ten exact cycles (five) or never supplied a
+legal profitable standing offer (two).  There is no state satisfying every
+condition without the gate.  Historical first-trigger incidence was only
+`21/389 = 5.40%` pooled and `6/109 = 5.50%` on Test 4, so seeing zero among the
+first 11 target games has probability about `.54` under either historical rate.
+
+Do not lower the `.50` floor merely to manufacture fires: the four blocked live
+offers would lock in bottom-quarter same-cell ranks, and the retrospective
+threshold grid found lower-rank bands mixed or harmful.  The existing heartbeat
+was updated without touching fleet state so it reports exact target, ten-cycle,
+score-blocked, and would-fire counts rather than the ambiguous phrase “fire
+pending.”  It must treat a ten-cycle rank below `.50` as a correct nonfire and
+alert only if all conditions pass without the action change.
+
 ## 2026-08-28 21:56 IST — Test 4 dynamic stop code-loaded and armed; first natural fire pending
 
 Commit `fe7e435` is pushed to `origin/main`. At `21:42:12 IST`, supported
