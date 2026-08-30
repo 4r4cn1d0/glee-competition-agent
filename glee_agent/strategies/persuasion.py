@@ -27,7 +27,7 @@ from __future__ import annotations
 import math
 import re
 
-from .. import runtime_flags
+from .. import grok_suppression, runtime_flags
 
 from ..actions import _num
 from ..text import (
@@ -2637,6 +2637,10 @@ def buyer_plan(game: dict, cfg) -> dict:
 
 
 def decide(game: dict, cfg) -> dict:
+    suppressed = grok_suppression.action(game)
+    if suppressed is not None:
+        return suppressed
+
     action_type = game["valid_actions"]["type"]
 
     if action_type in ("seller_message", "seller_recommendation"):

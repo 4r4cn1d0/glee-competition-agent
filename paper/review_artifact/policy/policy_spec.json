@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "scope": "Executable excerpts of selected disclosed deterministic branches",
+  "determinism_boundary": [
+    "visible request state",
+    "declared numerical assumptions",
+    "synthetic history supplied to the function"
+  ],
+  "owner_precedence": {
+    "bargaining": [
+      "player2_fixed_disclosed_12",
+      "generic_bargaining_reference"
+    ],
+    "negotiation": [
+      "one_round_seller",
+      "complete_disclosed_10_buyer",
+      "hidden_disclosed_10_terminal_bound",
+      "buyer_fallback_reference",
+      "seller_fallback_reference"
+    ],
+    "persuasion": [
+      "seller_value_or_history_rule",
+      "buyer_posterior_money_gate",
+      "buyer_credibility_adjustment",
+      "buyer_explicit_decline_veto"
+    ]
+  },
+  "declared_assumptions": {
+    "undisclosed_bargaining_horizon": 99,
+    "hidden_opponent_discount": 0.9,
+    "negotiation_assumed_horizon": 10,
+    "negotiation_deal_probability": 0.65,
+    "seller_concession_exponent": 2.0,
+    "price_tick": 0.01
+  },
+  "effective_generic_bargaining": {
+    "planning_order": [
+      "finite recursion with a 99-round hidden cap",
+      "realistic continuation and intermediate own-share floor",
+      "inflation-aware concession clock",
+      "opponent-share floor",
+      "eligible local-rank upward floor",
+      "wire coercion or legal fallback"
+    ],
+    "hidden_opponent_discount": 0.9,
+    "hidden_recursion_horizon": 99,
+    "inflation_clock": {
+      "formula": "ceil(log(0.05) / log(own_discount)) clamped to [4, 60]",
+      "patient_boundary": 60,
+      "cap": 60,
+      "reference_grid": {
+        "0.8": 14,
+        "0.9": 29,
+        "0.95": 59,
+        "1.0": 60
+      }
+    },
+    "intermediate_own_share_floor": 0.57,
+    "opponent_share_floor_before_rank": 0.39,
+    "local_rank_search": {
+      "share_minimum": 0.2,
+      "share_maximum": 0.95,
+      "share_step": 0.01,
+      "required_gain_over_continuation": 0.005,
+      "direction": "upward_floor_only"
+    },
+    "acceptance_order": [
+      "accept strictly positive payoff at a true terminal decision",
+      "reject nonpositive payoff before terminal",
+      "compare against 0.98 times realistic continuation",
+      "when eligible apply min(0.50, own_discount * 0.05 / (1 - own_discount))"
+    ],
+    "configured_floor_gain": 0.05,
+    "maximum_acceptance_share_floor": 0.5,
+    "realistic_continuation_multiplier": 0.98,
+    "absent_release_or_guard_layers": [
+      "broad discounted acceptance guard",
+      "observed-gain floor replacement",
+      "stonewall floor release",
+      "high-share delay"
+    ],
+    "wire_semantics": {
+      "generic_integer_pot": "round own gain to whole units and derive the other gain as the exact residual",
+      "fixed_player2_exception": "preserve the structurally verified one-cent terminal offer",
+      "invalid_action": "return a legal family fallback"
+    }
+  },
+  "effective_generic_negotiation": {
+    "whole_policy_owner_order": [
+      "one-round seller structural owner",
+      "complete disclosed-10 buyer structural owner",
+      "hidden disclosed-10 terminal conditional-bound owner",
+      "selected deterministic buyer path",
+      "generic seller fallback",
+      "seller message-only rewrite",
+      "numeric postguards unless a direct wire is exempt"
+    ],
+    "fallback_decision_order": [
+      "true-terminal strictly profitable acceptance",
+      "dead-game walk condition",
+      "visible-span 0.48 acceptance veto",
+      "configured but shadowed 0.60 final-proposer option",
+      "hidden acceptance table",
+      "stall acceptance",
+      "0.65 continuation-value acceptance",
+      "profitable-side counter"
+    ],
+    "seller_price_pipeline": {
+      "boulware_exponent": 2.0,
+      "visible_zopa_opponent_share": 0.39,
+      "minimum_margin": 0.02,
+      "outgoing_visible_span_floor": 0.4,
+      "complete_first_outgoing_share_postguard": 0.95,
+      "complete_later_wire_share_floor": 0.8,
+      "cent_rounding": 0.01
+    },
+    "acceptance_parameters": {
+      "visible_span_veto": 0.48,
+      "continuation_deal_probability": 0.65
+    },
+    "configured_but_shadowed": [
+      {
+        "component": "final_proposer_option",
+        "value": 0.6,
+        "scope": "supported submitted whole-policy paths"
+      },
+      {
+        "component": "generic_visible_terminal_ultimatum",
+        "value": 0.8,
+        "scope": "supported submitted whole-policy paths"
+      }
+    ],
+    "active_complete_information_postguards": {
+      "first_outgoing_share": 0.95,
+      "later_wire_share_floor": 0.8
+    },
+    "direct_wire_exemption": "structural and exact deterministic wires bypass generic numeric postguards",
+    "fallback_semantics": "prices are nonnegative and rounded to cents; unrepairable actions use a legal family fallback"
+  },
+  "disclosed_policy_excerpts": {
+    "player2_offer_shares_before_terminal": [0.61, 0.68, 0.74, 0.82, 0.91],
+    "player2_discount": 0.95,
+    "player2_disclosed_horizon": 12,
+    "complete_10_buyer_visible_surplus_share": 0.994,
+    "hidden_one_round_cost_support": [0.8, 1.0, 1.2, 1.5],
+    "hidden_one_round_asks_at_unit_scale": [1.19, 1.19, 1.49, 2.0],
+    "hidden_buyer_value_support": [0.8, 1.0, 1.2, 1.5],
+    "persuasion_unknown_value_buy_rate_cutoff": 0.5,
+    "persuasion_high_message_error": 0.02,
+    "persuasion_low_recommendation_grid": [0.0, 0.125, 0.25, 0.5, 0.75, 1.0]
+  },
+  "excluded_from_reference": [
+    "production routing and coercion",
+    "fitted production tables",
+    "runtime overlays",
+    "dormant experimental branches",
+    "message parsing implementation",
+    "service interaction"
+  ]
+}

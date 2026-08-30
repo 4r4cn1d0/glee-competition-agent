@@ -1,0 +1,72 @@
+{
+  "schema_version": "2.0",
+  "review_id": "GLEE-IAB-AUTHOR-REVIEW-2026-08-30",
+  "material": {
+    "status": "unpublished_confidential",
+    "contains_personal_or_sensitive_data": false
+  },
+  "authorization": {
+    "basis": "author_request",
+    "documented": true,
+    "local_processing_authorized": true,
+    "external_processing_authorized": false
+  },
+  "reviewer": {
+    "capacity": "author_requested_reader",
+    "human_accountable": true,
+    "competence_areas": [
+      "agent_evaluation",
+      "game_theory",
+      "statistical_inference",
+      "competition_papers",
+      "scientific_writing"
+    ],
+    "competence_limits": [
+      "This is an author-side local review, not an official venue review.",
+      "The panel cannot predict the organizers' award decision.",
+      "Institutional human-participant status requires a qualified human determination."
+    ],
+    "conflict_status": "none_identified",
+    "conflicts": []
+  },
+  "venue_policy": {
+    "checked": true,
+    "peer_review_model": "single_anonymized",
+    "confidential_editor_notes_supported": false
+  },
+  "ai_use": {
+    "policy": "permitted_with_disclosure",
+    "planned": "approved_ai_assistance",
+    "permission_confirmed": true,
+    "disclosure_planned": true
+  },
+  "handling": {
+    "local_only": true,
+    "external_service_use": false,
+    "data_reuse_permitted": false,
+    "retention_rule": "retain_per_venue_policy",
+    "deletion_or_retention_record_planned": true
+  },
+  "scope": {
+    "manuscript_type": "competition_report",
+    "requested_focus": [
+      "abstract_context",
+      "conclusion_significance",
+      "competition_track_fit",
+      "award_competitiveness",
+      "claim_evidence_alignment",
+      "methods",
+      "statistics",
+      "theory",
+      "agent_behavior_analysis",
+      "ethics"
+    ],
+    "out_of_scope": [
+      "official_editorial_decision",
+      "unverified_competition_result"
+    ],
+    "specialist_review_needed": [
+      "human_participant_compliance"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "catalog_reviewed_on": "2026-07-23",
+  "coverage": null,
+  "errors": [],
+  "notice": "Guideline selection and checklist coverage concern reporting completeness only. They are not scores and do not establish study quality, validity, conduct, or manuscript merit. Check the official guideline, applicable extensions, and target venue policy.",
+  "profile_id": "GLEE-COMPETITION-CASE-STUDY",
+  "schema_version": "2.0",
+  "selected_guidelines": [
+    {
+      "category": "reporting_guideline",
+      "id": "CONSORT-2025",
+      "name": "CONSORT",
+      "notes": "Supersedes CONSORT 2010. Check design-specific extensions; CONSORT is not a quality assessment instrument.",
+      "status": "current",
+      "url": "https://www.consort-spirit.org/",
+      "version": "2025"
+    }
+  ],
+  "status": "VALID",
+  "valid": true,
+  "warnings": []
+}

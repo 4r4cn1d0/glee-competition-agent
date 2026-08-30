@@ -1,0 +1,14 @@
+measure,estimate,unit,sample_size,lower,upper,status
+narrow_bargaining_agreement_rate,0.92,proportion,25,,,selected_live_sample
+narrow_bargaining_changed_actions,153,count,153,,,reached_action_audit
+negotiation_owner_reach,6188,count,6188,,,simulation
+negotiation_changed_actions,3274,count,6188,,,simulation
+preclose_parser_strict_miss_purchase_rate,1.0,proportion,4,,,audited_preclose_subcohort
+preclose_parser_low_outcome_rate,1.0,proportion,4,,,audited_preclose_subcohort
+broad_bargaining_floor_seed_1,-0.0012,diagnostic_percentile,1,,,negative_diagnostic
+broad_bargaining_floor_seed_2,-0.0013,diagnostic_percentile,1,,,negative_diagnostic
+broad_bargaining_floor_seed_3,-0.0006,diagnostic_percentile,1,,,negative_diagnostic
+faster_seller_concession_seed_1,-0.0166,diagnostic_percentile,1,,,invalidated_diagnostic_sign_unresolved
+faster_seller_concession_seed_2,-0.0182,diagnostic_percentile,1,,,invalidated_diagnostic_sign_unresolved
+clone_rating_difference,0.869101,rating_per_game,91,-0.730366,2.468567,repeated_look_descriptive
+clone_no_deal_difference,6.141,percentage_points,91,-11.977,24.259,repeated_look_descriptive

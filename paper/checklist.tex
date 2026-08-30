@@ -5,7 +5,7 @@
 \item {\bf Claims}
     \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The abstract and Sections~\ref{sec:introduction}--\ref{sec:limitations} state the contribution as an objective-aware design and audit, and distinguish formal results, observations, retrospective estimates, and counterfactual hypotheses.
+    \item[] Justification: The abstract and Sections~\ref{sec:introduction}--\ref{sec:competition} state the contribution as a rank-aware case study and returned-action audit, and distinguish identities, live descriptions, simulations, retrospective diagnostics, and causal claims.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the abstract and introduction do not include the claims made in the paper.
@@ -17,7 +17,7 @@
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:limitations} and Appendix~\ref{app:identification} discuss incomplete observability, selection bias, private data, limited causal identification, and the scope of the competition-specific conclusions.
+    \item[] Justification: Sections~\ref{sec:behavior} and~\ref{sec:competition} discuss incomplete execution provenance, adaptive best-of-five selection, private data, limited causal identification, an unreproduced replay, dual-use risks, and competition-specific scope.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper has no limitation while the answer \answerNo{} means that the paper has limitations, but those are not discussed in the paper.
@@ -33,7 +33,7 @@
 \item {\bf Theory assumptions and proofs}
     \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:objective} states the assumptions behind the main objective result. Appendices~\ref{app:objective}--\ref{app:persuasion} give numbered statements, complete assumptions, proofs, and explicit boundaries between theorems and heuristics.
+    \item[] Justification: Section~\ref{sec:introduction} states every condition for the one-step rating identity and derives the two-outcome terminal rank expression. Equation~\ref{eq:hidden-seller} is a declared finite construction, and Section~\ref{sec:strategy} labels the remaining game-theoretic rules as benchmarks or heuristics rather than theorems.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include theoretical results.
@@ -47,7 +47,7 @@
     \item {\bf Experimental result reproducibility}
     \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
     \item[] Answer: \answerNo{}
-    \item[] Justification: Appendices~\ref{app:experiments} and~\ref{app:reproducibility} disclose the estimands, assignment unit, reachability checks, evidence labels, and snapshot, but the competition transcripts and complete frozen analysis artifacts cannot currently be released.
+    \item[] Justification: Sections~\ref{sec:behavior} and~\ref{sec:competition} disclose denominators, evidence classes, and the main missing provenance. A prepared narrow bundle verifies selected arithmetic and synthetic policy fixtures, but it is not production-equivalent, is not yet available through an approved review channel, and cannot replay private interactions.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -67,7 +67,7 @@
 \item {\bf Open access to data and code}
     \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
     \item[] Answer: \answerNo{}
-    \item[] Justification: The implementation repository and raw competition transcripts are private at draft time. Appendix~\ref{app:reproducibility} specifies which evidence remains independently unverifiable and what should accompany a camera-ready release if permissions allow.
+    \item[] Justification: The working repository and verification bundle are private at submission. A sanitized production-equivalent camera-ready release is planned but remains conditional on licensing, data-use permission, and privacy review; raw transcripts, identities, credentials, and operational controls will remain withheld.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that paper does not include experiments requiring code.
@@ -84,7 +84,7 @@
 \item {\bf Experimental setting/details}
     \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?
     \item[] Answer: \answerNo{}
-    \item[] Justification: Section~\ref{sec:evidence} and Appendices~\ref{app:experiments}--\ref{app:ledger} report assignment units, cohorts, sample counts, and evidence status, but some historical seeds, resample counts, clustering choices, assignment details, and process-to-commit records were not preserved.
+    \item[] Justification: Sections~\ref{sec:behavior}--\ref{sec:competition} report assignment units, cohorts, sample counts, and evidence status, but some historical seeds, resampling recipes, assignment details, and process-to-commit-to-server records were not preserved.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -95,7 +95,7 @@
 \item {\bf Experiment statistical significance}
     \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
     \item[] Answer: \answerNo{}
-    \item[] Justification: The reported intervals are nominal game-bootstrap summaries conditional on selected rules and corpora. The archived analyses do not preserve every resample count, seed, clustering choice, or correction for policy and threshold search, so the draft does not claim confirmatory 95\% coverage.
+    \item[] Justification: The clone interval is a nominal unadjusted normal interval after two looks, not a confirmatory confidence interval. The archived replay lacks a preserved resampling recipe, so the core reports only its unreproduced direction reversal.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -112,7 +112,7 @@
 \item {\bf Experiments compute resources}
     \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
     \item[] Answer: \answerNo{}
-    \item[] Justification: Appendix~\ref{app:reproducibility} reports the available host, memory, operating-system, architecture, Python, and zero-training/GPU facts. Historical per-analysis wall time, peak memory, and total exploratory CPU use were not preserved for the full competition period.
+    \item[] Justification: The submitted policy required no model training or inference-time LLM call, but this four-page report does not provide host, memory, per-analysis wall time, peak memory, or total exploratory CPU use for the competition period.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -124,7 +124,7 @@
 \item {\bf Code of ethics}
     \item[] Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics \url{https://neurips.cc/public/EthicsGuidelines}?
     \item[] Answer: \answerNo{}
-    \item[] Justification: The work withholds transcripts and reports no opponent identities or participant-level claims, but the shared pool may include humans and the required institutional classification has not yet been obtained. This draft must not be submitted until that review is resolved; see Appendix~\ref{app:governance}.
+    \item[] Justification: The work withholds transcripts and reports no opponent identities or participant-level claims, but the shared pool may include humans and the required organizer or institutional determination has not yet been obtained. This draft must not be submitted until that review is resolved.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the authors have not reviewed the NeurIPS Code of Ethics.
@@ -136,7 +136,7 @@
 \item {\bf Broader impacts}
     \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
     \item[] Answer: \answerYes{}
-    \item[] Justification: Section~\ref{sec:limitations} discusses the value of auditable strategic agents and the risks of transferring rank-optimizing heuristics to real bargaining, persuasion, or human-facing settings.
+    \item[] Justification: Section~\ref{sec:competition} discusses the value of auditable strategic agents and names risks from manipulative persuasion, human-opponent exploitation, imitation, and transfer beyond the benchmark.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that there is no societal impact of the work performed.
@@ -178,7 +178,7 @@
 \item {\bf New assets}
     \item[] Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
     \item[] Answer: \answerNA{}
-    \item[] Justification: No new public dataset, model, or code asset is released with this draft.
+    \item[] Justification: No new public dataset, model, or code asset is released with this draft. The planned camera-ready artifact will include licenses and a data-access statement.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not release new assets.
@@ -190,7 +190,7 @@
 \item {\bf Crowdsourcing and research with human subjects}
     \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?
     \item[] Answer: \answerNo{}
-    \item[] Justification: The authors did not recruit, instruct, or compensate participants, but the shared opponent pool may include humans. Organizer authorization and the applicable institutional classification for this secondary analysis remain unresolved; see Appendix~\ref{app:governance}.
+    \item[] Justification: The authors did not recruit, instruct, or compensate participants, but the shared opponent pool may include humans. Organizer authorization and the applicable institutional classification for this secondary analysis remain unresolved.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not involve crowdsourcing nor research with human subjects.

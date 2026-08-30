@@ -1,0 +1,4 @@
+family,start_utc,end_utc,games,role_1,role_1_games,role_2,role_2_games,terminal_summary,recorded_action_summary,own_action_records,logged_errors
+bargaining,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,19,Alice,9,Bob,10,19 agreements,49 offers; 40 rejects; 8 accepts,97,0
+negotiation,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,19,seller,10,buyer,9,13 agreements; 3 walks; 3 no-deals,10 initial offers; 171 rejects or counters; 7 accepts; 2 own walks,190,0
+persuasion,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,25,seller,11,buyer,14,25 completed games,buyer yes/no 233/47; binary seller recommendation yes/no 50/30; text seller message yes/no 108/32,500,0

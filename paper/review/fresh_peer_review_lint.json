@@ -1,0 +1,129 @@
+{
+  "channel_separation": {
+    "author_before_editor": true,
+    "author_heading_count": 1,
+    "editor_heading_count": 1
+  },
+  "comments": [
+    {
+      "comment_id": "M1",
+      "empty_fields": [],
+      "heading_line": 40,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M2",
+      "empty_fields": [],
+      "heading_line": 50,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M3",
+      "empty_fields": [],
+      "heading_line": 60,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M4",
+      "empty_fields": [],
+      "heading_line": 70,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M5",
+      "empty_fields": [],
+      "heading_line": 80,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M6",
+      "empty_fields": [],
+      "heading_line": 90,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M7",
+      "empty_fields": [],
+      "heading_line": 100,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "M8",
+      "empty_fields": [],
+      "heading_line": 110,
+      "kind": "major",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m1",
+      "empty_fields": [],
+      "heading_line": 122,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m2",
+      "empty_fields": [],
+      "heading_line": 132,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m3",
+      "empty_fields": [],
+      "heading_line": 142,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m4",
+      "empty_fields": [],
+      "heading_line": 152,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m5",
+      "empty_fields": [],
+      "heading_line": 162,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m6",
+      "empty_fields": [],
+      "heading_line": 172,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m7",
+      "empty_fields": [],
+      "heading_line": 182,
+      "kind": "minor",
+      "missing_fields": []
+    },
+    {
+      "comment_id": "m8",
+      "empty_fields": [],
+      "heading_line": 192,
+      "kind": "minor",
+      "missing_fields": []
+    }
+  ],
+  "errors": [],
+  "line_count": 237,
+  "notice": "This deterministic lint uses structural and lexical rules. It does not judge scientific validity, verify whether statements are true, or replace accountable human review. Findings contain line numbers and rule IDs, not review or manuscript text.",
+  "schema_version": "2.0",
+  "status": "READY_FOR_HUMAN_REVIEW",
+  "structured_comment_count": 16,
+  "valid": true,
+  "warnings": []
+}

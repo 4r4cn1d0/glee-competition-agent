@@ -19,7 +19,7 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 
 HERE = Path(__file__).resolve().parent
-DATA = HERE.parent / "data" / "agent5_rating_checkpoints.csv"
+DATA = HERE.parent / "data" / "submitted_agent_rating_checkpoints.csv"
 
 BLUE = "#4C72B0"
 ORANGE = "#DD8452"
@@ -102,12 +102,23 @@ def draw_rating_panel(ax, rows):
     )
 
     ax.annotate(
-        "Final bank\n2603.81 / 2620.36 / 2344.79",
+        "Pre-close bank\n2603.81 / 2620.36 / 2344.79",
         xy=(datetime(2026, 8, 29, 18, 18), 2620.36),
-        xytext=(datetime(2026, 8, 28, 16, 0), 2435),
+        xytext=(datetime(2026, 8, 28, 12, 0), 2435),
         fontsize=6.7,
         ha="center",
         va="top",
+        color="#333333",
+        arrowprops=dict(arrowstyle="->", color=GRAY, linewidth=0.65),
+        bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.82),
+    )
+    ax.annotate(
+        "Official close\n2804.82 / 2620.36 / 2344.87",
+        xy=(datetime(2026, 8, 30, 17, 31), 2804.82),
+        xytext=(datetime(2026, 8, 30, 0, 0), 2880),
+        fontsize=6.7,
+        ha="center",
+        va="bottom",
         color="#333333",
         arrowprops=dict(arrowstyle="->", color=GRAY, linewidth=0.65),
         bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.82),
@@ -122,7 +133,7 @@ def draw_rating_panel(ax, rows):
     ax.text(
         0.0,
         1.07,
-        "(a) Dated Agent 5 snapshots",
+        "(a) Dated submitted-agent snapshots",
         transform=ax.transAxes,
         fontsize=8.2,
         fontweight="bold",
@@ -160,7 +171,7 @@ def draw_audit_panel(ax):
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.text(0.0, 1.03, "(b) Positive-looking claims after full audit", fontsize=8.2, fontweight="bold", ha="left")
+    ax.text(0.0, 1.03, "(b) Claims and measurements after full audit", fontsize=8.2, fontweight="bold", ha="left")
     ax.text(0.02, 0.91, "Initial estimate", fontsize=7, fontweight="bold", color=GRAY)
     ax.text(0.59, 0.91, "Corrected status", fontsize=7, fontweight="bold", color=GRAY)
 
@@ -188,9 +199,9 @@ def draw_audit_panel(ax):
         ),
         (
             0.02,
-            "11,737 missing finals\ncoded as low-rank losses",
-            "UNRESOLVED",
-            "Reader fixed; analyses reopened",
+            "11,737 outstanding in\nstopped collector snapshot",
+            "NOT A FLEET TOTAL",
+            "Cold omissions kept unresolved;\nanalyses reopened",
             BLUE,
         ),
     ]

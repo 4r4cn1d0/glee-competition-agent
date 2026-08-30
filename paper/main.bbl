@@ -1,4 +1,4 @@
-\begin{thebibliography}{39}
+\begin{thebibliography}{46}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -90,6 +90,12 @@ Kalyan Chatterjee and William Samuelson.
 \newblock \emph{Operations Research}, 31\penalty0 (5):\penalty0 835--851, 1983.
 \newblock \doi{10.1287/opre.31.5.835}.
 
+\bibitem[Chen et~al.(2026)Chen, Sun, Zhang, Xu, and Shi]{chen2026trajectory}
+Jing Chen, Yang Sun, Li~Zhang, Lin Xu, and Jie Shi.
+\newblock Long-horizon agent trajectory attribution: A unified benchmark and
+  fine-grained annotation framework, 2026.
+\newblock URL \url{https://arxiv.org/abs/2608.06909v1}.
+
 \bibitem[Cl{\'e}men\c{c}on et~al.(2008)Cl{\'e}men\c{c}on, Lugosi, and
   Vayatis]{clemencon2008ranking}
 St{\'e}phan Cl{\'e}men\c{c}on, G{\'a}bor Lugosi, and Nicolas Vayatis.
@@ -147,10 +153,18 @@ Drew Fudenberg and David~K. Levine.
 \newblock \emph{Econometrica}, 57\penalty0 (4):\penalty0 759--778, 1989.
 \newblock \doi{10.2307/1913771}.
 
-\bibitem[{GLEE Competition Organizing Team}(2026)]{gleecompetition2026}
+\bibitem[{GLEE Competition Organizing Team}(2026{\natexlab{a}})]{gleecall2026}
+{GLEE Competition Organizing Team}.
+\newblock Call for competition papers.
+\newblock \url{https://glee-competition.com/call-for-papers},
+  2026{\natexlab{a}}.
+\newblock Accessed 2026-08-30.
+
+\bibitem[{GLEE Competition Organizing
+  Team}(2026{\natexlab{b}})]{gleecompetition2026}
 {GLEE Competition Organizing Team}.
 \newblock {GLEE Competition}: Rules and scoring.
-\newblock \url{https://glee-competition.com/docs}, 2026.
+\newblock \url{https://glee-competition.com/docs}, 2026{\natexlab{b}}.
 \newblock Accessed 2026-08-30.
 
 \bibitem[Howard et~al.(2021)Howard, Ramdas, McAuliffe, and
@@ -168,6 +182,13 @@ Nicholas~R. Jennings, Peyman Faratin, Alessio~R. Lomuscio, Simon Parsons,
 \newblock \emph{Group Decision and Negotiation}, 10\penalty0 (2):\penalty0
   199--215, 2001.
 \newblock \doi{10.1023/A:1008746126376}.
+
+\bibitem[Jiang and Li(2016)]{jiang2016doubly}
+Nan Jiang and Lihong Li.
+\newblock Doubly robust off-policy value evaluation for reinforcement learning.
+\newblock In \emph{Proceedings of the 33rd International Conference on Machine
+  Learning}, volume~48, pages 652--661. PMLR, 2016.
+\newblock URL \url{https://proceedings.mlr.press/v48/jiang16.html}.
 
 \bibitem[Johari et~al.(2017)Johari, Koomen, Pekelis, and
   Walsh]{johari2017peeking}
@@ -215,6 +236,15 @@ Lihong Li, Wei Chu, John Langford, and Xuanhui Wang.
 \newblock In \emph{Proceedings of the Fourth ACM International Conference on
   Web Search and Data Mining}, pages 297--306, 2011.
 \newblock \doi{10.1145/1935826.1935878}.
+
+\bibitem[Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He]{ma2024agentboard}
+Chang Ma, Junlei Zhang, Zhihao Zhu, Cheng Yang, Yujiu Yang, Yaohui Jin,
+  Zhenzhong Lan, Lingpeng Kong, and Junxian He.
+\newblock {AgentBoard}: An analytical evaluation board of multi-turn {LLM}
+  agents.
+\newblock In \emph{Advances in Neural Information Processing Systems 37}, 2024.
+\newblock \doi{10.52202/079017-2365}.
 
 \bibitem[Mann and Whitney(1947)]{mann1947test}
 H.~B. Mann and D.~R. Whitney.
@@ -269,13 +299,25 @@ Ariel Rubinstein.
 \newblock \emph{Econometrica}, 50\penalty0 (1):\penalty0 97--109, 1982.
 \newblock \doi{10.2307/1912531}.
 
+\bibitem[Seyedghorban et~al.(2026)Seyedghorban, Klimov, van Deursen,
+  Panichella, and Kulahcioglu~Ozkan]{seyedghorban2026observability}
+Zahra Seyedghorban, Egor Klimov, Arie van Deursen, Annibale Panichella, and
+  Burcu Kulahcioglu~Ozkan.
+\newblock Observability and fault injection for {LLM}-based multi-agent systems
+  in software engineering.
+\newblock In \emph{2026 IEEE Conference on Software Testing, Verification and
+  Validation}, 2026.
+\newblock \doi{10.1109/ICST69053.2026.00037}.
+\newblock URL \url{https://arxiv.org/abs/2608.24271v1}.
+
 \bibitem[Shapira et~al.(2024)Shapira, Madmon, Reinman, Amouyal, Reichart, and
   Tennenholtz]{shapira2024glee}
 Eilam Shapira, Omer Madmon, Itamar Reinman, Samuel~Joseph Amouyal, Roi
   Reichart, and Moshe Tennenholtz.
 \newblock {GLEE}: A unified framework and benchmark for language-based economic
   environments, 2024.
-\newblock URL \url{https://arxiv.org/abs/2410.05254}.
+\newblock URL \url{https://arxiv.org/abs/2410.05254v3}.
+\newblock Version 3, revised 2 March 2026.
 
 \bibitem[Sobel(1985)]{sobel1985credibility}
 Joel Sobel.
@@ -298,5 +340,18 @@ Tian Xia, Zhiwei He, Tong Ren, Yibo Miao, Zhuosheng Zhang, Yang Yang, and Rui
 \newblock Measuring bargaining abilities of {LLM}s: A benchmark and a
   buyer-enhancement method, 2024.
 \newblock URL \url{https://arxiv.org/abs/2402.15813}.
+
+\bibitem[Zhang et~al.(2025)Zhang, Wang, Chen, Zhou, Wang, and
+  Yan]{zhang2025agentracer}
+Guibin Zhang, Junhao Wang, Junjie Chen, Wangchunshu Zhou, Kun Wang, and
+  Shuicheng Yan.
+\newblock {AgenTracer}: Who is inducing failure in the {LLM} agentic systems?,
+  2025.
+\newblock URL \url{https://arxiv.org/abs/2509.03312v2}.
+
+\bibitem[Zhou et~al.(2026)Zhou, Liu, Li, Rossi, and Hu]{zhou2026cta}
+Xiaolin Zhou, Jinbo Liu, Li~Li, Ryan~A. Rossi, and Xiyang Hu.
+\newblock Counterfactual trace auditing of {LLM} agent skills, 2026.
+\newblock URL \url{https://arxiv.org/abs/2605.11946v2}.
 
 \end{thebibliography}

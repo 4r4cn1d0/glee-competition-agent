@@ -1,0 +1,4 @@
+slice,buyer_role_games,seller_role_games,buyer_decisions,text_games,text_decisions,binary_games,binary_decisions,v1_negative_turns,strict_miss_turns,strict_miss_games,purchased_strict_miss_turns,purchased_strict_miss_games,passed_strict_miss_turns,low_purchased_outcomes,high_purchased_outcomes,missing_purchased_outcomes
+frozen_forensic,1464,1432,29280,745,14900,719,14380,3069,146,33,40,21,106,40,0,0
+post_change_complete,1533,1501,30660,778,15560,755,15100,3132,150,34,44,22,106,44,0,0
+preclose_final_policy_subcohort,14,11,280,4,80,10,200,2,4,1,4,1,0,4,0,0

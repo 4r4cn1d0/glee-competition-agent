@@ -1,0 +1,6 @@
+window,start_utc,end_utc,family,joined_games,rated_games,timeouts,role_1,role_1_games,role_2,role_2_games,terminal_summary,recorded_action_summary,own_action_records,logged_errors,provenance
+preclose,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,bargaining,19,19,0,Alice,9,Bob,10,19 agreements,49 offers; 40 rejects; 8 accepts,97,0,paper/data/final_policy_era_census.csv
+preclose,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,negotiation,19,19,0,seller,10,buyer,9,13 agreements; 3 walks; 3 no-deals,10 initial offers; 171 rejects or counters; 7 accepts; 2 own walks,190,0,paper/data/final_policy_era_census.csv
+preclose,2026-08-29T05:27:36.596627Z,2026-08-29T12:48:08.480754Z,persuasion,25,25,0,seller,11,buyer,14,25 completed games,buyer yes/no 233/47; seller positive/negative 158/62,500,0,paper/data/final_policy_era_census.csv
+close,2026-08-30T11:08:31.586000Z,2026-08-30T11:59:57.872000Z,bargaining,152,152,0,Alice,80,Bob,72,152 agreements,454 offers; 374 rejects; 76 accepts,904,0,.ai/HANDOFF.md close-window census and canonical local joins
+close,2026-08-30T11:08:31.586000Z,2026-08-30T11:59:57.872000Z,persuasion,30,29,1,seller,11,buyer,19,29 completed games; 1 timeout,buyer yes/no 223/154; seller positive/negative 158/62,597,0,.ai/HANDOFF.md close-window census and canonical local joins

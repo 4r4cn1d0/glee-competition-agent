@@ -1,0 +1,36 @@
+stable_id,record,source_location,inclusion_category,reach,live,staged_only,disposition,evidence_reference
+REG-001,complete-unknown-buyer-dynamic-stop-v1 development profile,.ai/EXPERIMENTS.md:3-69,duplicate design and live headings collapsed,1,1,0,N,.ai/EXPERIMENTS.md:40-43
+REG-002,seller-positive-pass-streak-truth-v1 development profile stage 1,.ai/EXPERIMENTS.md:71-240,named candidate,1,1,0,N,.ai/EXPERIMENTS.md:138-146
+REG-003,direct-decline-safety-v1 development-profile replication,.ai/EXPERIMENTS.md:71-89 and 242-340,separately enrolled replication,1,1,0,N,.ai/EXPERIMENTS.md:272-278
+REG-004,seller-terminal-push-v1 development profile,.ai/EXPERIMENTS.md:341-434,named candidate,1,1,0,S,.ai/EXPERIMENTS.md:341-355 and 387-394
+REG-005,tight-credibility-reset-v1 development profile,.ai/EXPERIMENTS.md:395-402 and 435-525,initial cohort and retained mechanism collapsed,1,1,0,N,.ai/EXPERIMENTS.md:435-450 and 474-479
+REG-006,direct-decline-safety-v1 development profile,.ai/EXPERIMENTS.md:527-618,original-profile cohort,1,1,0,N,.ai/EXPERIMENTS.md:527-545 and 580-585
+REG-007,adaptive-credibility-v1 development profile,.ai/EXPERIMENTS.md:619-730,composite candidate profile,1,0,0,S,.ai/EXPERIMENTS.md:619-629 and 653-683
+REG-008,strict-edge challenger development profile,.ai/EXPERIMENTS.md:732-744,one named composite cohort,1,1,0,S,.ai/EXPERIMENTS.md:732-744 and .ai/HANDOFF.md:4021-4056
+REG-009,complete-information unknown-horizon late stasis,.ai/EXPERIMENTS.md:746-771,named candidate,1,0,0,N,.ai/EXPERIMENTS.md:762-765
+REG-010,bargaining high-share delay guard submitted agent,.ai/EXPERIMENTS.md:773-843,named deterministic candidate,1,1,0,A,.ai/EXPERIMENTS.md:795-810 and .ai/HANDOFF.md:306-318
+REG-011,deterministic negotiation leader replica development profile,.ai/EXPERIMENTS.md:844-888,named deterministic candidate lineage,1,1,0,N,.ai/EXPERIMENTS.md:844-888
+REG-012,first-principles terminal cells development profile,.ai/EXPERIMENTS.md:890-915,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:899-915
+REG-013,surplus-share response probe,.ai/EXPERIMENTS.md:917-930,named randomized candidate,1,1,0,A,.ai/EXPERIMENTS.md:917-930 and .ai/HANDOFF.md:2820-2826
+REG-014,seller-message parser v2,.ai/EXPERIMENTS.md:917 and 931-937,historical candidate,0,0,0,N,.ai/EXPERIMENTS.md:931-937
+REG-015,hidden unknown-horizon first-offer greed probe,.ai/EXPERIMENTS.md:939-980,named three-arm candidate,1,1,0,S,.ai/EXPERIMENTS.md:964-974
+REG-016,hidden cap-10 buyer-1.2 terminal counter,.ai/EXPERIMENTS.md:982-1021,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1009-1018
+REG-017,broad direct-leader hidden cap-10 buyer trajectory,.ai/EXPERIMENTS.md:1023-1070,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1059-1070
+REG-018,top-four or five observable negotiation behavior buyer only,.ai/EXPERIMENTS.md:1072-1184,named randomized broad clone,1,1,0,S,.ai/EXPERIMENTS.md:1132-1184
+REG-019,hidden-information cap-10 buyer leader clone,.ai/EXPERIMENTS.md:1186-1261,same-salt rearm epochs collapsed,1,1,0,S,.ai/EXPERIMENTS.md:1226-1243
+REG-020,anonymized-leader hidden unknown-horizon buyer trajectory clone,.ai/EXPERIMENTS.md:1262-1328,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1286-1292 and .ai/HANDOFF.md:3397-3422
+REG-021,direct-leader hidden unknown-horizon opening copy,.ai/EXPERIMENTS.md:1329-1378,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1361-1376
+REG-022,hidden unknown-horizon 95-percent-share support ladder,.ai/EXPERIMENTS.md:1379-1390,named randomized candidate,1,0,0,A,.ai/EXPERIMENTS.md:1381-1389 and .ai/HANDOFF.md:1752-1787
+REG-023,hidden unknown-horizon accept-all-profitable,.ai/EXPERIMENTS.md:1391-1402,named retrospective candidate,1,0,0,A,.ai/EXPERIMENTS.md:1391-1402
+REG-024,buyer selectivity safety factorial including strike,.ai/EXPERIMENTS.md:1403-1474,one named factorial record,1,0,0,A,.ai/EXPERIMENTS.md:1408-1474
+REG-025,current-offer stale-stall break,.ai/EXPERIMENTS.md:1476-1506,named randomized candidate,1,0,0,N,.ai/EXPERIMENTS.md:1476-1506 and .ai/HANDOFF.md:2927-2956
+REG-026,hidden support minimum-share acceptance veto development profile,.ai/EXPERIMENTS.md:1507-1561 and 2006-2037,build and activation headings collapsed,1,1,0,S,.ai/EXPERIMENTS.md:1556-1559 and 2017-2024
+REG-027,exact weak-cell token versus non-leaking prose,.ai/EXPERIMENTS.md:1570-1659,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1609-1620
+REG-028,exact zero-margin binary seller truthfulness,.ai/EXPERIMENTS.md:1660-1769,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1703-1752
+REG-029,exact buyer text explicit-decline veto,.ai/EXPERIMENTS.md:1770-1893,named randomized candidate,1,1,0,S,.ai/EXPERIMENTS.md:1868-1887
+REG-030,exact p=.5 r=1.2 buyer selectivity unlock,.ai/EXPERIMENTS.md:1894-1986,named design record,0,0,0,N,.ai/EXPERIMENTS.md:1894-1919 and 1980-1983
+REG-031,continuation-aware persuasion rank gate development profile,.ai/EXPERIMENTS.md:1987-2005,named randomized candidate,1,1,0,A,.ai/EXPERIMENTS.md:1989-2004
+REG-032,trend-confirmed TABLE versus continuation precedence,.ai/EXPERIMENTS.md:2038-2072,named randomized candidate,1,0,0,N,.ai/EXPERIMENTS.md:2055-2065
+REG-033,persuasion buyer binary post-decline pulse,.ai/EXPERIMENTS.md:2073-2191,same-salt rearm epochs collapsed,1,1,0,S,.ai/EXPERIMENTS.md:2163-2173
+REG-034,bargaining discounted reject counter consistency A B,.ai/EXPERIMENTS.md:2192-2260,named randomized candidate,1,0,1,S,.ai/EXPERIMENTS.md:2248-2260
+REG-035,deterministic discounted-counter guard,.ai/EXPERIMENTS.md:2262-2303,separate deterministic candidate,1,1,0,A,.ai/EXPERIMENTS.md:2288-2294 and .ai/HANDOFF.md:1210-1217 and 4148-4158

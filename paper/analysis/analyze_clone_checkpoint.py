@@ -71,7 +71,7 @@ def summarize(rows: list[dict[str, object]]) -> None:
 
     weighted_difference = 0.0
     weighted_variance = 0.0
-    print("Host-stratum rating changes")
+    print("Profile-stratum rating changes")
     for stratum in sorted(strata):
         group = strata[stratum]
         candidate = [float(row["rating_change"]) for row in group if row["arm"] == "candidate"]
@@ -86,7 +86,7 @@ def summarize(rows: list[dict[str, object]]) -> None:
         )
 
     weighted_se = math.sqrt(weighted_variance)
-    print("Host-standardized rating change")
+    print("Profile-stratum-standardized rating change")
     print(
         f"  difference={weighted_difference:.6f}, SE={weighted_se:.6f}, "
         f"normal 95% interval=[{weighted_difference - Z_975 * weighted_se:.6f}, "

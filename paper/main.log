@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  30 AUG 2026 01:57
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  30 AUG 2026 14:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -263,6 +263,8 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 )
 \Hy@SectionHShift=\skip55
 )
+Package hyperref Info: Option `hypertexnames' set `false' on input line 10.
+
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/graphics/grap
 hicx.sty
 Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
@@ -488,33 +490,46 @@ Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
 \TX@cols=\count325
 \TX@ftn=\toks37
 )
-\c@proposition=\count326
+(/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/float/float.s
+ty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count326
+\float@exts=\toks38
+\float@box=\box59
+\@float@everytoks=\toks39
+\@floatcapt=\box60
+)
+(/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/placeins/plac
+eins.sty
+Package: placeins 2005/04/18  v 2.2
+)
+\c@proposition=\count327
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3backend/l3b
 ackend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count327
+\l__color_backend_stack_int=\count328
 ) (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 45.
-LaTeX Font Info:    ... okay on input line 45.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -582,7 +597,7 @@ LaTeX Font Info:    ... okay on input line 45.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 45.
+Package hyperref Info: Link coloring OFF on input line 59.
 (./main.out) (./main.out)
 \@outlinefile=\write3
 \openout3 = `main.out'.
@@ -591,17 +606,17 @@ Package hyperref Info: Link coloring OFF on input line 45.
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/context/base/mkii/s
 upp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count328
+\scratchcounter=\count329
 \scratchdimen=\dimen198
-\scratchbox=\box59
-\nofMPsegments=\count329
-\nofMParguments=\count330
-\everyMPshowfont=\toks38
-\MPscratchCnt=\count331
+\scratchbox=\box61
+\nofMPsegments=\count330
+\nofMParguments=\count331
+\everyMPshowfont=\toks40
+\MPscratchCnt=\count332
 \MPscratchDim=\dimen199
-\MPnumerator=\count332
-\makeMPintoPDFobject=\count333
-\everyMPtoPDFconversion=\toks39
+\MPnumerator=\count333
+\makeMPintoPDFobject=\count334
+\everyMPtoPDFconversion=\toks41
 )
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/epstopdf-pkg/
 epstopdf-base.sty
@@ -614,13 +629,13 @@ pstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Info: Redefining \microtypecontext on input line 45.
-Package microtype Info: Applying patch `item' on input line 45.
-Package microtype Info: Applying patch `toc' on input line 45.
-Package microtype Info: Applying patch `eqnum' on input line 45.
-Package microtype Info: Applying patch `footnote' on input line 45.
-Package microtype Info: Applying patch `verbatim' on input line 45.
-LaTeX Info: Redefining \microtypesetup on input line 45.
+LaTeX Info: Redefining \microtypecontext on input line 59.
+Package microtype Info: Applying patch `item' on input line 59.
+Package microtype Info: Applying patch `toc' on input line 59.
+Package microtype Info: Applying patch `eqnum' on input line 59.
+Package microtype Info: Applying patch `footnote' on input line 59.
+Package microtype Info: Applying patch `verbatim' on input line 59.
+LaTeX Info: Redefining \microtypesetup on input line 59.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
@@ -641,7 +656,7 @@ cmr.cfg
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 48.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 61.
 
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/amsfonts/umsa
@@ -652,7 +667,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 48.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 61.
 
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/amsfonts/umsb
@@ -667,7 +682,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `cmtt' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-LaTeX Font Info:    Trying to load font information for T1+phv on input line 70
+LaTeX Font Info:    Trying to load font information for T1+phv on input line 86
 .
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/psnfss/t1phv.
@@ -678,190 +693,339 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `phv' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 9
-4.
-
-(/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/psnfss/ts1ptm
-.fd
-File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-) [1
+ [1
 
 
 {/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/pdftex/updmap
 /pdftex.map}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/d
 vips/base/8r.enc}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/
 enc/dvips/cm-super/cm-super-t1.enc}]
-<figures/fig_strategy_evolution.pdf, id=189, 418.49416pt x 301.76837pt>
-File: figures/fig_strategy_evolution.pdf Graphic file (type pdf)
-<use figures/fig_strategy_evolution.pdf>
-Package pdftex.def Info: figures/fig_strategy_evolution.pdf  used on input line
- 163.
-(pdftex.def)             Requested size: 397.48499pt x 286.63226pt.
- [2] [3 <./figures/fig_strategy_evolution.pdf>] [4] [5] (./main.bbl [6
+<figures/fig_audit_contract.pdf, id=185, 518.86247pt x 121.99176pt>
+File: figures/fig_audit_contract.pdf Graphic file (type pdf)
+<use figures/fig_audit_contract.pdf>
+Package pdftex.def Info: figures/fig_audit_contract.pdf  used on input line 146
+.
+(pdftex.def)             Requested size: 397.48499pt x 93.45554pt.
+ [2 <./figures/fig_audit_contract.pdf>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
-] [7]) [8] (./appendix.tex
-<figures/fig_rank_objective.pdf, id=317, 352.484pt x 147.76196pt>
+ [3]
+[4] (./main.bbl [5
+
+] [6]) [7] (./appendix.tex [8
+
+]
+<figures/fig_rank_objective.pdf, id=353, 360.69724pt x 148.67162pt>
 File: figures/fig_rank_objective.pdf Graphic file (type pdf)
 <use figures/fig_rank_objective.pdf>
-Package pdftex.def Info: figures/fig_rank_objective.pdf  used on input line 99.
+Package pdftex.def Info: figures/fig_rank_objective.pdf  used on input line 130
+.
+(pdftex.def)             Requested size: 325.9406pt x 134.34764pt.
+ [9 <./figures/fig_rank_objective.pdf>]
+Underfull \hbox (badness 2503) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Narrow self-commitment
+ []
 
-(pdftex.def)             Requested size: 325.9406pt x 136.63934pt.
+
+Underfull \hbox (badness 5519) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Bargaining, ei-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Negotiation,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) One-round struc-tural
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Negotiation,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Negotiation,
+ []
+
+
+Underfull \hbox (badness 1142) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Negotiation, ei-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Persuasion,
+ []
+
+
+Underfull \hbox (badness 3168) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Known or hid-den buyer
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 253--253
+[]|\T1/ptm/m/n/9 (+20) Persuasion,
+ []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[9
 
-] [10 <./figures/fig_rank_objective.pdf>]
-Underfull \hbox (badness 10000) in paragraph at lines 247--247
+Underfull \hbox (badness 4967) in paragraph at lines 276--276
+\T1/ptm/m/n/9 (+20) fit-ted ac-cep-tance, coars-ened
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+[]|\T1/ptm/m/n/9 (+20) Internal pol-icy dis-ci-pline,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+\T1/ptm/m/n/9 (+20) reached-action au-dit, and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+[]|\T1/ptm/m/n/9 (+20) Complete ne-go-ti-a-tion
+ []
+
+
+Underfull \hbox (badness 1215) in paragraph at lines 276--276
+[]|\T1/ptm/m/n/9 (+20) Buyer and seller fall-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+[]|\T1/ptm/m/n/9 (+20) Bayesian bench-mark plus
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+[]|\T1/ptm/m/n/9 (+20) Regularized Bayesian-style
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--276
+\T1/ptm/m/n/9 (+20) model and returned-action
+ []
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[10]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [11]
+[12] [13] [14
+
+]
+Underfull \hbox (badness 10000) in paragraph at lines 524--524
 []|\T1/ptm/m/n/9 (+20) Observed con-ces-sion
  []
 
 
-Underfull \hbox (badness 4036) in paragraph at lines 247--247
-[]|\T1/ptm/m/n/9 (+20) A doc-u-mented dis-counted floor is
+Underfull \hbox (badness 10000) in paragraph at lines 524--524
+[]|\T1/ptm/m/n/9 (+20) One-decision-period
+ []
+
+
+Underfull \hbox (badness 2573) in paragraph at lines 524--524
+[]|\T1/ptm/m/n/9 (+20) Odd-round de-ci-sions check a com-
+ []
+
+
+Underfull \hbox (badness 2529) in paragraph at lines 524--524
+\T1/ptm/m/n/9 (+20) mon dis-counted floor. The bank-
+ []
+
+
+Underfull \hbox (badness 1609) in paragraph at lines 524--524
+\T1/ptm/m/n/9 (+20) enabled silent pol-icy sends a fixed
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[11] [12]
-Underfull \hbox (badness 10000) in paragraph at lines 387--387
+[15] [16] [17]
+Underfull \hbox (badness 10000) in paragraph at lines 674--680
+[]\T1/ptm/m/n/10 (+20) The ac-tive learned ta-ble has no ask map, so only its h
+id-den ac-cep-tance rows
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 674--680
+\T1/ptm/m/n/10 (+20) op-er-ate. In elapsed quar-tile $\OML/cmm/m/it/10 q \OT1/c
+mr/m/n/10 = []\OMS/cmsy/m/n/10 fb\OT1/cmr/m/n/10 4\OML/cmm/m/it/10 e\OMS/cmsy/m
+/n/10 c\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 3\OMS/cmsy/m/n/10 g$\T1/ptm/m/n/10 (+
+20) , its seller thresh-olds are
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 674--680
+\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 4984083690\OML/cmm/m/it/10 ;
+ :\OT1/cmr/m/n/10 4363183570\OML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 0344636090\OML/
+cmm/m/it/10 ; :\OT1/cmr/m/n/10 2268590560)\OML/cmm/m/it/10 B$ \T1/ptm/m/n/10 (+
+20) and its buyer thresh-olds are
+ []
+
+
+Underfull \vbox (badness 1622) has occurred while \output is active []
+
+ [18]
+[19]
+Underfull \hbox (badness 10000) in paragraph at lines 854--854
 []|\T1/ptm/m/n/9 (+20) Offer-derived type
  []
 
-[13] [14] [15]
-Underfull \hbox (badness 10000) in paragraph at lines 626--626
+
+Underfull \hbox (badness 10000) in paragraph at lines 854--854
+[]|\T1/ptm/m/n/9 (+20) Development-only
+ []
+
+[20]
+Underfull \hbox (badness 10000) in paragraph at lines 944--948
+[]\T1/ptm/m/n/10 (+20) The fit-ted prior file con-tains 4,191 games and SHA-256
+
+ []
+
+
+Underfull \hbox (badness 3333) in paragraph at lines 944--948
+\T1/cmtt/m/n/10 173e00273db5b2d5121080be0e6192c4ab12e1ea553b61ab22896bfb4a31787
+a\T1/ptm/m/n/10 (+20) . Rows be-
+ []
+
+[21] [22] [23]
+Underfull \hbox (badness 10000) in paragraph at lines 1153--1153
 []|\T1/ptm/m/n/9 (+20) Reached-decision
  []
 
 
-Underfull \hbox (badness 6859) in paragraph at lines 626--626
+Underfull \hbox (badness 6859) in paragraph at lines 1153--1153
 []|\T1/ptm/m/n/9 (+20) Hindsight com-par-i-son be-tween
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 626--626
+Underfull \hbox (badness 10000) in paragraph at lines 1153--1153
 []|\T1/ptm/m/n/9 (+20) Before/after com-
  []
 
 
-Underfull \hbox (badness 2197) in paragraph at lines 626--626
+Underfull \hbox (badness 2197) in paragraph at lines 1153--1153
 []|\T1/ptm/m/n/9 (+20) Invalid or re-futed
  []
 
 
-Underfull \hbox (badness 1616) in paragraph at lines 626--626
+Underfull \hbox (badness 1616) in paragraph at lines 1153--1153
 []|\T1/ptm/m/n/9 (+20) A tempt-ing es-ti-mate whose es-
  []
 
+File: figures/fig_audit_contract.pdf Graphic file (type pdf)
+<use figures/fig_audit_contract.pdf>
+Package pdftex.def Info: figures/fig_audit_contract.pdf  used on input line 115
+8.
+(pdftex.def)             Requested size: 373.63686pt x 87.84888pt.
+<figures/fig_strategy_evolution.pdf, id=547, 419.18423pt x 301.76837pt>
+File: figures/fig_strategy_evolution.pdf Graphic file (type pdf)
+<use figures/fig_strategy_evolution.pdf>
+Package pdftex.def Info: figures/fig_strategy_evolution.pdf  used on input line
+ 1178.
+(pdftex.def)             Requested size: 381.58824pt x 274.72014pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<figures/fig_audit_contract.pdf, id=453, 519.87425pt x 160.51167pt>
-File: figures/fig_audit_contract.pdf Graphic file (type pdf)
-<use figures/fig_audit_contract.pdf>
-Package pdftex.def Info: figures/fig_audit_contract.pdf  used on input line 631
-.
-(pdftex.def)             Requested size: 373.63686pt x 115.365pt.
 
-Underfull \vbox (badness 2042) has occurred while \output is active []
-
- [16 <./figures/fig_audit_contract.pdf>]
-Underfull \hbox (badness 1331) in paragraph at lines 666--666
+Underfull \hbox (badness 1331) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) nat-ing of-fers and
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) coun-terof-fers; ac-cept-ing
  []
 
 
-Underfull \hbox (badness 1383) in paragraph at lines 666--666
+Underfull \hbox (badness 1383) in paragraph at lines 1205--1205
 \OML/cmm/m/it/9 o \OMS/cmsy/m/n/9 ^^U \OML/cmm/m/it/9 ^^Nc$ \T1/ptm/m/n/9 (+20)
  dom-i-nates one
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) stip-u-lated next-period
  []
 
 
-Underfull \hbox (badness 7558) in paragraph at lines 666--666
+Underfull \hbox (badness 3375) in paragraph at lines 1205--1205
+\T1/ptm/m/n/9 (+20) joined his-to-ries un-der the P2
+ []
+
+
+Underfull \hbox (badness 7558) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) in-for-ma-tion, and
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) con-ces-sion func-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) tions [[]Chat-ter-jee
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) and Samuel-son[],
  []
 
 
-Underfull \hbox (badness 6236) in paragraph at lines 666--666
+Underfull \hbox (badness 6236) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) mit-ted obe-di-ence
  []
 
 
-Underfull \hbox (badness 2269) in paragraph at lines 666--666
+Underfull \hbox (badness 2269) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) i-bil-ity [[]Ka-menica
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 666--666
+Underfull \hbox (badness 10000) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) and Gentzkow[],
  []
 
 
-Underfull \hbox (badness 2626) in paragraph at lines 666--666
+Underfull \hbox (badness 2626) in paragraph at lines 1205--1205
 \T1/ptm/m/n/9 (+20) within the one-shot obe-
  []
 
-[17]
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
-\T1/ptm/m/n/9 (+20) ne-go-ti-a-tion V1, and
- []
+
+LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-Underfull \hbox (badness 1147) in paragraph at lines 687--687
-\T1/ptm/m/n/9 (+20) nar-row P2 com-mit-ment
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
-\T1/ptm/m/n/9 (+20) as-sem-bled at sep-a-rate
- []
-
-
-Underfull \hbox (badness 3375) in paragraph at lines 687--687
+Underfull \hbox (badness 3375) in paragraph at lines 1226--1226
 []|\T1/ptm/m/n/9 (+20) Overall $\OT1/cmr/m/n/9 2220\OML/cmm/m/it/9 :\OT1/cmr/m/
 n/9 76 \OMS/cmsy/m/n/9 ! \OT1/cmr/m/n/9 2467\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 17$
 
  []
 
 
-Underfull \hbox (badness 2213) in paragraph at lines 687--687
+Underfull \hbox (badness 2213) in paragraph at lines 1226--1226
 \T1/ptm/m/n/9 (+20) fore and af-ter a clean
  []
 
 
-Underfull \hbox (badness 4048) in paragraph at lines 687--687
+Underfull \hbox (badness 4048) in paragraph at lines 1226--1226
 []|\T1/ptm/m/n/9 (+20) Locked pol-icy; fam-ily
  []
 
 
-Underfull \hbox (badness 7168) in paragraph at lines 687--687
+Underfull \hbox (badness 7168) in paragraph at lines 1226--1226
 \OT1/cmr/m/n/9 +21\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 03\OML/cmm/m/it/9 =\OT1/cmr/m
 /n/9 20$\T1/ptm/m/n/9 (+20) , N $\OMS/cmsy/m/n/9 ^^@\OT1/cmr/m/n/9 33\OML/cmm/m
 /it/9 :\OT1/cmr/m/n/9 78\OML/cmm/m/it/9 =\OT1/cmr/m/n/9 22$\T1/ptm/m/n/9 (+20) 
@@ -869,17 +1033,17 @@ Underfull \hbox (badness 7168) in paragraph at lines 687--687
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
 []|\T1/ptm/m/n/9 (+20) Tight cred-i-bil-ity re-set
  []
 
 
-Underfull \hbox (badness 3838) in paragraph at lines 687--687
+Underfull \hbox (badness 3838) in paragraph at lines 1226--1226
 \T1/ptm/m/n/9 (+20) fol-lowed by minimum-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
 []|\T1/ptm/m/n/9 (+20) B $\OT1/cmr/m/n/9 +14\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 60\
 OML/cmm/m/it/9 =\OT1/cmr/m/n/9 19$\T1/ptm/m/n/9 (+20) , N $\OMS/cmsy/m/n/9 ^^@\
 OT1/cmr/m/n/9 1\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 02\OML/cmm/m/it/9 =\OT1/cmr/m/n/
@@ -887,286 +1051,557 @@ OT1/cmr/m/n/9 1\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 02\OML/cmm/m/it/9 =\OT1/cmr/m/n/
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
 \T1/ptm/m/n/9 (+20) P $\OT1/cmr/m/n/9 +40\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 12\OML
 /cmm/m/it/9 =\OT1/cmr/m/n/9 25$\T1/ptm/m/n/9 (+20) ; fam-ily mean
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
+[]|\T1/ptm/m/n/9 (+20) Deterministic wrap-per,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
+\T1/ptm/m/n/9 (+20) LLM off, no ac-tive
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
 []|\T1/ptm/m/n/9 (+20) B $\OT1/cmr/m/n/9 2603\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 81
 \OML/cmm/m/it/9 =\OT1/cmr/m/n/9 15[]487$\T1/ptm/m/n/9 (+20) , N
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--687
+Underfull \hbox (badness 10000) in paragraph at lines 1226--1226
 \OT1/cmr/m/n/9 2620\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 36\OML/cmm/m/it/9 =\OT1/cmr/
 m/n/9 15[]415$\T1/ptm/m/n/9 (+20) , P
  []
 
 
-Underfull \hbox (badness 8132) in paragraph at lines 722--722
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[24]
+Underfull \hbox (badness 8132) in paragraph at lines 1275--1275
 []|\T1/ptm/m/n/9 (+20) Three then-leading
  []
 
 
-Underfull \hbox (badness 2173) in paragraph at lines 722--722
+Underfull \hbox (badness 10000) in paragraph at lines 1275--1275
+\T1/ptm/m/n/9 (+20) pub-lic ne-go-ti-a-tion
+ []
+
+
+Underfull \hbox (badness 2173) in paragraph at lines 1275--1275
 \OML/cmm/m/it/9 :\OT1/cmr/m/n/9 8075$\T1/ptm/m/n/9 (+20) --$\OML/cmm/m/it/9 :\O
 T1/cmr/m/n/9 8108\OML/cmm/m/it/9 B$ \T1/ptm/m/n/9 (+20) across 30 open-
  []
 
 
-Underfull \hbox (badness 7667) in paragraph at lines 722--722
+Underfull \hbox (badness 7667) in paragraph at lines 1275--1275
 []|\T1/ptm/m/n/9 (+20) Two com-pleted cap-10 buyer
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 722--722
+Underfull \hbox (badness 10000) in paragraph at lines 1275--1275
 \T1/ptm/m/n/9 (+20) mid-point nor-mal-ized shares
  []
 
 
-Underfull \hbox (badness 6910) in paragraph at lines 722--722
-\T1/ptm/m/n/9 (+20) standardized dif-fer-ence $\OT1/cmr/m/n/9 +\OML/cmm/m/it/9 
-:\OT1/cmr/m/n/9 991$\T1/ptm/m/n/9 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 1275--1275
+[]|\T1/ptm/m/n/9 (+20) Four-source-profile
  []
 
 
-Underfull \hbox (badness 5388) in paragraph at lines 722--722
-\T1/ptm/m/n/9 (+20) in-ter-val $\OT1/cmr/m/n/9 [\OMS/cmsy/m/n/9 ^^@\OML/cmm/m/i
-t/9 :\OT1/cmr/m/n/9 63\OML/cmm/m/it/9 ; \OT1/cmr/m/n/9 2\OML/cmm/m/it/9 :\OT1/c
-mr/m/n/9 61]$\T1/ptm/m/n/9 (+20) . Can-di-
+Underfull \hbox (badness 10000) in paragraph at lines 1275--1275
+\T1/ptm/m/n/9 (+20) clone eval-u-ated
  []
 
 
-Underfull \hbox (badness 1436) in paragraph at lines 722--722
-\OT1/cmr/m/n/9 [\OMS/cmsy/m/n/9 ^^@\OT1/cmr/m/n/9 12\OML/cmm/m/it/9 :\OT1/cmr/m
-/n/9 0\OML/cmm/m/it/9 ; \OT1/cmr/m/n/9 24\OML/cmm/m/it/9 :\OT1/cmr/m/n/9 3]$ \T
-1/ptm/m/n/9 (+20) per-cent-age points,
+Underfull \hbox (badness 2293) in paragraph at lines 1275--1275
+\T1/ptm/m/n/9 (+20) on four in-account
  []
 
 
-Underfull \hbox (badness 5133) in paragraph at lines 722--722
+Underfull \hbox (badness 5133) in paragraph at lines 1275--1275
 []|\T1/ptm/m/n/9 (+20) Profiled bar-gain-ing
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
+[25 <./figures/fig_strategy_evolution.pdf>]
 
-Underfull \hbox (badness 1817) in paragraph at lines 761--761
-\T1/ptm/m/n/9 (+20) pairs un-der the independent-
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Underfull \hbox (badness 3460) in paragraph at lines 1355--1355
+\T1/ptm/m/n/9 (+20) pairs un-der its independent-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 761--761
-[]|\T1/ptm/m/n/9 (+20) 911/911 checked out-comes
+Underfull \hbox (badness 3009) in paragraph at lines 1355--1355
+[]|\T1/ptm/m/n/9 (+20) An archived check re-ported
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 761--761
+Underfull \hbox (badness 1983) in paragraph at lines 1355--1355
+\T1/ptm/m/n/9 (+20) 911/911 out-comes con-sis-tent
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1355--1355
 []|\T1/ptm/m/n/9 (+20) One-round re-sponse
  []
 
 
-Underfull \hbox (badness 6825) in paragraph at lines 761--761
-\T1/ptm/m/n/9 (+20) con-verted 46.3%, tem-plates
+Underfull \hbox (badness 3417) in paragraph at lines 1355--1355
+[]|\T1/ptm/m/n/9 (+20) An archived com-par-i-son fa-
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[18]
-Underfull \hbox (badness 10000) in paragraph at lines 788--788
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [26]
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) Aggressive visible-
  []
 
 
-Underfull \hbox (badness 1484) in paragraph at lines 788--788
-\T1/ptm/m/n/9 (+20) and 4,050 co-hort games: ex-posed
- []
-
-
-Underfull \hbox (badness 1215) in paragraph at lines 788--788
-\OT1/cmr/m/n/9 [\OMS/cmsy/m/n/9 ^^@\OT1/cmr/m/n/9 0\OML/cmm/m/it/9 :\OT1/cmr/m/
-n/9 08183\OML/cmm/m/it/9 ; \OMS/cmsy/m/n/9 ^^@\OT1/cmr/m/n/9 0\OML/cmm/m/it/9 :
-\OT1/cmr/m/n/9 05096]$\T1/ptm/m/n/9 (+20) ; co-hort av-er-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 788--788
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) Ultimatum share
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 788--788
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1382
+[]|\T1/ptm/m/n/9 (+20) Two early di-ag-nos-tics re-ported
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) Broad bar-gain-ing
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 788--788
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) Three seeds
  []
 
 
-Underfull \hbox (badness 1412) in paragraph at lines 788--788
+Underfull \hbox (badness 1412) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) High-share bar-gain-ing
  []
 
 
-Underfull \hbox (badness 3601) in paragraph at lines 788--788
+Underfull \hbox (badness 3601) in paragraph at lines 1382--1382
 []|\T1/ptm/m/n/9 (+20) Response-model of-fer
  []
 
 
-Underfull \hbox (badness 3713) in paragraph at lines 788--788
+Underfull \hbox (badness 3713) in paragraph at lines 1382--1382
 \OT1/cmr/m/n/9 91$ \T1/ptm/m/n/9 (+20) read, nom-i-nal nor-mal in-ter-val
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[19]
-Underfull \hbox (badness 8170) in paragraph at lines 844--844
+[27] [28]
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1505--1505
+[]|\T1/ptm/m/n/9 (+20) Return a lo-cally schema-
+ []
+
+
+Underfull \hbox (badness 4229) in paragraph at lines 1505--1505
+[]|\T1/ptm/m/n/9 (+20) Narrow P2 lad-der and dis-
+ []
+
+
+Underfull \hbox (badness 1199) in paragraph at lines 1505--1505
+\T1/ptm/m/n/9 (+20) counted floor own the ex-act
+ []
+
+
+Underfull \hbox (badness 8170) in paragraph at lines 1505--1505
 []|\T1/ptm/m/n/9 (+20) First-principles own-ers take
  []
 
 
-Underfull \hbox (badness 1360) in paragraph at lines 844--844
+Underfull \hbox (badness 1360) in paragraph at lines 1505--1505
 \T1/ptm/m/n/9 (+20) ence han-dles el-i-gi-ble hid-den
  []
 
 
-Underfull \hbox (badness 2285) in paragraph at lines 844--844
+Underfull \hbox (badness 2285) in paragraph at lines 1505--1505
 \T1/ptm/m/n/9 (+20) cap-10 buyer ter-mi-nals; the
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 844--844
-[]|\T1/ptm/m/n/9 (+20) Known val-ues use prior-
+Underfull \hbox (badness 5288) in paragraph at lines 1505--1505
+[]|\T1/ptm/m/n/9 (+20) Known val-ues use all-push
  []
 
 
-Underfull \hbox (badness 1019) in paragraph at lines 844--844
-\T1/ptm/m/n/9 (+20) profitable all-push and oth-er-
+Underfull \hbox (badness 8056) in paragraph at lines 1505--1505
+\T1/ptm/m/n/9 (+20) when prior ex-pected value
  []
 
 
-Underfull \hbox (badness 4036) in paragraph at lines 844--844
+Underfull \hbox (badness 4036) in paragraph at lines 1505--1505
 []|\T1/ptm/m/n/9 (+20) Every enu-mer-ated A/B and
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[20] [21]
-Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [22]
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \vbox (badness 3068) has occurred while \output is active []
+
+ [29]
+[30] [31] [32]
+Underfull \hbox (badness 10000) in paragraph at lines 1673--1685
+[]\T1/ptm/m/n/10 (+20) The man-i-fest be-low iden-ti-fies the cur-rent source a
+s-sets. The or-dered
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1673--1685
+\T1/ptm/m/n/10 (+20) 23-file re-ceipt in $\T1/cmtt/m/n/10 paper / data / submit
+ted _ policy _ asset _ manifest . csv$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1673--1685
+\T1/ptm/m/n/10 (+20) records each SHA-256; hash-ing its or-dered \T1/cmtt/m/n/1
+0 shasum -a 256 \T1/ptm/m/n/10 (+20) out-put gives
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 glee _ agent / config . py$\T1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 runtime _ flags . py$\T1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 text . py$\T1/ptm/m/n/9 (+20) , $\T1/cmtt/m/n/9 dispatch . py$\T
+1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
 []|$\T1/cmtt/m/n/9 glee _ agent / strategies /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 glee _ agent / bargaining _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 glee _ agent / barg _ offer . py$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/ptm/m/n/9 (+20) and $\T1/cmtt/m/n/9 models / barg _ bob _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
 []|$\T1/cmtt/m/n/9 glee _ agent / strategies /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 glee _ agent /
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 deterministic _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 negotiation . py$\T1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 glee _ agent / first _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 principles . py$\T1/ptm/m/n/9 (+20) , and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 glee _ agent / nego _ hidden _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 glee _ agent / top _ buyer _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 clone . py$\T1/ptm/m/n/9 (+20) , $\T1/cmtt/m/n/9 top _ seller _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 message _ clone . py$\T1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 table _ policy . py$\T1/ptm/m/n/9 (+20) , and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 models / nego _ policy _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 v1 . json$\T1/ptm/m/n/9 (+20) , $\T1/cmtt/m/n/9 negotiation _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 acceptance _ v5 . json$\T1/ptm/m/n/9 (+20) ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 negotiation _ value _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+\T1/cmtt/m/n/9 posterior _ v2 . json$\T1/ptm/m/n/9 (+20) , and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
 []|$\T1/cmtt/m/n/9 glee _ agent / strategies /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1715--1715
+[]|$\T1/cmtt/m/n/9 models / pers _ buyer _ prior _
+ []
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 scripts / check _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
-[]|$\T1/cmtt/m/n/9 paper / data / agent5 _
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / submitted _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+\T1/cmtt/m/n/9 agent _ rating _ checkpoints .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / submitted _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+\T1/cmtt/m/n/9 agent _ leaderboard _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / log _ archive _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / final _ policy _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / persuasion _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / submitted _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / submitted _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+\T1/cmtt/m/n/9 policy _ asset _ manifest .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 paper / data / clone _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 \T1/cmtt/m/n/9 checkpoint _ deidentified .
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / data / experiment _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 paper / analysis / analyze _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / analysis / analyze _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+\T1/cmtt/m/n/9 persuasion _ parser _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / analysis / verify _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / analysis / verify _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / analysis / verify _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / review _ artifact /
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / review / theory _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 paper / figures / gen _ fig _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 paper / figures / gen _ fig _
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 990--990
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
+[]|$\T1/cmtt/m/n/9 paper / figures / gen _ fig _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1753--1753
 []|$\T1/cmtt/m/n/9 paper / figures / gen _ fig _
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-) [23] [24] (./checklist.tex [25
+) [33] [34] [35] [36] (./checklist.tex
+LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 1
+1.
 
-] [26] [27] [28] [29] [30]) [31] (./main.aux)
+(/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/psnfss/ts1ptm
+.fd
+File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
+) [37
+
+] [38] [39] [40] [41] [42]) [43] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 47B2772129B1A2E19D7310443F7A7072;7362.
+(rerunfilecheck)             Checksum: 11E6C57022D4DC9318E749305D3BA449;8274.
  ) 
 Here is how much of TeX's memory you used:
- 14904 strings out of 467525
- 232521 string characters out of 5408440
- 700984 words of memory out of 5000000
- 42997 multiletter control sequences out of 15000+600000
- 687002 words of font info for 357 fonts, out of 8000000 for 9000
+ 15137 strings out of 467525
+ 236563 string characters out of 5408440
+ 720428 words of memory out of 5000000
+ 43138 multiletter control sequences out of 15000+600000
+ 687300 words of font info for 363 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  72i,12n,79p,1001b,821s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/am
 sfonts/cm/cmbx10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fo
 nts/type1/public/amsfonts/cm/cmex10.pfb></opt/homebrew/Cellar/texlive/20260301/
 share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></opt/homebrew/Cella
-r/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></
+r/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></
 opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfon
-ts/cm/cmmi9.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmr10.pfb></opt/homebrew/Cellar/texlive/20260301/share/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></opt/homebrew/Cellar/texliv
-e/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></opt/homeb
-rew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
-7.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/publi
-c/amsfonts/cm/cmr9.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/homebrew/Cellar/texlive/2026030
-1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></opt/homebrew/Cell
-ar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb><
-/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfo
-nts/symbols/msbm10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/
-fonts/type1/public/cm-super/sftt0900.pfb></opt/homebrew/Cellar/texlive/20260301
-/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homebrew/Cella
-r/texlive/20260301/share/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></opt/h
-omebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/times/utmb8a.p
-fb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/time
-s/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type
-1/urw/times/utmri8a.pfb>
-Output written on main.pdf (31 pages, 549183 bytes).
+ts/cm/cmmi6.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmmi7.pfb></opt/homebrew/Cellar/texlive/20260301/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></opt/homebrew/Cellar/texli
+ve/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></opt/hom
+ebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/c
+mr6.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmr7.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmr9.pfb></opt/homebrew/Cellar/texlive/2026030
+1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/homebrew/Cel
+lar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb>
+</opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmsy9.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts
+/type1/public/amsfonts/symbols/msbm10.pfb></opt/homebrew/Cellar/texlive/2026030
+1/share/texmf-dist/fonts/type1/public/cm-super/sftt0900.pfb></opt/homebrew/Cell
+ar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb><
+/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/helvetic
+/uhvr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1
+/urw/times/utmb8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/f
+onts/type1/urw/times/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/te
+xmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on main.pdf (43 pages, 637335 bytes).
 PDF statistics:
- 859 PDF objects out of 1000 (max. 8388607)
- 719 compressed objects within 8 object streams
- 190 named destinations out of 1000 (max. 500000)
- 54568 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 1028 PDF objects out of 1200 (max. 8388607)
+ 868 compressed objects within 9 object streams
+ 265 named destinations out of 1000 (max. 500000)
+ 54584 words of extra memory for PDF output out of 61914 (max. 10000000)
 

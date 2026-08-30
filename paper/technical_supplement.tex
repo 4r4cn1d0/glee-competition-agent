@@ -1,0 +1,51 @@
+\documentclass{article}
+
+\usepackage[sglblindworkshop]{neurips_2026}
+\workshoptitle{Interpreting Agent Behavior}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{xr-hyper}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{placeins}
+
+% Import cross-document labels without importing bibliography keys a second time.
+\externaldocument[][nocite]{main_core}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newtheorem{proposition}{Proposition}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prb}{\mathbb{P}}
+
+\title{Technical Supplement:\\
+Percentiles, Not Payoffs}
+\author{%
+  Author Name\\
+  Affiliation\\
+  \texttt{email@example.com}
+}
+
+\begin{document}
+\maketitle
+\appendix
+\numberwithin{equation}{section}
+\numberwithin{table}{section}
+\numberwithin{figure}{section}
+\numberwithin{proposition}{section}
+\input{appendix.tex}
+
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

@@ -208,6 +208,18 @@ def make_probe(name: str, cfg, log=None, seed: int | None = None):
 
     def strategy(game: dict) -> dict:
         from .actions import coerce, safe_action
+        # The all-family exact-name override must also supersede Test 4's custom
+        # randomized callable. Consume the discarded draw first so one targeted
+        # turn cannot shift the RNG stream of later non-target games.
+        if name == "randomized":
+            from . import grok_suppression
+            if grok_suppression.owns(game):
+                try:
+                    inner(game)
+                except Exception:
+                    pass
+                return base(game)
+
         # Route the exact one-round seller promotion through ordinary dispatch.
         # Advance the discarded randomized action first so this one deterministic
         # override cannot shift Test 4's RNG stream and silently change later,

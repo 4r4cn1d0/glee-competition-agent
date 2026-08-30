@@ -1,0 +1,6 @@
+profile,unique_flat_result_ids,unique_per_game_records,terminal_finals,unresolved,public_total_at_audit,coverage_note
+submitted,24803,46316,46301,15,46564,official-close reconciled snapshot
+development_a,53539,76818,76807,11,,historical execution slot not reconciled to a current public row
+development_b,51688,77235,77222,13,77495,moving collector snapshot
+development_c,60838,83293,83280,13,83479,moving collector snapshot
+development_d,45386,48991,48983,8,56577,moving collector snapshot

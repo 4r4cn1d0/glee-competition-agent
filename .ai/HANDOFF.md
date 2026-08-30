@@ -3,6 +3,109 @@
 Append-only. Newest at the top. Each entry: what changed, what was measured,
 what is contested.
 
+## 2026-08-30 17:32 IST — Agent 5 all-three launch reached closed competition
+
+The operator's final topology instruction was to start all three Agent 5
+families.  Supported fleet tooling staged physical slot `composite` as
+`bargaining,negotiation,persuasion`, LLM off.  Persuasion-only PID `33525` had
+three games in flight at `17:28:59`; it stopped topping up, completed all three
+naturally, reached authenticated `active_games=0` at `17:32:01`, and exited at
+`17:32:16`.  No signal, kill, force-cycle, timeout, or abandonment was used.
+
+The supervisor launched the exact all-three-family hardliner command as PID
+`35008` at `17:32:43 IST`, and retried the same command as PID `35075` at
+`17:33:03`.  Both loaded successfully, but the platform returned the explicit
+terminal response: `Competition closed at 2026-08-30T11:59:59+00:00. No new
+games will be accepted; the leaderboard is final.`  Thus the slot remains
+enabled and configured for all three families, but no post-close family can
+acquire a game.  Authenticated final read: active `0`; bargaining
+`2804.8 / 15,639`, negotiation `2620.4 / 15,415`, persuasion
+`2344.9 / 15,510`.  `arms.json` remained byte-identical at SHA-256
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+
+## 2026-08-30 17:15 IST — Agent 5 bargaining + persuasion live
+
+At the operator's direct request, physical slot `composite` added persuasion
+while retaining bargaining.  Supported fleet tooling staged next-launch
+families `bargaining,persuasion`, retained LLM-off, and requested the SDK's
+cooperative lossless drain.  Old bargaining-only PID `27860` had one active
+game at `17:14:39`, reached authenticated `active_games=0` at `17:14:56`, and
+exited normally at `17:15:19`.  No signal, kill, force-cycle, timeout, or game
+abandonment was used.
+
+Supervisor PID `30479` launched at `17:15:49 IST` with policy `hardliner`, LLM
+off, concurrency 8, and exact `--families bargaining,persuasion`.  Within the
+first 19 seconds, fresh logs contained both bargaining (2 turns / 1 game) and
+persuasion (3 turns / 1 game), while the authenticated API reported two active
+games.  The persuasion entry boundary was display rating `2344.8`, game count
+`15,481`; the contemporaneous bargaining read was `2842.3` / `15,612`.
+Strategy state did not change: `arms.json` remained byte-identical at SHA-256
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+
+## 2026-08-30 17:06 IST — Agent 5 retained bargaining-only after cancelled family add
+
+The operator cancelled the requested Agent 5 negotiation addition before a
+replacement launched and directed that no game be abandoned.  The earlier
+supported bank request had already latched inside bargaining PID `21805`, so it
+could not safely be cancelled in-process.  No signal, kill, force-cycle, or
+game interruption was used: PID `21805` completed the SDK's cooperative
+in-flight drain and exited normally.  The staged next-launch family set was
+restored to `bargaining` before relaunch.
+
+Supported fleet tooling immediately re-enabled physical slot `composite`.
+Supervisor PID `27860` launched at `17:06:42 IST` with policy `hardliner`, LLM
+off, concurrency 8, and `--families bargaining` only.  Fresh post-launch turns
+are bargaining turns; negotiation was never activated.  Strategy state was
+unchanged: `arms.json` remained byte-identical at SHA-256
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+
+## 2026-08-30 16:38 IST — Agent 5 started bargaining-only
+
+At the operator's direct request, supported fleet tooling changed only physical
+slot `composite`'s next-launch family set to `bargaining`, retained LLM-off,
+and enabled the already-banked slot.  No strategy flag changed: `arms.json`
+remained byte-identical at SHA-256
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+Supervisor PID `21805` launched at `16:38:27 IST` with policy `hardliner`,
+`--families bargaining`, LLM off, concurrency 8, and the existing 3,600-second
+lossless shift.  Fresh turn-stream activity and regenerated state verified the
+process live.  Negotiation and persuasion are not queued by this runner; the
+existing negotiation peak threshold/latch was preserved and is inert while the
+negotiation family is absent.
+
+## 2026-08-30 02:49 IST — `The One & Only` relaunched without a time/game cap
+
+The operator explicitly replaced the prior bounded-shift instruction with
+“keep it on forever.”  The previous PID `5665` was already down after its clean
+one-hour drain, so no process or game was interrupted.  The new agent was
+relaunched as an isolated continuous runner under a memory-only singleton
+watchdog because the repository fleet supervisor supports only five physical
+slots.  The credential remains outside Git, `.env`, argv, and logs.
+
+Watchdog PID `92317` (parented to init) launched runner PID `92318` at
+`02:49:03 IST`.  The runner command is policy `composite`, all three families,
+LLM off, concurrency 8, and poll interval 2 seconds.  Both `--max-time` and
+`--max-games` are absent and inherited `GLEE_MAX_TIME` / `GLEE_MAX_GAMES` were
+removed, so the SDK has no planned stop boundary.  The watchdog restarts only
+abnormal runner exits with capped backoff; it never signals a live runner and
+stops on a normal/competition-closed exit.
+
+The exact deterministic family-best overlay is unchanged: Agent 5 supplies
+bargaining and negotiation, Test 2 supplies persuasion, all randomized `*_AB`
+flags are explicit zero, and the 81-key canonical SHA-256 remains
+`c1a68e6b0431c3598c67b975be1e8855464ecbc4d417dbc980fb2c04cb6d0d20`.
+The first continuous log is
+`logs/the_one_and_only_continuous/run_0001_20260829T211903Z`.  Authenticated
+startup verification found three active games and ratings/counts B
+`1775.57/175`, N `1655.83/175`, P `1601.63/171`.  Existing fleet PIDs and
+commands were unchanged; `arms.json` remained
+`07069a162deb67bb2eb90348286450e838fb6f5346abfcd795b4570188ba3abb`.
+
+“Forever” here means no configured runner limit for as long as this host and
+competition remain available.  The watchdog intentionally holds the key only
+in memory, so a host reboot requires a fresh secure launch rather than silently
+persisting the credential on disk.
+
 ## 2026-08-29 18:26 IST — New agent `The One & Only` launched on family-best composite
 
 The operator supplied and explicitly authorized deployment of a newly created

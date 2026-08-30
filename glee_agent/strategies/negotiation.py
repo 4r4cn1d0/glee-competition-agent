@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import math
 
-from .. import (deterministic_negotiation, first_principles, nego_arms,
+from .. import (deterministic_negotiation, first_principles, grok_suppression,
+                nego_arms,
                 nego_score_floor, nego_support_v2, pricing, runtime_flags,
                 top_buyer_clone,
                 top_buyer_clone_hi_cap10,
@@ -2895,6 +2896,10 @@ def decide(game: dict, cfg) -> dict:
     is deliberately bypassed so a complete policy cannot silently become a
     mixed treatment.  Flag-off behavior retains the original attachment path.
     """
+    suppressed = grok_suppression.action(game)
+    if suppressed is not None:
+        return suppressed
+
     # The exact last-mover component must precede the broader deterministic
     # buyer replicas.  Otherwise a selected replica returns before _decide()
     # and silently shadows the cent-leaving terminal price.  This override is

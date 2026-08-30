@@ -1,0 +1,4 @@
+family,joined_games,rated_games,timeout_games,role_a,role_a_games,role_b,role_b_games,terminal_summary,recorded_action_summary,own_action_records,logged_errors
+bargaining,171,171,0,player_1,89,player_2,82,171 agreements,503 offers; 414 rejects; 84 accepts,1001,0
+negotiation,19,19,0,seller,10,buyer,9,13 agreements; 3 walks; 3 no-deals,10 initial offers; 171 rejects or counters; 7 accepts; 2 own walks,190,0
+persuasion,55,54,1,seller,22,buyer,33,54 completed games; 1 timeout,buyer yes/no 456/201; seller positive/negative 316/124,1097,0

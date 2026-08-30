@@ -45,6 +45,7 @@ import math
 
 from .. import barg_offer
 from .. import bargaining_p2_commitment
+from .. import grok_suppression
 from .. import messages
 from .. import opponents
 from .. import runtime_flags
@@ -1356,6 +1357,9 @@ def _decide(game: dict, cfg) -> dict:
 
 def decide(game: dict, cfg) -> dict:
     """Choose numeric bargaining behaviour, then attach the assigned text arm."""
+    suppressed = grok_suppression.action(game)
+    if suppressed is not None:
+        return suppressed
     # A flagged player-2 commitment component owns its deliberately tiny cell
     # end to end.  It must precede the generic opponent floor, terminal cap and
     # message arm: layering any of those would silently destroy the committed

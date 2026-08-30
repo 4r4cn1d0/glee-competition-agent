@@ -1,0 +1,86 @@
+\begin{thebibliography}{11}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Crawford and Sobel(1982)]{crawford1982strategic}
+Vincent~P. Crawford and Joel Sobel.
+\newblock Strategic information transmission.
+\newblock \emph{Econometrica}, 50\penalty0 (6):\penalty0 1431--1451, 1982.
+\newblock \doi{10.2307/1913390}.
+
+\bibitem[Faratin et~al.(1998)Faratin, Sierra, and
+  Jennings]{faratin1998negotiation}
+Peyman Faratin, Carles Sierra, and Nick~R. Jennings.
+\newblock Negotiation decision functions for autonomous agents.
+\newblock \emph{Robotics and Autonomous Systems}, 24\penalty0 (3--4):\penalty0
+  159--182, 1998.
+\newblock \doi{10.1016/S0921-8890(98)00029-3}.
+
+\bibitem[{GLEE Competition Organizing Team}(2026{\natexlab{a}})]{gleecall2026}
+{GLEE Competition Organizing Team}.
+\newblock Call for competition papers.
+\newblock \url{https://glee-competition.com/call-for-papers},
+  2026{\natexlab{a}}.
+\newblock Accessed 2026-08-30.
+
+\bibitem[{GLEE Competition Organizing
+  Team}(2026{\natexlab{b}})]{gleecompetition2026}
+{GLEE Competition Organizing Team}.
+\newblock {GLEE Competition}: Rules and scoring.
+\newblock \url{https://glee-competition.com/docs}, 2026{\natexlab{b}}.
+\newblock Accessed 2026-08-30.
+
+\bibitem[Kamenica and Gentzkow(2011)]{kamenica2011bayesian}
+Emir Kamenica and Matthew Gentzkow.
+\newblock Bayesian persuasion.
+\newblock \emph{American Economic Review}, 101\penalty0 (6):\penalty0
+  2590--2615, 2011.
+\newblock \doi{10.1257/aer.101.6.2590}.
+
+\bibitem[Lazear and Rosen(1981)]{lazear1981tournaments}
+Edward~P. Lazear and Sherwin Rosen.
+\newblock Rank-order tournaments as optimum labor contracts.
+\newblock \emph{Journal of Political Economy}, 89\penalty0 (5):\penalty0
+  841--864, 1981.
+\newblock \doi{10.1086/261010}.
+
+\bibitem[Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He]{ma2024agentboard}
+Chang Ma, Junlei Zhang, Zhihao Zhu, Cheng Yang, Yujiu Yang, Yaohui Jin,
+  Zhenzhong Lan, Lingpeng Kong, and Junxian He.
+\newblock {AgentBoard}: An analytical evaluation board of multi-turn {LLM}
+  agents.
+\newblock In \emph{Advances in Neural Information Processing Systems 37}, 2024.
+\newblock \doi{10.52202/079017-2365}.
+
+\bibitem[Rubinstein(1982)]{rubinstein1982}
+Ariel Rubinstein.
+\newblock Perfect equilibrium in a bargaining model.
+\newblock \emph{Econometrica}, 50\penalty0 (1):\penalty0 97--109, 1982.
+\newblock \doi{10.2307/1912531}.
+
+\bibitem[Shapira et~al.(2024)Shapira, Madmon, Reinman, Amouyal, Reichart, and
+  Tennenholtz]{shapira2024glee}
+Eilam Shapira, Omer Madmon, Itamar Reinman, Samuel~Joseph Amouyal, Roi
+  Reichart, and Moshe Tennenholtz.
+\newblock {GLEE}: A unified framework and benchmark for language-based economic
+  environments, 2024.
+\newblock URL \url{https://arxiv.org/abs/2410.05254v3}.
+\newblock Version 3, revised 2 March 2026.
+
+\bibitem[Sobel(1985)]{sobel1985credibility}
+Joel Sobel.
+\newblock A theory of credibility.
+\newblock \emph{The Review of Economic Studies}, 52\penalty0 (4):\penalty0
+  557--573, 1985.
+\newblock \doi{10.2307/2297732}.
+
+\bibitem[Zhou et~al.(2026)Zhou, Liu, Li, Rossi, and Hu]{zhou2026cta}
+Xiaolin Zhou, Jinbo Liu, Li~Li, Ryan~A. Rossi, and Xiyang Hu.
+\newblock Counterfactual trace auditing of {LLM} agent skills, 2026.
+\newblock URL \url{https://arxiv.org/abs/2605.11946v2}.
+
+\end{thebibliography}

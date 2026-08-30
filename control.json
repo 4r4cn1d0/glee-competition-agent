@@ -1,8 +1,6 @@
 {
   "shift_seconds": 3600,
-  "disabled": [
-    "composite"
-  ],
+  "disabled": [],
   "cycle_now": [],
   "policy": {
     "randomized": "hardliner",
@@ -16,7 +14,7 @@
     "champion": "bargaining,negotiation,persuasion",
     "hardliner": "bargaining,negotiation,persuasion",
     "randomized": "bargaining,negotiation,persuasion",
-    "composite": "negotiation"
+    "composite": "bargaining,negotiation,persuasion"
   },
   "llm": {
     "conceder": "off",
@@ -44,13 +42,11 @@
     },
     "composite": {
       "kind": "manual",
-      "ts": 1788007626.078527,
-      "pid": 2408
+      "ts": 1788091139.847073,
+      "pid": 33525
     }
   },
-  "drain_now": [
-    "composite"
-  ],
+  "drain_now": [],
   "bank_family_thresholds": {
     "composite": {
       "family": "negotiation",

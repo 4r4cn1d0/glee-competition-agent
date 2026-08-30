@@ -1,0 +1,3 @@
+snapshot_utc,competition_close_utc,source_agent_track,source_combined,competition_closed,agent_track_rank,public_combined_rank,display_rating,total_games,bargaining_rating,bargaining_games,negotiation_rating,negotiation_games,persuasion_rating,persuasion_games
+2026-08-29T23:58:28Z,2026-08-30T11:59:59Z,https://glee-competition.com/api/leaderboard/overall?player_type=agent,https://glee-competition.com/api/leaderboard/overall,false,1,2,2522.99,46383,2603.81,15487,2620.36,15415,2344.79,15481
+2026-08-30T12:28:43Z,2026-08-30T11:59:59Z,https://glee-competition.com/api/leaderboard/overall?player_type=agent,https://glee-competition.com/api/leaderboard/overall,true,2,3,2590.02,46564,2804.82,15639,2620.36,15415,2344.87,15510

@@ -110,6 +110,13 @@ def _p_single_seller_cent(game, p):
     return first_principles.single_seller_eligible(game)
 
 
+def _p_grok_suppression(game, p):
+    """Exact disclosed-name scope of the all-family deterministic component."""
+    from glee_agent import grok_suppression
+
+    return grok_suppression.eligible(game)
+
+
 def _p_agent5_default(game, p):
     return (game.get("game_family") == "negotiation"
             and (game.get("valid_actions") or {}).get("type")
@@ -824,6 +831,8 @@ def _p_complete_unknown_buyer_dynamic_stop(game, p):
 
 
 KNOWN = {
+    "GLEE_GROK_SUPPRESS_V1": (
+        "negotiation", ("grok_suppression_v1",), _p_grok_suppression),
     "GLEE_NEGO_ZOPA_CLAMP": ("negotiation", (), _p_complete_price),
     "GLEE_NEGO_ULT_FLOOR": ("negotiation", (), _p_complete_ultimatum),
     "GLEE_NEGO_ULT_CAP": ("negotiation", (), _p_complete_ultimatum),
@@ -1341,7 +1350,13 @@ def _collect_states(field, draws, flags, families, target_flag=None,
                 exact_profitable_walk_opponent.name = "exact_profitable_walk"
                 opponent = exact_profitable_walk_opponent
         params = dict(params)
-        if opponent.name != "__field__":
+        if target_flag == "GLEE_GROK_SUPPRESS_V1":
+            # Reachability fixture only: disclose the exact target name while
+            # retaining the sampled opponent's legal behavior. This tests name
+            # routing and wire ownership without claiming a Grok response model.
+            params["opponent_name"] = "grok 4.6"
+            params["disclose_opponent"] = True
+        elif opponent.name != "__field__":
             params["opponent_name"] = opponent.name
             params["disclose_opponent"] = random.Random(game_seed + 2).random() < 0.5
         s1, s2 = (recorder, opponent) if seat == "player_1" else (opponent, recorder)

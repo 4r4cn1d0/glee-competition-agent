@@ -1,8 +1,9 @@
 # GLEE competition paper
 
 This directory contains the working NeurIPS 2026 competition-paper draft,
-``Percentiles, Not Payoffs: Falsification as Strategy in a Live Agent
-Competition.''
+``Rank-Aware Routing and Returned-Action Audits in GLEE.'' The
+repository and its companion data and analysis files remain
+private working artifacts until the planned sanitized camera-ready release.
 
 ## Build
 
@@ -10,10 +11,19 @@ From this directory, run:
 
 ```sh
 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+latexmk -pdf -interaction=nonstopmode -halt-on-error main_core.tex
+latexmk -pdf -interaction=nonstopmode -halt-on-error technical_supplement.tex
 ```
 
+`main.pdf` is the internal working draft with technical report and checklist.
+`main_core.pdf` is the exact one-PDF submission candidate: four self-contained
+main-text pages, references, and the mandatory NeurIPS checklist.
+`technical_supplement.pdf` is an internal technical report and is not part of
+the current submission package.
+
 The manuscript uses the official `sglblindworkshop` option from the NeurIPS 2026
-author kit. A pristine copy of that kit is retained in `official_template/`;
+author kit, matching the competition call's lightweight single-blind review.
+A pristine copy of that kit is retained in `official_template/`;
 `neurips_2026.sty` at the directory root is the exact style file used to build
 the paper.
 
@@ -21,37 +31,91 @@ the paper.
 
 - Main text: exactly four pages, including the required Agent Behavior Analysis.
 - References: begin on page five.
-- Technical appendix: included in the working draft through
-  `\technicalappendixtrue` in `main.tex`.
-- NeurIPS paper checklist: the complete official checklist follows the
-  technical appendix.
-- Performance numbers: losslessly banked Agent 5 snapshot from August 29,
-  2026, with 15,487 bargaining, 15,415 negotiation, and 15,481 persuasion
-  games. The paper labels these ratings as observational.
+- NeurIPS checklist: follows the references in the same PDF and does not count
+  toward the four-page limit.
+- Submission package: `main_core.pdf` only. The core has no dependency on the
+  internal technical report.
+- Technical appendix: included only in the internal working build.
+- NeurIPS paper checklist: included after references in the submission build;
+  the internal working build places it after the technical appendix.
+- Performance numbers: official post-close account result. The focal profile
+  finished at 2590.02 after 46,564 rated games, with 15,639 bargaining, 15,415
+  negotiation, and 15,510 persuasion games. The account placed second in the
+  agent track and third on the combined human-agent board.
+- Behavior coverage: 46,301 canonical terminal joins, or 99.44% of the final
+  public total, plus an exactly reconciled two-window census of 245 assignments,
+  244 rated games, one timeout, and 2,288 own actions. Lifetime owner-to-wire
+  conformance is not claimed.
 - Remaining placeholder: author name, affiliation, and email in `main.tex`.
+- Artifact state: the working repository remains private. The anonymous review
+  bundle makes a deliberately narrow claim: it reproduces released arithmetic,
+  figures, mathematical checks, and synthetic policy behavior, but is not
+  production-equivalent source. A sanitized production-equivalent camera-ready
+  release remains conditional on licensing, data-use permission, privacy review,
+  and secret-removal checks.
 
-The competition call explicitly allows four main-text pages and unlimited
-reference pages, but it does not explicitly authorize an appendix. Before
-submission, ask the organizers whether the technical appendix may be attached.
-If not, set `\technicalappendixfalse` and distribute the appendix only through
-an allowed anonymous supplement. Also replace the author placeholder, confirm
-the human-opponent ethics classification, confirm every author's OpenReview
-profile and the submitted agent's public ID, and complete the asset-license and
-compute-accounting items identified in the checklist.
+The exact include, exclude, verification, and release boundary is recorded in
+`ARTIFACT_RELEASE_PLAN.md`.
+
+## Anonymous review artifact
+
+The review bundle is deliberately isolated from production code and controls.
+After installing its two pinned plotting dependencies in an isolated Python
+3.11 environment, verify it from `paper/review_artifact/` with:
+
+```sh
+python3 verify_all.py
+```
+
+That command checks the closed allowlist and checksums, runs a privacy scan,
+executes mathematical and synthetic-policy fixtures, recomputes the released
+aggregates and tables, and regenerates the four figures. It reproduces released
+arithmetic and synthetic behavior. It cannot re-audit withheld messages,
+private joins or assignment hashes, counterfactual opponent responses, or
+equivalence to the withheld production source. The bundle has not been
+uploaded or made public from this workspace. The verified local archive is
+`output/artifacts/glee_anonymous_review_2026-08-30.zip`; it is not part of the
+one-PDF submission unless the organizers approve a separate review channel.
+
+The current competition call allows four main-text pages and unlimited
+references, the paper deadline is September 5, 2026 AoE, and the current
+OpenReview form provides one PDF field. The prepared submission therefore
+contains no technical appendix or separate supplement, but it does include the
+mandatory NeurIPS checklist after the references. Before
+submission, replace the author placeholder, resolve and document the applicable
+human-opponent data-use or ethics determination, confirm every author's
+OpenReview profile and the submitted agent's public ID, and complete the
+asset-license, secret-removal, configuration-sanitization, and compute-accounting
+checks.
 
 The publication figures are generated by:
 
 ```sh
 python3 figures/gen_fig_audit_contract.py
+python3 figures/gen_fig_final_policy.py
 python3 figures/gen_fig_rank_objective.py
 python3 figures/gen_fig_strategy_evolution.py
 ```
 
 The rating plot reads its checked-in values and line-level ledger provenance
-from `data/agent5_rating_checkpoints.csv`.
+from `data/submitted_agent_rating_checkpoints.csv`. The pre-close and official
+post-close public-board claims read from
+`data/submitted_agent_leaderboard_snapshot.csv`.
 
-The deidentified buyer-clone checkpoint can be reproduced with only the Python
-standard library:
+The deidentified archive inventory, complete 63-game pre-close subcohort, and
+two-window final-profile census are stored in `data/log_archive_coverage.csv`,
+`data/final_policy_era_census.csv`, and
+`data/final_policy_two_window_census.csv`.
+Frozen semantic-parser denominators and counterexamples are stored in
+`data/persuasion_parser_coverage.csv`.
+The source commit, configuration hashes, era boundaries, all 81 recorded
+overlay flags, and behavior-affecting defaults for the submitted policy are
+frozen in `data/submitted_agent_bank_manifest.csv`. The ordered 23-file policy
+and fitted-model checksum receipt is
+`data/submitted_policy_asset_manifest.csv`.
+
+Within the working tree, the deidentified buyer-clone checkpoint can
+be reproduced with only the Python standard library:
 
 ```sh
 python3 analysis/analyze_clone_checkpoint.py
@@ -59,5 +123,48 @@ python3 analysis/analyze_clone_checkpoint.py
 
 Its 91-row input is `data/clone_checkpoint_deidentified.csv`. The table removes
 game IDs, opponent names, values, prices, messages, and timestamps. It reproduces
-the published arm and host-stratum summaries but cannot re-audit the original
-hash assignment or action-history joins.
+the published arm and profile-stratum summaries but cannot re-audit the original
+hash assignment or action-history joins. Strata `S1` through `S4` are four
+deidentified in-account agent profiles, not machine hosts or participant
+accounts.
+
+The frozen policy and overlay receipts can be checked with:
+
+```sh
+python3 analysis/verify_artifact_manifest.py
+```
+
+An authorized holder of the private submitted-profile turn archive can
+reproduce the frozen semantic-parser audit with:
+
+```sh
+../.venv/bin/python analysis/analyze_persuasion_parser_coverage.py \
+  --turns /path/to/private/submitted-turns.jsonl \
+  --since 1787607315 --until 1787747687 --expect frozen
+```
+
+The checked-in private aggregate supports arithmetic verification and carries a
+canonical row hash. The planned public version will do the same, but because
+messages and game IDs are withheld, neither permits an independent language
+reclassification or source-to-server join audit.
+
+The mathematical identities and selected production branches used in the
+paper can be checked without reading live state or replaying games:
+
+```sh
+../.venv/bin/python analysis/verify_theory_code.py
+python3 analysis/verify_derived_tables.py
+```
+
+The claim-by-claim assumptions, code ownership trace, empirical provenance, and
+remaining limitations are recorded in `review/theory_code_audit.md`.
+
+The 35-record experiment-flow denominator is frozen in
+`data/experiment_registry_crosswalk.csv`. It records stable IDs, source ranges,
+the normalization convention, action-changing reach, historical live status,
+and terminal disposition. The resulting counts are 33 reached, 25 historically
+live, one staged-only, seven adverse, 17 stopped or superseded, 11 without a
+terminal efficacy disposition, and zero promoted by a precommitted efficacy
+rule. This working-tree file is a private provenance crosswalk. The public
+camera-ready table will replace private `.ai` paths with stable release source
+IDs and checksums of sanitized evidence excerpts or derived records.

@@ -1,0 +1,13 @@
+sequence_index,bargaining,negotiation,persuasion,overall_rating,agent_track_place,overall_place,public_games,event
+1,2122.69,2060.42,2471.17,,,,,baseline_snapshot
+2,2204.31,,,,,,,bargaining_checkpoint_1
+3,2222.34,,,,,,,bargaining_checkpoint_2
+4,2495.94,2616.98,2372.56,,,,,policy_snapshot_1
+5,2471.96,2668.82,2400.19,,,,,policy_snapshot_2
+6,2468.47,2663.29,2406.19,,,,,policy_snapshot_3
+7,2460.07,2672.03,2392.22,,,,,policy_snapshot_4
+8,2637.44,2823.94,2314.94,,,,,observed_peak_interval_start
+9,2658.47,2790.16,2285.52,,,,,observed_peak_interval_end
+10,2589.21,2621.38,2304.67,,,,,final_policy_boundary
+11,2603.81,2620.36,2344.79,,,,,preclose_display_snapshot
+12,2804.82,2620.36,2344.87,2590.02,2,3,46564,official_final_display

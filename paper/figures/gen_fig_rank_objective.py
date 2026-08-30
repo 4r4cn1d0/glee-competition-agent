@@ -16,8 +16,9 @@ GRAY = "#666666"
 
 
 def percentile_map(payoff: np.ndarray | float) -> np.ndarray | float:
-    """A valid monotone reference CDF for the constructive example."""
-    return 1.0 / (1.0 + np.exp(-(np.asarray(payoff) - 5.0) / 2.5))
+    """Exact-equality midrank against the finite reference multiset D={5}."""
+    values = np.asarray(payoff)
+    return np.where(values < 5.0, 0.0, np.where(values == 5.0, 0.5, 1.0))
 
 
 def main() -> None:
@@ -41,7 +42,6 @@ def main() -> None:
         }
     )
 
-    x = np.linspace(0.0, 21.5, 500)
     action_a_payoff = 10.0
     action_b_payoffs = np.array([0.0, 21.0])
     expected_payoffs = np.array(
@@ -65,7 +65,22 @@ def main() -> None:
     )
 
     ax_cdf = fig.add_subplot(grid[:, 0])
-    ax_cdf.plot(x, percentile_map(x), color=GRAY, linewidth=1.6)
+    ax_cdf.step(
+        [-0.6, 5.0, 22.0],
+        [0.0, 1.0, 1.0],
+        where="post",
+        color=GRAY,
+        linewidth=1.6,
+    )
+    ax_cdf.scatter(
+        [5.0],
+        [0.5],
+        facecolors="white",
+        edgecolors=GRAY,
+        linewidths=1.2,
+        s=24,
+        zorder=4,
+    )
     ax_cdf.scatter(
         [action_a_payoff],
         [percentile_map(action_a_payoff)],
@@ -102,7 +117,7 @@ def main() -> None:
     ax_cdf.set_yticks([0.0, 0.5, 1.0])
     ax_cdf.set_xlabel(r"Payoff $y$")
     ax_cdf.set_ylabel(r"Cell percentile $Q(y)$")
-    ax_cdf.set_title("(a) Nonlinear percentile map", loc="left")
+    ax_cdf.set_title(r"(a) Empirical midrank map, $D=\{5\}$", loc="left")
     ax_cdf.grid(axis="y", color="#D0D0D0", linewidth=0.5, alpha=0.55)
     ax_cdf.legend(
         loc="lower right",

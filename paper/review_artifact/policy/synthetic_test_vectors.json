@@ -1,0 +1,86 @@
+[
+  {
+    "name": "midrank_above_single_atom",
+    "function": "empirical_midrank",
+    "kwargs": {"reference": [5.0], "payoff": 10.0},
+    "expected": 1.0
+  },
+  {
+    "name": "midrank_at_single_atom",
+    "function": "empirical_midrank",
+    "kwargs": {"reference": [5.0], "payoff": 5.0},
+    "expected": 0.5
+  },
+  {
+    "name": "player2_first_offer",
+    "function": "player2_offer_payoff",
+    "kwargs": {"proposal_number": 1, "pot": 1.0},
+    "expected": 0.61
+  },
+  {
+    "name": "player2_terminal_offer",
+    "function": "player2_offer_payoff",
+    "kwargs": {"proposal_number": 6, "pot": 1.0},
+    "expected": 0.99
+  },
+  {
+    "name": "player2_discounted_floor_accepts",
+    "function": "player2_accepts",
+    "kwargs": {"own_payoff": 0.95, "round_number": 11, "pot": 1.0},
+    "expected": true
+  },
+  {
+    "name": "hidden_one_round_second_support",
+    "function": "one_round_seller_ask",
+    "kwargs": {"seller_value": 0.8, "scale": 1.0},
+    "expected": 1.19
+  },
+  {
+    "name": "complete_one_round_near_buyer_value",
+    "function": "one_round_seller_ask",
+    "kwargs": {"seller_value": 0.8, "buyer_value": 1.5},
+    "expected": 1.49
+  },
+  {
+    "name": "hidden_terminal_conditional_bound",
+    "function": "hidden_terminal_buyer_bid",
+    "kwargs": {"own_value": 1.2, "seller_asks": [1.1, 1.05]},
+    "expected": 1.01
+  },
+  {
+    "name": "strict_trade_exists",
+    "function": "strict_trade_interval",
+    "kwargs": {"seller_value": 0.8, "buyer_value": 1.2},
+    "expected": [0.8, 1.2]
+  },
+  {
+    "name": "strict_trade_absent",
+    "function": "strict_trade_interval",
+    "kwargs": {"seller_value": 1.2, "buyer_value": 1.0},
+    "expected": null
+  },
+  {
+    "name": "one_shot_persuasion_threshold",
+    "function": "persuasion_commitment_threshold",
+    "kwargs": {"prior_high": 0.5, "high_value": 1.5, "low_value": 0.0, "price": 1.0},
+    "expected": 0.5
+  },
+  {
+    "name": "decline_veto_is_directional",
+    "function": "persuasion_buyer_action",
+    "kwargs": {"posterior_high": 0.8, "high_value": 1.5, "low_value": 0.0, "price": 1.0, "explicit_decline": true},
+    "expected": "pass"
+  },
+  {
+    "name": "bargaining_specific_owner_preempts",
+    "function": "select_owner",
+    "kwargs": {"state": {"family": "bargaining", "role": "player_2", "horizon": 12, "own_discount": 0.95, "messages": false}},
+    "expected": "player2_fixed_disclosed_12"
+  },
+  {
+    "name": "negotiation_terminal_bound_precedes_fallback",
+    "function": "select_owner",
+    "kwargs": {"state": {"family": "negotiation", "role": "buyer", "horizon": 10, "information": "hidden", "terminal": true, "messages": true}},
+    "expected": "hidden_disclosed_10_terminal_bound"
+  }
+]

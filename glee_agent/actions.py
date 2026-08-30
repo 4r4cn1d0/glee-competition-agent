@@ -15,7 +15,7 @@ import logging
 import math
 
 from . import (bargaining_p2_commitment, deterministic_negotiation,
-               first_principles, pricing,
+               first_principles, grok_suppression, pricing,
                runtime_flags, top_buyer_clone, top_buyer_clone_hi_cap10,
                top_opus_buyer_clone, top_opus_buyer_clone_hi_unknown)
 
@@ -703,6 +703,11 @@ def _is_negotiation_opening(game: dict) -> bool:
 def _apply_negotiation_price_guards(action: dict, game: dict) -> None:
     """Apply flagged information-regime postconditions to an outgoing price."""
     if "product_price" not in action:
+        return
+    # The exact-name suppression component owns its zero-profit boundary end to
+    # end. Moving that boundary would hand the targeted opponent positive
+    # surplus, which is precisely the behavior this default-OFF policy forbids.
+    if grok_suppression.owns(game):
         return
     # A first-principles price is terminal by construction -- it is the
     # opponent's own visible value plus a cent, or an exact grid point.  Every

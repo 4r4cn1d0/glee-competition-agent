@@ -18,7 +18,7 @@ import math
 import os
 import random
 
-from . import llm, messages
+from . import grok_suppression, llm, messages
 from .actions import coerce, safe_action
 from .strategies import bargaining, negotiation, persuasion
 
@@ -80,7 +80,8 @@ def _play(game: dict, cfg, log) -> dict:
     #    because it is what the model's reply is checked against.
     raw = decide(game, cfg)
     plan = raw.pop("_plan", None)
-    source = "heuristic"
+    suppression_owned = grok_suppression.is_plan(plan)
+    source = "grok-suppression" if suppression_owned else "heuristic"
 
     # 2. In "full" mode the model may override, but only through the same
     #    repair path — a bad override degrades to the heuristic, never to an
@@ -88,7 +89,8 @@ def _play(game: dict, cfg, log) -> dict:
     # Bargaining is sentence-bank only. Even a stale custom allowlist cannot
     # route its action or message through an LLM; GLEE_BARG_MSG owns that channel
     # downstream of the already-final numeric split.
-    if (family != "bargaining" and cfg.llm_mode == "full" and family in
+    if (not suppression_owned and family != "bargaining"
+            and cfg.llm_mode == "full" and family in
             set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))):
         proposed = llm.propose_action(game, raw, plan, cfg)
         if proposed:
@@ -102,7 +104,8 @@ def _play(game: dict, cfg, log) -> dict:
     # LLM rewords the policy's recommendation persuasively; the recommendation
     # itself is never the model's to change, and any failure falls back to the
     # template (a lost call costs wording, never a game).
-    if (game.get("game_family") == "persuasion" and "persuasion" in
+    if (not suppression_owned
+            and game.get("game_family") == "persuasion" and "persuasion" in
             set((os.environ.get("GLEE_LLM_FAMILIES") or "persuasion").split(","))
             and cfg.llm_mode in ("messages", "full")
             and isinstance(action, dict) and "message" in action
@@ -159,7 +162,8 @@ def _play(game: dict, cfg, log) -> dict:
                   and action["message"].strip()
                   and not _downgraded
                   and _rf.enabled("GLEE_PERS_KEEP_MSG"))
-    if _wants_message(game) and family != "bargaining" and family in llm_fams \
+    if (not suppression_owned and _wants_message(game)
+            and family != "bargaining" and family in llm_fams) \
             and not armed and not pers_final:
         message = None
         if cfg.llm_mode in ("messages", "full"):
