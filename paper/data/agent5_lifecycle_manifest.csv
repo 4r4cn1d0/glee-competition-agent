@@ -1,0 +1,2 @@
+artifact,source,cutoff_utc_inclusive,rows,sha256
+agent5_lifecycle_rating_snapshots.csv,logs/ratings_history.jsonl,2026-08-30T12:01:32.549750Z,1348,3a43f9b6ad088418d549ae055d97d33b86bc99c96e995925a98b36073ba41ee5

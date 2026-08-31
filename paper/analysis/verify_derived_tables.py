@@ -17,10 +17,25 @@ def read_rows(name: str) -> list[dict[str, str]]:
 
 coverage = {row["profile"]: row for row in read_rows("log_archive_coverage.csv")}
 submitted = coverage["submitted"]
-finals = int(submitted["terminal_finals"])
-public_total = int(submitted["public_total_at_audit"])
-assert (finals, public_total) == (46_301, 46_564)
-assert round(100 * finals / public_total, 2) == 99.44
+official_rated = int(submitted["public_total_at_audit"])
+lifetime = read_rows("agent5_lifecycle_family_census.csv")
+local_assignments = sum(int(row["assignments"]) for row in lifetime)
+local_completed = sum(int(row["status_completed"]) for row in lifetime)
+local_failed_terminal = sum(
+    int(row["outcome_timeout"])
+    + int(row["outcome_invalid"])
+    + int(row["outcome_abandoned"])
+    + int(row["outcome_failed"])
+    for row in lifetime
+)
+local_active = sum(int(row["status_active"]) for row in lifetime)
+assert (
+    local_assignments,
+    local_completed,
+    local_failed_terminal,
+    local_active,
+    official_rated,
+) == (46_316, 46_079, 222, 15, 46_564)
 
 era = {row["family"]: row for row in read_rows("final_policy_era_census.csv")}
 assert {family: int(row["games"]) for family, row in era.items()} == {
@@ -69,7 +84,7 @@ assert (
     int(frozen_parser["purchased_strict_miss_turns"]),
     int(frozen_parser["purchased_strict_miss_games"]),
 ) == (14_900, 146, 33, 40, 21)
-final_parser = parser_slices["complete_final_era"]
+final_parser = parser_slices["complete_preclose_window"]
 assert (
     int(final_parser["all_persuasion_games"]),
     int(final_parser["buyer_role_games"]),
@@ -80,7 +95,7 @@ assert (
     int(final_parser["low_purchased_outcomes"]),
 ) == (25, 14, 11, 80, 4, 4, 4)
 
-print("PASS: archive coverage is 46,301/46,564 = 99.44%")
+print("PASS: local lifecycle and official rated totals are verified separately")
 print("PASS: pre-close subcohort is 63 games and 787 own actions")
 print("PASS: two final-profile windows are 245 joined games, 244 rated games, 1 timeout, 2,288 own actions, 0 logged errors")
 print("PASS: persuasion parser denominators match the frozen and pre-close tables")
