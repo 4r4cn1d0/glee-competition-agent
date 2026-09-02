@@ -133,7 +133,10 @@ audit windows in Section~\ref{sec:behavior}. Its object is the locally returned
 action, not a component effect or proof that every live process loaded the
 recorded state.
 
-Five recurring terms are used throughout. A \emph{wire} is the exact returned
+This appendix accompanies the four-page paper and is not required to read it;
+the paper's claims stand on the main text, and this section supplies the
+specification a reader would need to reimplement or audit the policy. Five
+recurring terms are used throughout. A \emph{wire} is the exact returned
 action after coercion, and a \emph{protected wire} bypasses the price
 postguards. \emph{Shadowed} means that, by static inspection of the frozen
 source, an earlier rule returns an action on every state in the later rule's
@@ -171,7 +174,7 @@ appear in the accompanying manifest.}
 \toprule
 Object & Recorded identifier or value \\
 \midrule
-Source & Commit \texttt{b54cb33ad9f4fe7da4c667262eee00ffaeac3ab6}; 23-file asset manifest. \\
+Source & Commit \texttt{b54cb33ad9f4fe7da4c667262eee00ffaeac3ab6}; 23-file asset manifest, ordered checksum \texttt{1969fa1c\ldots f521498c}. \\
 Overlay receipts & Nonpersuasion \texttt{33c9a48838ac485f}; persuasion \texttt{9fa0fb417acb4c4e}. \\
 Runtime defaults & Hidden bargaining $\delta=.90$ and cap 99; negotiation clock 10 and continuation probability $.65$; margin weight $.40$. \\
 Execution mode & LLM off; bargaining messages off; persuasion token style preserved. \\
@@ -180,7 +183,12 @@ Execution mode & LLM off; bargaining messages off; persuasion token style preser
 \end{table}
 
 An \emph{owner} is the first eligible rule that returns a candidate action;
-family transforms may follow. The common coercer repairs the phase schema,
+family transforms may follow. Negotiation owners carry the identifiers used by
+the census in Section~\ref{sec:behavior}: N1 is the outer one-round seller
+(census \emph{cent-owner}), N2 the complete-information $T=10$ buyer, N3 the
+hidden $T=10$ terminal buyer, N4 the observed-leader buyer table (census
+\emph{leader-buyer}), and N5 the generic stack (census \emph{current-seller}
+in its seller instantiation). The common coercer repairs the phase schema,
 applies negotiation price postguards except in first-principles-owned states or
 for exact recomputed deterministic wires, removes forbidden text, and truncates
 text above 2,000 characters. That output is the \emph{returned action}; server
@@ -193,9 +201,11 @@ accept; persuasion falls back to recommending as seller and buying as buyer.
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Summary of priority in the recorded final policy. Within bargaining
-and negotiation, later rows are reached only when earlier eligible rules return
-no action. Persuasion rows are mutually exclusive action phases.}
+\caption{Summary of priority in the recorded final policy, refining
+Table~\ref{tab:policy} with the eligibility conditions and returned actions
+behind its R, G, H, and S labels. Within bargaining and negotiation, later rows
+are reached only when earlier eligible rules return no action. Persuasion rows
+are mutually exclusive action phases.}
 \label{tab:policy-precedence}
 \setlength{\tabcolsep}{3.0pt}
 \renewcommand{\arraystretch}{0.96}
@@ -259,6 +269,9 @@ C_i=\begin{cases}0,&k=1,\\
 \label{eq:banked-barg-aspiration}
 \end{equation}
 The $.57M$ term is an intermediate floor, not a returned-offer invariant. The
+$C_i$ term binds only when $\delta_j>1$, since for $\delta_i,\delta_j\in(0,1]$
+the recursion gives $\delta_i[1-f_j(k-1)]\leq f_i(k)$; it is retained because
+the planner does not exclude that regime. The
 active realistic-continuation estimator, defined for $k\geq2$, has ceiling
 $S_i=\delta_i f_i(k-1)M$, replaced by $.57M\delta_i$ when
 $\delta_j\geq1$ and $k>2$. With fewer than two opponent offers it returns
@@ -294,8 +307,16 @@ J(x)=\widehat P_{\rm acc}(1-x,r,\delta_A^{\rm raw},d)\widehat Q(x\delta_i^{r-1})
 +[1-\widehat P_{\rm acc}(1-x,r,\delta_A^{\rm raw},d)]\widehat V_{\rm cont},
 \label{eq:banked-bob-search}
 \end{equation}
-where $d$ is Alice's latest retained share and a missing Alice discount is
-passed as \texttt{None}, activating the model's hidden-discount indicator. If
+Here $\widehat Q$ is a midrank over the cell's fitted knot list of Bob payoff
+shares, so its argument is a discounted share and its value is a percentile in
+$[0,1]$; $\widehat V_{\rm cont}$ is a fitted percentile on the same scale,
+read from a table keyed by $\min(r,6)$ and a two-valued clock that is
+\emph{patient} when $\delta_i$ is missing or at least 1 and \emph{burning}
+otherwise, with default $.42$ when no row matches. Its recorded rows run from
+$.0626$ (round 6, burning) to $.8029$ (round 4, patient). The quantity $d$ is
+the share Alice most recently asked to retain for herself, and a missing Alice
+discount is passed as \texttt{None}, activating the model's hidden-discount
+indicator. If
 $\ell$ is the larger of $.20$, the current target share, and Bob's best received
 share, candidates are $\operatorname{round}(\ell+.01i,4)$ for
 $i=0,\ldots,\operatorname{round}[(.95-\ell)/.01]$; an off-grid $\ell$ can put
@@ -304,7 +325,10 @@ when $J(x)>\widehat V_{\rm cont}+.005$; otherwise the pre-model target remains.
 The CDF key is $(M,T^{\rm field},\mathbf1\{T\text{ known}\},
 \mathbf1\{\text{complete}\})$, with $T^{\rm field}=\texttt{None}$ when
 withheld, and falls back to a pooled CDF. Missing model or CDF also leaves the
-target unchanged. Role, discounts, message mode, and opponent adjustment are
+target unchanged. The acceptance model, payoff CDF, and continuation table are
+fitted together on 9,881 logged games and 15,812 offers at a $.2903$ pooled
+acceptance rate; the fit pools opponents, so it is a field average rather than
+a profile for any named opponent. Role, discounts, message mode, and opponent adjustment are
 absent from the CDF, so this is a raw-rank proxy, not the official optimizer.
 
 At computed $k\leq1$, including the synthetic round-99 boundary, the generic
