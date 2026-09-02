@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  2 SEP 2026 04:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  2 SEP 2026 16:49
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -717,16 +717,26 @@ Underfull \hbox (badness 1259) in paragraph at lines 69--76
 
 [6
 
-] [7] [8] [9] [10] [11]) [12] (./checklist.tex
+] [7] [8]
+Underfull \hbox (badness 1005) in paragraph at lines 282--287
+\T1/ptm/m/n/10 (+20) which equals $\OT1/cmr/m/n/10 14\OML/cmm/m/it/10 ; \OT1/cm
+r/m/n/10 29\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 59\OML/cmm/m/it/10 ; \OT1/cmr/m/n
+/10 60$ \T1/ptm/m/n/10 (+20) on the sup-ported own-discount grid $\OMS/cmsy/m/n
+/10 f\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 8\OML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 9\O
+ML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 95\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1\OMS/cm
+sy/m/n/10 g$\T1/ptm/m/n/10 (+20) . For $\OML/cmm/m/it/10 e \OT1/cmr/m/n/10 =
+ []
+
+[9] [10] [11] [12]) [13] (./checklist.tex
 LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 1
 1.
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/psnfss/ts1ptm
 .fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-) [13
+) [14
 
-] [14] [15] [16] [17] [18]) [19] (./main.aux)
+] [15] [16] [17] [18] [19]) [20] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -735,13 +745,13 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 0B0DBFCF7CD7EE2C680F452CC127B491;2243.
  ) 
 Here is how much of TeX's memory you used:
- 14674 strings out of 467525
- 229345 string characters out of 5408440
- 690966 words of memory out of 5000000
+ 14675 strings out of 467525
+ 229355 string characters out of 5408440
+ 689968 words of memory out of 5000000
  42981 multiletter control sequences out of 15000+600000
  683750 words of font info for 270 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 72i,11n,79p,1001b,819s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 72i,11n,79p,1001b,821s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/am
 sfonts/cm/cmbx10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fo
 nts/type1/public/amsfonts/cm/cmex10.pfb></opt/homebrew/Cellar/texlive/20260301/
@@ -766,10 +776,10 @@ xlive/20260301/share/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></opt/homebrew
 /Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></op
 t/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/times/utmri
 8a.pfb>
-Output written on main.pdf (19 pages, 379319 bytes).
+Output written on main.pdf (20 pages, 387238 bytes).
 PDF statistics:
- 417 PDF objects out of 1000 (max. 8388607)
- 342 compressed objects within 4 object streams
- 102 named destinations out of 1000 (max. 500000)
+ 426 PDF objects out of 1000 (max. 8388607)
+ 350 compressed objects within 4 object streams
+ 103 named destinations out of 1000 (max. 500000)
  58974 words of extra memory for PDF output out of 61914 (max. 10000000)
 

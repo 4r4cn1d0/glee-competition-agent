@@ -133,15 +133,28 @@ audit windows in Section~\ref{sec:behavior}. Its object is the locally returned
 action, not a component effect or proof that every live process loaded the
 recorded state.
 
+Five recurring terms are used throughout. A \emph{wire} is the exact returned
+action after coercion, and a \emph{protected wire} bypasses the price
+postguards. \emph{Shadowed} means that, by static inspection of the frozen
+source, an earlier rule returns an action on every state in the later rule's
+scope, so the later rule cannot reach the wire. An \emph{overlay} is a
+recorded flag dictionary applied over source defaults, and \emph{banked}
+marks the recorded values intended for the audit windows. The negotiation
+router generation V1 and the persuasion parser generations V1--V3 are
+unrelated numbering schemes, and symbols such as $e$, $g$, and $u$ are local
+to each family subsection.
+
 \subsection{Frozen scope and common action path}
 
-The recorded composite slot launched the \texttt{hardliner} profile from source
+The recorded composite slot launched the final profile (internal slot name
+\texttt{hardliner}) from source
 commit \texttt{b54cb33}; a separate manifest
 hashes 23 files from it. The profile supplied bargaining SPE weight 1 and clock
 cap 60 before the effective overlay. Table~\ref{tab:policy-receipt} records
-other non-source inputs. All recorded per-game hash arms were zero and the
-custom randomized-probe router was off; unrecorded arms evaluate at frozen
-source defaults. Thus, with LLM mode off, the policy was deterministic
+other non-source inputs. All 22 recorded per-game hash arms were zero and the
+custom randomized-probe router was recorded off in the dated snapshot;
+unrecorded arms, including the source's six post-router repair overlays,
+evaluate at frozen source defaults. Thus, with LLM mode off, the policy was deterministic
 conditional on the request, overlay, defaults, frozen assets, parser, cache
 state, inherited environment, and source version.
 
@@ -160,7 +173,7 @@ Object & Recorded identifier or value \\
 \midrule
 Source & Commit \texttt{b54cb33ad9f4fe7da4c667262eee00ffaeac3ab6}; 23-file asset manifest. \\
 Overlay receipts & Nonpersuasion \texttt{33c9a48838ac485f}; persuasion \texttt{9fa0fb417acb4c4e}. \\
-Runtime defaults & Hidden bargaining $\delta=.90$ and cap 99; negotiation clock 10 and continuation probability $.65$. \\
+Runtime defaults & Hidden bargaining $\delta=.90$ and cap 99; negotiation clock 10 and continuation probability $.65$; margin weight $.40$. \\
 Execution mode & LLM off; bargaining messages off; persuasion token style preserved. \\
 \bottomrule
 \end{tabularx}
@@ -173,8 +186,9 @@ for exact recomputed deterministic wires, removes forbidden text, and truncates
 text above 2,000 characters. That output is the \emph{returned action}; server
 receipt is separate. An exception, invalid candidate, or unrepairable candidate
 triggers a protocol-legal fallback and then a phase-shaped last resort. These
-are not utility-safe: offers use the nearest legal equal bargaining split or
-the negotiator's own value, decisions accept, and persuasion recommends or buys.
+are not utility-safe. Bargaining offers fall back to the nearest legal equal
+split and negotiation offers to the negotiator's own value; decision phases
+accept; persuasion falls back to recommending as seller and buying as buyer.
 
 \begin{table}[H]
 \centering
@@ -209,6 +223,9 @@ Persuasion & Buyer phase & V2 posterior and money gate. & Disabled overlays, cre
 Eligibility requires the focal and current player to be P2, a valid bargaining
 phase with correct proposer and parity, \texttt{horizon\_known=True}, numeric
 $T=12$, numeric $\delta_2=.95$, \texttt{messages\_allowed=False}, and $M>.01$.
+On decision rounds it additionally requires a well-formed current offer record
+with the correct proposer, round, and gains summing to $M$, and exactly one
+armed commitment flag, failing closed otherwise.
 It does not inspect Alice's discount or the \texttt{complete\_information}
 flag. On Bob's six even-round proposal opportunities, it requests Bob payoffs
 \[
@@ -218,8 +235,12 @@ On odd decision round $r$, it accepts Bob payoff $b_r$ exactly when
 Eq.~\eqref{eq:bargaining-floor} holds. For rounds 2--10, let $g=s_rM$ for the
 listed share $s_r$: if $g$ lies within $10^{-9}\max(M,1)$ of an integer, Python
 ties-to-even rounding is used; otherwise $g$ is preserved. Alice receives the
-exact residual. The round-12 $M-.01$ wire remains exact. Every independently
-verified owned offer bypasses generic rounding. This is internal discipline,
+exact residual. The round-12 $M-.01$ wire remains exact and, like every $\pm.01$ terminal
+wire in this appendix, assumes the opponent accepts $\epsilon$ surplus.
+Owned offers bypass generic rounding by design; the 30 audited silent-Bob
+actions all matched this schedule exactly. Acceptance is implemented in
+division form, $b_r\geq(M-.01)(.95)^{11}/(.95)^{r-1}$, equivalent over reals
+but not over binary floats at exact boundaries. This is internal discipline,
 not an observable commitment or equilibrium claim.
 
 \paragraph{Generic owner.}
@@ -227,8 +248,9 @@ Let $r$ be the current round. Missing own discount gives $\delta_i=1$; an
 absent opponent-discount key gives the planner $\delta_j=.90$. A horizon is
 treated as disclosed only when \texttt{horizon\_known} is not false and
 \texttt{max\_rounds} is present. Set $T$ to that cap or otherwise 99, and
-$k=\max(1,T-r+1)$. With the recursion $f_i$ in
-Section~\ref{sec:strategy}, the pre-transform aspiration is
+$k=\max(1,T-r+1)$. With the recursion $f_i$ in Section~\ref{sec:strategy}, which is the
+finite-horizon alternating-offer benchmark rather than the infinite-horizon
+result of \citet{rubinstein1982}, the pre-transform aspiration is
 \begin{equation}
 a_0=\min\{M,\max[f_i(k)M,.57M,C_i]\},\qquad
 C_i=\begin{cases}0,&k=1,\\
@@ -237,10 +259,10 @@ C_i=\begin{cases}0,&k=1,\\
 \label{eq:banked-barg-aspiration}
 \end{equation}
 The $.57M$ term is an intermediate floor, not a returned-offer invariant. The
-active realistic-continuation estimator has ceiling
+active realistic-continuation estimator, defined for $k\geq2$, has ceiling
 $S_i=\delta_i f_i(k-1)M$, replaced by $.57M\delta_i$ when
 $\delta_j\geq1$ and $k>2$. With fewer than two opponent offers it returns
-$S_i$. Otherwise, let $o_0,o_1$ be the first and last gains offered to us,
+$S_i$. Otherwise, let $o_0,o_1$ be the first and last gains offered to us in rounds $r_0,r_1$,
 $g=(o_1-o_0)/(r_1-r_0)$ with denominator at least one, and
 $h_{\max}=\min(5,k-1)$. It returns
 \begin{equation}
@@ -258,7 +280,7 @@ H_i=\begin{cases}
 \end{cases}
 \label{eq:banked-barg-clock}
 \end{equation}
-which equals $14,29,59,60$ on the supported discount grid. For
+which equals $14,29,59,60$ on the supported own-discount grid $\{.8,.9,.95,1\}$. For
 $e=\min\{1,\max[0,(r-1)/H_i]\}$ and $L$ the greater of $R_i$ and the best
 observed opponent offer, the hidden-horizon target is
 $L+(a_0-L)(1-e)^2$ when $a_0>L$.
@@ -296,23 +318,26 @@ F_i=\min\{.50,\delta_i(.05)/(1-\delta_i)\}\quad(\delta_i<1),
 No equality repair was banked: binary floats make the nominal $.20$ and $.45$
 floors at $\delta_i=.8,.9$ slightly larger, so exact $.20M$ or $.45M$ offers can
 fail \texttt{>=}. In the intended reconstruction, absent
-\texttt{BARG\_CLIFF\_GUARD} is false; if the threshold still rejects a positive
-hidden-horizon offer at $r\geq H_i$, the pacing fallback accepts. The configured
-high-share delay child was unreachable because its deterministic discount-aware
-no-regression parent was off. Generic integer-pot offers use Python rounding on
+\texttt{BARG\_CLIFF\_GUARD} evaluates false; if the threshold still rejects a
+positive hidden-horizon offer at $r\geq H_i$, the pacing fallback accepts. The
+configured high-share delay child (\texttt{BARG\_HIGH\_SHARE\_DELAY\_GUARD})
+was unreachable by static inspection because its parent gate
+(\texttt{BARG\_DISCOUNT\_NO\_REGRESS}) was recorded as off. Generic integer-pot offers use Python rounding on
 our gain and the exact residual; noninteger pots use cents with residual repair.
 
 \subsection{Negotiation}
 \label{app:policy-negotiation}
 
 Write seller cost $s$, buyer value $b$, price $p$, and scale $B$. The outer
-one-round seller owner runs before the V1 whole-policy router; it normally
-shadows V1's duplicate one-round branch. It asks $b-.01$ when $b$ is visible,
+one-round seller owner runs before the V1 whole-policy router; whenever it
+returns an action it shadows V1's duplicate one-round branch. It asks $b-.01$ when $b$ is visible,
 using the midpoint only if $b-s\leq.02$. With hidden $b$, costs
 $.8B,1.0B,1.2B,1.5B$ map respectively to
 $1.2B-.01,1.2B-.01,1.5B-.01,2B$. The first three values maximize the declared
-pooled seed-midrank proxy in Eq.~\eqref{eq:hidden-seller}; the last is a
-dead-cell convention. V1's remaining action-changing branch is a
+per-configuration seed-midrank average of Eq.~\eqref{eq:hidden-seller}, an
+equally weighted mean over the 24 per-cell seed midranks; a single seed CDF
+pooled across those cells instead selects $1.0B$ at cost $.8B$ and was
+rejected during development. The last value is a dead-cell convention. V1's remaining action-changing branch is a
 complete-information $T=10$ buyer: it offers or counters at $s+.01$ (or the
 midpoint when $b-s\leq.02$), accepts before terminal only when its share of
 $b-s$ is at least $.994$, and accepts any strictly profitable terminal offer.
@@ -331,8 +356,10 @@ The observed-leader table requires a game ID, on-grid own value, valid offer or
 decision phase, explicit Boolean information and horizon markers, and either a
 known cap of 1 or 10 or an unknown horizon with missing \texttt{max\_rounds}.
 Unsupported or malformed buyers fall to the generic stack. An owned buyer
-counts prior distinct own price wires and holds the last element after a
-sequence ends. Complete unknown-horizon prices claim buyer shares
+indexes its path by the count of its prior own price wires, collapsing only
+consecutive duplicate price-and-round echo records, so a held price repeated
+across later rounds advances the index; it holds the final element once a
+path is exhausted. Complete unknown-horizon prices claim buyer shares
 $(.960,.898,.836,.774,.712)$ of visible surplus. The compiled cap-10 sequence
 $(.960,.898,.836,.774,.774)$ is shadowed by the structural owner above. Hidden
 price paths in units of $B$ are
@@ -342,18 +369,44 @@ price paths in units of $B$ are
 1.2 &: (.860000,.860000,.860000,1.030000,1.030000),\\
 1.5 &: (.905000,.905000,1.075000,1.075000,1.245000,1.245000,1.245000,1.245000).
 \end{align*}
-For complete information, share $\rho$ returns price $b-\rho(b-s)$. Prices are
-clipped to $[0,b-.01]$. A true terminal receiver accepts exactly
-when $b-p>0$; otherwise it accepts a profitable seller ask no larger than the
-path's final price, rejects with the current path price, and in hidden unknown
-horizons walks after eight distinct own prices. Message-enabled counters say
-``Above what I can justify. Here is where I can go.'' This is an observed-leader
-imitation rule, not recovered private code or an equilibrium. The recorded
-buyer anchor and learned buyer acceptance rows are shadowed on these owned
-paths.
+For complete information, share $\rho$ returns price $b-\rho(b-s)$, and a
+known cap of 1 uses the single-element prefix $(.960)$. Hidden prices are
+clipped to $[0,b-.01]$. The decision order is: a true terminal receiver
+accepts exactly when $b-p>0$; a profitable seller ask no larger than the
+path's final price is accepted; in hidden unknown horizons the buyer walks
+after eight own price wires; otherwise it rejects with the current path price.
+Message-enabled counters say ``Above what I can justify. Here is where I can
+go.'' This is an observed-leader imitation rule, not recovered private code or
+an equilibrium. The recorded buyer anchor and learned buyer acceptance rows
+are shadowed on these owned paths.
+
+The lineage of these paths is disclosed here rather than left to the released
+trajectories. The development exclusion that Section~\ref{sec:strategy} lists
+as ``leader clone'' refers to the randomized whole-policy arm, not to the
+buyer content specified here. The banked buyer coverage equals the buyer coverage of the
+randomized whole-policy clone whose experiment Section~\ref{sec:competition}
+reports as stopped: at the frozen 91-game checkpoint the hidden
+unknown-horizon slice scored $-.227$ per game for the clone against $+.093$
+for control, with 10 of 11 clone games walking, while hidden cap-10 showed the
+opposite directional signal ($+1.573$ against $-.236$, then $+2.467$ against
+$+1.100$ on a small prospective checkpoint); neither interval met the
+promotion rule. A narrower assembly excluding the adverse slice existed in the
+frozen source and was recorded off; the broader assembly shipped. The printed
+$.8B$ path is structurally incapable of agreement against an individually
+rational seller, since its maximum price sits below every feasible cost, and
+was retained because copying the complete policy means retaining its dead
+cells. The quoted counter sentence, the seller table sentences below, and
+these price coefficients are constants copied from observed public play; as
+banked constants of the submitted policy they are reported verbatim, while
+raw transcripts and opponent identities remain withheld.
 
 \paragraph{Remaining sellers.}
-In supported generic seller cells, a real cap has $T=10$ and
+At the wire level, complete-information generic seller offers always claim
+$.95$ of visible surplus on the first outgoing wire and at least $.80$
+afterward; the coercion postguard below enforces those bounds on every
+supported returned path, including stall-matched prices, so the machinery in
+this paragraph determines hidden-seller prices and acceptance decisions. In
+supported generic seller cells, a real cap has $T=10$ and
 $R=\max(1,T-r+1)$; otherwise $R=\max(1,11-r)$. The policy uses
 $e=1-(R-1)/10$, clipped to $.85$ only when uncapped. Let $h$ be the maximum
 finite opponent buyer price in offer, counter, and last-offer records. Treating
@@ -379,22 +432,36 @@ For continuation, write seller surplus $u(p)=p-s$. With fewer than two opponent
 price records, $\widehat u=\max[0,u(t)]$. Otherwise a nonpositive first-to-last
 concession rate gives $\widehat u=\max[0,u(p_{\rm last})]$; a positive rate is
 projected for $1,\ldots,\min(4,R-1)$ steps and the largest nonnegative surplus
-is retained. In both cases $\widehat u$ is capped by
-$\max[0,u(a)]$, and $V_c=.65(1-1/R)\widehat u$.
+is retained. The trend branches cap $\widehat u$ by $\max[0,u(a)]$; the no-trend branch
+returns $\max[0,u(t)]$ uncapped, which the recorded configuration keeps below
+the anchor. Then $V_c=.65(1-1/R)\widehat u$.
 
 The decision order is: true-terminal positive-gain acceptance; unprofitable
-late uncapped deadgame walk after a detected stall; nonterminal visible-span
-veto below $.48$; configured $.60$ final-option
+late uncapped deadgame walk (elapsed at least $.6$) after a detected stall;
+nonterminal visible-span veto below $.48$; configured $.60$ final-option
 comparison; hidden acceptance table; stall acceptance; $V_c$ acceptance; then
-a role-improving counter. The frozen learned ask maps are empty, so the enabled
-table never changes $t$ and acts only through hidden seller acceptance. Its
-thresholds by elapsed quartile are
-$(.498408369,.436318357,.034463609,.226859056)B$.
-The $.60$ option is shadowed by the earlier $.48$ veto on its complete-information
-scope, and the configured $.80$ ultimatum writer is also shadowed on supported
-returned paths. Configured posterior and curve-pricing writers are likewise
-action-shadowed on supported returned paths. The $.40$ span invariant is reached,
-but is output-dominated by the $.48$ acceptance veto and later $.80$ claim floor.
+a role-improving counter. The final-option value is asset-defined: the seller
+side maximizes fitted acceptance-weighted surplus over acceptance-model bins
+with at least 20 observations under the recorded margin weight $.40$, the
+buyer side maximizes fitted acceptance times surplus, and both scale by $.6$.
+The frozen learned ask maps are empty, so the enabled table never changes
+$t$; it acts through hidden acceptance, taking a profitable standing offer
+exactly when current surplus reaches the elapsed-quartile threshold. The
+seller thresholds are $(.498408369,.436318357,.034463609,.226859056)B$; the
+buyer rows, $(.132607,.329608,.075918,.118423)B$, are reachable only by the
+fall-through buyers described next. Both are retained learned values stored
+without fit metadata, and the near-zero third seller quartile is an unvetted
+fitted artifact kept for fidelity. The $.60$ option is shadowed by the earlier
+$.48$ veto on its complete-information scope, and the configured $.80$
+ultimatum writer is shadowed on supported returned paths, as are the
+configured posterior and curve-pricing writers. The $.40$ span invariant is
+reached, but its output is always overwritten by the $.48$ acceptance veto
+and the later $.80$ claim floor.
+
+Unowned or malformed buyers reach the same generic stack instantiated for the
+buyer seat: anchor $.15b$, buyer stall parks $(\varnothing,.9B,1.1B,1.3B)$
+for values $(.8B,1.0B,1.2B,1.5B)$, and the buyer acceptance rows above. No
+such state occurred in the recorded windows.
 
 The seller text table requires messages, a game ID, seller role, explicit
 Boolean information and horizon markers, a supported cap, a price-bearing offer
@@ -414,12 +481,14 @@ postguard, and first-principles states and exact buyer wires bypass it.
 \label{app:policy-persuasion}
 
 \paragraph{Seller.}
-Exact quality string \texttt{high} is always recommended. A buyer high value is
-treated as known solely when its field is nonmissing. Otherwise, for LOW
-quality, the seller recommends iff filtered history is empty or the cumulative
-truthy buy rate is at least $.5$. With visible values, it recommends LOW iff prior value
-$pv+(1-p)u$ weakly exceeds price. Otherwise the banked honesty horizon 99 and
-zero lie shading make it truthful throughout the 20-round game. The runtime
+The seller cases, in order: (i) exact quality string \texttt{high} is always
+recommended; (ii) when the buyer high value is unknown (its field missing), a
+LOW item is recommended iff the dictionary-shaped history records are empty or
+their cumulative truthy buy rate is at least $.5$; (iii) with visible values,
+a LOW item is recommended iff prior value $pv+(1-p)u$ weakly exceeds price;
+(iv) a LOW item failing (iii) is declined, and the banked honesty horizon 99
+with zero lie shading keeps every refusal truthful across the 20-round
+horizon. The runtime
 overlay overrides more aggressive wrapper defaults. In text mode, token style
 and message preservation return literal ``yes'' or ``no''; optional seller
 overlays were off.
@@ -438,7 +507,8 @@ w^0_{\rm text,lo}&=(.16190,.13936,.10638,.07602,.08400,.43234),\\
 w^0_{\rm text,mid}&=(.12912,.10903,.08988,.07497,.12686,.47014),\\
 w^0_{\rm text,hi}&=(.08032,.07913,.08491,.12060,.21062,.42441).
 \end{align*}
-The loader rechecks at most every ten seconds, retains its last valid cached
+The printed vectors are the exact stored values; two of the six sum to
+$.99999$. The loader rechecks at most every ten seconds, retains its last valid cached
 document after a later load failure, and uses uniform weights if no valid model
 has loaded. It clips prior weights below $10^{-4}$, floors history likelihoods
 at $10^{-12}$, and returns to uniform weights if normalization degenerates.
@@ -507,9 +577,21 @@ entry could rewrite negotiation text even with LLM mode off.
 
 The authenticated 245-game join matches 2,288 returned actions to valid replay
 moves, but does not recover every owner or pre-coercion candidate. Negotiation
-contributes only 19 pre-close games and 190 actions (87 seller, 103 buyer), with
-none in the added close window. In persuasion, stricter retrospective parsing
-finds four V1 misses among 80 text-buyer decisions, all in one game; all four
-purchases revealed LOW. Under Table~\ref{tab:evidence-status}, this is an
-implementation specification, not a policy-effect estimate or complete
-deployment receipt.
+contributes only 19 pre-close games and 190 actions (87 seller, 103 buyer; in
+census labels, 85 current-seller wires from the generic stack, 103
+leader-buyer wires from the observed-leader table, and 2 cent-owner asks from
+the outer one-round seller), with none in the added close window. An
+independent recomputation from this appendix's printed rules reproduces all
+102 owned negotiation price wires in that window exactly (68
+complete-information path prices, 32 hidden path prices, and both one-round
+asks), confirms the $.95$ first-wire and $.80$ later-wire bounds on all 59
+complete-information generic seller wires, and matches all 59 sent
+negotiation messages to the fixed table strings, which also bounds
+inherited-overlay text rewriting to zero in the audited windows. In
+persuasion, stricter retrospective parsing finds four V1 misses among the 80
+text-buyer decisions of the pre-close window (the closing window was not
+re-parsed), all in one game; all four purchases revealed LOW. Under
+Table~\ref{tab:evidence-status}, the join and the wire recomputation are
+authenticated replay joins, the parser counts are a retrospective selected
+diagnostic, and the remainder of this section is specification, not a
+policy-effect estimate or complete deployment receipt.

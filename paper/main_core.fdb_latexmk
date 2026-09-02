@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main_core"] 1788204354.56173 "main_core.aux" "main_core.bbl" "main_core" 1788299259.43176 0
+["bibtex main_core"] 1788347978.25609 "main_core.aux" "main_core.bbl" "main_core" 1788347980.24958 0
   "./references.bib" 1788080585.72774 16519 77b1c0ae57926eb31974ca7b4b433f85 ""
   "/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/bibtex/bst/natbib/plainnat.bst" 1772380719 26816 ffe5423d2019860bad9f54bc402fac15 ""
-  "main_core.aux" 1788299259.06105 5302 df5a2cbffa6c149384668d04d90ddd87 "pdflatex"
+  "main_core.aux" 1788347979.7074 5302 df5a2cbffa6c149384668d04d90ddd87 "pdflatex"
   (generated)
   "main_core.bbl"
   "main_core.blg"
   (rewritten before read)
-["pdflatex"] 1788299258.03716 "main_core.tex" "main_core.pdf" "main_core" 1788299259.43207 0
+["pdflatex"] 1788347978.34106 "main_core.tex" "main_core.pdf" "main_core" 1788347980.25057 0
   "/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/base/8r.enc" 1772380719 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1772380719 2971 def0b6c1f0b107b3b936def894055589 ""
   "/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/fontname/texfonts.map" 1772380719 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -139,10 +139,10 @@
   "/opt/homebrew/Cellar/texlive/20260301/share/texmf-var/web2c/pdftex/pdflatex.fmt" 1772380719 3636956 5168b884cb430e6a6336cfea08fa659a ""
   "checklist.tex" 1788093414.08291 26141 9cd820bbc80bb2d189c42c52aa69ae17 ""
   "figures/fig_agent5_lifecycle.pdf" 1788181652.3874 35877 ff8d9b81d74dfa4a96e527c16eb05e0f ""
-  "main.tex" 1788211289.85675 18612 5b1e85e8c561a65c5a229317f9812365 ""
-  "main_core.aux" 1788299259.06105 5302 df5a2cbffa6c149384668d04d90ddd87 "pdflatex"
-  "main_core.bbl" 1788204354.75421 4058 3eec0d6b5b934c6f8f76b7d6ecdfd817 "bibtex main_core"
-  "main_core.out" 1788299259.06237 850 887f32d94ca0abe1028c2e1b02c6eb89 "pdflatex"
+  "main.tex" 1788347976.82911 18586 c5a86acbcdbef5fa528330df407067aa ""
+  "main_core.aux" 1788347979.7074 5302 df5a2cbffa6c149384668d04d90ddd87 "pdflatex"
+  "main_core.bbl" 1788347978.33817 4058 3eec0d6b5b934c6f8f76b7d6ecdfd817 "bibtex main_core"
+  "main_core.out" 1788347979.71015 850 887f32d94ca0abe1028c2e1b02c6eb89 "pdflatex"
   "main_core.tex" 1788211289.8572 179 a6d363029fcfd83f315d91ee7e6fcf5a ""
   "neurips_2026.sty" 1788211500.36758 13703 d9247a4c77506260a38d907dd1996797 ""
   (generated)
