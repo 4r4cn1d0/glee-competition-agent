@@ -623,3 +623,124 @@ Table~\ref{tab:evidence-status}, the join and the wire recomputation are
 authenticated replay joins, the parser counts are a retrospective selected
 diagnostic, and the remainder of this section is specification, not a
 policy-effect estimate or complete deployment receipt.
+
+\section{Experiment flow and terminal dispositions}
+\label{app:experiment-flow}
+
+Section~\ref{sec:competition} reports the failed strategies and rating
+reversals that shaped the final policy. This section supplies the denominator
+behind them: the convention that fixes the candidate count, the flow of those
+candidates to a terminal disposition, and the seven records whose disposition
+is explicitly adverse or invalid. Its headline result is that no named
+candidate in this program was promoted by a rule fixed before its read. Its object is the flow of
+candidates through the development process, not an effect estimate for any
+candidate.
+
+\subsection{Denominator and convention}
+
+The registry contains 35 records drawn from the frozen development log. A
+record is one named candidate, so repeated arming epochs under one salt, design
+and activation headings for one mechanism, and initial-cohort and
+retained-mechanism headings collapse into a single row; splitting the one
+factorial record into its two independently hashed factors would instead give
+36. Three fields are recorded per row, and each is weaker than it may appear.
+
+\emph{Reach} is 1 when the candidate had an action-changing surface, which for
+a never-built implementation is not established. \emph{Live} is 1 when code
+containing the candidate was loaded and its configuration armed at least once
+before the cutoff; it does not imply a natural fire, adequate exposure, or
+efficacy. \emph{Staged} is 1 only for a configuration staged but superseded
+before any behaviorally live cohort, which is why the code-loaded dynamic-stop
+rollout counts as live rather than staged even though its first natural
+mechanism fire was still pending.
+
+Terminal disposition takes three values. \textbf{A} is an explicit adverse or
+invalid disposition. \textbf{S} is stopped or superseded without an efficacy
+verdict. \textbf{N} is no terminal efficacy disposition. The categories are
+exhaustive and mutually exclusive, so the three counts sum to 35.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Experiment flow across the 35-record registry, by terminal
+disposition and whether the candidate was ever live. Live means loaded and
+armed, not naturally fired or adequately exposed.}
+\label{tab:experiment-flow}
+\setlength{\tabcolsep}{4.0pt}
+\renewcommand{\arraystretch}{0.96}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Terminal disposition & Live & Not live & Total \\
+\midrule
+A, explicit adverse or invalid & 4 & 3 & 7 \\
+S, stopped or superseded without a verdict & 15 & 2 & 17 \\
+N, no terminal efficacy disposition & 6 & 5 & 11 \\
+\midrule
+Total & 25 & 10 & 35 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Of the 35 records, 33 had an action-changing surface, 25 were live at least
+once, and exactly one was staged and superseded before a live cohort. The two
+records without established reach are a parser variant that was never built and
+one buyer-selectivity unlock whose surface was never reconstructed.
+\textbf{No row passed a precommitted efficacy-promotion rule.} Seventeen were
+stopped or superseded before a verdict existed, and eleven reached no terminal
+efficacy disposition at all, so the modal outcome of a candidate in this
+program was not rejection on evidence but expiry without one.
+
+\subsection{The seven adverse or invalid records}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Records carrying an explicit adverse or invalid terminal disposition.
+Exposure figures are development-time reach, not final-policy exposure. Only
+one row carries a quantified outcome contrast; the others are mechanism, scope,
+or validity findings.}
+\label{tab:adverse-records}
+\setlength{\tabcolsep}{3.0pt}
+\renewcommand{\arraystretch}{0.94}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{1.15cm}>{\raggedright\arraybackslash}p{3.0cm}Y@{}}
+\toprule
+Record & Candidate & Exposure and terminal finding \\
+\midrule
+REG-010 & Bargaining high-share delay guard & Historical reach 130 turns with a 38-turn live preflight. A later current-stack replay found acceptance worse in 45 of 45 joined cases and the child rule unreachable behind its parent gate. \\
+REG-013 & Surplus-share response probe & Live on two profiles. Assignment contaminated the accept and reject target and the result join was wrong, so the record is invalid as run rather than negative, and must not be restored. \\
+REG-022 & Hidden unknown-horizon 95 percent share ladder & Shadow reach 316 turns across 159 games. Independent review rejected the bundled mechanism and the implementation was removed before deployment. \\
+REG-023 & Hidden unknown-horizon accept-all-profitable & Corrected replay over a 4,050-game cohort exposed 375 decisions and would have changed 156. Exact-percentile contrast $-.06628$, bootstrap 95\% CI $[-.08183,-.05096]$, cohort intent-to-treat $-.00614$. Implementation and reader removed before deployment. \\
+REG-024 & Buyer selectivity safety factorial & Two independently hashed factors, both action-changing surfaces reconstructed. The held-out performance claim failed and neither flag was armed. \\
+REG-031 & Continuation-aware persuasion rank gate & A live census found 828 action flips, of which 539 were unintended. Disarmed and rejected for mechanism failure rather than for a measured loss. \\
+REG-035 & Deterministic discounted-counter guard & Reach on three profiles with later code-loaded live processes. The comparator was then established to belong only to the P2 seat at a disclosed twelve-round horizon, so the broad guard was retired as a scope error, not an adverse efficacy estimate. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two distinctions in that table carry most of its content. First, only REG-023
+supplies a quantified outcome contrast; the remaining six are findings about
+mechanism, scope, or validity, and none of them licenses a statement about what
+the candidate would have done to rating. Second, REG-013 and REG-031 are
+failures of the experiment rather than of the hypothesis. A probe whose
+assignment leaks into the outcome variable and a gate that produces 539
+unintended flips both destroy their own evidence, which is why they are grouped
+with adverse rather than with stopped records.
+
+\subsection{What this census does and does not establish}
+
+The registry is a bounded reconstruction of a development process, not a
+preregistration. Its denominator depends on the stated naming convention above,
+and a different convention gives a different count, as the factorial row shows.
+One disposition is inferential rather than explicit in its source heading, and
+one live-status claim rests on the handoff ledger rather than on the experiment
+record. Reach, live, and staged are recorded from archived state, so a row can
+be live and still have had no natural fire.
+
+The census therefore supports three claims and no more: that 35 named
+candidates entered the process under this convention, that seven ended with an
+explicit adverse or invalid disposition, and that none was promoted by a rule
+fixed before its read. It does not establish that the retained policy is better
+than the candidates that were stopped, that the stopped candidates were
+harmful, or that any single record changed the competition endpoint. Under
+Table~\ref{tab:evidence-status} the flow counts are a defined observational
+corpus audit and the REG-023 contrast is a retrospective selected diagnostic.
