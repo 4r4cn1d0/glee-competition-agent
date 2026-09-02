@@ -1,0 +1,19 @@
+claim_id,location,claim_type,claim_summary,evidence_ids,support_level,alignment_issue,limitation,requested_action
+CLAIM-A-001,AppendixA:evidence-status,methods,Evidence status taxonomy defines six classes used to grade every downstream claim,TAB-evidence-status,supported,none,Taxonomy is authored not standardised,None
+CLAIM-A-002,AppendixA:rating,methods,Rating map is 2000 plus 8000 times percentile minus one half,EQ-rating;docs-glee,supported,none,Opponent adjustment undocumented by platform,None
+CLAIM-B-001,AppendixB:receipt,methods,Ordered asset checksum 1969fa1c commits the 23-file manifest,DATA-asset-manifest;SCRIPT-verify-artifact,supported,none,Verifier hashes git blobs not the shipped tree,None
+CLAIM-B-002,AppendixB:frozen-scope,methods,All 22 recorded per-game hash arms were zero,DATA-bank-manifest,supported,none,Unrecorded arms evaluate at source defaults,None
+CLAIM-B-003,AppendixB:coverage,primary_outcome,Recomputation reproduces 102 owned negotiation price wires exactly,LOG-composite-turns;ANALYSIS-wire-recompute,supported,none,One wire matches at 1.27e-16 relative not bitwise,None
+CLAIM-B-004,AppendixB:coverage,primary_outcome,59 complete-information seller price wires satisfy the .95 and .80 bounds,LOG-composite-turns,supported,none,Bound rests on three first wires across three games,None
+CLAIM-B-005,AppendixB:coverage,primary_outcome,All 59 sent negotiation messages match the fixed table strings,LOG-composite-turns,supported,none,Bounds emitted text only in this window,None
+CLAIM-B-006,AppendixB:bob-search,mechanistic,V-cont is a fitted percentile keyed by round and clock with default .42,MODEL-barg-bob-offer,supported,none,Fit pools opponents,None
+CLAIM-B-007,AppendixB:bob-search,methods,Acceptance model and CDF fitted on 9881 games and 15812 offers,MODEL-barg-bob-offer,supported,none,None,None
+CLAIM-C-001,AppendixC:denominator,methods,Registry contains 35 records with 33 reached 25 live and 1 staged,DATA-experiment-registry,supported,none,Denominator depends on naming convention,None
+CLAIM-C-002,AppendixC:denominator,methods,Dispositions are 7 adverse 17 stopped and 11 without terminal disposition,DATA-experiment-registry,supported,none,One disposition is inferential,None
+CLAIM-C-003,AppendixC:denominator,primary_outcome,No named candidate was promoted by a precommitted efficacy rule,DATA-experiment-registry;REVIEW-crosswalk,supported,none,Bounded reconstruction not a preregistration,None
+CLAIM-C-004,AppendixC:adverse-table,methods,REG-010 historical reach 130 turns with a 38-turn live preflight,EXPERIMENTS-773-843,unsupported,magnitude,Source records 130/130/130 eligible fired action-changed over 2400 paired simulation games and 38/38/38 over 800 paired games not live turns,Restate as paired-simulation reachability screens and remove the word live
+CLAIM-C-005,AppendixC:adverse-table,methods,REG-022 shadow reach 316 turns across 159 games,HANDOFF-1752-1787,unsupported,magnitude,Source records 316/159/159 as eligible fired action-changed not turns and games,Restate using the eligible fired action-changed convention
+CLAIM-C-006,AppendixC:adverse-table,primary_outcome,REG-023 replay over 4050 games exposed 375 decisions changed 156 contrast -.06628,EXPERIMENTS-1391-1402,supported,none,Retrospective selected diagnostic,None
+CLAIM-C-007,AppendixC:adverse-table,methods,REG-031 live census found 828 action flips of which 539 unintended,EXPERIMENTS-1987-2005,partly_supported,other,Source says turn flips not action flips,Use the source term turn flips
+CLAIM-C-008,AppendixC:adverse-table,mechanistic,REG-035 retired as a scope error not an adverse efficacy estimate,REVIEW-crosswalk-REG035,supported,none,Scope finding rests on a human source note,None
+CLAIM-C-009,AppendixC:establishes,generalization,Census does not establish retained policy is better than stopped candidates,none,supported,none,Explicitly disclaimed,None

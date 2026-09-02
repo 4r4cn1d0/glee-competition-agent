@@ -1058,3 +1058,7 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-09-02 12:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-02 15:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
