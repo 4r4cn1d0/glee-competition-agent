@@ -1,0 +1,13 @@
+{
+  "schema_version": "2.0",
+  "profile_id": "GLEE-COMPETITION-ADAPTIVE-AGENT-REPORT",
+  "study_types": [
+    "observational_study",
+    "randomized_trial"
+  ],
+  "report_kind": "results",
+  "features": [],
+  "domains": [
+    "all"
+  ]
+}

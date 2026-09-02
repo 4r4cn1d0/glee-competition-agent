@@ -1,0 +1,30 @@
+{
+  "channel_separation": {
+    "author_before_editor": false,
+    "author_heading_count": 0,
+    "editor_heading_count": 0
+  },
+  "comments": [],
+  "errors": [
+    {
+      "code": "AUTHOR_CHANNEL_HEADING_REQUIRED_ONCE",
+      "field": "document"
+    },
+    {
+      "code": "EDITOR_CHANNEL_HEADING_REQUIRED_ONCE",
+      "field": "document"
+    }
+  ],
+  "line_count": 224,
+  "notice": "This deterministic lint uses structural and lexical rules. It does not judge scientific validity, verify whether statements are true, or replace accountable human review. Findings contain line numbers and rule IDs, not review or manuscript text.",
+  "schema_version": "2.0",
+  "status": "REVISION_REQUIRED",
+  "structured_comment_count": 0,
+  "valid": false,
+  "warnings": [
+    {
+      "code": "NO_STRUCTURED_COMMENTS_FOUND",
+      "field": "document"
+    }
+  ]
+}

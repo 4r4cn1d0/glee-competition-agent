@@ -1,0 +1,74 @@
+{
+  "schema_version": "2.0",
+  "review_id": "GLEE-IAB-HARSH-REVIEW-2026-08-30",
+  "material": {
+    "status": "unpublished_confidential",
+    "contains_personal_or_sensitive_data": false
+  },
+  "authorization": {
+    "basis": "author_request",
+    "documented": true,
+    "local_processing_authorized": true,
+    "external_processing_authorized": false
+  },
+  "reviewer": {
+    "capacity": "author_requested_reader",
+    "human_accountable": true,
+    "competence_areas": [
+      "agent_evaluation",
+      "game_theory",
+      "statistical_inference",
+      "competition_papers",
+      "scientific_writing",
+      "information_visualization"
+    ],
+    "competence_limits": [
+      "This is an author-side working review, not an official venue decision.",
+      "The panel cannot predict the Best Competition Paper decision.",
+      "Human-opponent research and privacy status require a qualified human determination."
+    ],
+    "conflict_status": "none_identified",
+    "conflicts": []
+  },
+  "venue_policy": {
+    "checked": true,
+    "peer_review_model": "single_anonymized",
+    "confidential_editor_notes_supported": false
+  },
+  "ai_use": {
+    "policy": "permitted_with_disclosure",
+    "planned": "approved_ai_assistance",
+    "permission_confirmed": true,
+    "disclosure_planned": true
+  },
+  "handling": {
+    "local_only": true,
+    "external_service_use": false,
+    "data_reuse_permitted": false,
+    "retention_rule": "retain_per_venue_policy",
+    "deletion_or_retention_record_planned": true
+  },
+  "scope": {
+    "manuscript_type": "competition_report",
+    "requested_focus": [
+      "venue_fit",
+      "award_competitiveness",
+      "claim_evidence_alignment",
+      "methods",
+      "statistics",
+      "game_theory",
+      "agent_behavior_analysis",
+      "reproducibility",
+      "ethics",
+      "figures_and_tables",
+      "four_page_prioritization"
+    ],
+    "out_of_scope": [
+      "official_editorial_decision",
+      "official_award_prediction"
+    ],
+    "specialist_review_needed": [
+      "human_participant_compliance"
+    ]
+  }
+}

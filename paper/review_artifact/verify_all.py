@@ -35,12 +35,8 @@ ALLOWED_FILES = frozenset(
         "data/parser_coverage_aggregate.csv",
         "data/rating_trajectory_relative.csv",
         "data/reported_claims.csv",
-        "figures/expected/audit_contract.png",
-        "figures/expected/final_policy.png",
         "figures/expected/rank_objective.png",
         "figures/expected/rating_trajectory.png",
-        "figures/gen_audit_contract.py",
-        "figures/gen_final_policy.py",
         "figures/gen_rank_objective.py",
         "figures/gen_rating_trajectory.py",
         "policy/__init__.py",
@@ -56,9 +52,7 @@ ALLOWED_FILES = frozenset(
 )
 TEXT_SUFFIXES = {".md", ".py", ".json", ".csv", ".lock"}
 FIGURE_SPECS = {
-    "audit_contract": (1296, 413),
-    "final_policy": (1296, 540),
-    "rank_objective": (1007, 360),
+    "rank_objective": (1044, 432),
     "rating_trajectory": (1152, 503),
 }
 

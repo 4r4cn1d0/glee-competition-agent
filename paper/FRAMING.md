@@ -1,5 +1,10 @@
 # GLEE competition paper: framing brief
 
+Archived pre-close planning note. This August 25 brief is retained only as a
+record of the original narrative choices. The official result and current
+claims are in `main.tex`, `appendix.tex`, and
+`data/submitted_agent_leaderboard_snapshot.csv`.
+
 Status: proposed framing for author confirmation, 25 August 2026.
 
 Target: IAB Workshop at NeurIPS 2026, GLEE competition-paper track. The track
@@ -213,4 +218,3 @@ claim it supports. Do not generate bibliography entries from memory.
    anonymized meanwhile.
 3. Supply the public ID of the submitted agent for the submission form. It
    does not need to appear in the paper unless the organizers require it.
-

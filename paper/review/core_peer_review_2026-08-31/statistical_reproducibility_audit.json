@@ -1,0 +1,79 @@
+{
+  "checklist_id": "GLEE-CORE-STAT-REPRO-2026-08-31",
+  "errors": [],
+  "gap_item_ids_by_category": {
+    "analysis": [
+      "analysis.assumptions_diagnostics",
+      "analysis.clustering_repeated_measures",
+      "analysis.method_design_alignment",
+      "analysis.multiplicity",
+      "analysis.prespecification"
+    ],
+    "data": [
+      "data.inclusion_exclusion",
+      "data.missing_data",
+      "data.outliers_transformations"
+    ],
+    "design": [
+      "design.allocation_randomization",
+      "design.sample_size_precision",
+      "design.unit_and_independence"
+    ],
+    "ethics": [
+      "ethics.approval_consent_governance"
+    ],
+    "integrity": [
+      "integrity.deviations_selective_reporting"
+    ],
+    "interpretation": [
+      "interpretation.claim_evidence_causality"
+    ],
+    "question": [
+      "question.estimand_alignment"
+    ],
+    "reproducibility": [
+      "reproducibility.code_environment_parameters",
+      "reproducibility.data_materials_access",
+      "reproducibility.provenance_versions"
+    ],
+    "results": [
+      "results.complete_outcomes_harms",
+      "results.effect_sizes_uncertainty"
+    ]
+  },
+  "item_count": 22,
+  "item_ids_missing_requested_action": [],
+  "notice": "This is a structured completeness and consistency audit, not a statistical reanalysis, reproducibility claim, quality score, or publication recommendation. A qualified specialist must evaluate methods outside the reviewer's competence.",
+  "schema_version": "2.0",
+  "specialist_review": {
+    "declared_areas": [
+      "adaptive_experimentation",
+      "game_level_dependence",
+      "rank_based_outcomes"
+    ],
+    "declared_needed": "yes",
+    "declared_requested": true,
+    "recheck_recommended": true,
+    "trigger_item_ids": [
+      "analysis.assumptions_diagnostics",
+      "analysis.clustering_repeated_measures",
+      "analysis.method_design_alignment",
+      "analysis.multiplicity",
+      "data.missing_data",
+      "interpretation.claim_evidence_causality",
+      "question.estimand_alignment",
+      "results.effect_sizes_uncertainty"
+    ]
+  },
+  "status": "VALID_WITH_REVIEW_GAPS",
+  "status_counts": {
+    "missing": 4,
+    "not_applicable": 1,
+    "not_assessed": 1,
+    "partly_documented": 15,
+    "verified_present": 1
+  },
+  "study_design": "adaptive_competition_system_with_observational_lifecycle_and_randomized_subexperiments",
+  "valid": true,
+  "warnings": []
+}

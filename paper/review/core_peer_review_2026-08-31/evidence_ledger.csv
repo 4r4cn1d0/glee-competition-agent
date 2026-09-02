@@ -1,0 +1,27 @@
+evidence_id,evidence_object,scope,review_use
+E01,paper/main.tex lines 84-105,core manuscript,Rank objective and one-step rating argument
+E02,Official GLEE documentation and call,public venue material,Scoring and track requirements
+E03,paper/analysis/verify_theory_code.py plus passing local execution,checked-in verifier,Rank reversal and algebraic checks
+E04,paper/data/agent5_lifecycle_family_census.csv,frozen aggregate,Lifecycle assignments actions and outcomes
+E05,paper/data/submitted_agent_bank_manifest.csv,frozen provenance,Final configuration and overlay receipt
+E06,paper/data/agent5_lifecycle_rating_snapshots.csv and manifest,frozen trajectory,Rating chronology
+E07,paper/data/submitted_agent_leaderboard_snapshot.csv,frozen official aggregate,Placement and endpoint ratings
+E08,paper/main.tex lines 290-297,core manuscript,Placement and phase exposure claim
+E09,paper/data/final_window_outcome_summary.csv,frozen derived aggregate,Family and role final-window outcomes
+E10,paper/data/final_policy_two_window_census.csv,frozen aggregate,Two-window assignment and action denominators
+E11,paper/analysis/verify_theory_code.py plus passing local execution,checked-in verifier,Theory-to-code alignment checks
+E12,glee_agent/strategies/bargaining.py and glee_agent/bargaining_p2_commitment.py,production source,Bargaining owners and ladder
+E13,glee_agent/first_principles.py and sim/official_negotiation_seed.py,production source and seed model,Negotiation hidden-seller proxy
+E14,glee_agent/strategies/persuasion.py,production source,Persuasion threshold and posterior policy
+E15,paper/data/agent5_lifecycle_rating_eras.csv,frozen aggregate,Phase trajectory and nonstationarity
+E16,paper/data/experiment_registry_crosswalk.csv,frozen registry,Adaptive strategy search and event coverage
+E17,paper/analysis/analyze_final_window_outcomes.py,checked-in verifier,Local action to authenticated replay join
+E18,paper/data/final_policy_two_window_census.csv,frozen aggregate,Returned action and outcome counts
+E19,.ai/AGENT5_NEGATIVE_NEGO_TRANSCRIPTS_2026-08-28.md,private authenticated audit,Positive payoff and agreement with negative rating changes
+E20,.ai/FINDINGS.md,private measured-fact ledger,Bargaining delay and wording diagnostics
+E21,paper/data/clone_checkpoint_deidentified.csv,deidentified experiment table,Randomized leader-clone result
+E22,.ai/EXPERIMENTS.md,private experiment ledger,Experiment decisions and stopping rules
+E23,paper/evidence_dossier/source_notes/timeline_and_decisions.md,private provenance synthesis,Strategy removals and reversals
+E24,paper/main.tex lines 330-334,core manuscript,Reproducibility statement
+E25,/Users/spiderishi/Downloads/agent5_official_final_windows_2026-08-29_30.json joined by paper/analysis/analyze_final_window_outcomes.py,private official export,Window-stratified recomputation of rating changes
+E26,/Users/spiderishi/Downloads/agent5_official_final_windows_2026-08-29_30.json,private official export,Opponent-type audit showing one human game in the 245-game final audit

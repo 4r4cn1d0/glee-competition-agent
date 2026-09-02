@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import subprocess
 from pathlib import Path
 
 
@@ -33,7 +34,33 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def bank_source_commit() -> str:
+    with BANK_MANIFEST.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    matches = [
+        row["value"]
+        for row in rows
+        if row["record_type"] == "metadata"
+        and row["scope"] == "source"
+        and row["key"] == "git_commit"
+    ]
+    assert len(matches) == 1, "expected one recorded bank source commit"
+    return matches[0]
+
+
+def git_blob(commit: str, relative: str) -> bytes:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{relative}"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    assert result.returncode == 0, f"missing banked git blob: {relative}"
+    return result.stdout
+
+
 def verify_assets() -> None:
+    commit = bank_source_commit()
     with ASSET_MANIFEST.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
     assert len(rows) == 23, f"expected 23 policy assets, found {len(rows)}"
@@ -41,7 +68,7 @@ def verify_assets() -> None:
     for expected_order, row in enumerate(rows, start=1):
         assert int(row["order"]) == expected_order
         relative = row["path"]
-        actual = sha256(ROOT / relative)
+        actual = hashlib.sha256(git_blob(commit, relative)).hexdigest()
         assert actual == row["sha256"], f"hash mismatch: {relative}"
         combined_input.extend(f"{actual}  {relative}\n".encode())
     combined = hashlib.sha256(combined_input).hexdigest()

@@ -962,3 +962,91 @@ scripts/redteam_cycle.sh: line 51: codex: command not found
 ## 2026-08-30 09:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
 
 scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-30 12:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-30 15:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-30 18:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-30 21:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 00:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 03:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 09:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 12:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 15:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 18:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-08-31 21:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 00:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 03:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 06:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 09:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 12:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 15:47Z — surface: the bargaining accept/offer floors and their exact boundary values
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 18:47Z — surface: the negotiation acceptance path: span veto, span invariant, final-round any-positive, and how they interact
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-01 21:47Z — surface: the concession schedule and stall detection
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-02 00:47Z — surface: the persuasion buyer DP and its belief update
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-02 03:47Z — surface: cross-family: anything that reads opponent identity, or any state an opponent can manufacture
+
+scripts/redteam_cycle.sh: line 51: codex: command not found
+
+## 2026-09-02 06:47Z — surface: VARIANCE: which live rules have the highest payoff dispersion, and which cliffs cause large swings rather than small ones
+
+scripts/redteam_cycle.sh: line 51: codex: command not found

@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.0",
+  "review_id": "GLEE-2026-HARSH-THEORY-SEAT",
+  "material": {
+    "status": "unpublished_confidential",
+    "contains_personal_or_sensitive_data": false
+  },
+  "authorization": {
+    "basis": "author_request",
+    "documented": true,
+    "local_processing_authorized": true,
+    "external_processing_authorized": false
+  },
+  "reviewer": {
+    "capacity": "author_requested_reader",
+    "human_accountable": true,
+    "competence_areas": [
+      "game_theory",
+      "automated_negotiation",
+      "agent_systems",
+      "mathematical_audit",
+      "code_to_claim_verification"
+    ],
+    "competence_limits": [
+      "The organizer's opponent-strength adjustment and official tie rule are undisclosed.",
+      "Private server receipts and withheld production interaction logs cannot be independently re-audited from the review bundle.",
+      "The accountable author must verify every citation, calculation, and manuscript locator before relying on this draft."
+    ],
+    "conflict_status": "none_identified",
+    "conflicts": []
+  },
+  "venue_policy": {
+    "checked": true,
+    "peer_review_model": "single_anonymized",
+    "confidential_editor_notes_supported": false
+  },
+  "ai_use": {
+    "policy": "permitted_with_disclosure",
+    "planned": "approved_ai_assistance",
+    "permission_confirmed": true,
+    "disclosure_planned": true
+  },
+  "handling": {
+    "local_only": true,
+    "external_service_use": false,
+    "data_reuse_permitted": false,
+    "retention_rule": "retain_per_venue_policy",
+    "deletion_or_retention_record_planned": true
+  },
+  "scope": {
+    "manuscript_type": "competition_case_study_with_formal_analysis",
+    "requested_focus": [
+      "game_theoretic_correctness",
+      "equation_and_formal_claim_audit",
+      "code_to_policy_alignment",
+      "causal_and_identification_language",
+      "citation_support",
+      "strategy_reproducibility",
+      "decision_useful_figures"
+    ],
+    "out_of_scope": [
+      "editorial_decision",
+      "venue_wide_acceptance_recommendation",
+      "independent_verification_of_private_server_state"
+    ],
+    "specialist_review_needed": [
+      "organizer_platform_rule_confirmation"
+    ]
+  }
+}

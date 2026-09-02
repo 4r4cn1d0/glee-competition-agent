@@ -1,0 +1,49 @@
+{
+  "errors": [],
+  "handling_assertions": {
+    "author_and_editor_channels_must_remain_separate": true,
+    "bundled_tools_are_local_only": true,
+    "data_reuse_authorized": false,
+    "external_service_use_authorized_by_this_report": false
+  },
+  "normalized_scope": {
+    "ai_plan": "approved_ai_assistance",
+    "capacity": "author_requested_reader",
+    "competence_areas": [
+      "methods",
+      "statistics",
+      "causal_inference",
+      "reproducibility"
+    ],
+    "manuscript_type": "competition_paper",
+    "out_of_scope": [
+      "appendix",
+      "supplement",
+      "checklist",
+      "editorial_decision"
+    ],
+    "peer_review_model": "double_anonymized",
+    "requested_focus": [
+      "methods",
+      "statistics",
+      "evidence_alignment",
+      "causal_status",
+      "reproducibility"
+    ]
+  },
+  "notice": "This validates declared process controls only. It does not establish reviewer competence, resolve conflicts, authorize external processing, or assess manuscript quality.",
+  "review_id": "GLEE-CORE-METHODS-2026-08-31",
+  "schema_version": "2.0",
+  "status": "READY_FOR_LOCAL_REVIEW",
+  "valid": true,
+  "warnings": [
+    {
+      "code": "CONFIDENTIAL_NOTES_CHANNEL_UNAVAILABLE",
+      "field": "venue_policy.confidential_editor_notes_supported"
+    },
+    {
+      "code": "COMPETENCE_LIMITS_MUST_BE_DISCLOSED",
+      "field": "reviewer.competence_limits"
+    }
+  ]
+}

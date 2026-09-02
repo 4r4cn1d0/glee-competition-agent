@@ -7,11 +7,15 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.legend_handler import HandlerTuple
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 OUTPUT_DIR = Path(__file__).resolve().parent
 BLUE = "#0072B2"
 ORANGE = "#D55E00"
+ORANGE_LIGHT = "#F7D9CA"
 GRAY = "#666666"
 
 
@@ -34,7 +38,7 @@ def main() -> None:
             "ytick.labelsize": 7,
             "figure.dpi": 300,
             "savefig.dpi": 300,
-            "savefig.bbox": "tight",
+            "savefig.bbox": None,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
             "axes.spines.top": False,
@@ -54,14 +58,14 @@ def main() -> None:
         ]
     )
 
-    fig = plt.figure(figsize=(5.5, 1.72))
+    fig = plt.figure(figsize=(5.8, 2.4))
     grid = fig.add_gridspec(
         2,
         2,
         width_ratios=(1.62, 1.0),
         height_ratios=(1.0, 1.0),
-        wspace=0.42,
-        hspace=0.95,
+        wspace=0.56,
+        hspace=1.45,
     )
 
     ax_cdf = fig.add_subplot(grid[:, 0])
@@ -88,18 +92,16 @@ def main() -> None:
         marker="o",
         s=30,
         zorder=3,
-        label=r"$A$: payoff $10$ surely",
     )
     ax_cdf.scatter(
         action_b_payoffs,
         percentile_map(action_b_payoffs),
-        facecolors="white",
+        facecolors=ORANGE_LIGHT,
         edgecolors=ORANGE,
         marker="s",
         linewidths=1.3,
         s=30,
         zorder=3,
-        label=r"$B$: payoff $0$ or $21$ equally",
     )
     for value in (0.0, 10.0, 21.0):
         ax_cdf.vlines(
@@ -112,27 +114,37 @@ def main() -> None:
             zorder=1,
         )
     ax_cdf.set_xlim(-0.6, 22.0)
-    ax_cdf.set_ylim(0.0, 1.02)
+    ax_cdf.set_ylim(-0.04, 1.04)
     ax_cdf.set_xticks([0, 5, 10, 15, 21])
     ax_cdf.set_yticks([0.0, 0.5, 1.0])
     ax_cdf.set_xlabel(r"Payoff $y$")
-    ax_cdf.set_ylabel(r"Cell percentile $Q(y)$")
-    ax_cdf.set_title(r"(a) Empirical midrank map, $D=\{5\}$", loc="left")
+    ax_cdf.set_ylabel(r"Cell percentile $Q_D(y)$")
+    ax_cdf.set_title(r"(a) Midrank map for $D=\{5\}$", loc="left")
+    ax_cdf.set_axisbelow(True)
     ax_cdf.grid(axis="y", color="#D0D0D0", linewidth=0.5, alpha=0.55)
-    ax_cdf.legend(
-        loc="lower right",
-        frameon=False,
-        fontsize=6.6,
-        handletextpad=0.45,
-        borderaxespad=0.2,
+    ax_cdf.annotate(
+        r"tie: $Q_D(5)=0.5$",
+        xy=(5.0, 0.5),
+        xytext=(6.1, 0.38),
+        color="#4A4A4A",
+        fontsize=7.0,
+        arrowprops={"arrowstyle": "-", "color": GRAY, "linewidth": 0.7},
     )
 
-    labels = ["A", "B"]
-    colors = [BLUE, ORANGE]
+    labels = ["A: sure", "B: lottery"]
+    bar_facecolors = [BLUE, ORANGE_LIGHT]
+    bar_edgecolors = [BLUE, ORANGE]
     hatches = ["", "///"]
 
     ax_payoff = fig.add_subplot(grid[0, 1])
-    bars = ax_payoff.barh(labels, expected_payoffs, color=colors, height=0.55)
+    bars = ax_payoff.barh(
+        labels,
+        expected_payoffs,
+        color=bar_facecolors,
+        edgecolor=bar_edgecolors,
+        linewidth=0.8,
+        height=0.55,
+    )
     for bar, hatch, value in zip(bars, hatches, expected_payoffs):
         bar.set_hatch(hatch)
         ax_payoff.text(
@@ -144,11 +156,20 @@ def main() -> None:
         )
     ax_payoff.set_xlim(0.0, 12.0)
     ax_payoff.set_xticks([0, 5, 10])
-    ax_payoff.set_title("(b) Expected payoff", loc="left")
+    ax_payoff.set_xlabel("Expected payoff")
+    ax_payoff.set_title("(b) Money criterion", loc="left")
+    ax_payoff.set_axisbelow(True)
     ax_payoff.grid(axis="x", color="#D0D0D0", linewidth=0.5, alpha=0.55)
 
     ax_rank = fig.add_subplot(grid[1, 1])
-    bars = ax_rank.barh(labels, expected_percentiles, color=colors, height=0.55)
+    bars = ax_rank.barh(
+        labels,
+        expected_percentiles,
+        color=bar_facecolors,
+        edgecolor=bar_edgecolors,
+        linewidth=0.8,
+        height=0.55,
+    )
     for bar, hatch, value in zip(bars, hatches, expected_percentiles):
         bar.set_hatch(hatch)
         ax_rank.text(
@@ -160,12 +181,79 @@ def main() -> None:
         )
     ax_rank.set_xlim(0.0, 1.05)
     ax_rank.set_xticks([0.0, 0.5, 1.0])
-    ax_rank.set_title("(c) Expected percentile", loc="left")
+    ax_rank.set_xlabel("Expected cell percentile")
+    ax_rank.set_title("(c) Rank criterion", loc="left")
+    ax_rank.set_axisbelow(True)
     ax_rank.grid(axis="x", color="#D0D0D0", linewidth=0.5, alpha=0.55)
 
     for axis in (ax_payoff, ax_rank):
         axis.tick_params(axis="both", which="major", pad=2)
         axis.invert_yaxis()
+
+    legend_handles = [
+        Line2D(
+            [0],
+            [0],
+            color=GRAY,
+            marker="o",
+            markerfacecolor="white",
+            markeredgecolor=GRAY,
+            linewidth=1.5,
+            markersize=4.2,
+            label=r"Reference map $Q_D(y)$",
+        ),
+        (
+            Line2D(
+                [0],
+                [0],
+                color=BLUE,
+                marker="o",
+                linestyle="none",
+                markersize=5,
+            ),
+            Patch(facecolor=BLUE, edgecolor=BLUE, linewidth=0.8),
+        ),
+        (
+            Line2D(
+                [0],
+                [0],
+                color=ORANGE,
+                marker="s",
+                markerfacecolor=ORANGE_LIGHT,
+                markeredgewidth=1.2,
+                linestyle="none",
+                markersize=5,
+            ),
+            Patch(
+                facecolor=ORANGE_LIGHT,
+                edgecolor=ORANGE,
+                hatch="///",
+                linewidth=0.8,
+            ),
+        ),
+    ]
+    fig.legend(
+        handles=legend_handles,
+        labels=[
+            r"Reference map $Q_D(y)$",
+            r"$A$: sure payoff $10$",
+            r"$B$: payoff $0$ or $21$, each with probability $1/2$",
+        ],
+        handler_map={tuple: HandlerTuple(ndivide=None, pad=0.25)},
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        ncol=3,
+        frameon=True,
+        fancybox=False,
+        facecolor="white",
+        edgecolor="#A8A8A8",
+        fontsize=6.8,
+        handlelength=2.2,
+        handletextpad=0.5,
+        columnspacing=1.0,
+        borderpad=0.35,
+    )
+    fig.subplots_adjust(left=0.095, right=0.98, top=0.90, bottom=0.31)
 
     fig.savefig(OUTPUT_DIR / "fig_rank_objective.pdf")
     fig.savefig(OUTPUT_DIR / "fig_rank_objective.png", dpi=300)

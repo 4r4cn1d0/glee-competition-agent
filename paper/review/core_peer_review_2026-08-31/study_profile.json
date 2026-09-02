@@ -1,0 +1,17 @@
+{
+  "schema_version": "2.0",
+  "profile_id": "GLEE-CORE-SYSTEM-REPORT",
+  "study_types": [
+    "competition_system_report"
+  ],
+  "report_kind": "results",
+  "features": [
+    "adaptive_agent",
+    "observational_lifecycle",
+    "randomized_subexperiments"
+  ],
+  "domains": [
+    "machine_learning",
+    "economics"
+  ]
+}

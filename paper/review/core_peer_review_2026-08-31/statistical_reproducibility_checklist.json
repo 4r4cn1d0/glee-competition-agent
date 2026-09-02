@@ -1,0 +1,214 @@
+{
+  "schema_version": "2.0",
+  "checklist_id": "GLEE-CORE-STAT-REPRO-2026-08-31",
+  "study_design": "adaptive_competition_system_with_observational_lifecycle_and_randomized_subexperiments",
+  "specialist_review": {
+    "needed": "yes",
+    "areas": [
+      "adaptive_experimentation",
+      "game_level_dependence",
+      "rank_based_outcomes"
+    ],
+    "requested": true
+  },
+  "items": [
+    {
+      "id": "question.estimand_alignment",
+      "category": "question",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Section 1, lines 84-113", "Abstract, lines 53-69", "Table 2(b)"],
+      "note": "The intended one-step target is adjusted same-cell percentile, while the principal reported final-policy quantities are displayed rating changes and endpoint ratings. Direct final-window same-cell percentiles are absent, and displayed rating changes also depend on inherited rating state and learning rate.",
+      "requested_action": "Define the primary descriptive estimand for the final audit and report the closest observable rank outcome, or explicitly frame displayed rating change as the available proxy."
+    },
+    {
+      "id": "design.unit_and_independence",
+      "category": "design",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Section 1, line 113", "Figure 1 caption", "Table 2 caption"],
+      "note": "The assigned game is named as the unit, but games share configurations, opponents, reference-pool states, policy versions, and time periods. The game bootstrap treats sampled games as exchangeable.",
+      "requested_action": "State the dependence structure and either use a stratified or clustered sensitivity analysis or label the intervals as naive game-level descriptive intervals."
+    },
+    {
+      "id": "design.sample_size_precision",
+      "category": "design",
+      "applicability": "applicable",
+      "status": "missing",
+      "evidence_locations": ["Section 4, lines 308-318"],
+      "note": "Randomized and diagnostic comparisons have small and unequal samples, including 14 joined triggers, 91 clone assignments, and 27 resolved fires, without a precision target or stopping justification in the core.",
+      "requested_action": "For each comparison retained in the four-page core, report the planned decision threshold, stopping rule, and uncertainty sufficient to show what effect sizes remain compatible with the data."
+    },
+    {
+      "id": "design.allocation_randomization",
+      "category": "design",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Section 4, lines 299-318"],
+      "note": "The core states that the leader clone was assigned by game hash and calls the backload comparison randomized, but omits allocation ratio, hash inputs, eligibility timing, implementation checks, and analysis population.",
+      "requested_action": "Add a compact randomization specification for every comparison described as randomized, including unit, ratio, eligibility, hash or seed, and intent-to-treat denominator."
+    },
+    {
+      "id": "design.blinding",
+      "category": "design",
+      "applicability": "not_applicable",
+      "status": "not_applicable",
+      "evidence_locations": [],
+      "note": "The reported interventions are automated game-level policy assignments in a live competition; conventional participant or assessor blinding is not the relevant protection. Allocation concealment and automated outcome retrieval are addressed under randomization and provenance.",
+      "requested_action": ""
+    },
+    {
+      "id": "data.inclusion_exclusion",
+      "category": "data",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Agent Behavior Analysis, lines 207-216", "Section 4, lines 294-297"],
+      "note": "The final windows and half-open phase boundaries are reported, but the rationale for selecting the two noncontiguous final windows and the rule for including major strategy events are not fully specified. The pooled persuasion mean combines 25 preclose games at mean displayed change 1.63 with 29 rated closing games at approximately 0.00.",
+      "requested_action": "State the freeze criterion and all inclusion or exclusion rules for the final audit, phase census, and strategy lineage."
+    },
+    {
+      "id": "data.missing_data",
+      "category": "data",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Agent Behavior Analysis, lines 207-216", "Table 2", "Agent Behavior Analysis, lines 261-285"],
+      "note": "The paper transparently distinguishes 46,316 local assignments from 46,564 official increments and reports one final-audit timeout, but does not quantify missing replay, poll, or metadata mechanisms or their sensitivity implications.",
+      "requested_action": "Give a compact reconciliation table or sentence covering unmatched official games, retained-poll gaps, timeout handling, and missing owner metadata."
+    },
+    {
+      "id": "data.outliers_transformations",
+      "category": "data",
+      "applicability": "applicable",
+      "status": "not_assessed",
+      "evidence_locations": [],
+      "note": "The core does not say whether rating changes, payoffs, raw percentiles, or conversion records were filtered, winsorized, transformed, or deduplicated beyond canonical assignment selection.",
+      "requested_action": "State that no outcome filtering or transformation was used, if true, and define canonicalization and duplicate handling."
+    },
+    {
+      "id": "analysis.prespecification",
+      "category": "analysis",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Section 4, lines 299-328"],
+      "note": "The paper refers to evidence gates and precommitted efficacy reads, but the core does not identify which hypotheses, metrics, thresholds, strata, or stopping rules were fixed before data inspection.",
+      "requested_action": "Label each reported comparison as precommitted, retrospective, or diagnostic and state the associated decision rule in one compact table or sentence."
+    },
+    {
+      "id": "analysis.method_design_alignment",
+      "category": "analysis",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Table 2 caption", "Section 4, lines 299-328"],
+      "note": "Descriptive means and game-level bootstrap intervals are reasonable summaries, but they do not account for configuration, role, opponent, time, or adaptive policy selection. Several experiment summaries omit a fully specified estimand and analysis population.",
+      "requested_action": "Match each result to a named estimand and denominator, and add at least one dependence-aware sensitivity analysis for the final-family summaries."
+    },
+    {
+      "id": "analysis.assumptions_diagnostics",
+      "category": "analysis",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Section 1, lines 94-105", "Figure 1 caption"],
+      "note": "The one-step rank argument states its fixed-adjustment, fixed-pool, positive-rate, and unclipped assumptions. The empirical uncertainty summaries do not assess skew, influential games, dependence, field drift, or sensitivity to the chosen window.",
+      "requested_action": "Retain the mathematical caveats and add a concise robustness statement for window choice, role mix, and influential rating changes."
+    },
+    {
+      "id": "analysis.multiplicity",
+      "category": "analysis",
+      "applicability": "applicable",
+      "status": "missing",
+      "evidence_locations": ["Table 1", "Section 4, lines 299-328"],
+      "note": "Many candidates, strata, gates, windows, and repeated live looks were explored. No familywise or false-discovery control is needed for a purely descriptive system history, but isolated experimental estimates can be selected by this adaptive search.",
+      "requested_action": "State that the strategy search involved multiple adaptive comparisons and distinguish confirmatory randomized reads from exploratory diagnostics; avoid treating nominal intervals as a global error guarantee."
+    },
+    {
+      "id": "analysis.clustering_repeated_measures",
+      "category": "analysis",
+      "applicability": "applicable",
+      "status": "missing",
+      "evidence_locations": ["Table 2 caption", "Figure 1 caption"],
+      "note": "Repeated games can be nested within configuration, role, opponent, reference-pool state, and policy period. The reported game bootstrap and trajectory do not model these repeated structures.",
+      "requested_action": "Provide a stratified-by-family-role and configuration-clustered sensitivity analysis where identifiers permit, or explicitly limit uncertainty claims to the observed game sample."
+    },
+    {
+      "id": "results.effect_sizes_uncertainty",
+      "category": "results",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Table 2(b)", "Section 4, lines 308-328"],
+      "note": "Final-family mean rating changes have intervals, and the leader-clone interval is qualitatively described. Other prominent comparisons report only point estimates or proportions, including the 14-trigger delay, 27-fire challenger, wording conversion, backload loss, and seesaw totals.",
+      "requested_action": "Add uncertainty or exact denominators for every quantitative comparison used to justify a policy decision, and avoid comparative claims when compatible effects are wide."
+    },
+    {
+      "id": "results.denominators_flow",
+      "category": "results",
+      "applicability": "applicable",
+      "status": "verified_present",
+      "evidence_locations": ["Abstract", "Table 2", "Agent Behavior Analysis, lines 207-285", "Section 4, lines 294-318"],
+      "note": "The paper is unusually explicit about local assignments, actions, official increments, rated versus all final games, family windows, phase counts, and small experiment denominators.",
+      "requested_action": ""
+    },
+    {
+      "id": "results.complete_outcomes_harms",
+      "category": "results",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Table 1", "Section 4, lines 308-328"],
+      "note": "The core reports multiple negative results, zero outcomes, timeouts, failed branches, and close failures. Completeness cannot be assessed because the inclusion rule for strategies and analyses is not stated.",
+      "requested_action": "Define the strategy-event inclusion rule and identify any tested candidates omitted from the core because of space rather than outcome."
+    },
+    {
+      "id": "reproducibility.data_materials_access",
+      "category": "reproducibility",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Reproducibility paragraph, lines 330-334"],
+      "note": "Preserved materials are named, but release is only planned and replay access depends on approval.",
+      "requested_action": "Provide an immutable repository or archive identifier, release date, access conditions, and a manifest separating public artifacts from restricted replays."
+    },
+    {
+      "id": "reproducibility.code_environment_parameters",
+      "category": "reproducibility",
+      "applicability": "applicable",
+      "status": "missing",
+      "evidence_locations": ["Reproducibility paragraph, lines 330-334"],
+      "note": "The core contains no environment, model version, dependency lock, configuration schema, randomization seed or hash specification, or run command.",
+      "requested_action": "State the production-equivalent execution target and point to a versioned environment, complete configuration, and deterministic verification commands."
+    },
+    {
+      "id": "reproducibility.provenance_versions",
+      "category": "reproducibility",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Figure 1 caption", "Agent Behavior Analysis, lines 278-285", "Reproducibility paragraph"],
+      "note": "The paper names frozen source, overlay, authenticated polls and replays, but does not expose immutable commit hashes, checksums, source dates, or transformation versions in the core.",
+      "requested_action": "Add one compact artifact identifier or manifest reference covering source, overlay, logs, transformed tables, and figure inputs."
+    },
+    {
+      "id": "ethics.approval_consent_governance",
+      "category": "ethics",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Reproducibility paragraph, lines 330-334"],
+      "note": "The paper recognizes that private replay release needs data-use approval. The supplied final-window export includes one completed persuasion game against a human opponent, but the core does not state the applicable organizer or institutional determination, consent or competition terms, or how message content will be sanitized.",
+      "requested_action": "Obtain the applicable organizer and institutional determination. Add a one-sentence governance statement covering participant types, inclusion of the human game, applicable terms or approval, privacy treatment, and why raw replays are restricted; otherwise exclude that game and recompute affected summaries."
+    },
+    {
+      "id": "interpretation.claim_evidence_causality",
+      "category": "interpretation",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Abstract, lines 67-69", "Section 1, lines 107-113", "Figure 1 caption", "Section 4, lines 299-339"],
+      "note": "The core repeatedly limits observational event attribution and denies component credit for placement. The conclusion still says the endpoint supports competitiveness of measured revision, which reads as a process-effect claim without a comparator.",
+      "requested_action": "Attribute competitiveness to the evolving submitted system and describe measurement as an audit property rather than an identified cause of success."
+    },
+    {
+      "id": "integrity.deviations_selective_reporting",
+      "category": "integrity",
+      "applicability": "applicable",
+      "status": "partly_documented",
+      "evidence_locations": ["Table 1", "Figure 1 caption", "Section 4, lines 299-328"],
+      "note": "Including failed strategies and reversals is a major strength. However, without a declared event-selection rule, readers cannot distinguish a comprehensive audit from a persuasive subset of a much larger adaptive search.",
+      "requested_action": "Declare how major strategies, experiments, and runtime boundaries were selected for the four-page core and identify the authoritative complete registry."
+    }
+  ]
+}

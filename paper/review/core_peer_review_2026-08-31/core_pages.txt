@@ -1,0 +1,249 @@
+         Rank Aware Strategic Policy Design for Language
+                Based Economic Environments
+
+
+                                                     Author Name
+                                                       Affiliation
+                                                  email@example.com
+
+
+
+                                                         Abstract
+ 1             Games in Language Based Economic Environments (GLEE) evaluates agents in
+ 2             multiround bargaining, bilateral negotiation, and repeated persuasion. It converts
+ 3             payoff to a same-configuration, same-role percentile before opponent adjustment
+ 4             and rating. We report our submitted agent’s full development as an adaptive
+ 5             system, not a frozen policy. It routed visible states among game-theoretic owners,
+ 6             empirical rank heuristics, history rules, and legal fallbacks. A census of 46,316 local
+ 7             assignments and 1,348 frozen rating polls traces closed-form solvers, randomized
+ 8             probes, failed imitation and stalling, rollbacks, and a deterministic final router.
+ 9             The agent finished second in the 2026 agent track and third combined, closing at
+10             2590.02 after 46,564 official rated-game increments, with family ratings 2804.82,
+11             2620.36, and 2344.87. A separate final-policy audit covers 245 assignments and
+12             2,288 returned actions; mean displayed changes per game were +1.26, −0.05,
+13             and +0.76 across the three families. Agreement and payoff alone were unsafe
+14             targets. The evidence supports a competitive, traceable adaptive system, but gives
+15             no component causal credit for placement.
+
+
+16   1    Objective, inspiration, and contribution
+17   GLEE spans 960 configurations that vary role, horizon, information, communication, and economic
+18   parameters [GLEE Competition Organizing Team, 2026]. Bargaining divides a pot, negotiation trades
+19   under public or private values, and persuasion repeatedly recommends products whose quality a buyer
+20   learns only after purchase. Shapira et al. study how GLEE’s agent and market design affect self-gain,
+21   efficiency, and fairness [Shapira et al., 2024]. We instead ask how one competition agent should be
+22   designed and revised when success depends on relative outcomes within each configuration and role.
+23   For payoff Y in configuration c, role r, and reference pool at time τ , let q = Qc,r,τ (Y ) be its raw
+24   empirical percentile and qe the undocumented opponent-adjusted value. A normally completed game
+25   updates the unshrunk family rating as
+                                q − .5),
+                G = 2000 + 8000(e                   Rgraw = clip{Rg−1
+                                                                  raw            raw
+                                                                      + ηg (G − Rg−1 ), 100, 5000}.             (1)
+26   The displayed rating also shrinks toward 1000. Under fixed adjustment and reference pool, positive
+27   learning rate, and inactive clipping, maximizing the expected one-step update is equivalent to
+28   maximizing E[e  q ], not necessarily E[Y ]. Even before adjustment, a sure 10 ranks above a 50:50
+29   lottery over 0 and 21 against reference {5}, despite its lower expected payoff. For a terminal offer
+30   x with acceptance probability A(x), accepted payoff u(x), and zero otherwise, the raw objective is
+31   Q(0) + A(x){Q(u(x)) − Q(0)}. Thus a zero can be costly in a cell where the field usually closes.
+32   This tournament-like incentive [Lazear and Rosen, 1981] and the broader distinction between ranking
+33   and regression objectives [Clémençon et al., 2008] motivated rank-aware offer selection, but not a
+34   claim to know the official adjustment.
+35   Our contribution is threefold. First, we develop an observable-state router that combines exact
+36   game-theoretic benchmarks with scoped empirical policies. Second, we reconstruct the focal agent’s
+
+     Submitted to 40th Conference on Neural Information Processing Systems (NeurIPS 2026). Do not distribute.
+37   entire local lifecycle across all three families, including strategies that were tried, rejected, or retained.
+38   Third, we audit the final returned actions against authenticated replays and report failures alongside
+39   the second-place result. The unit of analysis is an assigned game, and only randomized comparisons
+40   receive causal language.
+
+
+41   2     Agent design and strategy evolution
+
+42   The physical submission slot changed policies throughout the competition. We therefore call it the
+43   focal agent and reserve final policy for the bounded configuration first observed on August 29. On
+44   each final-policy turn, a deterministic dispatcher mapped visible state s = (g, r, T, I, C, θi , x, h),
+45   denoting family, role, horizon, information, communication, visible role-private type, public economic
+46   parameters, and history, to an ordered family policy. The first eligible owner returned a candidate
+47   action, numeric postguards and schema coercion produced the wire action, and an exception invoked
+48   a legal fallback. The final windows ran with the LLM disabled. Earlier persuasion development did
+49   use generated wording, which was later removed after it converted less often than templates.
+
+50   Theory-guided owners. For finite complete-information bargaining, the benchmark proposer share
+51   with k opportunities left was fi (1) = 1 and fi (k) = 1 − δj fj (k − 1) [Rubinstein, 1982]. The final
+52   system combined this benchmark with empirical floors, a discount-dependent concession clock, and
+53   a Bob offer search over a coarsened payoff CDF. A narrow silent Bob owner for T = 12, δ2 = .95
+54   instead requested shares .61, .68, .74, .82, .91, (M − .01)/M on even rounds and accepted br on odd
+55   round r iff
+                                        br (.95)r−1 ≥ (M − .01)(.95)11 .                               (2)
+56   For negotiation, complete information supplied the strict trade interval s < p < b; hidden offers
+57   supplied only conditional reservation bounds, consistent with the limits of incomplete-information
+58   bargaining [Chatterjee and Samuelson, 1983, Myerson and Satterthwaite, 1983]. A hidden one-round
+59   seller selected a supported scale π by the finite proxy
+                                 1        X
+                      J¯σ (π) =                  Qseed
+                                                  c(σ,β,m,B),S (1{βB > πB − .01}{πB − .01 − σB}) ,                                                (3)
+                                24
+                                        β,m,B
+
+60   averaging four latent buyer multipliers, two message modes, and three scales. This is a pooled raw-
+61   rank construction, not an official cell optimum. For a one-shot persuasion benchmark, recommending
+62   every HIGH product and a fraction q of LOW products is obedient up to qmax = clip[p(v − P )/{(1 −
+63   p)(P − u)}, 0, 1] [Kamenica and Gentzkow, 2011]. The repeated, noncommitted game violates the
+64   benchmark’s commitment assumption, so the agent used it only to route seller restraint and combined
+65   it with posterior and credibility checks [Crawford and Sobel, 1982, Sobel, 1985, Kreps and Wilson,
+66   1982].
+
+     Table 1: Major strategy lineage across all three families. The appendix gives the exact owner order,
+     formulas, flags, and experiment registry.
+     Family       Motivation and candidates                    Retained in the final lineage                Rejected, reversed, or unresolved
+     Bargaining  Alternating-offer continuation, discount      Finite recursion, synthetic-horizon clock,   Stonewall and economic stall after live or
+                 floors, avoiding the field’s half-pot atom,   rank-aware Bob offer search, and the         adversarial losses; a configured
+                 and a Bob-seat deficit                        silent T = 12 commitment owner               high-share delay guard was unreachable
+     Negotiation ZOPA geometry, terminal proposer              Three structural cell owners, hidden         Broad first-principles promotion,
+                 advantage, the large zero atom, and           terminal bounds, observed-leader buyer       accept-all-profitable replay, leader clone,
+                 observed leading openings                     paths, and seller continuation or            and score-floor challenger all failed their
+                                                               Boulware fallback [Faratin et al., 1998]     evidence gates
+     Persuasion   Obedience, posterior value, credibility,     LLM-free templates, seller restraint or      Hybrid and dynamic backloading, LLM
+                  and message parsing                          all-push, buyer money and tight-cell         wording, and several parser rules were
+                                                               gates, credibility reset, and final          removed; the final reset remained causally
+                                                               BUY-to-PASS veto                             unresolved
+
+
+
+
+67   Figure 1 prevents crediting the final strategy with the full endpoint. Persuasion rose early then
+68   plateaued, negotiation rose during the structural transition, and bargaining closed strongest. Oppo-
+69   nents, pauses, cell exposure, and reference-pool drift confound event attribution.
+
+
+                                                                            2
+                                       1                  2       3                             4                                         5
+                                2800
+
+
+
+
+      Displayed family rating
+                                2600
+
+                                2400
+
+                                2200
+
+                                2000                                                                                                Bargaining
+                                                                                                                                    Negotiation
+                                1800                                                                                                Persuasion
+                                                                                                                                    Competition close
+                                1600
+                                                 Aug 21               Aug 23                Aug 25                 Aug 27            Aug 29
+                                                                                      August 2026 (UTC)
+
+
+
+     Figure 1: Focal-agent displayed ratings in 1,348 authenticated per-family API polls retained in the
+     frozen dataset, from the first poll, after 3,545 cumulative family games, through the first settled
+     poll after close. Lines connect polls. Verified runtime boundaries are: (1) family-winner assembly;
+     (2) bargaining stonewall rollback; (3) measurement reset after the persuasion backload test; (4)
+     deterministic negotiation dispatcher activation; (5) final persuasion overlay and audit boundary. The
+     close line marks competition end. None is an isolated treatment effect.
+
+
+70   3                          Agent Behavior Analysis
+71   We use two complementary denominators. The lifecycle census reads every 46,316 canonical local
+72   assignment record from August 19 to 30, spanning 512,456 nested own actions. It describes an
+73   evolving policy, not one treatment. We did not freeze a complete row-level official lifetime history.
+74   Because the retained close snapshot is aggregate, the artifact cannot join all 46,316 local assignments
+75   to the 46,564 official rated games. Table 2(a) reports both without calling one coverage of the other.
+76   The final audit censuses August 29 05:27–12:48 UTC and August 30 11:08–11:59 UTC; the agent was
+77   banked between them. The closing run contained 152 bargaining, 30 persuasion, and no negotiation
+78   assignments.
+
+     Table 2: Lifecycle and final-policy behavior. Local terminal failures are timeouts or invalid termi-
+     nation. Official ∆R is the dashboard’s displayed per-game change; brackets are descriptive 95%
+     game-bootstrap intervals for the mean.
+     (a) Entire local lifecycle and official endpoint
+     Family        Local games Actions Local outcomes/status                                                                            Official rating/games
+     Bargaining                            15,539 96,756 15,483 agreements; 6 completed no-deals; 49 timeouts; 1 active                 2804.82/15,639
+     Negotiation                           15,354 108,984 7,516 agreements; 5,591 no-deals; 2,177 walks; 67 timeouts; 3 active          2620.36/15,415
+     Persuasion                            15,423 306,716 15,306 completed; 105 timeouts; 1 invalid; 11 active                          2344.87/15,510
+
+     (b) Authenticated final-policy audit
+     Family       Rated/all Zero/rated Returned behavior and outcomes                                                                   Mean ∆R [95%]
+     Bargaining                        171/171       0/171 503 offers, 414 rejects, 84 accepts; 171 agreements                          1.26 [.59, 1.92]
+     Negotiation                         19/19        6/19 10 offers, 171 rejects/counters, 7 accepts, 2 own walks; 13 agreements       −.05 [−2.17, 2.05]
+     Persuasion                          54/55       12/54 buyer BUY/PASS 456/201; seller positive/negative 316/124; 1 timeout          .76 [−.31, 1.81]
+
+
+
+79   Negotiation also has an intermediate mechanism census beyond the small final receipt window. From
+80   activation of the deterministic dispatcher on August 25, 2,499 local assignments produced 18,033
+81   own actions. The current-seller fallback owned 866 games and 9,795 actions, first-principles cells
+82   519 and 948, observed-leader buyer paths 1,095 and 7,271, and the standardized one-round seller
+83   owner 19 and 19. A configured hidden cap-10 terminal-inference branch selected no focal-agent
+84   action. These counts establish which rules owned recorded behavior, not whether an owner improved
+85   rating.
+86   The bounded final audit joins the 245 local games to the same 245 authenticated replays, including
+87   244 rated outcomes and one timeout. Protocol and role attribution identified 2,288 focal moves, and
+
+
+                                                                                            3
+ 88   every normalized local returned action matched a valid replay move. The behavior largely matched
+ 89   design: bargaining always reached agreement, negotiation retained both walking and trading, and
+ 90   persuasion used both messages and both buyer actions. Yet agreement was not itself success. Six
+ 91   of 19 negotiation games returned zero, and its mean official change was near zero despite a 68%
+ 92   agreement rate. Role means also varied: bargaining Alice/Bob changes were 1.86/.61, negotiation
+ 93   seller/buyer 1.09/−1.32, and persuasion seller/buyer 1.29/.39.
+ 94   An earlier authenticated 85-game negotiation snapshot sharpened this point: 44 games had negative
+ 95   displayed changes, including 21 agreements. One visible one-round buyer earned 3,000 yet lost
+ 96   6.1 rating points, while a hidden one-round buyer earned 300,000 yet lost 8.1. Positive payoff and
+ 97   agreement were therefore not reliable substitutes for the competition objective.
+ 98   Alignment assurance combined a frozen source revision and overlay, gate reachability tests, local
+ 99   state-plan-action records, terminal outcomes, and authenticated replay receipt, following the general
+100   principle that agent behavior requires execution-level observability [Seyedghorban et al., 2026, Zhang
+101   et al., 2025]. It was not exhaustive owner conformance: plan.component exists for only 220 of
+102   2,288 final actions and gates_fired for 1,207. We can verify what action left the local policy and
+103   appeared in replay, but not reconstruct a selected owner for every turn.
+
+104   4   Results, failures, and lessons
+105   The account led by the focal agent finished second in the agent track and third combined at 2590.02.
+106   Figure 1 and Table 2 show that this endpoint was produced by adaptation across all families, not by a
+107   monotone climb or a bargaining-only policy. Using first-own-action and half-open phases ending
+108   August 22 10:54:50, August 24 20:05:52, and August 29 05:27:36 UTC, B/N/P assignments were
+109   5,983/5,972/5,967 in rapid search, 6,322/6,335/6,321 in measurement, and 3,063/3,028/3,080 in
+110   deterministic assembly. Each development phase exposed all three families substantially.
+111   Opponent observation influenced the search but was never treated as proof. Three then-leading
+112   negotiation profiles opened at roughly .92 to 1.05 of visible surplus while our opening was about
+113   .681. This motivated a .95 open-claim challenger and later observed-leader buyer paths. Field drift
+114   and agreement-conditioned samples made direct imitation unsafe, so the broad clone was assigned by
+115   game hash and judged on all assignments. The observed correlation explains why the strategy was
+116   tested; the stopped experiment explains why it was not promoted wholesale.
+117   Negative results changed the policy. Bargaining stonewall and economic stall were removed after
+118   live divergence and exploit tests. A promising high-share delay rule was found unreachable; under
+119   the later stack, waiting beat immediate acceptance in all 14 joined triggers by 21.77 pot points on
+120   average. In negotiation, a randomized 91-game leader clone had a positive point estimate but an
+121   interval crossing zero, 6.14 percentage points more no-deals, and a negative focal-agent stratum,
+122   so it was stopped. A later score-floor challenger closed only 7 of 27 resolved fires and was rolled
+123   back. In persuasion, LLM-generated wording converted at 46.3% versus 55.3% for templates, and a
+124   randomized backload policy lost by .391 raw-percentile points in its strict profitable cells. Both were
+125   removed.
+126   Failures remained at close. In one buyer game, four warnings escaped the final persuasion veto; the
+127   agent bought all four products and each was LOW. After three passed positive recommendations,
+128   only 8 of 664 observed targeted LOW seller recommendations converted. The final credibility reset
+129   was copied before its source experiment reached its precommitted efficacy read. Finally, the clearest
+130   same-overlay seesaw retained every family: across 79 August 27 games, bargaining gained 21.03
+131   rating points while negotiation lost 33.78 and persuasion lost 29.42. Overall fell from about 2592.11
+132   to 2578.05. These are descriptive diagnostics in a nonstationary field, not component effects.
+
+133   Reproducibility and conclusion. Frozen receipts preserve source, overlay, aggregates, rating
+134   snapshots, final replays, and mathematical checks. We plan to release sanitized production-equivalent
+135   source and verifiers; private replays await data-use approval.
+136   The second-place result supports the competitiveness of measured revision across all three families.
+137   Game theory supplied local owners, rank awareness changed acceptable risks, and action auditing
+138   separated intended from returned behavior. No single owner has causal credit for the placement.
+
+
+
+                                                        4
+

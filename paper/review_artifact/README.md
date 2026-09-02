@@ -27,7 +27,7 @@ The final command performs all of the following:
 5. Recomputes aggregate tables, including the 91-row randomized checkpoint,
    official final display values, and the complete two-window final-policy
    census.
-6. Regenerates all four figures in a temporary directory and checks their
+6. Regenerates the two quantitative figures in a temporary directory and checks their
    dimensions against the included visual references.
 
 Expected final line:

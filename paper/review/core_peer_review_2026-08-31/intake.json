@@ -1,0 +1,76 @@
+{
+  "schema_version": "2.0",
+  "review_id": "GLEE-CORE-2026-08-31",
+  "material": {
+    "status": "unpublished_confidential",
+    "contains_personal_or_sensitive_data": false
+  },
+  "authorization": {
+    "basis": "author_request",
+    "documented": true,
+    "local_processing_authorized": true,
+    "external_processing_authorized": false
+  },
+  "reviewer": {
+    "capacity": "author_requested_reader",
+    "human_accountable": true,
+    "competence_areas": [
+      "machine_learning",
+      "agent_systems",
+      "game_theory",
+      "statistical_review",
+      "scientific_writing"
+    ],
+    "competence_limits": [
+      "The assistant materially helped draft the manuscript and is not an independent reviewer.",
+      "The official opponent-strength adjustment is undisclosed and cannot be reconstructed from the core.",
+      "Venue-specific award preferences remain at organizer discretion."
+    ],
+    "conflict_status": "disclosed_to_editor",
+    "conflicts": [
+      "The reviewing assistant materially contributed to earlier manuscript drafting and revision."
+    ]
+  },
+  "venue_policy": {
+    "checked": true,
+    "peer_review_model": "single_anonymized",
+    "confidential_editor_notes_supported": false
+  },
+  "ai_use": {
+    "policy": "permitted_with_disclosure",
+    "planned": "approved_ai_assistance",
+    "permission_confirmed": true,
+    "disclosure_planned": true
+  },
+  "handling": {
+    "local_only": true,
+    "external_service_use": false,
+    "data_reuse_permitted": false,
+    "retention_rule": "retain_per_venue_policy",
+    "deletion_or_retention_record_planned": true
+  },
+  "scope": {
+    "manuscript_type": "competition_system_report",
+    "requested_focus": [
+      "claim_evidence_alignment",
+      "game_theory",
+      "statistics",
+      "agent_behavior_analysis",
+      "competition_track_fit",
+      "figures_tables",
+      "writing_clarity",
+      "reproducibility_core"
+    ],
+    "out_of_scope": [
+      "appendix",
+      "supplement",
+      "paper_revision",
+      "code_modification",
+      "official_editorial_decision"
+    ],
+    "specialist_review_needed": [
+      "independent_game_theorist",
+      "independent_competition_statistician"
+    ]
+  }
+}

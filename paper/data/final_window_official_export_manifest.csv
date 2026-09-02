@@ -1,0 +1,23 @@
+field,value
+artifact,agent5_official_final_windows_2026-08-29_30.json
+capture_utc,2026-08-31T11:13:36.704Z
+source,authenticated GLEE dashboard JSON API
+agent_uuid,87df5f6b-64d6-437f-914d-23105d15e1bf
+sha256,b777bfc314adb7ec4a522641118a39bebe0fb9153ce98030f8eaa49c8f06ca98
+assignments,245
+rated_games,244
+replay_errors,0
+unique_game_ids,245
+locally_joined_game_ids,245
+matched_valid_agent_moves,2288
+matched_bargaining_moves,1001
+matched_negotiation_moves,190
+matched_persuasion_moves,1097
+matched_bargaining_alice_moves,427
+matched_bargaining_bob_moves,574
+matched_negotiation_seller_moves,87
+matched_negotiation_buyer_moves,103
+matched_persuasion_seller_moves,440
+matched_persuasion_buyer_moves,657
+proxy_model_sha256,dd85dcde6ec5ce671786409c6458e469fe3a218558c09ff4ef00fcdef4ada55d
+privacy,raw replay export retained privately because it contains transcripts and opponent-linked game records
