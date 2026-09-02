@@ -82,17 +82,16 @@ revision itself.
 \section{Objective, inspiration, and contribution}
 \label{sec:introduction}
 
-GLEE spans 960 configurations that vary role, horizon, information,
+GLEE spans 960 configurations varying role, horizon, information,
 communication, and economic parameters \citep{gleecompetition2026}. Bargaining
-divides a pot, negotiation trades under public or private values, and
-persuasion repeatedly recommends products whose quality a buyer learns only
-after purchase. Shapira et al. study how GLEE's agent and market design affect
-self-gain, efficiency, and fairness \citep{shapira2024glee}. We instead ask how
-one competition agent should be designed and revised when success depends on
-relative outcomes within each configuration and role.
+divides a pot, negotiation trades under public or private values, and persuasion recommends products whose quality a buyer learns only after
+purchase. Prior GLEE work studies how agent and market design affect
+self-gain, efficiency, and fairness \citep{shapira2024glee}. We ask how one competition
+agent should be designed and revised when success depends on relative outcomes
+within each configuration and role.
 
 For payoff $Y$ in configuration $c$, role $r$, and reference pool at time
-$\tau$, let $q=Q_{c,r,\tau}(Y)$ be its raw empirical percentile and
+$\tau$, let $q=Q_{c,r,\tau}(Y)$ be its raw percentile and
 $\widetilde q$ the undocumented opponent-adjusted value. At rated-game index
 $n$, with step size $\eta_n>0$, a normally completed game updates the unshrunk
 family rating as
@@ -103,67 +102,60 @@ R_n^{\mathrm{raw}}=\operatorname{clip}\{R_{n-1}^{\mathrm{raw}}
 \label{eq:rating}
 \end{equation}
 The displayed rating also shrinks toward 1000. Under fixed adjustment and
-reference pool, positive learning rate, and inactive clipping, maximizing the
-expected one-step update is equivalent to maximizing $\E[\widetilde q]$, not
-necessarily $\E[Y]$. Using exact-equality midranks against the fixed external
-reference multiset $\{5\}$, a sure 10 ranks above a 50:50 lottery over 0 and 21,
-despite its lower expected payoff. For a terminal offer $x$ with acceptance
-probability $A(x)$, accepted
-payoff $u(x)$, and zero otherwise, the raw objective is
-$Q(0)+A(x)\{Q(u(x))-Q(0)\}$. Thus a zero can be costly in a cell where the
-field usually closes. This tournament-like incentive \citep{lazear1981tournaments}
-and the broader distinction between ranking and regression objectives
-\citep{clemencon2008ranking} motivated rank-aware offer selection, but not a
-claim to know the official adjustment. In this paper, \emph{rank aware} means
-that the score determined the system objective and selected policy decisions;
-many other returned actions came from equilibrium, monetary, behavioral,
-imitation, or safety rules.
+reference pool, positive learning rate, and inactive clipping, maximizing the expected one-step update maximizes $\E[\widetilde q]$, not
+necessarily $\E[Y]$. Using exact-equality midranks against the reference multiset $\{5\}$, a sure 10
+ranks above a 50:50 lottery over 0 and 21 despite its lower expected payoff. For a terminal offer $x$ with acceptance probability $A(x)$ and accepted payoff
+$u(x)$, the raw objective is $Q(0)+A(x)\{Q(u(x))-Q(0)\}$, so a zero can be costly
+in a cell where the field usually closes. This tournament-like incentive and the ranking versus regression
+distinction \citep{lazear1981tournaments,clemencon2008ranking} motivated
+rank-aware offer selection, but not a claim to know the official adjustment. Here \emph{rank aware} means the score determined the system
+objective and selected policy decisions; other returned actions came from
+equilibrium, monetary, behavioral, imitation, or safety rules.
 
 We contribute a rank-sensitive objective and two local proxy decisions; an
 observable-state router combining exact, behavioral, and safety policies; a
-three-family lifecycle reconstruction; and a replay-linked final action audit
-with failures and the second-place result. The unit of analysis is an assigned
+three-family lifecycle reconstruction; and a replay-linked action audit with failures and the second-place result. The unit of analysis is an assigned
 game. We use causal language only for
 prospective comparisons with recoverable assignment, treatment isolation,
-complete all-assignment accounting, and stopping-aware analysis.
+complete accounting, and stopping-aware analysis.
 
 \section{Agent design and strategy evolution}
 \label{sec:strategy}
 
-The physical submission slot changed policies throughout the competition. We
-therefore call it the \emph{focal agent} and reserve \emph{final policy} for the
-bounded configuration first observed on August 29. On each final-policy turn,
+The submission slot changed policies throughout the competition. We call it the
+\emph{focal agent} and reserve \emph{final policy} for the bounded
+configuration first observed on August 29. On each final-policy turn,
 a deterministic dispatcher mapped visible state
 $s=(f,r,T,I,C,\theta_i,x,h)$, denoting family, role, horizon, information,
 communication, visible role-private type, public economic parameters, and
-history, to an ordered family policy. State-gated rules were checked in a fixed
-order. The first applicable rule proposed an action; protected rules bypassed
-later numeric safety checks, schema coercion normalized the API action, and
-exceptions invoked a legal fallback. We call those safety checks
-\emph{postguards}; \emph{banked} means inactive between audit windows. Final
-windows were LLM-free. Earlier generated persuasion wording was retired without
-a release-grade effect estimate.
+history, to an ordered family policy. Rules were checked in a fixed order and
+the first applicable rule proposed an action; protected rules bypassed later
+numeric safety checks, schema coercion normalized the API action, and exceptions
+invoked a legal fallback. We call those safety checks
+\emph{postguards}; \emph{banked} means inactive between audit windows. The
+submitted policy holds no language model, prompt, or learned parameter, and its
+memory is the visible history $h$. Generated persuasion wording, its one language model component, was
+retired before the final windows without a release-grade effect estimate.
 
 \paragraph{Theory-guided policies in all three families.}
 \textbf{Bargaining.} The policy compared the current split with discounted
-continuation. For a divisible pot with common knowledge, zero disagreement
-payoff, and acceptance at indifference, its finite benchmark with $k$ proposal
+continuation. Under common knowledge, zero disagreement payoff,
+and acceptance at indifference, its finite benchmark with $k$ proposal
 opportunities left is $f_i(1)=1$ and
 $f_i(k)=1-\delta_jf_j(k-1)$ \citep{rubinstein1982}. The system combined it with
 empirical floors, a discount-dependent clock, and a Bob search over a coarsened
-payoff CDF. A state-specific silent Bob policy
-for $T=12,\delta_2=.95$ instead requested Bob allocations
+payoff CDF. A silent Bob policy for
+$T=12,\delta_2=.95$ instead requested allocations
 $.61M,.68M,.74M,.82M,.91M,M-.01$ on even rounds and accepted the offered
 allocation $b_r$ on odd round $r$ iff
 \begin{equation}
 b_r(.95)^{r-1}\geq(M-.01)(.95)^{11}.
 \label{eq:bargaining-floor}
 \end{equation}
-\textbf{Negotiation.} The policy traded inside the visible positive-surplus
-interval $v_S<p<v_B$ and used support-consistent bounds when values were hidden.
+\textbf{Negotiation.} The policy traded inside the visible surplus interval $v_S<p<v_B$ and used support-consistent bounds when values were hidden.
 A binding hidden seller offer supplied only a
-support-consistent cost ceiling under the behavioral assumption that sellers
-do not offer below cost; otherwise the branch fell through
+support-consistent cost ceiling, assuming sellers do not offer below cost;
+otherwise the branch fell through
 \citep{chatterjee1983incomplete,myerson1983bilateral}. A hidden one-round seller
 selected an ask multiplier $\pi$ by the finite proxy
 \begin{equation}
@@ -176,7 +168,7 @@ Q^{\mathrm{seed}}_{c(\sigma,\beta,m,B),S}
 where $\sigma$, $\beta$, and $\pi$ are cost, value, and ask multipliers. The sum
 equally weights four $\beta$, two message, and three base cases and assumes
 acceptance iff $\beta B>\pi B-.01$. It is a cell-averaged raw-rank proxy, not an
-identified response model or official optimum.
+identified response model.
 \textbf{Persuasion.} Sellers always recommended HIGH and routed LOW by prior value
 or buy history; buyers used posterior value, a tight-prior credibility reset,
 then a current-decline veto. In the one-shot committed benchmark, a risk-neutral
@@ -189,9 +181,8 @@ guides restraint and credibility \citep{sobel1985credibility}.
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Ordered final routing and excluded development rules. Arrows give
-precedence; R is a raw-rank proxy, G game-theoretic or structural, H behavioral
-or historical, and S safety, coercion, or fallback.}
+\caption{Ordered final routing and excluded development rules. Arrows give precedence; R is a raw-rank
+proxy, G game-theoretic, H behavioral, and S safety or fallback.}
 \label{tab:policy}
 \setlength{\tabcolsep}{3.2pt}
 \renewcommand{\arraystretch}{0.92}
@@ -206,10 +197,10 @@ Persuasion & Seller quality, prior, or history, or buyer posterior and tight pri
 \end{tabularx}
 \end{table}
 
-Figure~\ref{fig:lifecycle} prevents crediting the final policy with the endpoint.
-Persuasion rose early then plateaued, negotiation rose during structural
-development, and bargaining closed strongest. Opponents, pauses, cell exposure,
-and reference-pool drift confound event attribution.
+Figure~\ref{fig:lifecycle} prevents crediting the final policy with the
+endpoint: persuasion rose early then plateaued, negotiation rose during
+structural development, and bargaining closed strongest. Opponents, pauses, cell
+exposure, and drift confound event attribution.
 
 \begin{figure}[H]
   \centering
@@ -218,8 +209,8 @@ and reference-pool drift confound event attribution.
   beginning after 3,545 family games and ending at the first settled post-close
   poll. Selected events are: (1) family-winner assembly; (2) stonewall rollback;
   (3) measurement baseline reset; (4) deterministic negotiation activation;
-  and (5) final persuasion overlay and audit boundary. Lines connect polls; the
-  close line marks competition end. Events are not isolated effects.}
+  and (5) final persuasion overlay and audit boundary. The close line marks
+  competition end. Events are not isolated effects.}
   \label{fig:lifecycle}
 \end{figure}
 
@@ -229,11 +220,11 @@ and reference-pool drift confound event attribution.
 We separate lifetime exposure from fixed-policy behavior. The local lifecycle
 contains 46,316 assignments and 512,456 own actions, but is not row-level
 coverage of the 46,564 official rated games and describes an evolving policy.
-The behavior census instead covers two selected operational windows, August 29
-05:27--12:48 UTC and August 30 11:08--11:59 UTC, with the agent banked between
-them. We chose these windows because they provide complete replay-linked
-exposure to the recorded final configuration: the preclose window covers all
-three families and the closing window captures actual closing play. The census
+The behavior census covers two operational windows, August 29 05:27--12:48 UTC
+and August 30 11:08--11:59 UTC, with the agent banked between them. We chose
+them for complete replay-linked exposure to the recorded final configuration:
+the preclose window covers all three families, the closing window actual
+closing play. The census
 audits execution, not representative policy performance. It contains 245
 assignments, 244 rated outcomes, one timeout, and 2,288 own actions across 206
 visible configurations: 171 bargaining, 19 negotiation, and 55 persuasion
@@ -284,16 +275,16 @@ rank-aware intent did not guarantee rank success.
 \label{sec:competition}
 
 The focal account finished second in the agent track and third combined at
-2590.02. The retained lifecycle records nonmonotone ratings, policy revision,
-and substantial play in every family, rather than a bargaining-only account.
-Every retrospectively declared development era included at least 3,028
-assignments per family; these operational segments are not interventions.
+2590.02. The retained lifecycle records nonmonotone ratings, policy revision, and at
+least 3,028 assignments per family in every retrospectively declared development
+era, rather than a bargaining-only account; these segments are not
+interventions.
 
 Three then-leading negotiation profiles opened at .92 to 1.05 of visible
 surplus while ours opened near .681, motivating a .95 challenger and later
 observed-leader paths. Drift and agreement-conditioned samples made imitation
 unsafe, so the broad clone used game-hash assignment and all assignments.
-Opponent observations motivated the test; they did not validate the strategy.
+Opponent observations motivated the test but did not validate the strategy.
 
 Negative results changed the policy. Across 35 named candidates, none was promoted by a precommitted efficacy rule. Bargaining stonewall and economic stall
 were removed after divergence and exploit tests. In a retrospective selected-
@@ -319,9 +310,12 @@ clustered, nonstationary diagnostics, not component effects.
 
 \paragraph{Reproducibility and conclusion.}
 Frozen private inputs reproduce aggregate arithmetic. Selected formula-to-code
-checks currently run against a private working checkout; neither end-to-end
-banked behavior nor an identity-to-leaderboard receipt is public. We plan a
-sanitized banked checkout and verifier. One audited game involved a human
+checks run against a private working checkout; neither end-to-end banked
+behavior nor an identity-to-leaderboard receipt is public. A sanitized banked
+checkout and verifier are planned. Appendices A to D, specifying the final
+policy and reporting the experiment registry and lifecycle census, are at
+\url{https://github.com/4r4cn1d0/glee-competition-agent/blob/main/paper/main.pdf}.
+One audited game involved a human
 opponent; the all-assignment analysis remains primary, and the closing
 persuasion mean changes from $.00$ to $.29$ when that game is excluded. Raw
 replays, linked fields, service
