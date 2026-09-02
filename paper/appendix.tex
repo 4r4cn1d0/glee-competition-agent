@@ -690,6 +690,17 @@ stopped or superseded before a verdict existed, and eleven reached no terminal
 efficacy disposition at all, so the modal outcome of a candidate in this
 program was not rejection on evidence but expiry without one.
 
+The standard those candidates failed was not nominal. The broad negotiation
+clone, REG-018, carried three precommitted gates, and its 91-game checkpoint
+failed all three at once: the candidate advantage was $+.869$ per game with an
+approximate Welch 95\% interval of $[-.78,+2.52]$, which fails the interval
+gate; candidate no-deals were 29.55\% against 23.40\%, a rise of 6.14
+percentage points, which fails the no-deal gate; and one of the four host
+profiles was negative at $-.648$ per game, which fails the every-host gate.
+The record concludes that the arm ``is not a proven percentile winner and must
+not be promoted fleet-wide.'' Rules of this shape, fixed before the read, are
+what none of the 35 candidates satisfied.
+
 \subsection{The seven adverse or invalid records}
 
 \begin{table}[H]
@@ -720,7 +731,12 @@ REG-035 & Deterministic discounted-counter guard & Reach on three profiles with 
 \end{table}
 
 Two distinctions in that table carry most of its content. First, only REG-023
-supplies a quantified outcome contrast; the remaining six are findings about
+supplies a quantified outcome contrast, and its interval is nominal: it is not
+adjusted for the 35 candidates screened, so it should be read as descriptive of
+that replay rather than as a family-wise inference. The estimate is large and
+adverse, so its direction is unlikely to reverse under adjustment, but the
+interval as printed is not the interval a multiplicity-aware reader would
+use. The remaining six are findings about
 mechanism, scope, or validity, and none of them licenses a statement about what
 the candidate would have done to rating. Second, REG-013 and REG-031 are
 failures of the experiment rather than of the hypothesis. A probe whose
@@ -746,3 +762,106 @@ than the candidates that were stopped, that the stopped candidates were
 harmful, or that any single record changed the competition endpoint. Under
 Table~\ref{tab:evidence-status} the flow counts are a defined observational
 corpus audit and the REG-023 contrast is a retrospective selected diagnostic.
+
+\section{Lifecycle census by development era}
+\label{app:lifecycle}
+
+Appendix~\ref{app:policy-spec} specifies the policy that produced the audited
+final windows, and Appendix~\ref{app:experiment-flow} records which candidates
+entered and left the process. Neither shows what the account actually played
+across the competition. This section supplies that view: every locally recorded
+assignment from the first record to the close, partitioned into the four
+development eras, so the frozen policy can be read against the history that
+produced it rather than in isolation.
+
+\subsection{Era boundaries}
+
+Eras are cut at operational events, not at hypotheses, and each boundary is a
+recorded timestamp rather than a retrospective judgement. \emph{Rapid search}
+runs from the first local record to the identical-fleet baseline epoch.
+\emph{Measurement and rank pivot} runs from that baseline to the final
+randomized-arm shutdown. \emph{Deterministic assembly} runs from the shutdown
+to the first declared final-policy turn. \emph{Final audited policy} runs from
+that turn to the competition close. These are operational segments and not
+interventions: opponents, matchmaking, cell exposure, and the reference pool
+all move across them, so a difference between eras is not an effect of the
+policy changes that happened to fall inside them.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Locally recorded assignments and own actions across the whole
+competition, by era and family. Counts are local records, not the official
+rated total, and sum to the 46,316 assignments and 512,456 actions reported in
+Section~\ref{sec:behavior}. Agreement is undefined for persuasion, which
+completes rather than agreeing.}
+\label{tab:lifecycle-era}
+\setlength{\tabcolsep}{3.4pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Era & Family & Assignments & Actions & Zero payoff & Agreements \\
+\midrule
+Rapid search & Bargaining & 5,983 & 32,128 & .6\% & 5,949 \\
+19--22 Aug & Negotiation & 5,972 & 41,497 & 51.1\% & 2,967 \\
+ & Persuasion & 5,967 & 118,273 & 24.5\% & n/a \\
+\midrule
+Measurement and & Bargaining & 6,322 & 47,362 & .3\% & 6,305 \\
+rank pivot & Negotiation & 6,335 & 45,213 & 51.5\% & 3,071 \\
+22--24 Aug & Persuasion & 6,321 & 126,095 & 23.3\% & n/a \\
+\midrule
+Deterministic & Bargaining & 3,063 & 16,265 & .2\% & 3,058 \\
+assembly & Negotiation & 3,028 & 22,084 & 51.6\% & 1,465 \\
+24--28 Aug & Persuasion & 3,080 & 61,251 & 23.6\% & n/a \\
+\midrule
+Final audited & Bargaining & 171 & 1,001 & .0\% & 171 \\
+policy & Negotiation & 19 & 190 & 31.6\% & 13 \\
+29--30 Aug & Persuasion & 55 & 1,097 & 23.6\% & n/a \\
+\midrule
+Total & & 46,316 & 512,456 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{What moves across eras, and what does not}
+
+The account played between 9,171 and 18,978 assignments in each of the three
+development eras and 245 in the audited final era, so the frozen policy is a
+small tail of the record rather than its bulk. Two family-level patterns are
+visible across the whole span and one is not.
+
+Bargaining zero-payoff rates fall monotonically, .6\%, .3\%, .2\%, then .0\%,
+on assignment counts that shrink by a factor of thirty-five, so the last figure
+rests on 171 games and the trend cannot be separated from that shrinking
+exposure. Persuasion zero rates are flat throughout at 24.5\%, 23.3\%, 23.6\%
+and 23.6\%, which is the clearest signal in the table precisely because nothing
+happens: three eras of persuasion development did not move the rate the family
+is scored on. Negotiation zero rates sit at 51.1\%, 51.5\% and 51.6\% across
+all three development eras and read 31.6\% in the final era, but that last cell
+is 19 games and its confidence interval covers the development-era level, so it
+is a hint at best.
+
+The rating trajectory moves on a different schedule from the policy work. From
+the polled snapshots, bargaining runs 1,980 to 2,084 in rapid search, 2,084 to
+2,106 in the pivot, then 2,096 to 2,589 in deterministic assembly, and 2,582 to
+2,832 in the final era; negotiation runs 1,817 to 1,972, then 1,996 to 2,030,
+then 2,031 to 2,621, and is flat at 2,633 to 2,620 in the final era. The large
+family gains therefore land in deterministic assembly, before the audited
+policy was declared, and the final era adds bargaining while negotiation does
+not move. This is the central reason the paper separates the endpoint from the
+final policy: the endpoint was substantially reached before the frozen
+configuration existed.
+
+\subsection{Coverage limits of this census}
+
+Three limits bound the table. It counts local records, so it is 46,316
+assignments against 46,564 official rated games and is not row-level coverage
+of the official total. Era membership is assigned by timestamp against
+operational boundaries, so a game spanning a boundary is attributed by its
+first local record. And the rating trajectory is polled rather than continuous:
+the first snapshot was taken after 1,185 bargaining, 1,183 negotiation and
+1,177 persuasion games had already been played, so 3,545 family games precede
+any rating observation and the early part of the curve is unrecoverable. Under
+Table~\ref{tab:evidence-status} the assignment and action counts are a defined
+observational-corpus audit, the rating figures are authenticated polls, and the
+era comparisons are descriptive only.
