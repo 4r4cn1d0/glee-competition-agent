@@ -865,3 +865,117 @@ any rating observation and the early part of the curve is unrecoverable. Under
 Table~\ref{tab:evidence-status} the assignment and action counts are a defined
 observational-corpus audit, the rating figures are authenticated polls, and the
 era comparisons are descriptive only.
+
+\section{Related work}
+\label{app:related-work}
+
+This section is a preliminary pass. It places the system against the
+literatures it borrows from and the literatures whose methods it did not have,
+and it is written to be checked rather than to claim priority. Each paragraph
+states what the cited work established and what this paper took or failed to
+take from it. Nothing here is offered as evidence for a result in the main
+text.
+
+\subsection{Bargaining under complete and incomplete information}
+
+The bargaining policy's finite benchmark is the alternating-offer construction
+\citep{rubinstein1982}, whose relationship to the axiomatic solution
+\citep{nash1950bargaining} is the subject of \citet{binmore1986nash}. That
+lineage covers only the complete-information cells. The hidden-value cells sit
+instead with two-sided incomplete information under alternating offers
+\citep{chatterjee1987twosided} and with the strategic use of delay
+\citep{admati1987delay}, which is the theoretical content of the
+discount-dependent clock in Section~\ref{sec:strategy} even though the deployed
+clock was tuned empirically rather than derived. The posted-ask branch of the
+one-round seller is a haggle-or-hold-firm decision in the sense of
+\citet{riley1983selling}. Finally, \citet{keniston2024splitting} document
+split-the-difference behavior as a widespread empirical regularity in
+incomplete-information bargaining; the field behavior recorded in
+Appendix~\ref{app:experiment-flow} is consistent with that pattern, but this
+paper ran no test that could distinguish it from alternatives.
+
+\subsection{Automated negotiation agents}
+
+The focal agent belongs to the automated-negotiation tradition surveyed by
+\citet{jennings2001automated}, and its concession structure follows the
+tactic-based lineage \citep{faratin1998negotiation} rather than the
+optimal-strategy formulations for incomplete information
+\citep{fatima2002optimal}. The closest prior competition is ANAC, whose 2011
+edition \citet{baarslag2013anac} analyze in the terms this paper also needs:
+which agent design choices survive contact with a heterogeneous opponent pool.
+Most directly, \citet{baarslag2016opponent} survey opponent modelling in
+bilateral negotiation. The imitation work in Section~\ref{sec:competition} is a
+crude instance of that program and inherits its known failure mode, since
+learning from observed opponent behavior is unreliable when the observations
+are conditioned on the interactions that reached agreement.
+
+\subsection{Persuasion without commitment}
+
+The persuasion bound in Section~\ref{sec:strategy} is the committed one-shot
+case \citep{kamenica2011bayesian}. Repeated play removes commitment, which
+places the deployed policy closer to the cheap-talk literature
+\citep{crawford1982strategic,farrell1996cheap} and its multi-stage extension
+\citep{aumann2003long}, and closest of all to persuasion sustained over a long
+horizon \citep{best2024longrun}. The credibility reset is a reputation device
+in the sense of \citet{kreps1982reputation} and \citet{fudenberg1989reputation},
+though it was implemented as a fixed counter and never analyzed as an
+equilibrium object. Language-based persuasion games specifically were studied
+before GLEE by \citet{apel2022predicting} and \citet{raifer2022automatic}, whose
+repeated-game setting is the direct predecessor of the persuasion family here.
+
+\subsection{Ranking agents rather than scoring them}
+
+The paper's objective is a rank rather than a payoff, which connects it to
+evaluation methods that treat relative standing as the primitive: empirical
+game-theoretic analysis \citep{wellman2025egta} and evolutionary ranking
+\citep{omidshafiei2019alpharank}. The connection should not be overstated. Those
+methods choose a ranking criterion in order to evaluate a population, whereas
+here the ranking was imposed by the competition scoring rule and the agent was
+built to serve it. What the two share is the observation that an agent optimized
+for relative standing need not be the agent that maximizes expected payoff, which
+Section~\ref{sec:introduction} demonstrates with a two-outcome example.
+
+\subsection{The evidence methods this work did not use}
+
+Section~\ref{sec:competition} declines to attribute the result to any component.
+The methods that would license such an attribution from logged play are known,
+and naming them makes the gap concrete. Estimating a component's effect from
+non-randomized logs is off-policy evaluation
+\citep{li2011offline,dudik2014doubly,jiang2016doubly}; the required propensities
+and behavior policies were not retained. Conditioning an analysis on agreement,
+as several of the retrospective reads in Appendix~\ref{app:experiment-flow} do,
+is conditioning on a collider and can induce association where none exists
+\citep{elwert2014selection}. The 91-game clone was stopped after an earlier
+look, which is the peeking problem \citep{johari2017peeking}; the interval
+reported for it is nominal because no group-sequential boundary
+\citep{pocock1977group} or always-valid confidence sequence
+\citep{howard2021confidence} was specified in advance. These citations describe
+what a future run should do, not what this one did.
+
+\subsection{Language agents in economic games}
+
+GLEE \citep{shapira2024glee} sits among benchmarks that place language agents in
+strategic settings, including multi-party negotiation with adversarial
+participants \citep{abdelnabi2023negotiation}, the NegotiationArena platform
+\citep{bianchi2024arena}, buyer-seller bargaining
+\citep{xia2024bargaining}, and general multi-turn agent evaluation
+\citep{ma2024agentboard}. The audit in Section~\ref{sec:behavior} is a
+trace-level exercise and belongs with recent work on attributing agent outcomes
+to steps in a trajectory \citep{chen2026trajectory} and on counterfactual
+auditing of agent skills \citep{zhou2026cta}, alongside the observability and
+tracing work already cited there
+\citep{seyedghorban2026observability,zhang2025agentracer}. The distinction this
+paper adds is narrow and negative: verifying that every returned action reached
+the server as intended establishes transmission, not that the policy selecting
+those actions was the right one.
+
+\subsection{What this section still needs}
+
+Three gaps remain before this is a finished related-work section. It does not
+position the paper against other GLEE competition entries, whose designs were
+not public at writing. It cites the automated-negotiation and persuasion
+literatures for framing without reporting any comparison against a baseline
+drawn from them, so no claim of improvement over prior agent designs is made or
+implied. And the evidence-methods subsection lists what was not done without
+establishing what would have been feasible under the competition's rate limits
+and unlogged opponent assignment.
