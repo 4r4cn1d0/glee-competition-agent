@@ -230,18 +230,18 @@ closing play. The census
 audits execution, not representative policy performance. It contains 245
 assignments, 244 rated outcomes, one timeout, and 2,288 own actions across 206
 visible configurations: 171 bargaining, 19 negotiation, and 55 persuasion
-games. Both roles occur in every family, but the census is bargaining-heavy and
-contains no closing-window negotiation.
+games. Both roles occur in every family, but the census is
+bargaining-heavy with no closing-window negotiation.
 
 \begin{table}[H]
 \centering
-\footnotesize
+\scriptsize
 \caption{Observed behavior against the designed routes in
 Table~\ref{tab:policy}. $\Delta R$ is displayed per-game rating change; means
 are descriptive, not policy-effect estimates.}
 \label{tab:behavior}
 \setlength{\tabcolsep}{3.2pt}
-\renewcommand{\arraystretch}{0.94}
+\renewcommand{\arraystretch}{0.92}
 \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.78cm}YY@{}}
 \toprule
 Family & Observed behavior and outcome & Design match, assurance, and residual gap \\
@@ -253,9 +253,8 @@ Family & Observed behavior and outcome & Design match, assurance, and residual g
 \end{tabularx}
 \end{table}
 
-All 245 local games joined one-to-one to authenticated replays, and 2,288 of
-2,288 normalized returned actions matched valid replay moves, with no logged
-local action error. This verifies replay-level transmission, not full strategic
+All 245 local games joined one-to-one to authenticated replays, and 2,288 of 2,288 normalized returned actions matched valid replay
+moves. This verifies replay-level transmission, not full strategic
 alignment. Table~\ref{tab:behavior} therefore reports family-specific evidence:
 owner selection is directly labeled in negotiation, a narrow state-conditioned
 owner is checked in bargaining, and persuasion verifies plan-to-action
@@ -269,40 +268,35 @@ $\Delta R$ changed from $+.768$ in the 19-game preclose window to $+1.322$ over
 $+.003$ over 29 rated closing games. Negotiation appeared only preclose and
 averaged $-.053$. Within bargaining, the CDF gate changed the planned offer on
 57 turns across 15 Bob games. All 15 agreed, yet 14 had negative displayed
-changes and mean $\Delta R$ was $-4.67$. This trigger-selected retrospective
-audit does not estimate the gate's effect; it shows that agreement and explicit
+changes and mean $\Delta R$ was $-4.67$. This trigger-selected audit does not estimate the gate's effect; it shows that agreement and explicit
 rank-aware intent did not guarantee rank success.
 
 \section{Results, failures, and lessons}
 \label{sec:competition}
 
 The focal account finished second in the agent track and third combined at
-2590.02. The retained lifecycle records nonmonotone ratings, policy revision, and at
-least 3,028 assignments per family in every retrospectively declared development
-era, rather than a bargaining-only account; these segments are not
-interventions.
+2590.02. The retained lifecycle records nonmonotone ratings, policy revision, and at least 3,028 assignments per family in
+every era.
 
 Three then-leading negotiation profiles opened at .92 to 1.05 of visible
 surplus while ours opened near .681, motivating a .95 challenger and later
 observed-leader paths. Drift and agreement-conditioned samples made imitation
-unsafe, so the broad clone used game-hash assignment and all assignments.
-Opponent observations motivated the test but did not validate the strategy.
+unsafe, so the clone used game-hash assignment and all assignments, and
+observation motivated the test without validating it.
 
-Negative results changed the policy. Across 35 named candidates, none was promoted by a precommitted efficacy rule. Bargaining stonewall and economic stall
-were removed after divergence and exploit tests. In a retrospective selected-
-trigger audit, waiting beat immediate acceptance on all 14 focal triggers among
-45 joined of 46 pooled triggers, by 21.77 pot points on average. A 91-game
+Negative results changed the policy. Across 35 named candidates, none was promoted by a precommitted efficacy rule. Stonewall and economic stall were removed after divergence and
+exploit tests. In a selected-trigger audit, waiting beat
+immediate acceptance on all 14 focal triggers among 45 joined of 46, by 21.77
+pot points on average. A 91-game
 hash-assigned negotiation clone was stopped after an earlier look: its
 candidate-control difference was $+.869$ (nominal unadjusted interval
-$[-.730,2.469]$), no-deals were 6.14 percentage points higher, and the focal stratum was
-negative. Generated persuasion wording was retired without a release-grade
-effect estimate. A corrected operational read favored all-push over backload,
-but does not support an exact intent-to-treat magnitude.
+$[-.730,2.469]$), no-deals were 6.14 points higher, and the focal stratum was
+negative. A corrected read favored all-push over backload, but
+supports no exact intent-to-treat magnitude.
 
 Failures remained. Four warning misses among 80 pre-close text-buyer decisions, all in one game,
-all four purchases LOW. After three
-consecutive passed explicit positive recommendations, a fixed-policy shadow
-selected 668 targeted LOW recommendations in 109 games; 664 outcomes were
+all four purchases LOW. A fixed-policy shadow selected 668 targeted LOW
+recommendations in 109 games; 664 outcomes were
 observed and only eight sold. This is action-selected, not an intervention. The
 final credibility reset was copied before its source experiment reached its
 efficacy read. In a
@@ -311,18 +305,24 @@ efficacy read. In a
 clustered, nonstationary diagnostics, not component effects.
 
 \paragraph{Reproducibility and conclusion.}
-Frozen private inputs reproduce aggregate arithmetic. Selected formula-to-code
-checks run against a private working checkout; neither end-to-end banked
-behavior nor an identity-to-leaderboard receipt is public. A sanitized banked
-checkout and verifier are planned. Appendices A to D, specifying the final
-policy and reporting the experiment registry and lifecycle census, are at
+Frozen private inputs reproduce aggregate arithmetic. Formula-to-code checks run against a private working checkout; neither end-to-end banked
+behavior nor an identity-to-leaderboard receipt is public. A sanitized checkout and verifier are planned. Appendices A to D, specifying the policy and reporting the
+registry and lifecycle census, are at
 \url{https://github.com/4r4cn1d0/glee-competition-agent/blob/main/paper/main.pdf}.
 One audited game involved a human
 opponent; the all-assignment analysis remains primary, and the closing
 persuasion mean changes from $.00$ to $.29$ when that game is excluded. Raw
 replays, linked fields, service
 joins, human messages, identifiers, and private values remain withheld pending
-organizer and applicable institutional approval.
+organizer and institutional approval.
+
+\paragraph{Broader impacts.}
+Action auditing records what a deployed agent actually did, a precondition for
+oversight. Against that, recommending against a buyer's interest is manipulation
+when the counterpart is human, and the 668-recommendation shadow shows how
+cheaply one is built; rank-aware objectives can license exploitation that payoff
+maximization would not; and imitation transfers behavior without its
+justification. None of this is advice outside GLEE.
 
 Second place establishes the competitiveness of the resulting adaptive
 three-family system. Game theory supplied local policy rules, rank awareness changed
