@@ -992,3 +992,126 @@ drawn from them, so no claim of improvement over prior agent designs is made or
 implied. And the evidence-methods subsection lists what was not done without
 establishing what would have been feasible under the competition's rate limits
 and unlogged opponent assignment.
+
+\section{Two environment measurements}
+\label{app:environment}
+
+The two measurements in this section describe the environment rather than the
+policy. Both are recomputed here from frozen artifacts rather than quoted from
+development notes, and both bound claims made elsewhere in the paper. Their
+corpora differ from the focal-agent census of
+Appendix~\ref{app:lifecycle} and are stated with each result.
+
+\subsection{Where percentile is won in one-round seller cells}
+
+Equation~\eqref{eq:hidden-seller} scores candidate asks against a seed
+percentile rather than against money. This subsection reports what that
+percentile actually rewards. The source is the fitted official-seed
+distribution, built from the public GLEE release over 32,403 games and 64,806
+role samples across 1,152 configuration cells. For a one-round seller cell we
+compute the midrank of Eq.~\eqref{eq:midrank} at two payoffs: exactly zero, and
+one cent. The first is the value of failing to close, the second the value of
+closing on the worst possible terms. Their difference is what closing alone
+buys. The remainder, from one cent to the top of the cell's reference set, is
+what every further unit of price buys.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Percentile available from closing versus from price, one-round seller
+cells with messages disabled, by information condition and value scale. $n$ is
+the number of reference payoffs pooled over the sixteen cost and value
+multiplier cells at that scale. Closing gain is
+$Q_D(.01)-Q_D(0)$; price gain is $Q_D(\max D)-Q_D(.01)$.}
+\label{tab:rank-ladder}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{0.92}
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+Information & Scale & $n$ & $Q_D(0)$ & $Q_D(.01)$ & Closing gain & Price gain \\
+\midrule
+Complete & $10^2$ & 898 & .382 & .697 & $+.315$ & $+.299$ \\
+Complete & $10^4$ & 904 & .375 & .667 & $+.292$ & $+.332$ \\
+Complete & $10^6$ & 906 & .357 & .606 & $+.249$ & $+.391$ \\
+\midrule
+Hidden & $10^2$ & 904 & .120 & .243 & $+.123$ & $+.757$ \\
+Hidden & $10^4$ & 900 & .113 & .229 & $+.116$ & $+.771$ \\
+Hidden & $10^6$ & 901 & .111 & .226 & $+.115$ & $+.773$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two things follow, and they point in opposite directions. Under complete
+information the two quantities are comparable: closing at any price buys
+roughly a quarter to a third of the percentile range, and all remaining price
+buys about as much again. Under hidden information they are not comparable at
+all. Closing buys about .12 while price buys about .77, so in these cells the
+percentile objective is close to a money objective and a policy that concedes
+in order to close is discarding most of what is available.
+
+The ordering is stable across the three value scales, which is why the
+implemented policy does not condition on scale. It is also the reason the
+hidden one-round seller searches over an ask multiplier rather than accepting
+any positive margin.
+
+Three limits apply. The reference set is the fitted seed rather than the live
+opponent pool the focal agent actually met, so these are properties of the
+scoring reference, not of realized play. The pooling across sixteen multiplier
+cells hides within-scale variation, and a decision faces one cell rather than
+the pool. And the table describes what percentile is available at a payoff, not
+what payoff is achievable, since it contains no acceptance model. A development
+note summarizing this relationship in the opposite direction did not reproduce
+against the frozen seed and is not used anywhere in this paper.
+
+\subsection{Opponent disclosure in the agent interface}
+
+The agent interface returns an opponent record with each turn. Across the
+archived fleet store, which holds 57,793 game records over five development
+identities and is therefore broader than the focal-agent census, that record
+resolves as follows.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Opponent disclosure across 57,793 archived fleet game records. Named
+counts the records carrying a non-empty opponent name.}
+\label{tab:disclosure}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{0.92}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Disclosed opponent type & Records & Share \\
+\midrule
+Agent & 28,980 & 50.14\% \\
+Hidden & 28,749 & 49.75\% \\
+Human & 64 & 0.11\% \\
+\midrule
+Named (non-empty opponent name) & 29,044 & 50.26\% \\
+Distinct named opponents & 238 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+By family the store holds 19,849 bargaining records with 216 distinct named
+opponents, 19,841 persuasion records with 215, and 18,103 negotiation records
+with 209.
+
+Three consequences bear on the rest of the paper. First, opponent identity is
+available at decision time in about half of all games, so opponent-conditioned
+policy was reachable by any entrant reading the agent interface rather than the
+web interface. The imitation work in Section~\ref{sec:competition} used that
+channel; its failure was one of inference from agreement-conditioned
+observation, not of access.
+
+Second, the human count is a floor and not an estimate. Sixty-four records
+carry an explicit human label, but 28,749 disclose no type at all and cannot be
+ruled human. This is the measured basis for the position taken in the
+checklist, which reports no participant-level data rather than claiming an
+upper bound on human exposure.
+
+Third, names matching our own development identities appear in the opponent
+field of 565 of the 29,044 named records, about 1.9\%. Name matching is not
+proof of self-play, since another entrant may use a colliding name, but any
+comparison across our own identities is exposed to that contamination at
+roughly this rate. No analysis in this paper compares development identities to
+one another.
