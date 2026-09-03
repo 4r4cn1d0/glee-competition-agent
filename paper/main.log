@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  4 SEP 2026 00:23
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  4 SEP 2026 00:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -715,10 +715,16 @@ Underfull \hbox (badness 1259) in paragraph at lines 69--76
 /n/10 g$\T1/ptm/m/n/10 (+20) , a sure pay-off of 10 has
  []
 
+<figures/fig_rank_objective.pdf, id=294, 419.166pt x 173.448pt>
+File: figures/fig_rank_objective.pdf Graphic file (type pdf)
+<use figures/fig_rank_objective.pdf>
+Package pdftex.def Info: figures/fig_rank_objective.pdf  used on input line 79.
+
+(pdftex.def)             Requested size: 397.48499pt x 164.47824pt.
 [8
 
-] [9] [10]
-Underfull \hbox (badness 1005) in paragraph at lines 295--300
+] [9 <./figures/fig_rank_objective.pdf>] [10] [11]
+Underfull \hbox (badness 1005) in paragraph at lines 308--313
 \T1/ptm/m/n/10 (+20) which equals $\OT1/cmr/m/n/10 14\OML/cmm/m/it/10 ; \OT1/cm
 r/m/n/10 29\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 59\OML/cmm/m/it/10 ; \OT1/cmr/m/n
 /10 60$ \T1/ptm/m/n/10 (+20) on the sup-ported own-discount grid $\OMS/cmsy/m/n
@@ -727,7 +733,7 @@ ML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 95\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1\OMS/cm
 sy/m/n/10 g$\T1/ptm/m/n/10 (+20) . For $\OML/cmm/m/it/10 e \OT1/cmr/m/n/10 =
  []
 
-[11] [12] [13] [14] [15] [16] [17] [18] [19]) [20] (./checklist.tex
+[12] [13] [14] [15] [16] [17] [18] [19]) [20] (./checklist.tex
 LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 1
 1.
 
@@ -742,13 +748,13 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 7FC352F126DBFB5DB2B2BCA35DD5CFA4;5995.
+(rerunfilecheck)             Checksum: 1746D1F10EA388D5DAC96F7F8CD20B8C;5995.
  ) 
 Here is how much of TeX's memory you used:
- 14905 strings out of 467525
- 233621 string characters out of 5408440
- 694328 words of memory out of 5000000
- 43089 multiletter control sequences out of 15000+600000
+ 14915 strings out of 467525
+ 233941 string characters out of 5408440
+ 696066 words of memory out of 5000000
+ 43097 multiletter control sequences out of 15000+600000
  685852 words of font info for 305 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  72i,11n,79p,1089b,819s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -772,10 +778,10 @@ b></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/times
 /utmb8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1
 /urw/times/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/f
 onts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (27 pages, 403417 bytes).
+Output written on main.pdf (27 pages, 458290 bytes).
 PDF statistics:
- 672 PDF objects out of 1000 (max. 8388607)
- 591 compressed objects within 6 object streams
- 166 named destinations out of 1000 (max. 500000)
- 58078 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 710 PDF objects out of 1000 (max. 8388607)
+ 612 compressed objects within 7 object streams
+ 168 named destinations out of 1000 (max. 500000)
+ 58083 words of extra memory for PDF output out of 61914 (max. 10000000)
 

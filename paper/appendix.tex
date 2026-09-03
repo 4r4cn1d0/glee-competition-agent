@@ -74,6 +74,19 @@ that ordering. Also, $Q_D(0)$ need not be zero: it equals $1/2$ when every
 reference payoff is zero. These qualifications make the implemented rules rank
 proxies, not exact optimizers of the private platform score.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_rank_objective.pdf}
+  \caption{The payoff-rank reversal of Section~\ref{sec:introduction}, drawn
+  against the finite reference multiset $D=\{5\}$. Panel (a) is the midrank map
+  of Eq.~\eqref{eq:midrank}, a step with a tie value $Q_D(5)=1/2$. Panels (b)
+  and (c) evaluate the same two actions under the two criteria: the equal
+  lottery over 0 and 21 wins on expected payoff, 10.5 against 10.0, and loses on
+  expected cell percentile, 0.50 against 1.00. The reversal is a property of
+  this reference set and criterion pair, not of the private official score.}
+  \label{fig:rank-objective}
+\end{figure}
+
 The one-step equivalence is not a leaderboard theorem. It excludes special
 handling of abandonment or dropped games, activity penalties, decay, a binding
 clamp, and changes in the reference pool or opponent adjustment. Display
