@@ -71,30 +71,45 @@ one of them had player_1 making that final offer.
 
 ## 2. The rank calculus — why this is not a negotiation problem
 
-Percentile against the field payoff distribution in `single/HI/nomsg`, seller:
+> **CORRECTED 2026-09-03.** The table previously here did not reproduce against
+> `models/negotiation_seed_cdf_full.json` (official seed, 32,403 public games,
+> 1,152 cells). It was labelled hidden-information but its values match
+> COMPLETE-information cells, and two of its four entries were wrong by more
+> than half the range. It claimed $20 -> 0.804 and $70 -> 0.830 where the seed
+> gives 1.000 for both. Its headline, "one cent of closing buys +0.369,
+> everything else buys +0.09", is inverted for the hidden-information cells it
+> was written about. Verified figures follow. Recompute before reusing.
 
-| your payoff | percentile |
-|---|---|
-| $0 | 0.370 |
-| **$0.01** | **0.739** |
-| $20 | 0.804 |
-| $70 (the entire zone) | 0.830 |
+One-round seller cells, messages disabled, midrank against the official seed,
+pooled over the sixteen cost/value multiplier cells at each scale:
 
-**One cent of closing buys +0.369. Everything else you could ever win buys +0.09.**
+| information | scale | n | Q(0) | Q(0.01) | closing buys | price buys |
+|---|---|---|---|---|---|---|
+| complete | 1e2 | 898 | 0.382 | 0.697 | **+0.315** | +0.299 |
+| complete | 1e4 | 904 | 0.375 | 0.667 | +0.292 | +0.332 |
+| complete | 1e6 | 906 | 0.357 | 0.606 | +0.249 | +0.391 |
+| hidden | 1e2 | 904 | 0.120 | 0.243 | +0.123 | **+0.757** |
+| hidden | 1e4 | 900 | 0.113 | 0.229 | +0.116 | **+0.771** |
+| hidden | 1e6 | 901 | 0.111 | 0.226 | +0.115 | **+0.773** |
 
-That is the whole strategic content of the hidden-information cells, and it is a
-direct consequence of the 62.5% structural no-zone rate creating a 70% atom at
-exactly zero. Money-optimal and rank-optimal prices genuinely diverge:
+**Under complete information, closing and price are worth about the same.
+Under hidden information, price is worth six times closing.** The ordering is
+stable across all three value scales, which is why the policy never conditions
+on scale.
 
-| your cost | money-optimal ask | rank-optimal ask | rank gain |
-|---|---|---|---|
-| 80 | 120 (EV $20.0) | **100** (EV $15.0) | **+0.103** |
-| 100 | 150 (EV $12.5) | **120** (EV $10.0) | **+0.105** |
+The zero atom in hidden-info one-round seller cells is **0.24**, not the 0.70
+asserted previously.
 
-Verified identical at all three value scales, so **the policy never conditions on
-scale.**
+What this does NOT say: it contains no acceptance model, so it describes what
+percentile is available at a payoff, not what payoff is reachable. The
+reference set is the fitted seed, not the live pool we actually met.
 
----
+**Knock-on:** section 3.2's closing paragraph prices a marginal hidden-info
+close at "+0.35 percentile" off the 70% figure. The verified value is +0.12.
+The "never walk away" conclusion still holds, since both outcomes pay $0 and
+grinding is free either way, but the magnitude is overstated about threefold.
+Section 3.2's grid rule rests on its own n=2,107 acceptance table and is not
+affected by this correction.
 
 ## 3. The policy
 

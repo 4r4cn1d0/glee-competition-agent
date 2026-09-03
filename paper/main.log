@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  4 SEP 2026 01:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  4 SEP 2026 01:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -724,7 +724,7 @@ Package pdftex.def Info: figures/fig_rank_objective.pdf  used on input line 79.
 [8
 
 ] [9 <./figures/fig_rank_objective.pdf>] [10] [11]
-Underfull \hbox (badness 1005) in paragraph at lines 308--313
+Underfull \hbox (badness 1005) in paragraph at lines 307--312
 \T1/ptm/m/n/10 (+20) which equals $\OT1/cmr/m/n/10 14\OML/cmm/m/it/10 ; \OT1/cm
 r/m/n/10 29\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 59\OML/cmm/m/it/10 ; \OT1/cmr/m/n
 /10 60$ \T1/ptm/m/n/10 (+20) on the sup-ported own-discount grid $\OMS/cmsy/m/n
@@ -779,7 +779,7 @@ helvetic/uhvr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fon
 ts/type1/urw/times/utmb8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texm
 f-dist/fonts/type1/urw/times/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/
 share/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (29 pages, 473195 bytes).
+Output written on main.pdf (29 pages, 473118 bytes).
 PDF statistics:
  745 PDF objects out of 1000 (max. 8388607)
  643 compressed objects within 7 object streams
