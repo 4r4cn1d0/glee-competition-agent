@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "review_id": "GLEE-AUTHOR-REVIEW-2026-09-05",
+  "material": {"status": "unpublished_confidential", "contains_personal_or_sensitive_data": true},
+  "authorization": {"basis": "author_request", "documented": true, "local_processing_authorized": true, "external_processing_authorized": false},
+  "reviewer": {
+    "capacity": "author_requested_reader",
+    "human_accountable": true,
+    "competence_areas": ["agent_evaluation", "game_theory", "statistics", "scientific_writing"],
+    "competence_limits": ["Author-side working draft, not official review or an award prediction.", "Prior drafting assistance creates correlated judgment; separate agents are not independent human reviewers.", "Human-data governance requires organizer or institutional determination."],
+    "conflict_status": "none_identified",
+    "conflicts": []
+  },
+  "venue_policy": {"checked": true, "peer_review_model": "single_anonymized", "confidential_editor_notes_supported": false},
+  "ai_use": {"policy": "permitted_with_disclosure", "planned": "approved_ai_assistance", "permission_confirmed": true, "disclosure_planned": true},
+  "handling": {"local_only": true, "external_service_use": false, "data_reuse_permitted": false, "retention_rule": "retain_per_venue_policy", "deletion_or_retention_record_planned": true},
+  "scope": {
+    "manuscript_type": "competition_report",
+    "requested_focus": ["full_manuscript", "technical_soundness", "behavior_analysis", "evidence", "reproducibility", "citations", "figures", "venue_fit"],
+    "out_of_scope": ["official_editorial_decision", "award_prediction", "live_deployment", "external_publication"],
+    "specialist_review_needed": ["human_data_governance"]
+  }
+}

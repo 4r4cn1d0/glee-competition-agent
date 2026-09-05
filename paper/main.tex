@@ -38,16 +38,13 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Prb}{\mathbb{P}}
 
-% The submission-safe build contains four main pages, references, and the
-% mandatory checklist. The working build also includes Appendices A and B.
+% The core build contains four main pages and references. The full working
+% build also includes Appendices A--F. Neither build includes a checklist.
 \newif\iftechnicalappendix
-\newif\ifpaperchecklist
 \ifdefined\corepaper
   \technicalappendixfalse
-  \paperchecklisttrue
 \else
   \technicalappendixtrue
-  \paperchecklisttrue
 \fi
 
 \title{Rank Aware Strategic Policy Design for Language Based Economic Environments}
@@ -64,270 +61,277 @@
 \begin{abstract}
 Games in Language Based Economic Environments (GLEE) evaluates language agents
 in multiround bargaining, bilateral negotiation, and repeated persuasion.
-Payoff becomes a same-configuration, same-role percentile before opponent
-adjustment and rating, so high monetary payoff can still reduce rating. We
-report one submitted agent, second in the 2026 agent track and third combined
-at 2590.02 after 46,564 rated games. A deterministic router assigned visible
-states to finite game-theoretic benchmarks, two scoped raw-rank proxies,
-behavioral history rules, postguards, and legal fallbacks. Rank awareness thus
-defined the objective and selected decisions, not every returned action. A
-census of 46,316 local assignments and 1,348 frozen rating polls documents
-exposure and rating trajectories; frozen source and deployment records identify
-failed imitation, probes, rollbacks, and final assembly across all three
-families. A separate audit joins 245 final-policy games and
-2,288 returned actions to authenticated replays, exposing rating reversals and
-residual failures. These records establish a competitive, traceable adaptive
-system, but identify neither a retained policy component's effect nor the effect of
-revision itself.
+We report an agent that finished second in the 2026 agent track at a rating of
+2590.02 after 46,564 officially rated games. Because GLEE ranks payoffs within each
+configuration and role, maximizing expected money need not maximize the
+competition score. Our final policy combines game-theoretic benchmarks, fitted
+opponent-response models, and history-based rules without a language model at
+inference. Bargaining balances discounted continuation against agreement risk;
+negotiation separates visible-surplus decisions from hidden-value inference;
+persuasion uses recommendations, observed quality, and credibility to guide
+purchases. We trace the development and failures of these strategies.
+A separate 245-game final-policy audit connects 2,288 returned actions to
+authenticated replays. Agreement alone was insufficient: all 15 bargaining
+games in which a rank-proxy rule changed offers agreed, yet 14 lost rating.
+These results describe a competitive system, not individual component effects.
 \end{abstract}
 
-\section{Objective, inspiration, and contribution}
+\section{Agent overview and motivation}
 \label{sec:introduction}
 
-GLEE spans 960 configurations varying role, horizon, information,
-communication, and economic parameters \citep{gleecompetition2026}. Bargaining
-divides a pot, negotiation trades under public or private values, and persuasion recommends products whose quality a buyer learns only after
-purchase. Prior GLEE work studies how agent and market design affect
-self-gain, efficiency, and fairness \citep{shapira2024glee}. We ask how one competition
-agent should be designed and revised when success depends on relative outcomes
-within each configuration and role.
+GLEE spans 960 configurations varying horizon, information, communication,
+and economic parameters \citep{gleecompetition2026}. Players divide a pot,
+negotiate a trade, or recommend products whose quality is revealed after
+purchase. Building on prior work on self-gain, efficiency, and fairness
+\citep{shapira2024glee}, we aimed to capture value, not merely secure agreement.
+Structural benchmarks, fitted response estimates, and history rules address
+uncertain opponents while keeping decisions inspectable.
 
 For payoff $Y$ in configuration $c$, role $r$, and reference pool at time
-$\tau$, let $q=Q_{c,r,\tau}(Y)$ be its raw percentile and
-$\widetilde q$ the undocumented opponent-adjusted value. At rated-game index
-$n$, with step size $\eta_n>0$, a normally completed game updates the unshrunk
-family rating as
+$\tau$, let $q=Q_{c,r,\tau}(Y)$ be its raw percentile and $\widetilde q$ its
+opponent-adjusted value. A normally completed rated game $n$ updates the
+unshrunk family rating with step size $\eta_n>0$:
 \begin{equation}
 G=2000+8000(\widetilde q-.5),\quad
 R_n^{\mathrm{raw}}=\operatorname{clip}\{R_{n-1}^{\mathrm{raw}}
 +\eta_n(G-R_{n-1}^{\mathrm{raw}}),100,5000\}.
 \label{eq:rating}
 \end{equation}
-The displayed rating also shrinks toward 1000. Under fixed adjustment and
-reference pool, positive learning rate, and inactive clipping, maximizing the expected one-step update maximizes $\E[\widetilde q]$, not
-necessarily $\E[Y]$. Using exact-equality midranks against the reference multiset $\{5\}$, a sure 10
-ranks above a 50:50 lottery over 0 and 21 despite its lower expected payoff. For a terminal offer $x$ with acceptance probability $A(x)$ and accepted payoff
-$u(x)$, the raw objective is $Q(0)+A(x)\{Q(u(x))-Q(0)\}$, so a zero can be costly
-in a cell where the field usually closes. This tournament-like incentive and the ranking versus regression
-distinction \citep{lazear1981tournaments,clemencon2008ranking} motivated
-rank-aware offer selection, but not a claim to know the official adjustment. Here \emph{rank aware} means the score determined the system
-objective and selected policy decisions; other returned actions came from
-equilibrium, monetary, behavioral, imitation, or safety rules.
+The displayed rating shrinks toward 1000; the official adjustment and tie
+convention are unpublished. With fixed adjustment and reference pool,
+positive learning rate, and inactive clipping, maximizing the expected update
+maximizes $\E[\widetilde q]$, not necessarily $\E[Y]$.
+Illustratively, exact-equality midranks against $\{5\}$ prefer a sure 10
+to a 50:50 lottery over 0 and 21, despite lower expected money. A terminal
+offer accepted with probability $A(x)$, paying $u(x)$ on acceptance and zero
+otherwise, has expected raw rank $Q(0)+A(x)\{Q(u(x))-Q(0)\}$. Thus avoiding zero
+and improving a deal's terms matter differently across reference pools.
+Tournament incentives and the ranking versus regression distinction
+\citep{lazear1981tournaments,clemencon2008ranking} informed this framing.
 
-We contribute a rank-sensitive objective and two local proxy decisions; an
-observable-state router combining exact, behavioral, and safety policies; a
-three-family lifecycle reconstruction; and a replay-linked action audit with failures and the second-place result. The unit of analysis is an assigned
-game. We use causal language only for
-prospective comparisons with recoverable assignment, treatment isolation,
-complete accounting, and stopping-aware analysis.
+We formalize this objective, implement two raw-rank proxies, and document one
+agent's design, development, and behavior. \emph{Rank aware} describes selected
+decisions, not every action or an optimizer of the private adjustment.
 
-\section{Agent design and strategy evolution}
+\section{Technical approach and strategic choices}
 \label{sec:strategy}
 
-The submission slot changed policies throughout the competition. We call it the
-\emph{focal agent} and reserve \emph{final policy} for the bounded
-configuration first observed on August 29. On each final-policy turn,
-a deterministic dispatcher mapped visible state
-$s=(f,r,T,I,C,\theta_i,x,h)$, denoting family, role, horizon, information,
-communication, visible role-private type, public economic parameters, and
-history, to an ordered family policy. Rules were checked in a fixed order and
-the first applicable rule proposed an action; protected rules bypassed later
-numeric safety checks, schema coercion normalized the API action, and exceptions
-invoked a legal fallback. We call those safety checks
-\emph{postguards}; \emph{banked} means inactive between audit windows. The
-submitted policy holds no language model, prompt, or learned parameter, and its
-memory is the visible history $h$. Generated persuasion wording, its one language model component, was
-retired before the final windows without a release-grade effect estimate.
+The \emph{focal agent} is the submission slot throughout development;
+\emph{final policy} is its recorded configuration first observed on August 29.
+A deterministic dispatcher uses family, role, horizon, information,
+communication, own private values, public parameters, and history. The first
+applicable rule selects an action; safety checks may modify unprotected rules'
+outputs before return. API normalization includes a legal fallback on error.
+There is no language model or prompt at inference. Model parameters and priors
+are fixed; history-based estimates update within a game.
 
-\paragraph{Theory-guided policies in all three families.}
-\textbf{Bargaining.} The policy compared the current split with discounted
-continuation. Under common knowledge, zero disagreement payoff,
-and acceptance at indifference, its finite benchmark with $k$ proposal
-opportunities left is $f_i(1)=1$ and
-$f_i(k)=1-\delta_jf_j(k-1)$ \citep{rubinstein1982}. The system combined it with
-empirical floors, a discount-dependent clock, and a Bob search over a coarsened
-payoff CDF. A silent Bob policy for
-$T=12,\delta_2=.95$ instead requested allocations
-$.61M,.68M,.74M,.82M,.91M,M-.01$ on even rounds and accepted the offered
-allocation $b_r$ on odd round $r$ iff
+\paragraph{Bargaining: value capture under delay.}
+Alice proposes first, Bob second; $M$ is the pot and $\delta_i$ player $i$'s
+per-round discount. With complete information, zero disagreement payoff, and
+acceptance at indifference, the monetary-payoff benchmark gives proposer share
+$f_i(1)=1$ and $f_i(k)=1-\delta_jf_j(k-1)$ with $k$ proposals remaining,
+following alternating-offer reasoning \citep{rubinstein1982}. The agent adds
+empirical floors and continuation estimates from observed concessions.
+With a hidden horizon, an own-discount-based clock paces concessions.
+On eligible Bob offers, an L2-regularized logistic model and coarsened payoff
+CDF score acceptance-weighted agreement and continuation rank. Fitting uses
+15,812 labeled offers from 9,881 fleet bargaining histories, pooling roles
+and opponents; features include offered share, round, opponent discount or
+missingness, and latest demand. Search can only raise Bob's target and must
+beat estimated continuation by $.005$. Pooling opponents and omitting
+scoring-cell dimensions make this a proxy.
+
+In the disclosed $T=12$, $\delta_2=.95$, messages-off cell, a separate Bob
+rule instead requests $.61M,.68M,.74M,.82M,.91M,M-.01$ on even rounds. On odd
+round $r$, it accepts offered Bob allocation $b_r$ iff
 \begin{equation}
 b_r(.95)^{r-1}\geq(M-.01)(.95)^{11}.
 \label{eq:bargaining-floor}
 \end{equation}
-\textbf{Negotiation.} The policy traded inside the visible surplus interval $v_S<p<v_B$ and used support-consistent bounds when values were hidden.
-A binding hidden seller offer supplied only a
-support-consistent cost ceiling, assuming sellers do not offer below cost;
-otherwise the branch fell through
-\citep{chatterjee1983incomplete,myerson1983bilateral}. A hidden one-round seller
-selected an ask multiplier $\pi$ by the finite proxy
-\begin{equation}
-\bar J_\sigma(\pi)=\frac1{24}\sum_{\beta,m,B}
-Q^{\mathrm{seed}}_{c(\sigma,\beta,m,B),S}
-\!\left(\mathbf1\{\beta B>\pi B-.01\}
-\{\pi B-.01-\sigma B\}\right),
-\label{eq:hidden-seller}
-\end{equation}
-where $\sigma$, $\beta$, and $\pi$ are cost, value, and ask multipliers. The sum
-equally weights four $\beta$, two message, and three base cases and assumes
-acceptance iff $\beta B>\pi B-.01$. It is a cell-averaged raw-rank proxy, not an
-identified response model.
-\textbf{Persuasion.} Sellers always recommended HIGH and routed LOW by prior value
-or buy history; buyers used posterior value, a tight-prior credibility reset,
-then a current-decline veto. In the one-shot committed benchmark, a risk-neutral
-buyer with $0<p<1$, $u<P<v$, and LOW recommendation rate $q$ obeys only if
-$q\leq q_{\max}$, where
-$q_{\max}=\operatorname{clip}[p(v-P)/\{(1-p)(P-u)\},0,1]$
-\citep{kamenica2011bayesian}. Repeated play lacks commitment, so the bound only
-guides restraint and credibility \citep{sobel1985credibility}.
+This terminal discounted target is internal discipline, not an enforceable
+commitment or field-equilibrium guarantee.
 
-\begin{table}[H]
-\centering
-\scriptsize
-\caption{Ordered final routing and excluded development rules. Arrows give precedence; R is a raw-rank
-proxy, G game-theoretic, H behavioral, and S safety or fallback.}
-\label{tab:policy}
-\setlength{\tabcolsep}{3.2pt}
-\renewcommand{\arraystretch}{0.92}
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{1.14cm}Y>{\raggedright\arraybackslash}p{1.90cm}@{}}
-\toprule
-Family & First-eligible route in the final policy & Excluded after development \\
-\midrule
-Bargaining & Silent Bob cell (G) $\rightarrow$ finite or synthetic plan (G) $\rightarrow$ eligible Bob CDF raise (R) $\rightarrow$ postguards, coercion, fallback (S) & Stonewall; economic stall; broad delay \\
-Negotiation & One-round seller (G/R) $\rightarrow$ complete-info $T=10$ buyer (G) $\rightarrow$ hidden $T=10$ terminal ceiling (G) $\rightarrow$ leader buyer or generic seller (H/G) $\rightarrow$ protected wire or postguards, coercion, fallback (S) \citep{faratin1998negotiation} & Broad first principles; accept all; leader clone \\
-Persuasion & Seller quality, prior, or history, or buyer posterior and tight prior (G/H) $\rightarrow$ buyer credibility reset (H) $\rightarrow$ decline veto, coercion, fallback (S) & Backload; generated wording; parser rules \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\paragraph{Negotiation: exploit structure without assuming hidden values.}
+Let seller cost $s$, buyer value $b$, and price $p$ satisfy $s<p<b$ for mutual
+profit; hidden values make that interval uncertain
+\citep{chatterjee1983incomplete,myerson1983bilateral}. In one-round
+complete-information seller states, it asks $b-.01$, assuming positive-surplus
+acceptance. A complete-information ten-round buyer offers $s+.01$, accepts
+only a buyer surplus share of at least $.994$ before the terminal round, then
+accepts any profitable offer. Both cent rules use the midpoint for surplus
+at most $.02$.
+For a hidden-value round-10 buyer proposal, earlier binding seller prices bound
+cost from above if sellers do not offer below cost; the agent bids one cent
+above the greatest consistent supported cost, or falls through if none exists.
+Remaining complete-information, unknown-horizon buyers follow an observed-leader
+path conceding from $.96$ toward $.712$ of surplus; hidden buyers use
+own-value-specific price ladders and accept profitable nonterminal asks no higher than
+their final ladder price. Generic sellers combine aspiration, concession, and
+acceptance rules \citep{faratin1998negotiation}. A hidden one-round seller uses an
+offline lookup selected from asks one cent below supported buyer values above
+cost. It maximizes average seller-role midrank in the public GLEE negotiation
+seed corpus, equally weighting four buyer values, two message modes, and three
+scales under positive-surplus acceptance. The highest-cost, infeasible type
+asks $4s/3$. This branch had no final-audit exposure.
 
-Figure~\ref{fig:lifecycle} prevents crediting the final policy with the
-endpoint: persuasion rose early then plateaued, negotiation rose during
-structural development, and bargaining closed strongest. Opponents, pauses, cell
-exposure, and drift confound event attribution.
+\paragraph{Persuasion: value, credibility, and selective feedback.}
+Write $p_H$ for prior HIGH probability, $v_H,v_L$ for the buyer's quality values,
+and $P$ for price. The seller always recommends HIGH. It recommends LOW when
+prior value $p_Hv_H+(1-p_H)v_L\geq P$, or, if the HIGH value is hidden, when
+history is empty or the observed buy rate is at least $.5$; otherwise it declines.
+The buyer updates a posterior over six possible LOW-recommendation rates,
+using messages and purchased quality while marginalizing unpurchased quality.
+It buys when posterior value covers price, except that a break-even HIGH
+probability of at least $.75$ blocks buying when prior $p_H<.65$.
+In eligible tight-value states, a later credibility rule requires a strict
+decline after the latest purchased LOW; a final decline veto only turns BUY
+into PASS.
+For $0<p_H<1$ and $v_L<P<v_H$, a one-shot committed, truthful-on-HIGH signal
+with LOW-recommendation rate $q$ satisfies buyer obedience only if
+$q\leq\operatorname{clip}[p_H(v_H-P)/\{(1-p_H)(P-v_L)\},0,1]$
+\citep{kamenica2011bayesian}. GLEE does not enforce this commitment. The bound
+motivates credibility \citep{sobel1985credibility}, not a repeated-play guarantee.
+
+\section{Development and competition results}
+\label{sec:competition}
+
+The focal account finished second in the agent track and third combined at
+2590.02. We retained 46,316 local assignments and 512,456 own actions across
+its changing policies, distinct from the official total of 46,564 rated games.
+Figure~\ref{fig:lifecycle} follows all three family ratings: persuasion rose
+early then plateaued, negotiation rose during structural development, and
+bargaining closed strongest. Policy events, opponent changes, pauses, and
+configuration exposure overlap; the curve does not isolate revision effects.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/fig_agent5_lifecycle.pdf}
   \caption{Focal displayed ratings from 1,348 authenticated per-family API polls,
   beginning after 3,545 family games and ending at the first settled post-close
-  poll. Selected events are: (1) family-winner assembly; (2) stonewall rollback;
-  (3) measurement baseline reset; (4) deterministic negotiation activation;
+  poll. Selected events are: (1) code assembly from then-leading family policies;
+  (2) stonewall rollback; (3) common-policy baseline for cross-agent variation,
+  not a rating reset; (4) deterministic negotiation activation;
   and (5) final persuasion overlay and audit boundary. The close line marks
   competition end. Events are not isolated effects.}
   \label{fig:lifecycle}
 \end{figure}
 
+\paragraph{What changed and why.}
+In bargaining, refusing to concede (stonewall) and lowering acceptance
+thresholds after stalled offers (economic stall) were removed after rating
+divergence and exploit tests. Waiting was not uniformly a mistake: a selected
+audit found that continuation beat immediate acceptance on 14/14 focal
+triggers by 21.77 pot points on average, supporting the narrow silent-Bob rule.
+In negotiation, three then-leading profiles opened at $.92$ to $1.05$ of
+visible surplus versus our $.681$, motivating a $.95$ challenger and later
+imitation. A later checkpoint of the stopped clone trial pooled 44 hash-assigned
+candidate and 47 control games across four development profiles. The rating
+difference was $+.869$ (nominal normal 95\% interval $[-.730,2.469]$);
+no-deal outcomes excluding walks rose 6.14 percentage points, and the focal
+profile's contrast was negative. Buyer paths remained as fallbacks outside structural rules in an
+operator-requested deterministic replacement, without a qualifying efficacy result.
+In persuasion, a corrected read favored all-push (recommending both qualities)
+over backloading only where known prior value covered price; the final seller
+remained conditional elsewhere. No exact intent-to-treat magnitude was recovered.
+Generated wording was retired. The credibility reset targeted continued buying
+after LOW purchases and persistent passing despite posterior-profitable
+recommendations; an operator-requested copy introduced it before its source
+experiment's efficacy read.
+Across 35 named candidates, none was promoted by a precommitted efficacy rule.
+
 \section{Agent Behavior Analysis}
 \label{sec:behavior}
 
-We separate lifetime exposure from fixed-policy behavior. The local lifecycle
-contains 46,316 assignments and 512,456 own actions, but is not row-level
-coverage of the 46,564 official rated games and describes an evolving policy.
-The behavior census covers two operational windows, August 29 05:27--12:48 UTC
-and August 30 11:08--11:59 UTC, with the agent banked between them. We chose
-them for complete replay-linked exposure to the recorded final configuration:
-the preclose window covers all three families, the closing window actual
-closing play. The census
-audits execution, not representative policy performance. It contains 245
-assignments, 244 rated outcomes, one timeout, and 2,288 own actions across 206
-visible configurations: 171 bargaining, 19 negotiation, and 55 persuasion
-games. Both roles occur in every family, but the census is
-bargaining-heavy with no closing-window negotiation.
+The final-policy census covers August 29 05:27--12:48 UTC and August 30
+11:08--11:59 UTC, with the agent inactive between them. These operational
+windows provide complete replay-linked observations after the recorded policy
+boundary, not representative performance or complete runtime provenance.
+They contain 245 assignments
+across 206 visible configurations, 244 rated outcomes, one timeout, and 2,288
+own actions. No negotiation game falls in the closing window.
 
 \begin{table}[H]
 \centering
-\scriptsize
-\caption{Observed behavior against the designed routes in
-Table~\ref{tab:policy}. $\Delta R$ is displayed per-game rating change; means
-are descriptive, not policy-effect estimates.}
+\small
+\caption{Final-policy outcomes by family and role. $\Delta R$ is the displayed
+per-game rating change. Means use rated games and are descriptive, not
+component effects. Zeros are pooled across roles. Persuasion has 32 rated buyer
+games and one separate buyer timeout.}
 \label{tab:behavior}
-\setlength{\tabcolsep}{3.2pt}
-\renewcommand{\arraystretch}{0.92}
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.78cm}YY@{}}
+\begin{tabularx}{\linewidth}{@{}Yrrr@{}}
 \toprule
-Family & Observed behavior and outcome & Design match, assurance, and residual gap \\
+Family (role order) & Assigned games & Zeros / rated games & Role mean $\Delta R$ \\
 \midrule
-\textbf{B} & 171 games (Alice/Bob $=89/82$), 1,001 actions: offers/rejects/accepts $=503/414/84$. All agreed; zero payoff: 0/171. Role mean $\Delta R=+1.86/+.61$. & Gates recorded on 1,001/1,001 actions; owner labels on 30. All 30 reached silent-Bob actions in 8 games matched the schedule; all agreed (mean $\Delta R=+5.18$). Generic-owner selection remains unresolved. \\
-\textbf{N} & 19 games (seller/buyer $=10/9$), 190 actions: offers/counters/accepts/walks $=10/171/7/2$. Thirteen agreed, but 6 returned zero. Role mean $\Delta R=+1.09/-1.32$. & Owner labels and gates covered 190/190 actions: 85 current-seller (N5), 103 leader-buyer (N4), and 2 cent-owner (N1). No hidden rank-proxy state occurred. All 102 wires and 59/59 messages match the frozen specification. \\
-\textbf{P} & 55 assignments (seller/buyer $=22/33$), 1,097 actions: BUY/PASS $=456/201$; positive/negative $=316/124$. Fifty-four were rated, one timed out, and 12 returned zero. Role mean $\Delta R=+1.29/+.39$. & Final plan semantics matched 1,097/1,097 returned actions. Owner labels were absent and gates covered 16/1,097; the reset changed 15 actions and the veto one. Parser, posterior, and owner selection remain incompletely audited. \\
+Bargaining (Alice/Bob) & $89/82$ & $0/171$ & $+1.86/+.61$ \\
+Negotiation (seller/buyer) & $10/9$ & $6/19$ & $+1.09/-1.32$ \\
+Persuasion (seller/buyer) & $22/33$ & $12/54$ & $+1.29/+.39$ \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-All 245 local games joined one-to-one to authenticated replays, and 2,288 of 2,288 normalized returned actions matched valid replay
-moves. This verifies replay-level transmission, not full strategic
-alignment. Table~\ref{tab:behavior} therefore reports family-specific evidence:
-owner selection is directly labeled in negotiation, a narrow state-conditioned
-owner is checked in bargaining, and persuasion verifies plan-to-action
-semantics. No family has complete independent eligibility, candidate,
-postguard, and process-provenance reconstruction
+\paragraph{Bargaining: agreement is not rank success.}
+All 171 games agreed. The 30 actions reaching the silent-Bob rule in eight
+games matched its schedule; those games averaged $+5.18$ rating change.
+By contrast, the CDF rule changed offers on 57 turns in 15 Bob games: all
+agreed, but 14 lost rating, averaging $-4.67$. This selected subset shows
+negative rating updates despite agreement, not the rule's causal effect.
+Mean change across all bargaining games was $+.768$ preclose ($n=19$) and
+$+1.322$ at close ($n=152$).
+
+\paragraph{Negotiation: inspect the terms and the applicable rule.}
+Seven games had complete and 12 hidden information; 13 agreed.
+All three hidden ten-round buyer games agreed in round 10,
+yet averaged $-1.80$ rating change. One of seven complete-information games
+ended without agreement despite positive visible surplus. These small slices
+are descriptive; feasibility remains unknown in some hidden games.
+Rule labels covered all 190 actions, including 103 observed-leader buyer
+actions. Independent checks reproduced 102 specified prices and 59 messages,
+and checked bounds on 59 generic-seller prices. Buyer paths reached play,
+but buyers lost rating on average.
+
+\paragraph{Persuasion: recommendations need credible interpretation.}
+In 22 seller games, all 230 HIGH items were recommended, but only 86 of 210
+LOW items: 31 under the prior-value rule and 55 under the history rule when
+values were hidden; the other 124 LOW items were declined. This matches
+conditional recommendation, not universal truthfulness.
+Across four buyer games, the credibility reset changed ten BUY decisions to
+PASS and five PASS decisions to BUY; a separate decline veto blocked one
+purchase. Retrospective parsing found four warning misses among 80 preclose
+text-buyer decisions, all in one game: the deployed decline parser did not classify a warning against
+purchasing the current item as a decline, BUY survived the veto, and each
+purchase revealed LOW. Closing-window text was not independently reclassified.
+A development shadow found only eight sales among 664 observed outcomes of
+668 LOW recommendations after three passed positives (109 games). This
+action-selected result does not estimate a truthful alternative's benefit.
+Mean rating change fell from $+1.632$ preclose ($n=25$) to $+.003$ at close
+($n=29$ rated).
+
+\paragraph{How alignment was checked.}
+All 245 games joined one-to-one to authenticated replays; all 2,288 returned
+actions matched valid normalized moves. All 1,097 persuasion outputs matched
+their final plans, but only 16 carried selection-condition traces. Schedule,
+price, and message recomputation provide narrower independent checks.
+Transmission agreement does not verify unrecorded rule selection, parser
+correctness, or the full posterior computation
 \citep{seyedghorban2026observability,zhang2025agentracer}.
 
-Observed outcomes also reject simpler success criteria. Bargaining mean
-$\Delta R$ changed from $+.768$ in the 19-game preclose window to $+1.322$ over
-152 closing games; persuasion changed from $+1.632$ over 25 preclose games to
-$+.003$ over 29 rated closing games. Negotiation appeared only preclose and
-averaged $-.053$. Within bargaining, the CDF gate changed the planned offer on
-57 turns across 15 Bob games. All 15 agreed, yet 14 had negative displayed
-changes and mean $\Delta R$ was $-4.67$. This trigger-selected audit does not estimate the gate's effect; it shows that agreement and explicit
-rank-aware intent did not guarantee rank success.
+\section{Limitations, reproducibility, and conclusion}
 
-\section{Results, failures, and lessons}
-\label{sec:competition}
+Placement belongs to the evolving account. The audit is bargaining-heavy;
+opponents, reference pools, and model accuracy can change. Local scripts reproduce
+aggregate arithmetic from private inputs; formula checks use a working checkout,
+not a frozen executable. Source, fitted assets, and a production-equivalent
+verifier are not publicly available; a sanitized release remains planned.
 
-The focal account finished second in the agent track and third combined at
-2590.02. The retained lifecycle records nonmonotone ratings, policy revision, and at least 3,028 assignments per family in
-every era.
+At least one audited opponent was human. Excluding that game changes closing
+persuasion's mean from $.00$ to $.29$; the all-assignment analysis remains
+primary. Messages, identities, service joins, and private values remain withheld
+pending organizer and institutional approval. Seller incentives can conflict
+with buyer welfare; ranking need not reward fairness.
 
-Three then-leading negotiation profiles opened at .92 to 1.05 of visible
-surplus while ours opened near .681, motivating a .95 challenger and later
-observed-leader paths. Drift and agreement-conditioned samples made imitation
-unsafe, so the clone used game-hash assignment and all assignments, and
-observation motivated the test without validating it.
-
-Negative results changed the policy. Across 35 named candidates, none was promoted by a precommitted efficacy rule. Stonewall and economic stall were removed after divergence and
-exploit tests. In a selected-trigger audit, waiting beat
-immediate acceptance on all 14 focal triggers among 45 joined of 46, by 21.77
-pot points on average. A 91-game
-hash-assigned negotiation clone was stopped after an earlier look: its
-candidate-control difference was $+.869$ (nominal unadjusted interval
-$[-.730,2.469]$), no-deals were 6.14 points higher, and the focal stratum was
-negative. A corrected read favored all-push over backload, but
-supports no exact intent-to-treat magnitude.
-
-Failures remained. Four warning misses among 80 pre-close text-buyer decisions, all in one game,
-all four purchases LOW. A fixed-policy shadow selected 668 targeted LOW
-recommendations in 109 games; 664 outcomes were
-observed and only eight sold. This is action-selected, not an intervention. The
-final credibility reset was copied before its source experiment reached its
-efficacy read. In a
-79-game same-overlay episode, B/N/P changed $+21.03/-33.78/-29.42$ over
-20/22/37 games and overall fell from 2592.11 to 2578.05. These are selected,
-clustered, nonstationary diagnostics, not component effects.
-
-\paragraph{Reproducibility and conclusion.}
-Frozen private inputs reproduce aggregate arithmetic. Formula-to-code checks run against a private working checkout; neither end-to-end banked
-behavior nor an identity-to-leaderboard receipt is public. A sanitized checkout and verifier are planned. Appendices A to D, specifying the policy and reporting the
-registry and lifecycle census, are at
-\url{https://github.com/4r4cn1d0/glee-competition-agent/blob/main/paper/main.pdf}.
-One audited game involved a human
-opponent; the all-assignment analysis remains primary, and the closing
-persuasion mean changes from $.00$ to $.29$ when that game is excluded. Raw
-replays, linked fields, service
-joins, human messages, identifiers, and private values remain withheld pending
-organizer and institutional approval.
-
-\paragraph{Broader impacts.}
-Action auditing records what a deployed agent actually did, a precondition for
-oversight. Against that, recommending against a buyer's interest is manipulation
-when the counterpart is human, and the 668-recommendation shadow shows how
-cheaply one is built; rank-aware objectives can license exploitation that payoff
-maximization would not; and imitation transfers behavior without its
-justification. None of this is advice outside GLEE.
-
-Second place establishes the competitiveness of the resulting adaptive
-three-family system. Game theory supplied local policy rules, rank awareness changed
-selected risks, and action auditing separated wire receipt from intended
-policy selection. No component, revision, or audit method has causal credit for placement.
+The second-place system connects structural reasoning with observed behavior.
+Checking both decision fidelity and economic outcomes exposes failures that
+placement alone conceals; no component is given causal credit for that placement.
 
 \clearpage
 \bibliographystyle{plainnat}
@@ -337,11 +341,6 @@ policy selection. No component, revision, or audit method has causal credit for 
 \clearpage
 \appendix
 \input{appendix.tex}
-\fi
-
-\ifpaperchecklist
-\clearpage
-\input{checklist.tex}
 \fi
 
 \end{document}

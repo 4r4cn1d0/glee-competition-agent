@@ -1,7 +1,7 @@
 # GLEE competition paper
 
 This directory contains the working NeurIPS 2026 competition-paper draft,
-``Rank-Aware Routing and Returned-Action Audits in GLEE.'' The
+``Rank Aware Strategic Policy Design for Language Based Economic Environments.'' The
 repository and its companion data and analysis files remain
 private working artifacts until the planned sanitized camera-ready release.
 
@@ -15,11 +15,10 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main_core.tex
 latexmk -pdf -interaction=nonstopmode -halt-on-error technical_supplement.tex
 ```
 
-`main.pdf` is the working draft with the four-page core, Appendix A, and checklist.
-`main_core.pdf` is the exact one-PDF submission candidate: four self-contained
-main-text pages, references, and the mandatory NeurIPS checklist.
-`technical_supplement.pdf` contains Appendix A only and is not part of the
-current submission package.
+`main.pdf` is the full working draft with the four-page core, references, and
+Appendices A through F. `main_core.pdf` contains the four-page core and
+references only. `technical_supplement.pdf` contains Appendices A through F
+with their references. No build includes a paper checklist.
 
 The manuscript uses the official `sglblindworkshop` option from the NeurIPS 2026
 author kit, matching the competition call's lightweight single-blind review.
@@ -31,13 +30,14 @@ the paper.
 
 - Main text: exactly four pages, including the required Agent Behavior Analysis.
 - References: begin on page five.
-- NeurIPS checklist: follows the references in the same PDF and does not count
-  toward the four-page limit.
-- Submission package: `main_core.pdf` only. The core has no dependency on the
-  internal technical report.
-- Appendix A: included only in the internal working build.
-- NeurIPS paper checklist: included after references in the submission build;
-  the internal working build places it after Appendix A.
+- Submission candidate: `main_core.pdf`. The current competition call explicitly
+  allows four pages plus references; permission to include technical appendices
+  in the submitted PDF has not been established.
+- Appendices A through F: included in the full working build and the separate
+  technical supplement, not in the core build.
+- Paper checklist: removed from the working sources and all three builds at
+  the author's request on September 5, 2026. The competition call does not
+  explicitly list a checklist requirement.
 - Performance numbers: official post-close account result. The focal profile
   finished at 2590.02 after 46,564 rated games, with 15,639 bargaining, 15,415
   negotiation, and 15,510 persuasion games. The account placed second in the
@@ -46,7 +46,7 @@ the paper.
   public total, plus an exactly reconciled two-window census of 245 assignments,
   244 rated games, one timeout, and 2,288 own actions. Lifetime owner-to-wire
   conformance is not claimed.
-- Remaining placeholder: author name, affiliation, and email in `main.tex`.
+- Author name, affiliation, and email are populated in `main.tex`.
 - Artifact state: the working repository remains private. The anonymous review
   bundle makes a deliberately narrow claim: it reproduces released arithmetic,
   figures, mathematical checks, and synthetic policy behavior, but is not
@@ -80,9 +80,8 @@ one-PDF submission unless the organizers approve a separate review channel.
 The current competition call allows four main-text pages and unlimited
 references, the paper deadline is September 5, 2026 AoE, and the current
 OpenReview form provides one PDF field. The prepared submission therefore
-contains no technical appendix or separate supplement, but it does include the
-mandatory NeurIPS checklist after the references. Before
-submission, replace the author placeholder, resolve and document the applicable
+contains no technical appendix, separate supplement, or checklist. Before
+submission, verify the author details, resolve and document the applicable
 human-opponent data-use or ethics determination, confirm every author's
 OpenReview profile and the submitted agent's public ID, and complete the
 asset-license, secret-removal, configuration-sanitization, and compute-accounting
@@ -152,7 +151,27 @@ paper can be checked without reading live state or replaying games:
 ```sh
 ../.venv/bin/python analysis/verify_theory_code.py
 python3 analysis/verify_derived_tables.py
+python3 analysis/verify_environment_rank_ladder.py --check-manuscript
 ```
+
+The environment-table check pins the frozen seed hash, restores currency units
+from payoff/base values, and verifies all six printed one-cent probe rows.
+It is a pooled descriptive calculation, not an official live-percentile audit.
+
+The revised core's information/horizon groups, seller quality/recommendation
+counts, and buyer reset directions can be verified against the existing private
+final-window export and its local joins:
+
+```sh
+../.venv/bin/python analysis/verify_core_behavior_summary.py \
+  /path/to/private/final-window-export.json
+```
+
+This pins the existing export hash, rechecks the 245-game/2,288-action join,
+and prints deidentified aggregates only. It does not infer hidden feasibility
+or identify component effects. Python 3.10 or later is required. The script
+requires authorized access to the retained private inputs; it is not a public
+production-equivalent agent release.
 
 The claim-by-claim assumptions, code ownership trace, empirical provenance, and
 remaining limitations are recorded in `review/theory_code_audit.md`.

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  2 SEP 2026 04:45
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  5 SEP 2026 17:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -263,7 +263,7 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 )
 \Hy@SectionHShift=\skip55
 )
-Package hyperref Info: Option `hypertexnames' set `false' on input line 9.
+Package hyperref Info: Option `hypertexnames' set `false' on input line 16.
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/hyperref/xr-h
 yper.sty
@@ -507,7 +507,7 @@ Package: float 2001/11/08 v1.3d Float enhancements (AL)
 eins.sty
 Package: placeins 2005/04/18  v 2.2
 )
-Package xr Info: IMPORTING LABELS FROM main_core.aux on input line 27.
+Package xr Info: IMPORTING LABELS FROM main_core.aux on input line 34.
 \c@proposition=\count327
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3backend/l3b
@@ -517,24 +517,24 @@ File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 ) (./technical_supplement.aux)
 \openout1 = `technical_supplement.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 40.
-LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -602,7 +602,7 @@ LaTeX Font Info:    ... okay on input line 40.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 40.
+Package hyperref Info: Link coloring OFF on input line 47.
 (./technical_supplement.out) (./technical_supplement.out)
 \@outlinefile=\write3
 \openout3 = `technical_supplement.out'.
@@ -634,13 +634,13 @@ pstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Info: Redefining \microtypecontext on input line 40.
-Package microtype Info: Applying patch `item' on input line 40.
-Package microtype Info: Applying patch `toc' on input line 40.
-Package microtype Info: Applying patch `eqnum' on input line 40.
-Package microtype Info: Applying patch `footnote' on input line 40.
-Package microtype Info: Applying patch `verbatim' on input line 40.
-LaTeX Info: Redefining \microtypesetup on input line 40.
+LaTeX Info: Redefining \microtypecontext on input line 47.
+Package microtype Info: Applying patch `item' on input line 47.
+Package microtype Info: Applying patch `toc' on input line 47.
+Package microtype Info: Applying patch `eqnum' on input line 47.
+Package microtype Info: Applying patch `footnote' on input line 47.
+Package microtype Info: Applying patch `verbatim' on input line 47.
+LaTeX Info: Redefining \microtypesetup on input line 47.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
@@ -661,7 +661,7 @@ cmr.cfg
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 42.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 49.
 
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/amsfonts/umsa
@@ -672,7 +672,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 42.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 49.
 
 
 (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/amsfonts/umsb
@@ -699,62 +699,81 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `phv' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
- [1
 
-
-{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/pdftex/updmap
-/pdftex.map}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/d
-vips/base/8r.enc}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/
-enc/dvips/cm-super/cm-super-t1.enc}]
 Underfull \hbox (badness 1259) in paragraph at lines 69--76
 []\T1/ptm/m/n/10 (+20) The two state-ments use dif-fer-ent ranks. Against $\OML
 /cmm/m/it/10 D \OT1/cmr/m/n/10 = \OMS/cmsy/m/n/10 f\OT1/cmr/m/n/10 5\OMS/cmsy/m
 /n/10 g$\T1/ptm/m/n/10 (+20) , a sure pay-off of 10 has
  []
 
-[2] [3] [4] [5] [6]) [7] (./technical_supplement.bbl) [8
+[1
 
-]
-(./technical_supplement.aux)
+
+{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/pdftex/updmap
+/pdftex.map}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/d
+vips/base/8r.enc}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/
+enc/dvips/cm-super/cm-super-t1.enc}]
+<figures/fig_rank_objective.pdf, id=143, 419.166pt x 173.448pt>
+File: figures/fig_rank_objective.pdf Graphic file (type pdf)
+<use figures/fig_rank_objective.pdf>
+Package pdftex.def Info: figures/fig_rank_objective.pdf  used on input line 79.
+
+(pdftex.def)             Requested size: 397.48499pt x 164.47824pt.
+ [2 <./figures/fig_rank_objective.pdf>]
+[3] [4]
+Underfull \hbox (badness 1005) in paragraph at lines 308--313
+\T1/ptm/m/n/10 (+20) which equals $\OT1/cmr/m/n/10 14\OML/cmm/m/it/10 ; \OT1/cm
+r/m/n/10 29\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 59\OML/cmm/m/it/10 ; \OT1/cmr/m/n
+/10 60$ \T1/ptm/m/n/10 (+20) on the sup-ported own-discount grid $\OMS/cmsy/m/n
+/10 f\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 8\OML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 9\O
+ML/cmm/m/it/10 ; :\OT1/cmr/m/n/10 95\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1\OMS/cm
+sy/m/n/10 g$\T1/ptm/m/n/10 (+20) . For $\OML/cmm/m/it/10 e \OT1/cmr/m/n/10 =
+ []
+
+[5] [6] [7] [8] [9] [10] [11] [12] [13] [14]) [15] (./technical_supplement.bbl
+[16
+
+] [17]) [18] (./technical_supplement.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `technical_supplement.out' has not changed.
-(rerunfilecheck)             Checksum: FC581BA21CDDFB2324AD08033645C947;1390.
+(rerunfilecheck)             Checksum: BB8CA61253EEAC6A5DDD03EDE1382869;5927.
  ) 
 Here is how much of TeX's memory you used:
- 14495 strings out of 467525
- 226915 string characters out of 5408440
- 690117 words of memory out of 5000000
- 42921 multiletter control sequences out of 15000+600000
- 676052 words of font info for 227 fonts, out of 8000000 for 9000
+ 14818 strings out of 467525
+ 232875 string characters out of 5408440
+ 696297 words of memory out of 5000000
+ 43078 multiletter control sequences out of 15000+600000
+ 681394 words of font info for 283 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 72i,11n,79p,1017b,560s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 72i,11n,79p,1017b,656s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/am
 sfonts/cm/cmbx10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fo
 nts/type1/public/amsfonts/cm/cmex10.pfb></opt/homebrew/Cellar/texlive/20260301/
 share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></opt/homebrew/Cella
-r/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></
+r/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></
 opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfon
-ts/cm/cmr10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmr5.pfb></opt/homebrew/Cellar/texlive/20260301/share/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></opt/homebrew/Cellar/texlive
-/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/home
-brew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-sy7.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/pub
-lic/amsfonts/symbols/msbm10.pfb></opt/homebrew/Cellar/texlive/20260301/share/te
-xmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homebrew/Cellar/texlive
-/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homeb
-rew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pf
-b></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/times
-/utmb8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1
-/urw/times/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/f
-onts/type1/urw/times/utmri8a.pfb>
-Output written on technical_supplement.pdf (8 pages, 262413 bytes).
+ts/cm/cmmi7.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmr10.pfb></opt/homebrew/Cellar/texlive/20260301/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></opt/homebrew/Cellar/texliv
+e/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></opt/homeb
+rew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cms
+y10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmsy7.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-di
+st/fonts/type1/public/amsfonts/symbols/msbm10.pfb></opt/homebrew/Cellar/texlive
+/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homeb
+rew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt10
+00.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/urw/
+helvetic/uhvr8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fon
+ts/type1/urw/times/utmb8a.pfb></opt/homebrew/Cellar/texlive/20260301/share/texm
+f-dist/fonts/type1/urw/times/utmr8a.pfb></opt/homebrew/Cellar/texlive/20260301/
+share/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on technical_supplement.pdf (18 pages, 390514 bytes).
 PDF statistics:
- 212 PDF objects out of 1000 (max. 8388607)
- 168 compressed objects within 2 object streams
- 44 named destinations out of 1000 (max. 500000)
- 51769 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 564 PDF objects out of 1000 (max. 8388607)
+ 487 compressed objects within 5 object streams
+ 125 named destinations out of 1000 (max. 500000)
+ 51926 words of extra memory for PDF output out of 61914 (max. 10000000)
 

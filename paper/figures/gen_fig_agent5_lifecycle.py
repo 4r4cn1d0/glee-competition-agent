@@ -40,9 +40,11 @@ def load_rows() -> list[dict[str, object]]:
     return rows
 
 
-# Verified focal-agent runtime boundaries, not randomized interventions.
+# Recorded development events, not randomized interventions. Event 1 is an
+# assembly commit timestamp, not verified runtime activation. Event 3 is the
+# common-policy baseline boundary, not a reset of the competition ratings.
 BOUNDARIES = [
-    ("1", "2026-08-20T00:45:20Z"),  # composite rebuilt from family winners
+    ("1", "2026-08-20T00:45:20Z"),  # code assembled from then-leading family policies
     ("2", "2026-08-21T14:09:40Z"),  # bargaining stonewall explicitly rolled back
     ("3", "2026-08-22T10:54:50Z"),  # identical-policy measurement baseline
     ("4", "2026-08-25T00:51:24Z"),  # deterministic negotiation dispatcher activated

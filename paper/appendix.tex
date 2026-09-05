@@ -9,8 +9,8 @@ For the focal agent, these distinctions explain why the design could prefer a
 lower expected monetary payoff, why agreement or purchase counts alone do not
 establish policy quality, and why most strategy revisions are described
 observationally rather than causally. They also bound the claim made for the two
-raw-rank proxy decisions in the core: the bargaining Bob CDF raise in
-Table~\ref{tab:policy} and the hidden one-round seller selector in
+raw-rank proxy decisions described in the core: the bargaining Bob CDF raise in
+Section~\ref{sec:strategy} and the hidden one-round seller selector in
 Eq.~\eqref{eq:hidden-seller}. Both were motivated by the scoring objective, but
 neither is a proven optimizer of the private adjusted score.
 
@@ -154,8 +154,9 @@ action after coercion, and a \emph{protected wire} bypasses the price
 postguards. \emph{Shadowed} means that, by static inspection of the frozen
 source, an earlier rule returns an action on every state in the later rule's
 scope, so the later rule cannot reach the wire. An \emph{overlay} is a
-recorded flag dictionary applied over source defaults, and \emph{banked}
-marks the recorded values intended for the audit windows. The negotiation
+recorded flag dictionary applied over source defaults. The \emph{intended bank}
+is the recorded policy configuration; an agent is \emph{banked} when inactive
+between audit windows. The negotiation
 router generation V1 and the persuasion parser generations V1--V3 are
 unrelated numbering schemes, and symbols such as $e$, $g$, and $u$ are local
 to each family subsection.
@@ -214,7 +215,7 @@ accept; persuasion falls back to recommending as seller and buying as buyer.
 \centering
 \scriptsize
 \caption{Summary of priority in the recorded final policy, refining
-Table~\ref{tab:policy} with the eligibility conditions and returned actions
+Section~\ref{sec:strategy} with the eligibility conditions and returned actions
 behind its R, G, H, and S labels. Within bargaining and negotiation, later rows
 are reached only when earlier eligible rules return no action. Persuasion rows
 are mutually exclusive action phases.}
@@ -319,8 +320,9 @@ J(x)=\widehat P_{\rm acc}(1-x,r,\delta_A^{\rm raw},d)\widehat Q(x\delta_i^{r-1})
 +[1-\widehat P_{\rm acc}(1-x,r,\delta_A^{\rm raw},d)]\widehat V_{\rm cont},
 \label{eq:banked-bob-search}
 \end{equation}
-Here $\widehat Q$ is a midrank over the cell's fitted knot list of Bob payoff
-shares, so its argument is a discounted share and its value is a percentile in
+Here $\widehat Q$ is a midrank over fitted knots of the fleet player's own
+discounted payoff shares, pooled across roles. Its argument is a discounted
+share and its value is a percentile in
 $[0,1]$; $\widehat V_{\rm cont}$ is a fitted percentile on the same scale,
 read from a table keyed by $\min(r,6)$ and a two-valued clock that is
 \emph{patient} when $\delta_i$ is missing or at least 1 and \emph{burning}
@@ -338,8 +340,9 @@ The CDF key is $(M,T^{\rm field},\mathbf1\{T\text{ known}\},
 \mathbf1\{\text{complete}\})$, with $T^{\rm field}=\texttt{None}$ when
 withheld, and falls back to a pooled CDF. Missing model or CDF also leaves the
 target unchanged. The acceptance model, payoff CDF, and continuation table are
-fitted together on 9,881 logged games and 15,812 offers at a $.2903$ pooled
-acceptance rate; the fit pools opponents, so it is a field average rather than
+fitted together from 9,881 fleet bargaining histories and 15,812 labeled offers
+at a $.2903$ pooled acceptance rate; the fit pools roles and opponents, so it is
+a field average rather than
 a profile for any named opponent. Role, discounts, message mode, and opponent adjustment are
 absent from the CDF, so this is a raw-rank proxy, not the official optimizer.
 
@@ -367,7 +370,23 @@ our gain and the exact residual; noninteger pots use cents with residual repair.
 Write seller cost $s$, buyer value $b$, price $p$, and scale $B$. The outer
 one-round seller owner runs before the V1 whole-policy router; whenever it
 returns an action it shadows V1's duplicate one-round branch. It asks $b-.01$ when $b$ is visible,
-using the midpoint only if $b-s\leq.02$. With hidden $b$, costs
+using the midpoint only if $b-s\leq.02$.
+For hidden $b$, write $s=\sigma B$, $b=\beta B$, and candidate price $\pi B-.01$.
+The rank proxy is
+\begin{equation}
+\bar J_\sigma(\pi)=\frac1{24}\sum_{\beta,m,B}
+Q^{\mathrm{seed}}_{c(\sigma,\beta,m,B),S}
+\!\left(\mathbf1\{\beta B>\pi B-.01\}
+\{\pi B-.01-\sigma B\}\right).
+\label{eq:hidden-seller}
+\end{equation}
+The sum equally weights four buyer multipliers $\beta\in\{.8,1,1.2,1.5\}$,
+two message modes $m$, and three scales $B\in\{10^2,10^4,10^6\}$.
+It uses the seller-role seed midrank in each configuration and assumes
+acceptance exactly when the buyer receives positive surplus. Candidates are
+$\pi\in\{.8,1,1.2,1.5\}$ strictly above $\sigma$, not unrestricted prices.
+The empty candidate set at $\sigma=1.5$ uses the dead-cell convention below.
+With hidden $b$, costs
 $.8B,1.0B,1.2B,1.5B$ map respectively to
 $1.2B-.01,1.2B-.01,1.5B-.01,2B$. The first three values maximize the declared
 per-configuration seed-midrank average of Eq.~\eqref{eq:hidden-seller}, an
@@ -417,9 +436,9 @@ an equilibrium. The recorded buyer anchor and learned buyer acceptance rows
 are shadowed on these owned paths.
 
 The lineage of these paths is disclosed here rather than left to the released
-trajectories. The development exclusion that Section~\ref{sec:strategy} lists
-as ``leader clone'' refers to the randomized whole-policy arm, not to the
-buyer content specified here. The banked buyer coverage equals the buyer coverage of the
+trajectories. The stopped experiment in Section~\ref{sec:competition}
+is the randomized whole-policy arm, not removal of the buyer content
+specified here. The banked buyer coverage equals the buyer coverage of the
 randomized whole-policy clone whose experiment Section~\ref{sec:competition}
 reports as stopped: at the frozen 91-game checkpoint the hidden
 unknown-horizon slice scored $-.227$ per game for the clone against $+.093$
@@ -702,16 +721,20 @@ stopped or superseded before a verdict existed, and eleven reached no terminal
 efficacy disposition at all, so the modal outcome of a candidate in this
 program was not rejection on evidence but expiry without one.
 
-The standard those candidates failed was not nominal. The broad negotiation
-clone, REG-018, carried three precommitted gates, and its 91-game checkpoint
-failed all three at once: the candidate advantage was $+.869$ per game with an
-approximate Welch 95\% interval of $[-.78,+2.52]$, which fails the interval
-gate; candidate no-deals were 29.55\% against 23.40\%, a rise of 6.14
-percentage points, which fails the no-deal gate; and one of the four host
-profiles was negative at $-.648$ per game, which fails the every-host gate.
-The record concludes that the arm ``is not a proven percentile winner and must
-not be promoted fleet-wide.'' Rules of this shape, fixed before the read, are
-what none of the 35 candidates satisfied.
+The broad negotiation clone, REG-018, illustrates why a positive pooled point
+estimate did not establish efficacy. Its later 91-game checkpoint contains
+44 candidate and 47 control games across four development profiles, after an
+earlier stop. The candidate advantage was $+.869$ per game with a nominal,
+unadjusted normal 95\% interval of $[-.730,2.469]$. The explicit
+\texttt{no\_deal} category occurred in 13/44 candidate games against 11/47
+controls (29.55\% versus 23.40\%, a rise of 6.14 percentage points).
+This endpoint excludes walks: adding the 13 candidate and five control walks
+gives all-nonagreement rates of 26/44 and 16/47 (59.09\% versus 34.04\%).
+The combined endpoint is descriptive, not a replacement for the historical
+no-deal gate. The focal profile's contrast was $-.648$ per game. These
+checks support no qualifying efficacy conclusion; the later checkpoint is not
+the earlier stopping read. The record concludes that the arm ``is not a proven
+percentile winner and must not be promoted fleet-wide.''
 
 \subsection{The seven adverse or invalid records}
 
@@ -842,16 +865,17 @@ development eras and 245 in the audited final era, so the frozen policy is a
 small tail of the record rather than its bulk. Two family-level patterns are
 visible across the whole span and one is not.
 
-Bargaining zero-payoff rates fall monotonically, .6\%, .3\%, .2\%, then .0\%,
-on assignment counts that shrink by a factor of thirty-five, so the last figure
-rests on 171 games and the trend cannot be separated from that shrinking
-exposure. Persuasion zero rates are flat throughout at 24.5\%, 23.3\%, 23.6\%
-and 23.6\%, which is the clearest signal in the table precisely because nothing
-happens: three eras of persuasion development did not move the rate the family
-is scored on. Negotiation zero rates sit at 51.1\%, 51.5\% and 51.6\% across
-all three development eras and read 31.6\% in the final era, but that last cell
-is 19 games and its confidence interval covers the development-era level, so it
-is a hint at best.
+Bargaining zero-payoff rates fall from .6\% to .3\%, .2\%, and .0\%.
+The final rate rests on 171 games, compared with thousands in each development
+era, and changes in cell exposure and opponents prevent attributing this trend
+to policy revision. Persuasion zero rates remain between 23.3\% and 24.5\%
+across the four eras. This stability concerns only the frequency of zero
+payoffs, not the distribution of positive payoffs or achieved same-cell ranks.
+Negotiation zero rates are 51.1\%, 51.5\%, and 51.6\% in the development eras
+and 31.6\% in the final era; the last estimate is based on just 19 games with
+a potentially different feasibility mix. Zero frequency is a descriptive
+diagnostic in all three families, not the scoring objective: rating depends on
+same-configuration, same-role payoff percentile and opponent adjustment.
 
 The rating trajectory moves on a different schedule from the policy work. From
 the polled snapshots, bargaining runs 1,980 to 2,084 in rapid search, 2,084 to
@@ -881,12 +905,11 @@ era comparisons are descriptive only.
 \section{Related work}
 \label{app:related-work}
 
-This section is a preliminary pass. It places the system against the
-literatures it borrows from and the literatures whose methods it did not have,
-and it is written to be checked rather than to claim priority. Each paragraph
-states what the cited work established and what this paper took or failed to
-take from it. Nothing here is offered as evidence for a result in the main
-text.
+This section situates the system within bargaining, automated negotiation,
+persuasion, and agent evaluation. It distinguishes ideas used to design the
+policy from methods that would be needed to evaluate its causal effects.
+These connections motivate and delimit the approach; they do not establish
+its empirical performance or priority over earlier agent designs.
 
 \subsection{Bargaining under complete and incomplete information}
 
@@ -981,16 +1004,15 @@ paper adds is narrow and negative: verifying that every returned action reached
 the server as intended establishes transmission, not that the policy selecting
 those actions was the right one.
 
-\subsection{What this section still needs}
+\subsection{Scope of comparison}
 
-Three gaps remain before this is a finished related-work section. It does not
-position the paper against other GLEE competition entries, whose designs were
-not public at writing. It cites the automated-negotiation and persuasion
-literatures for framing without reporting any comparison against a baseline
-drawn from them, so no claim of improvement over prior agent designs is made or
-implied. And the evidence-methods subsection lists what was not done without
-establishing what would have been feasible under the competition's rate limits
-and unlogged opponent assignment.
+We make no design-level comparison against other GLEE competition entries,
+whose implementations were not available for this analysis. Nor did we run
+baselines drawn from the cited automated-negotiation or persuasion literature,
+so these connections imply no improvement over those designs. The evaluation
+methods above describe requirements for future attribution, not a demonstrated
+analysis of what was feasible under the competition's rate limits and logging
+constraints.
 
 \section{Two environment measurements}
 \label{app:environment}
@@ -1001,57 +1023,61 @@ development notes, and both bound claims made elsewhere in the paper. Their
 corpora differ from the focal-agent census of
 Appendix~\ref{app:lifecycle} and are stated with each result.
 
-\subsection{Where percentile is won in one-round seller cells}
+\subsection{Rank structure in one-round seller reference distributions}
 
 Equation~\eqref{eq:hidden-seller} scores candidate asks against a seed
-percentile rather than against money. This subsection reports what that
-percentile actually rewards. The source is the fitted official-seed
+percentile rather than against money. This subsection describes pooled
+reference distributions related to that objective. The source is the fitted official-seed
 distribution, built from the public GLEE release over 32,403 games and 64,806
-role samples across 1,152 configuration cells. For a one-round seller cell we
+role samples across 1,152 configuration cells. For each pooled table row we
 compute the midrank of Eq.~\eqref{eq:midrank} at two payoffs: exactly zero, and
-one cent. The first is the value of failing to close, the second the value of
-closing on the worst possible terms. Their difference is what closing alone
-buys. The remainder, from one cent to the top of the cell's reference set, is
-what every further unit of price buys.
+one cent. The seed stores payoffs divided by the value scale $B$; we restore
+currency units before querying $Q_D$, equivalently querying the normalized
+reference at $.01/B$ for one cent. Zero is a reference payoff for no trade; one cent is a near-zero
+positive-payoff probe, not necessarily a feasible action in every cell.
+Their difference measures the rank jump at that probe. The remaining span,
+from one cent to the maximum reference payoff, describes the rank range
+associated with larger payoffs, not their probability of being achieved.
 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Percentile available from closing versus from price, one-round seller
-cells with messages disabled, by information condition and value scale. $n$ is
+\caption{Near-zero rank jump and remaining rank span in pooled one-round seller
+references with messages disabled, by information condition and value scale. $n$ is
 the number of reference payoffs pooled over the sixteen cost and value
-multiplier cells at that scale. Closing gain is
-$Q_D(.01)-Q_D(0)$; price gain is $Q_D(\max D)-Q_D(.01)$.}
+multiplier cells at that scale. Near-zero jump is
+$Q_D(.01)-Q_D(0)$; remaining span is $Q_D(\max D)-Q_D(.01)$.}
 \label{tab:rank-ladder}
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{0.92}
 \begin{tabular}{@{}llrrrrr@{}}
 \toprule
-Information & Scale & $n$ & $Q_D(0)$ & $Q_D(.01)$ & Closing gain & Price gain \\
+Information & Scale & $n$ & $Q_D(0)$ & $Q_D(.01)$ & Near-zero jump & Remaining span \\
 \midrule
-Complete & $10^2$ & 898 & .382 & .697 & $+.315$ & $+.299$ \\
-Complete & $10^4$ & 904 & .375 & .667 & $+.292$ & $+.332$ \\
-Complete & $10^6$ & 906 & .357 & .606 & $+.249$ & $+.391$ \\
+Complete & $10^2$ & 898 & .382 & .688 & $+.306$ & $+.308$ \\
+Complete & $10^4$ & 904 & .375 & .653 & $+.278$ & $+.347$ \\
+Complete & $10^6$ & 906 & .357 & .596 & $+.240$ & $+.401$ \\
 \midrule
-Hidden & $10^2$ & 904 & .120 & .243 & $+.123$ & $+.757$ \\
-Hidden & $10^4$ & 900 & .113 & .229 & $+.116$ & $+.771$ \\
-Hidden & $10^6$ & 901 & .111 & .226 & $+.115$ & $+.773$ \\
+Hidden & $10^2$ & 904 & .120 & .240 & $+.120$ & $+.759$ \\
+Hidden & $10^4$ & 900 & .113 & .227 & $+.113$ & $+.773$ \\
+Hidden & $10^6$ & 901 & .111 & .222 & $+.111$ & $+.777$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Two things follow, and they point in opposite directions. Under complete
-information the two quantities are comparable: closing at any price buys
-roughly a quarter to a third of the percentile range, and all remaining price
-buys about as much again. Under hidden information they are not comparable at
-all. Closing buys about .12 while price buys about .77, so in these cells the
-percentile objective is close to a money objective and a policy that concedes
-in order to close is discarding most of what is available.
+In these pooled reference distributions, complete-information rows have a
+near-zero rank jump of .240--.306 and a remaining rank span of .308--.401.
+Hidden-information rows have a smaller jump of .111--.120 and a larger
+remaining span of .759--.777. Thus a small positive payoff occupies different
+parts of the reference distribution in the two information conditions.
 
-The ordering is stable across the three value scales, which is why the
-implemented policy does not condition on scale. It is also the reason the
-hidden one-round seller searches over an ask multiplier rather than accepting
-any positive margin.
+This ordering holds at all three value scales shown, but it does not establish
+scale invariance within individual cells or validate the implemented
+scale-independent ask multiplier. Nor does a larger remaining span make rank
+maximization equivalent to payoff maximization or show that a higher ask is
+better than conceding. That comparison requires acceptance probabilities and
+the same-cell rank distribution. Table~\ref{tab:rank-ladder} describes a
+reference distribution, not the performance or optimality of the seller rule.
 
 Three limits apply. The reference set is the fitted seed rather than the live
 opponent pool the focal agent actually met, so these are properties of the
@@ -1104,9 +1130,9 @@ observation, not of access.
 
 Second, the human count is a floor and not an estimate. Sixty-four records
 carry an explicit human label, but 28,749 disclose no type at all and cannot be
-ruled human. This is the measured basis for the position taken in the
-checklist, which reports no participant-level data rather than claiming an
-upper bound on human exposure.
+ruled human. This motivates withholding participant-level data, as stated in
+Section~\ref{sec:competition}, rather than claiming an upper bound on human
+exposure.
 
 Third, names matching our own development identities appear in the opponent
 field of 565 of the 29,044 named records, about 1.9\%. Name matching is not

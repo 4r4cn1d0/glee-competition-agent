@@ -1,0 +1,13 @@
+claim_id,location,claim_type,claim_summary,evidence_ids,support_level,alignment_issue,limitation,requested_action
+OBJ-1,Appendix A Proposition 1,methods,Affine one-step ordering under stated assumptions,EQ-1;EQ-4;VERIFY-THEORY,supported,none,,
+OBJ-2,Appendix A example,methods,Expected payoff and empirical midrank can reverse,EQ-4;FIG-2;VERIFY-THEORY,supported,none,,
+TRACE-1,Core Section 3,diagnostic,2288 returned actions match replay moves in 245 assigned games,FINAL-WINDOW-EXPORT;FINAL-WINDOW-SCRIPT,supported,none,,
+POLICY-1,Core Table 1,methods,Leader clone excluded after development,FROZEN-ROUTER;APP-B-LINEAGE,partly_supported,scope,Randomized arm stopped but buyer content retained,Clarify exclusion and retained buyer paths in core
+REG-1,Appendix C1,methods,Clone failed stated interval gate,EXPERIMENTS-1112;CLONE-91,partly_supported,outcome,Decision rule interval concerns percentile not displayed rating,Use recorded metrics or state only documented failures
+ERA-1,Core Section 4,secondary_outcome,At least 3028 assignments per family in every era,LIFECYCLE-ERA-CSV,partly_supported,population,Only the three development eras qualify,Add development qualifier
+ZERO-1,Table 2 and Appendix D,secondary_outcome,Persuasion final zero frequency,FINAL-WINDOW-EXPORT;LIFECYCLE-ERA-CSV,partly_supported,population,Rated zero count excludes timeout but assignment zero rate includes it,Label denominators and timeout convention
+RANK-1,Appendix F1 Table 9,diagnostic,One-cent pooled seed rank jumps,SEED-SHA-F828;VERIFY-RANK-LADDER,supported,none,,
+REPRO-1,Core reproduction paragraph,methods,Reader can access the full draft link,GH-REPO-METADATA,partly_supported,scope,Linked repository is private,Supply authorized reviewer-accessible material or accurately state restriction
+LIT-1,Appendix E3,methods,Repeated play removes commitment,PERSUASION-INTERFACE;APP-B,unsupported,scope,Repetition and commitment are different game properties,Describe missing enforceable signal-policy commitment
+LIT-2,Appendix E4,methods,EGTA takes ranking as primitive,EGTA-SURVEY,partly_supported,scope,EGTA is empirical game-model analysis not necessarily ranking,Distinguish empirical game analysis from alpha-Rank and GLEE percentiles
+IMPACT-1,Core broader impacts,other,Recommendation count establishes implementation cost,SHADOW-668,unsupported,outcome,No implementation cost measured,Remove cost claim and qualify hypothetical exploitation comparison
