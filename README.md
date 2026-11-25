@@ -1,263 +1,336 @@
-# Rank Aware Strategic Policy Design for Language Based Economic Environments
+<h1 align="center">
+  Rank Aware Strategic Policy Design<br>
+  for Language Based Economic Environments
+</h1>
 
-Research code, analysis, and paper materials from a second-place agent in
-[Games in Language Based Economic Environments (GLEE)](https://glee-competition.com/),
-the IAB Workshop competition at NeurIPS 2026.
+<p align="center">
+  <a href="https://openreview.net/profile?id=~Aayush_Ghosh1"><strong>Aayush Ghosh</strong></a><br>
+  Independent researcher
+</p>
 
-[Paper](https://doi.org/10.5281/zenodo.22503374) ·
-[OpenReview](https://openreview.net/forum?noteId=uW8cpaqXdr) ·
-[GLEE documentation](https://glee-competition.com/docs) ·
-[Original GLEE paper](https://arxiv.org/abs/2410.05254v3)
+<p align="center">
+  <a href="https://openreview.net/forum?id=uW8cpaqXdr"><img src="https://img.shields.io/badge/NeurIPS_2026_IAB-Spotlight-5145CD?style=flat-square" alt="NeurIPS 2026 IAB Workshop Spotlight"></a>
+  <a href="https://glee-competition.com/"><img src="https://img.shields.io/badge/GLEE-2nd_agent_track-C6973D?style=flat-square" alt="Second place in the GLEE agent track"></a>
+  <a href="#competition-results"><img src="https://img.shields.io/badge/Rated_games-46%2C564-2563EB?style=flat-square" alt="46,564 officially rated games"></a>
+  <a href="#how-the-agent-works"><img src="https://img.shields.io/badge/Live_decisions-No_LLM-087F8C?style=flat-square" alt="No language model during play"></a>
+</p>
 
-> **Release status.** This repository is a working research archive, not a
-> sanitized, production-equivalent artifact. A future public release must exclude
-> raw trajectories, player identities, messages, private values, service joins,
-> and operational credentials. See [Reproducibility and scope](#reproducibility-and-scope)
-> before relying on this code or mirroring the repository.
+<p align="center">
+  <a href="https://openreview.net/forum?id=uW8cpaqXdr"><strong>Paper &amp; reviews</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://openreview.net/pdf?id=uW8cpaqXdr"><strong>Camera-ready PDF</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://doi.org/10.5281/zenodo.22503374">Archived preprint</a>
+  &nbsp;·&nbsp;
+  <a href="https://glee-competition.com/docs">GLEE documentation</a>
+</p>
 
-## Result at a glance
+<p align="center">
+  <a href="#competition-results">Results</a>
+  &nbsp; / &nbsp;
+  <a href="#how-the-agent-works">Approach</a>
+  &nbsp; / &nbsp;
+  <a href="#agent-behavior-analysis">Behavior analysis</a>
+  &nbsp; / &nbsp;
+  <a href="#quick-start">Quick start</a>
+  &nbsp; / &nbsp;
+  <a href="#citation">Citation</a>
+</p>
 
-The focal competition profile finished **second in the 2026 GLEE agent track**
-and third on the combined human-agent leaderboard. Its settled post-close result
-was 2590.02 after 46,564 officially rated games.
+An agent for **bargaining, negotiation, and persuasion** that finished second
+in the GLEE 2026 agent track. The final policy makes every live decision with
+deterministic code, combining economic benchmarks, fitted response models, and
+the history of the current game.
 
-| Family | Final displayed rating | Officially rated games |
-| --- | ---: | ---: |
+The central lesson is easy to miss: **a completed deal can still lose rating**.
+GLEE compares a payoff with other payoffs in the same configuration and role,
+then adjusts for opponent strength. We built around that objective and audited
+where the resulting decisions worked as intended, where they failed, and what
+the competition result can actually establish.
+
+## Competition results
+
+**Second in the agent track · Third on the combined human-agent leaderboard.**
+
+| Game family | Settled rating | Officially rated games |
+| :--- | ---: | ---: |
 | Bargaining | 2804.82 | 15,639 |
 | Negotiation | 2620.36 | 15,415 |
 | Persuasion | 2344.87 | 15,510 |
 | **Overall** | **2590.02** | **46,564** |
 
-These are externally produced competition results, not an estimate from a
-simulator. They belong to an evolving account with changing policies and
-opponents. They do **not** show that any one final rule caused the placement.
+These are the settled post-close competition results for an evolving agent.
+Policies, opponents, and reference pools changed during the run, so placement
+does not identify the contribution of any individual rule.
 
-## The problem we were actually solving
+<p align="center">
+  <img src="paper/figures/fig_agent5_lifecycle.png" width="960" alt="Bargaining, negotiation, and persuasion ratings throughout development, with five numbered strategy milestones and the competition close">
+</p>
 
-GLEE puts agents into multi-round economic games with language, private
-information, incomplete information, varying horizons, and different roles:
+*Rating history from 1,348 authenticated API polls. The first poll follows
+3,545 games; the curve ends at the first settled post-close poll. Numbered
+milestones identify changes in the development record, rather than isolated
+causal effects.*
 
-| Family | Core decision | Central difficulty |
-| --- | --- | --- |
-| Bargaining | Divide a discounted pot through alternating offers | Capture value without turning a viable deal into a zero payoff |
-| Negotiation | Trade a product at a price | Distinguish visible surplus from uncertain hidden values and infeasible trades |
-| Persuasion | Recommend or buy a product of uncertain quality | Balance immediate value against credibility and selective feedback |
+<details>
+<summary><strong>Read the five strategy milestones</strong></summary>
 
-The competition does not score a simple win, loss, or expected-dollar objective.
-For a payoff in a given configuration and role, GLEE first ranks it against a
-reference pool of comparable payoffs and then applies an opponent-strength
-adjustment. The exact adjustment and tie convention are not public. With a fixed
-reference pool, expected money and expected empirical raw rank can order actions
-differently, especially when an action creates more zeros or lands on a crowded
-payoff atom.
+1. **Code assembly:** combined then-leading family policies. This marker is a
+   commit time; it does not establish when every live process loaded the code.
+2. **Bargaining rollback:** removed the stonewall rule.
+3. **Common-policy baseline:** aligned development policies to study variation;
+   competition ratings were not reset.
+4. **Deterministic negotiation:** activated the assembled negotiation policy.
+5. **Final audit boundary:** recorded the closing persuasion configuration and
+   began the first final-policy audit window.
 
-That is the meaning of **rank aware** here. The system uses local raw-rank
-proxies where the environment and data make them defensible. It is not claimed
-to optimize GLEE's private adjusted-rating rule globally.
+</details>
 
-## What the submitted system was
+## How the agent works
 
-The recorded configurations in the two audited final-policy windows were
-deterministic and ran with language-model mode disabled. The source tree retains
-optional LLM support and records earlier wording experiments, but those are not
-part of the final policy described in the paper.
+The dispatcher reads the visible game state, selects the first applicable
+decision rule, and sends the result through action checks and protocol
+normalization. Fitted parameters stay fixed during play; designated estimates
+update from the current game's history. Rule order matters because an earlier
+decision can make a later rule unreachable.
 
-At each turn, an ordered dispatcher uses the observable game family, role,
-horizon, information state, communication mode, own values, public parameters,
-and dialogue history. The first eligible policy owner proposes an action;
-postconditions and a typed legal-action normalizer attempt to repair malformed
-proposals and fall back on exceptions before return.
+### Bargaining: decide whether waiting is worth it
 
-| Layer | Responsibility | Main location |
-| --- | --- | --- |
-| Family dispatcher | Select a family decision path and contain exceptions | [glee_agent/dispatch.py](glee_agent/dispatch.py) |
-| Theory-guided owners | Make offers, accept or reject decisions, and recommendations | [glee_agent/strategies/](glee_agent/strategies/) |
-| Action guard | Coerce outputs to the server's legal schema and apply narrow numerical guards | [glee_agent/actions.py](glee_agent/actions.py) |
-| Fixed empirical assets | Supply offline-fitted response estimates, priors, and policy tables | [models/](models/) |
-| Per-game traces | Record proposed plans, returned actions, and rule markers for later audits | [glee_agent/gamelog.py](glee_agent/gamelog.py) |
+The generic policy starts from a finite-horizon alternating-offer benchmark,
+then accounts for discounts, observed concessions, and agreement risk. Hidden
+horizons use an own-discount-based clock. A fitted acceptance model and payoff
+CDF can raise eligible Bob offers.
 
-The design deliberately separates a policy's economic claim from a safety
-claim. A heuristic may be wrong about how an opponent will respond; it must not
-be allowed to crash, submit an illegal object, or silently turn a measurement
-into an unauditable action.
+A separate rule handles Bob in a disclosed twelve-round, messages-off game
+with own discount 0.95. Its nominal demands **increase** toward the final
+one-cent-residual offer while its acceptance floor follows the discounted
+terminal target. This is a narrow heuristic, not an equilibrium guarantee.
 
-## Strategy by game family
+### Negotiation: separate visible surplus from hidden values
 
-### Bargaining: continuation value under delay
+With visible values, structural terminal rules leave the other player one cent
+of positive surplus. With hidden values, the policy uses the supported value
+grid, earlier prices, and explicit assumptions about individual rationality.
+Remaining buyers follow observed price ladders; generic seller rules combine
+aspiration, concession, and continuation estimates.
 
-The bargaining owner starts from an alternating-offers benchmark with discounting
-and finite-horizon parity. It then treats equilibrium as a reference point, not
-a literal prediction of the field. Eligible states combine discounted
-continuation values with empirical acceptance and payoff-rank proxies, while
-hidden-horizon states use conservative clocks. A narrow, disclosed-horizon Bob
-owner follows a predetermined commitment ladder derived from a terminal
-discounted target.
+The hidden one-round seller lookup directly scores candidate asks against
+per-configuration seed ranks. Its preferred ask changes under alternative tie
+conventions, showing how much depends on the scoring model.
 
-The final audit illustrates the distinction. In a selected final-window subset,
-a CDF-based offer rule changed 57 actions in 15 Bob games. Every game reached
-agreement, but 14 received a negative displayed rating update, with mean change
--4.67. This is descriptive, not an estimate of the rule's causal effect.
+### Persuasion: make recommendations and interpret their credibility
 
-### Negotiation: use structure without pretending hidden values are known
+The seller always recommends HIGH items and recommends LOW items only under
+its prior-value or observed-buy-rate rules. The buyer updates beliefs over six
+possible LOW-recommendation rates using the message history and purchased
+qualities, while marginalizing quality it did not observe. A credibility reset
+and a final decline veto modify purchases in specified states.
 
-For complete-information trades, the policy uses explicit surplus and terminal
-rules. For hidden values, it instead relies on support restrictions, observed
-public prices, history-dependent bounds, and role-specific concession ladders.
-Generic seller paths provide aspiration, concession, and acceptance fallbacks.
-The policy never treats an unobserved hidden value or hidden zone of agreement
-as known.
+The final policy used no language-model calls during play. Codex and Claude
+Code assisted development, implementation, analysis, and writing; that
+assistance is disclosed in the paper.
 
-During development we also tested imitation of high-ranking public price paths.
-The relevant checkpoint compared 44 hash-assigned candidate games with 47
-controls across four development profiles. Its +0.869 rating-per-game point
-estimate had a nominal 95% interval of [-0.730, 2.469], more no-deals, and a
-negative focal-profile contrast. We rejected the candidate as inconclusive
-rather than promote a noisy point estimate.
+<details>
+<summary><strong>What “rank aware” means here</strong></summary>
 
-### Persuasion: recommendation value versus credibility
+Expected money and expected rank can prefer different actions. For a terminal
+proposal with acceptance probability `A(x)`, accepted payoff `u(x)`, and
+rejection payoff zero, the expected empirical rank is:
 
-The persuasion owner uses a one-shot Bayesian-persuasion obedience calculation
-as motivation, not as a claim that the repeated game is solved. Its deployed
-policy combines prior value, observed purchased quality, recommendation history,
-and posterior-style belief updates. A credibility reset and a final decline veto
-are narrow history-based guards around buyer decisions. Seller recommendations
-are conditional: the policy may recommend LOW-quality items when its prior-value
-or history rule fires, and may decline otherwise.
+```text
+Q_D(0) + A(x) × [Q_D(u(x)) − Q_D(0)]
+```
 
-Language was treated as part of the mechanism, not decoration. Earlier generated
-wording was retired. The audited final-policy configuration used hand-controlled,
-auditable action and message paths with the LLM disabled.
+The value of improving the agreement therefore depends on both acceptance risk
+and the reference distribution. The platform's exact tie convention and
+opponent adjustment are unpublished.
 
-## How we developed it
+Only two final-policy branches directly use raw-rank proxies: the eligible Bob
+offer raise and the hidden one-round seller lookup. In the final audit, the
+former changed 57 of 2,288 returned actions (2.49%); the latter had no exposure.
+Rank awareness motivates selected decisions, and the audit does not establish
+a positive causal benefit from those components.
 
-The project was run as an adaptive live development program, not as a single
-offline training run. Several policy profiles shared the same safety layer but
-made deliberately different choices to generate diagnostic contrasts rather
-than select among identical copies.
+</details>
 
-1. **Start from structure.** Use game-theoretic benchmarks to rule out clearly
-   dominated actions and identify meaningful state distinctions.
-2. **Measure field response.** Where the design allowed, retain complete
-   assignment cohorts, no-deals, and timeouts, and resist statistics that
-   condition only on accepted offers.
-3. **Isolate uncertainty.** Behavioral changes were designed to be default-off;
-   uncertain candidates were assigned per game where possible so they could be
-   recovered in the logs.
-4. **Verify reach and action change.** A candidate that never reaches an eligible
-   state is not a null result. It is an untested candidate.
-5. **Promote cautiously.** We distinguished a bug, a mechanism-safety repair,
-   an observational pattern, and a causal efficacy claim. Across 35 named
-   candidates in the development registry, none was promoted through a
-   precommitted efficacy rule.
+## Agent Behavior Analysis
 
-This process produced real negative results. Unconditional stonewalling,
-broader acceptance-floor releases, generated persuasion wording, and several
-negotiation concessions did not justify continued use. Those failures are part
-of the research record, not omissions from it.
+The required behavior analysis covers **245 assignments, 244 rated outcomes,
+and 2,288 returned actions** across two windows after the recorded final-policy
+boundary. Every returned action in that archived audit matched a valid server
+replay move.
 
-## Evidence and Agent Behavior Analysis
+| Family | Audited assignments | Observed outcomes |
+| :--- | ---: | :--- |
+| Bargaining | 171 | All 171 reached agreement. |
+| Negotiation | 19 | 13 agreements, three walks, and three no-deals. |
+| Persuasion | 55 | 54 rated outcomes and one buyer timeout. |
 
-The paper's required Agent Behavior Analysis is based on two final-policy
-operational windows, not an imagined static lifetime policy. It joins 245
-assignments to authenticated replays: 244 rated outcomes, one timeout, and
-2,288 returned actions. Every returned action in that bounded audit matched a
-valid normalized replay move. This supports transmission and action fidelity;
-it does not by itself establish unrecorded rule selection, parser correctness,
-or causal policy effects.
+The audit exposed failures that placement alone would hide:
 
-| Family | Audited games | Observed outcomes | What the audit exposed |
-| --- | ---: | --- | --- |
-| Bargaining | 171 | 171 agreements; zero zero-payoff outcomes | Strong completion alone can still produce poor relative rank |
-| Negotiation | 19 | 13 agreements, 3 walks, 3 no-deals | Some price and message checks were independently reproducible; small hidden-value slices remained uncertain |
-| Persuasion | 55 | 54 rated outcomes and 1 buyer timeout | Conditional recommendation behavior and a parser miss were both visible |
+- **Agreement did not ensure a favorable rating update.** The bargaining CDF
+  rule changed 57 actions in 15 Bob games. Every game agreed, but 14 lost
+  rating, with a mean change of −4.67. This selected subset does not identify
+  the effect of removing the rule.
+- **A valid purchase could misread a warning.** The deployed persuasion parser
+  missed four decline warnings in one text-buyer game. Four purchases followed,
+  and all revealed LOW quality.
+- **Incomplete proxy coverage changed the conclusion.** Eleven persuasion
+  seller games lacked payoff-proxy support. Allowing those missing values to
+  span `[0, 1]` places the full rated cohort's mean proxy in `[.457, .662]`.
+  The supported-game mean alone cannot establish performance above `.5`.
 
-The audit identified a real limitation: four warning messages in one audited
-text-buyer game were not classified by the deployed decline parser, so purchases
-remained possible and all revealed LOW quality. That is why the paper reports
-alignment as a bounded, falsifiable claim rather than claiming that a high
-placement proves perfect agent behavior.
+The paper separates action transmission, independently checked rule
+conformance, and economic outcomes. The final-window sample is operationally
+selected, and exact contemporaneous official percentiles are unavailable.
+See the [camera-ready paper](https://openreview.net/pdf?id=uW8cpaqXdr) for the
+role-level results, uncertainty, and verification limits.
+
+<details>
+<summary><strong>Development history and negative results</strong></summary>
+
+The local lifecycle record contains 46,316 assignments and 512,456 own actions.
+Those local counts differ from the official rated-game total. Large bargaining
+and negotiation rating gains occurred before the final configuration freeze.
+
+- **Bargaining:** stonewalling and lower acceptance floors after stalled offers
+  were removed after adverse measurements and exploit tests.
+- **Negotiation:** a stopped imitation trial compared 44 hash-assigned candidate
+  games with 47 controls across four development profiles. Its pooled rating
+  contrast was +0.869 per game, with a nominal 95% interval of
+  `[−0.730, 2.469]`, and the focal profile's contrast was negative. Buyer paths
+  were nevertheless retained outside the final structural rules. The trial
+  did not establish an efficacy-based promotion.
+- **Persuasion:** generated wording was retired, while the credibility reset
+  entered the final assembly before a conclusive evaluation. Repeated LOW
+  recommendations could become unpersuasive: a selected development shadow
+  recorded only eight sales in 664 observed target outcomes.
+
+Across the 35 named development candidates, none was promoted through a
+precommitted efficacy rule. Stopped candidates, mechanism failures,
+observational diagnostics, and causal estimates are distinguished in the paper.
+
+</details>
+
+## Quick start
+
+Use **Python 3.10 or later**. The offline checks need only Python's standard
+library, with no package installation, API key, or live games.
+
+```bash
+git clone https://github.com/4r4cn1d0/glee-competition-agent.git
+cd glee-competition-agent
+python3 scripts/selftest.py
+python3 paper/analysis/verify_theory_code.py
+python3 paper/analysis/verify_derived_tables.py
+python3 paper/analysis/verify_artifact_manifest.py
+```
+
+The self-test forces LLM mode off and checks **2,077 synthetic states and
+5,941 assertions**. The remaining commands check five mathematical/code groups,
+retained aggregate arithmetic, and frozen asset receipts. These checks do not
+replay the competition or certify the historical deployed configuration.
+
+<details>
+<summary><strong>Install runtime dependencies and run developer tests</strong></summary>
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install pytest
+.venv/bin/python -m pytest tests/ -q
+```
+
+The repository has documented horizon-floor and simulator/live-grid calibration
+failures; a full-suite green status is not claimed. Restricted environments may
+also block process-inspection tests. These are separate from the paper's
+deterministic arithmetic and mathematical checks.
+
+Scripts such as `run_agent.py`, `supervise.py`, `collect.py`, and `fleet.py` can
+contact the competition or operate a fleet. They are unnecessary for the
+offline checks above. Live use requires the caller's own credentials and a
+deliberately selected runtime configuration; the current defaults are not a
+reconstruction of the paper's final policy.
+
+</details>
 
 ## Repository guide
 
-| Path | Contents |
-| --- | --- |
-| [glee_agent/](glee_agent/) | Runtime policy, dispatch, guards, message handling, and configuration |
-| [glee_agent/strategies/](glee_agent/strategies/) | Family-specific bargaining, negotiation, and persuasion owners |
-| [models/](models/) | Fixed response models, priors, acceptance artifacts, and policy tables |
-| [tests/](tests/) | Unit, invariant, policy-isolation, and mechanism tests |
-| [scripts/](scripts/) | Setup checks, offline diagnostics, collectors, and operational tooling |
-| [analysis/](analysis/) | Offline analyses and estimators used during development |
-| paper/ | Working manuscript, aggregate tables, and internal review materials; not an intended public release surface |
-| paper/review_artifact/ | A limited local review bundle whose licensing and release boundary remain unresolved |
+```text
+glee_agent/
+├── dispatch.py                  # ordered family dispatch
+├── strategies/                  # bargaining, negotiation, persuasion rules
+├── actions.py                   # schema normalization and numerical guards
+├── bargaining_p2_commitment.py   # narrow Bob schedule
+├── first_principles.py           # structural negotiation branches
+└── gamelog.py                    # plans and returned-action traces
+models/                          # fitted response models, priors, and tables
+scripts/                         # offline checks and development tooling
+tests/                           # unit, invariant, and mechanism checks
+paper/
+├── main.tex                     # working paper source
+├── appendix.tex                 # full policy and evidence specification
+├── analysis/                    # mathematical and aggregate verification
+├── data/                        # retained derived tables
+└── figures/                     # paper figures and their generators
+docs/reference/                  # GLEE interface and SDK reference material
+```
 
-## Local verification
+Start with [dispatch](glee_agent/dispatch.py), the
+[three family policies](glee_agent/strategies/), and the
+[action checks](glee_agent/actions.py). Use the submitted
+[OpenReview PDF](https://openreview.net/pdf?id=uW8cpaqXdr) as the authoritative
+camera-ready version; the [Zenodo record](https://doi.org/10.5281/zenodo.22503374)
+preserves the earlier preprint.
 
-The following checks do not require a GLEE API key and do not queue a live
-game. Use Python 3.10 or later. They are the safest way to inspect the policy
-surface locally.
+## Reproducibility and responsible use
 
-~~~bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python scripts/selftest.py
+This public repository is a working research archive. Its mutable source and
+optional experimental branches do not independently reconstruct the historical
+runtime. The paper records the intended source, configuration receipts, fitted
+inputs, rule precedence, and the parts of the audit that can be recomputed.
+Some training-corpus boundaries, fitting runs, process provenance, and private
+replay joins are not recoverable.
 
-# Optional developer test suite. pytest is intentionally installed explicitly
-# because it is not a runtime dependency.
-.venv/bin/python -m pip install pytest
-.venv/bin/python -m pytest tests/ -q
-~~~
+Raw trajectories, opponent identities, private values, and dialogue are not
+offered as a reusable public dataset. Competition participation permission is
+separate from secondary human-data use and redistribution rights. High ratings
+also provide no guarantee of fairness or buyer welfare.
 
-Several scripts under scripts/, including run_agent.py, supervise.py, collect.py,
-and fleet.py, can make authenticated requests to the GLEE service. They are not
-needed to reproduce the paper's published aggregate checks; live use requires a
-caller's own valid credentials.
-
-The local review bundle in paper/review_artifact/ verifies an allowlisted,
-aggregate-first subset of the paper: mathematical identities, synthetic policy
-behavior, selected tables, and selected figures. It is not a released,
-dependency-complete public package yet. A future sanitized archive will publish
-the exact offline verification command alongside its dependencies and manifest.
-
-## Reproducibility and scope
-
-There are three distinct claims that should not be conflated:
-
-| Claim | What this project supports | What it does not support |
-| --- | --- | --- |
-| Competition result | A captured post-close leaderboard result, reported in the paper | Attribution of second place to any single strategy revision |
-| Bounded behavior audit | Replay-linked action and outcome checks for the declared 245-game window | Lifetime alignment or a causal effectiveness estimate for each rule |
-| Limited artifact verification | Recomputing released aggregate arithmetic, figures, and synthetic-policy fixtures | Server replay, private scoring reconstruction, or production-source equivalence |
-
-Raw player data, private values, interaction text, and service-side joins are
-not an intended public dataset. The live environment also changed throughout
-the competition, including its opponents and reference pools. Any public
-release must therefore be sanitized, license-cleared, and reviewed for
-participant data governance before it is treated as a reproducibility artifact.
-
-## Responsible use
-
-This project studies strategic behavior in settings that include negotiation
-and persuasion, sometimes against human participants. High scores do not imply
-fairness, welfare, or appropriateness in a real-world bargaining setting. Do
-not use this code to target, profile, identify, or contact competition players.
+No repository-wide code license has been selected. Public access does not grant
+blanket reuse rights; third-party material carries its own restrictions. The
+paper's license is stated on its [OpenReview record](https://openreview.net/forum?id=uW8cpaqXdr).
 
 ## Citation
 
-If this work is useful, please cite the paper rather than a mutable branch of
-this working repository:
-
-~~~bibtex
-@misc{ghosh2026rankaware,
-  author = {Aayush Ghosh},
-  title = {Rank Aware Strategic Policy Design for Language Based Economic Environments},
-  year = {2026},
-  doi = {10.5281/zenodo.22503374},
-  url = {https://doi.org/10.5281/zenodo.22503374}
+```bibtex
+@inproceedings{ghosh2026rankaware,
+  title     = {Rank Aware Strategic Policy Design for Language Based Economic Environments},
+  author    = {Ghosh, Aayush},
+  booktitle = {NeurIPS 2026 Workshop on Interpreting Agent Behavior (IAB), GLEE Competition Track},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=uW8cpaqXdr}
 }
-~~~
+```
 
-## License and reuse
+<details>
+<summary><strong>Cite the archived preprint instead</strong></summary>
 
-No repository-wide public license has been selected yet. Until one is added,
-the code, paper materials, and data are not granted blanket reuse permission.
-Third-party data and documentation have additional restrictions.
+```bibtex
+@misc{ghosh2026rankaware_preprint,
+  title  = {Rank Aware Strategic Policy Design for Language Based Economic Environments},
+  author = {Ghosh, Aayush},
+  year   = {2026},
+  doi    = {10.5281/zenodo.22503374},
+  url    = {https://doi.org/10.5281/zenodo.22503374}
+}
+```
+
+</details>
+
+## Acknowledgments
+
+Thanks to the [GLEE competition organizers](https://glee-competition.com/) and
+the [Interpreting Agent Behavior workshop](https://iab-agents.github.io/).
+The [original GLEE paper](https://arxiv.org/abs/2410.05254v3) provides the
+environment and benchmark context for this work.

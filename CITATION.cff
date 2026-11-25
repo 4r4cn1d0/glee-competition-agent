@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this research code, please cite the associated GLEE competition paper."
+type: software
+title: "GLEE Competition Agent"
+authors:
+  - family-names: Ghosh
+    given-names: Aayush
+    affiliation: Independent researcher
+repository-code: "https://github.com/4r4cn1d0/glee-competition-agent"
+url: "https://openreview.net/forum?id=uW8cpaqXdr"
+keywords:
+  - bargaining
+  - automated negotiation
+  - persuasion
+  - game theory
+  - agent behavior analysis
+  - GLEE
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Ghosh
+      given-names: Aayush
+  title: "Rank Aware Strategic Policy Design for Language Based Economic Environments"
+  collection-title: "NeurIPS 2026 Workshop on Interpreting Agent Behavior (IAB), GLEE Competition Track"
+  year: 2026
+  url: "https://openreview.net/forum?id=uW8cpaqXdr"
